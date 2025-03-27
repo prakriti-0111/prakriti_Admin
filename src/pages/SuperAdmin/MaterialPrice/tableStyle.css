@@ -1,0 +1,30 @@
+.th_header_price {
+    background-color: #797676;
+    width: 200px;
+    color: #fff;
+    padding: 4px;
+}
+.td_material_name {
+    width: 250px;
+    padding: 4px;
+    border: 1px solid #616161;
+}
+.td_unit_name {
+    width: 250px;
+    padding: 4px;
+    border: 1px solid #616161;
+}
+.th_header {
+    background-color: #4c4949;
+    color: #fff;
+    padding: 4px;
+}
+.table_container {
+    margin-bottom: 15px;
+}
+.cell_padding {
+    padding: 5px;
+}
+.th_header_action {
+    width: 75px;
+}

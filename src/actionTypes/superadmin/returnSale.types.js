@@ -1,0 +1,2 @@
+export const LIST_RETURN_SALE = 'LIST_RETURN_SALE';
+export const GET_RETURN_SALE = 'GET_RETURN_SALE';

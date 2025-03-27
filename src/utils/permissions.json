@@ -1,0 +1,444 @@
+[
+    {
+        "title" : "Product Master",
+        "permissions": [
+            {
+                "title" : "Category",
+                "name" : "category",
+                "list" : false,
+                "view" : false,
+                "add" : false,
+                "edit" : false,
+                "delete" : false
+            },
+            {
+                "title" : "Sub Category",
+                "name" : "sub_category",
+                "list" : false,
+                "view" : false,
+                "add" : false,
+                "edit" : false,
+                "delete" : false
+            },
+            {
+                "title" : "Material",
+                "name" : "material",
+                "list" : false,
+                "view" : false,
+                "add" : false,
+                "edit" : false,
+                "delete" : false
+            },
+            {
+                "title" : "Price List",
+                "name" : "price_list",
+                "list" : false,
+                "view" : false,
+                "add" : false,
+                "edit" : false,
+                "delete" : false
+            },
+            {
+                "title" : "Products",
+                "name" : "products",
+                "list" : false,
+                "view" : false,
+                "add" : false,
+                "edit" : false,
+                "delete" : false
+            }
+        ]
+    },
+    {
+        "title" : "Invoice",
+        "permissions": [
+            {
+                "title" : "Purchase",
+                "name" : "purchase",
+                "list" : false,
+                "view" : false,
+                "add" : false,
+                "edit" : false,
+                "delete" : false
+            },
+            {
+                "title" : "Sales",
+                "name" : "sales",
+                "list" : false,
+                "view" : false,
+                "add" : false,
+                "edit" : false,
+                "delete" : false
+            },
+            {
+                "title" : "Sale On Approval",
+                "name" : "sale_on_approval",
+                "list" : false,
+                "view" : false,
+                "add" : false,
+                "edit" : false,
+                "delete" : false
+            },
+            {
+                "title" : "Purchase On Approval",
+                "name" : "purchase_on_approval",
+                "list" : false,
+                "view" : false,
+                "add" : false,
+                "edit" : false,
+                "delete" : false
+            },
+            {
+                "title" : "Return Purchase",
+                "name" : "return_purchase",
+                "list" : false,
+                "view" : false,
+                "add" : false,
+                "edit" : false,
+                "delete" : false
+            },
+            {
+                "title" : "Return Sale",
+                "name" : "return_sale",
+                "list" : false,
+                "view" : false,
+                "add" : false,
+                "edit" : false,
+                "delete" : false
+            },
+            {
+                "title" : "Transfer",
+                "name" : "transfer",
+                "list" : false,
+                "view" : false,
+                "add" : false,
+                "edit" : false,
+                "delete" : false
+            },
+            {
+                "title" : "Received",
+                "name" : "received",
+                "list" : false,
+                "view" : false,
+                "add" : false,
+                "edit" : false,
+                "delete" : false
+            }
+        ]
+    },
+    {
+        "title" : "Order Management",
+        "permissions": [
+            {
+                "title" : "Orders",
+                "name" : "orders",
+                "list" : false,
+                "view" : false,
+                "add" : false,
+                "edit" : false,
+                "delete" : false
+            },
+            {
+                "title" : "Return Orders",
+                "name" : "return_orders",
+                "list" : false,
+                "view" : false,
+                "add" : false,
+                "edit" : false,
+                "delete" : false
+            }
+        ]
+    },
+    {
+        "title" : "User Management",
+        "permissions": [
+            {
+                "title" : "Admin",
+                "name" : "admin",
+                "list" : false,
+                "view" : false,
+                "add" : false,
+                "edit" : false,
+                "delete" : false
+            },
+            {
+                "title" : "Distributor",
+                "name" : "distributor",
+                "list" : false,
+                "view" : false,
+                "add" : false,
+                "edit" : false,
+                "delete" : false
+            },
+            {
+                "title" : "Sales Excecutive",
+                "name" : "sales_executive",
+                "list" : false,
+                "view" : false,
+                "add" : false,
+                "edit" : false,
+                "delete" : false
+            },
+            {
+                "title" : "Retailer",
+                "name" : "retailer",
+                "list" : false,
+                "view" : false,
+                "add" : false,
+                "edit" : false,
+                "delete" : false
+            },
+            {
+                "title" : "Supplier",
+                "name" : "supplier",
+                "list" : false,
+                "view" : false,
+                "add" : false,
+                "edit" : false,
+                "delete" : false
+            },
+            {
+                "title" : "Customer",
+                "name" : "customer",
+                "list" : false,
+                "view" : false,
+                "add" : false,
+                "edit" : false,
+                "delete" : false
+            }
+        ]
+    },
+    {
+        "title" : "Employee Management",
+        "permissions": [
+            {
+                "title" : "Employees",
+                "name" : "employees",
+                "list" : false,
+                "view" : false,
+                "add" : false,
+                "edit" : false,
+                "delete" : false
+            },
+            {
+                "title" : "Roles",
+                "name" : "roles",
+                "list" : false,
+                "view" : false,
+                "add" : false,
+                "edit" : false,
+                "delete" : false
+            }
+        ]
+    },
+    {
+        "title" : "Investor Management",
+        "permissions": [
+            {
+                "title" : "Investors",
+                "name" : "investors",
+                "list" : false,
+                "view" : false,
+                "add" : false,
+                "edit" : false,
+                "delete" : false
+            },
+            {
+                "title" : "Loans",
+                "name" : "loans",
+                "list" : false,
+                "view" : false,
+                "add" : false,
+                "edit" : false,
+                "delete" : false
+            }
+        ]
+    },
+    {
+        "title" : "HR Management",
+        "permissions": [
+            {
+                "title" : "Leave Applications",
+                "name" : "leave_applications",
+                "list" : false,
+                "view" : false,
+                "add" : false,
+                "edit" : false,
+                "delete" : false
+            },
+            {
+                "title" : "Expense",
+                "name" : "expense",
+                "list" : false,
+                "view" : false,
+                "add" : false,
+                "edit" : false,
+                "delete" : false
+            }
+        ]
+    },
+    {
+        "title" : "Stock Management",
+        "permissions": [
+            {
+                "title" : "Stocks",
+                "name" : "stock",
+                "list" : false,
+                "view" : false,
+                "add" : false,
+                "edit" : false,
+                "delete" : false
+            },
+            {
+                "title" : "Material Stock",
+                "name" : "material_stock",
+                "list" : false,
+                "view" : false,
+                "add" : false,
+                "edit" : false,
+                "delete" : false
+            },
+            {
+                "title" : "Material Stock History",
+                "name" : "material_stock_history",
+                "list" : false,
+                "view" : false,
+                "add" : false,
+                "edit" : false,
+                "delete" : false
+            }
+        ]
+    },
+    {
+        "title" : "Master",
+        "permissions": [
+            {
+                "title" : "Unit",
+                "name" : "unit",
+                "list" : false,
+                "view" : false,
+                "add" : false,
+                "edit" : false,
+                "delete" : false
+            },
+            {
+                "title" : "Size",
+                "name" : "size",
+                "list" : false,
+                "view" : false,
+                "add" : false,
+                "edit" : false,
+                "delete" : false
+            },
+            {
+                "title" : "Purity",
+                "name" : "purity",
+                "list" : false,
+                "view" : false,
+                "add" : false,
+                "edit" : false,
+                "delete" : false
+            },
+            {
+                "title" : "Tax",
+                "name" : "tax",
+                "list" : false,
+                "view" : false,
+                "add" : false,
+                "edit" : false,
+                "delete" : false
+            },
+            {
+                "title" : "Certificates",
+                "name" : "certificates",
+                "list" : false,
+                "view" : false,
+                "add" : false,
+                "edit" : false,
+                "delete" : false
+            },
+            {
+                "title" : "Country",
+                "name" : "country",
+                "list" : false,
+                "view" : false,
+                "add" : false,
+                "edit" : false,
+                "delete" : false
+            },
+            {
+                "title" : "State",
+                "name" : "state",
+                "list" : false,
+                "view" : false,
+                "add" : false,
+                "edit" : false,
+                "delete" : false
+            },
+            {
+                "title" : "District",
+                "name" : "district",
+                "list" : false,
+                "view" : false,
+                "add" : false,
+                "edit" : false,
+                "delete" : false
+            },
+            {
+                "title" : "Return Policy",
+                "name" : "return_policy",
+                "list" : false,
+                "view" : false,
+                "add" : false,
+                "edit" : false,
+                "delete" : false
+            },
+            {
+                "title" : "Holidays",
+                "name" : "holidays",
+                "list" : false,
+                "view" : false,
+                "add" : false,
+                "edit" : false,
+                "delete" : false
+            }
+        ]
+    },
+    {
+        "title" : "Settings",
+        "permissions": [
+            {
+                "title" : "Banners",
+                "name" : "banners",
+                "list" : false,
+                "view" : false,
+                "add" : false,
+                "edit" : false,
+                "delete" : false
+            },
+            {
+                "title" : "Promocodes",
+                "name" : "promocodes",
+                "list" : false,
+                "view" : false,
+                "add" : false,
+                "edit" : false,
+                "delete" : false
+            }
+        ]
+    },
+    {
+        "title" : "Subscriber",
+        "permissions": [
+            {
+                "title" : "Subscribers",
+                "name" : "subscribers",
+                "list" : false,
+                "view" : false,
+                "add" : false,
+                "edit" : false,
+                "delete" : false
+            }
+        ]
+    }
+]

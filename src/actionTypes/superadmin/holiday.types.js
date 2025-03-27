@@ -1,0 +1,6 @@
+export const LIST_HOLIDAY = 'LIST_HOLIDAY';
+export const ADD_HOLIDAY = 'ADD_HOLIDAY';
+export const GET_HOLIDAY = 'GET_HOLIDAY';
+export const UPDATE_HOLIDAY = 'UPDATE_HOLIDAY';
+export const DELETE_HOLIDAY = 'DELETE_HOLIDAY';
+export const RESET_HOLIDAY = 'RESET_HOLIDAY';
