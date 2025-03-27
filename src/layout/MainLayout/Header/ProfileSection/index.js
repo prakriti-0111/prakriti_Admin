@@ -250,7 +250,7 @@ class ProfileSection extends Component {
         }
 
         const handleOrderHistory=(event)=>{
-            window.location.href = 'https://Ratnvihar.one/login';
+            window.location.href = 'https://Prakriti.one/login';
         }
         
 
