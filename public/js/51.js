@@ -508,7 +508,7 @@
                               sx: { mt: 6, mb: 0 },
                               className: "copyright",
                               children: [
-                                "Copyright ©  Ratnvihar ",
+                                "Copyright ©  Prakriti ",
                                 new Date().getFullYear(),
                                 (0, v.jsx)(f.Z, {
                                   color: "inherit",
