@@ -2890,7 +2890,7 @@ class SaleForm extends React.Component {
                         <React.Fragment key={index}>
                           <div className="unique_materials ms-3">
                             <p className="mb-2" style={{ fontSize: "smaller", color:"#000000" }}>
-                              {item.material_name} ({item["total_"+item.material_id].toFixed(3)} {item.unit})
+                              {item.material_name} ({item.material_id == 1?item["total_"+item.material_id].toFixed(3):item["total_"+item.material_id].toFixed(2)} {item.unit})
                             </p>
                             <span style={{ position: "relative" }}>
                               <input
