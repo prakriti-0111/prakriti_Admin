@@ -862,7 +862,7 @@ class DashboardPage extends Component {
             </CardContent>
           ) : null}
 
-          {this.isSuperAdmin || this.isAdmin ? (
+          {this.isSuperAdmin || (this.isAdmin && profile && profile.own == false) ? (
             <CardContent
               onClick={() => this.handleClick("purchase-products")}
               className="dashboard_card_content bg-color-1"
@@ -960,8 +960,8 @@ class DashboardPage extends Component {
 
           {(this.isAdmin ||
           this.isDistributor ||
-          this.isSalesExecutive) && 
-          (profile && profile.own == false) ? (
+          this.isSalesExecutive)/* && 
+          (profile && profile.own == false)*/ ? (
             <CardContent
               onClick={() =>
                 this.handleClick("stocks?total_avl_stock=1&by_specific=1")
