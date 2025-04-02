@@ -1386,13 +1386,19 @@ class SaleForm extends React.Component {
     );
   };
 
-  handleSubmit = async (isApproval) => {
+  handleSubmit = async (isApproval, e) => {
     let formValues = this.state.formValues;
     let hasErr = this.formValidate(isApproval);
+    if(hasErr){
+      e.target.disabled=false;
+      return false;
+    }
+
     if (formValues.products.length == 0) {
       this.props.enqueueSnackbar("Please add at least one product", {
         variant: "error",
       });
+      e.target.disabled=false;
       return false;
     }
     if (!hasErr && formValues.products.length) {
@@ -2890,7 +2896,7 @@ class SaleForm extends React.Component {
                         <React.Fragment key={index}>
                           <div className="unique_materials ms-3">
                             <p className="mb-2" style={{ fontSize: "smaller", color:"#000000" }}>
-                              {item.material_name} ({item.material_id == 1?item["total_"+item.material_id].toFixed(3):item["total_"+item.material_id].toFixed(2)} {item.unit})
+                              {item.material_name} ({item["total_"+item.material_id].toFixed(3)} {item.unit})
                             </p>
                             <span style={{ position: "relative" }}>
                               <input
@@ -3842,7 +3848,7 @@ class SaleForm extends React.Component {
                     type="button"
                     loading={submitting}
                     disabled={submitting}
-                    onClick={() => this.handleSubmit(true)}
+                    onClick={(e) => { e.target.disabled=true; this.handleSubmit(true, e)}}
                   >
                     Approval
                   </LoadingButton>
@@ -3854,7 +3860,7 @@ class SaleForm extends React.Component {
                     type="button"
                     loading={submitting}
                     disabled={submitting}
-                    onClick={() => this.handleSubmit(false)}
+                    onClick={(e) => { e.target.disabled=true; this.handleSubmit(false, e)}}
                   >
                     {this.state.isAssign ? "Transfer " : "Submit"}
                   </LoadingButton>

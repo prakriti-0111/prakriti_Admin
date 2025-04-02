@@ -31,49 +31,83 @@ class AdminPage extends Component {
       countries: this.props.countries,
       states: this.props.states,
     }
-    this.columns = [
-      {
-        name: 'company_name',
-        display_name: 'Company Name'
-      },
-      {
-        name: 'mobile',
-        display_name: 'Contact Number'
-      },
-      {
-        name: 'city',
-        display_name: 'City'
-      },
-      {
-        name: 'total_amount_display',
-        display_name: 'Total Amount',
-        className: "amount_column",
-        isBold: true
-      },
-      {
-        name: 'total_return_display',
-        display_name: 'Total Return',
-        className: "amount_column",
-        isBold: true
-      },
-      {
-        name: 'paid_amount_display',
-        display_name: 'Paid Amount',
-        className: "amount_column",
-        isBold: true
-      },
-      {
-        name: 'due_amount_display',
-        display_name: 'Due Amount',
-        className: "amount_column",
-        isBold: true
-      },
-      /*{
-        name: 'status_display',
-        display_name: 'Status'
-      },*/
 
-    ];
+    if(this.state.queryParams.own == 0){
+      this.columns = [
+        {
+          name: 'company_name',
+          display_name: 'Company Name'
+        },
+        {
+          name: 'mobile',
+          display_name: 'Contact Number'
+        },
+        {
+          name: 'city',
+          display_name: 'City'
+        },
+        {
+          name: 'total_amount_display',
+          display_name: 'Total Amount',
+          className: "amount_column",
+          isBold: true
+        },
+        {
+          name: 'total_return_display',
+          display_name: 'Total Return',
+          className: "amount_column",
+          isBold: true
+        },
+        {
+          name: 'paid_amount_display',
+          display_name: 'Paid Amount',
+          className: "amount_column",
+          isBold: true
+        },
+        {
+          name: 'due_amount_display',
+          display_name: 'Due Amount',
+          className: "amount_column",
+          isBold: true
+        },
+        /*{
+          name: 'status_display',
+          display_name: 'Status'
+        },*/
+
+      ];
+    } else {
+      this.columns = [
+        {
+          name: 'company_name',
+          display_name: 'Company Name'
+        },
+        {
+          name: 'mobile',
+          display_name: 'Contact Number'
+        },
+        {
+          name: 'city',
+          display_name: 'City'
+        },
+        {
+          name: 'total_stock',
+          display_name: 'No of Stock',
+          isBold: true
+        },
+        {
+          name: 'total_stock_price',
+          display_name: 'Stock Amt',
+          isBold: true
+        },
+        {
+          name: 'wallet_balance',
+          display_name: 'Wallet Balance',
+          isBold: true
+        },
+
+      ];
+    }
 
   }
 
@@ -189,7 +223,7 @@ class AdminPage extends Component {
 
     return (
       <>
-        <Card className='dashboard_card supplier-card' style={{ marginBottom: '16px' }}>
+        {this.state.queryParams.own == 0 && <Card className='dashboard_card supplier-card' style={{ marginBottom: '16px' }}>
           <CardContent className={`dashboard_card_content user-bg-1`} sx={{ display: "flex", justifyContent: "space-between" }}>
             <Typography sx={{ fontSize: 14, margin: 0 }} color="text.secondary" gutterBottom component="span">
               <h1>Total Sales</h1>
@@ -226,7 +260,7 @@ class AdminPage extends Component {
               {/*<CurrencyRupeeIcon />*/}
             </div>
           </CardContent>
-        </Card>
+        </Card>}
         <MainCard title="Admins" secondary={hasPermission(this.state.permissions, 'admin', 'add') ? <Button variant="contained" onClick={() => this.props.navigate('create')}>Add New</Button> : null} >
           <Box sx={{ flexGrow: 1, m: 0.5 }} className='ratn-dialog-inner'>
             <Grid container spacing={2} className='tax-input loans_view p_view'>
