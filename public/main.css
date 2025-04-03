@@ -461,11 +461,6 @@ label {
 .MuiTable-root .MuiButton-containedError svg {
   color: red;
 }
-
-.changes {
-  color: #1eaae7;
-}
-
 .profile-dropdown svg {
   color: #1e2746 !important;
 }
@@ -682,7 +677,7 @@ label {
 .super-admin-login {
   position: relative;
   height: 100vh;
-  background-color: #003631;
+  background-color: #1eaae7;
   display: grid;
   place-items: center;
 }
@@ -843,7 +838,7 @@ span.forget_header h3 {
   color: #1eaae7;
 }
 .signin-btn {
-  background-color: #003631 !important;
+  background-color: #1eaae7 !important;
   color: #fff !important;
   font-family: "Poppins", sans-serif;
   font-weight: 400;

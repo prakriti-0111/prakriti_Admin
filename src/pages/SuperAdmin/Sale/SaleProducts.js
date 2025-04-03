@@ -6,6 +6,7 @@ import { gridSpacing } from 'store/constant';
 import MainCard from 'ui-component/cards/MainCard';
 import withRouter from 'src/helpers/withRouter';
 import { saleProducts } from 'actions/superadmin/sales.actions';
+import { subCategoryList } from 'actions/superadmin/subCategory.actions';
 import DataTable from 'src/utils/DataTable';
 import { withSnackbar } from 'notistack';
 import { categoryList } from 'actions/superadmin/category.actions';
@@ -18,10 +19,13 @@ class SaleProductsPage extends Component {
     super(props);
     this.state = {
       items: [],
+      sale_by_list: [],
       price_by_categories: [],
       categories: this.props.categories,
+      sub_categories: this.props.sub_categories,
       queryParams: {
-        category_id: ''
+        category_id: '',
+        sub_category_id: '',
       },
       auth: this.props.auth,
     }
@@ -79,7 +83,11 @@ class SaleProductsPage extends Component {
       {
         name: 'mrp_display',
         display_name: 'Price'
-      }
+      },
+      {
+        name: 'sale_by_name',
+        display_name: 'Sale By'
+      },
     ];
 
     this.tableActions = [
@@ -105,6 +113,9 @@ class SaleProductsPage extends Component {
     if (props.categories !== state.categories) {
       update.categories = props.categories;
     }
+    if (props.sub_categories !== state.sub_categories) {
+      update.sub_categories = props.sub_categories;
+    }
     return update;
   }
 
@@ -112,8 +123,21 @@ class SaleProductsPage extends Component {
     saleProducts(this.state.queryParams)
       .then(res => {
         if (res.data.success) {
+          let saleByList = res.data.data.items.map((sale) => ({
+            id: sale.sale_by,
+            name: sale.sale_by_name
+          }));
+
+          saleByList = saleByList.reduce((unique, o) => {
+              if(!unique.some(obj => obj.id === o.id)) {
+                unique.push(o);
+              }
+              return unique;
+          },[]);
+
           this.setState({
             items: res.data.data.items,
+            sale_by_list: saleByList,
             price_by_categories: res.data.data.categories
           })
         }
@@ -126,10 +150,30 @@ class SaleProductsPage extends Component {
 
   handleCategoryChange = (event) => {
     let val = event.target.value;
+    this.props.actions.subCategoryList({ all: 1, category_id: val });
     this.setState({
       queryParams: {
         ...this.state.queryParams,
         category_id: val
+      }
+    })
+  }
+
+  handleSubCategoryChange = (event) => {
+    this.setState({
+      queryParams: {
+        ...this.state.queryParams,
+        sub_category_id: event.target.value
+      }
+    })
+  }
+
+  handleSaleByChange = (event) => {
+    let val = event.target.value;
+    this.setState({
+      queryParams: {
+        ...this.state.queryParams,
+        sale_by: val
       }
     })
   }
@@ -139,6 +183,7 @@ class SaleProductsPage extends Component {
   }
 
   handleCardClick = (category_id) => {
+    this.props.actions.subCategoryList({ all: 1, category_id: category_id });
     this.setState({
       queryParams: {
         ...this.state.queryParams,
@@ -199,6 +244,44 @@ class SaleProductsPage extends Component {
                   </Select>
                 </FormControl>
               </Grid>
+              <Grid item xs={6} md={3} className='create-input'>
+                <FormControl fullWidth>
+                  <InputLabel>Sub Category</InputLabel>
+                  <Select
+                    value={this.state.queryParams.sub_category_id}
+                    label="Sub Category"
+                    onChange={this.handleSubCategoryChange}
+                    className='input-inner'
+                    defaultValue=""
+                  >
+                    <MenuItem value="">All</MenuItem>
+                    {
+                      this.state.sub_categories.map((item, index) => (
+                        <MenuItem value={item.id} key={index}>{item.name}</MenuItem>
+                      ))
+                    }
+                  </Select>
+                </FormControl>
+              </Grid>
+              <Grid item xs={6} md={3} className='create-input'>
+                <FormControl fullWidth>
+                  <InputLabel>Sale by</InputLabel>
+                  <Select
+                    value={this.state.queryParams.sale_by}
+                    label="Sale by"
+                    onChange={this.handleSaleByChange}
+                    className='input-inner'
+                    defaultValue=""
+                  >
+                    <MenuItem value="">All</MenuItem>
+                    {
+                      this.state.sale_by_list.map((item, index) => (
+                        <MenuItem value={item.id} key={index}>{item.name}</MenuItem>
+                      ))
+                    }
+                  </Select>
+                </FormControl>
+              </Grid>
               <Grid item xs={6} md={1} className='create-input order-input button-right'>
                 <Button variant="contained" className='search-btn' onClick={this.handleSearch}>Search</Button>
               </Grid>
@@ -224,6 +307,7 @@ class SaleProductsPage extends Component {
 
 const mapStateToProps = (state) => ({
   categories: state.superadmin.category.items,
+  sub_categories: state.superadmin.subCategory.items,
   auth: state.auth
 });
 
@@ -231,7 +315,8 @@ const mapDispatchToProps = dispatch => {
   return {
     dispatch,
     actions: bindActionCreators({
-      categoryList
+      categoryList,
+      subCategoryList
     }, dispatch)
   }
 };

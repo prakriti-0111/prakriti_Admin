@@ -66577,7 +66577,7 @@
           this.props.actions.getNotifiactions();
           const e = new (hd())("09f950cd54a3bae697ec", {
               cluster: "ap2",
-            }).subscribe("Prakriti_channel"),
+            }).subscribe("Ratnvihar_channel"),
             t = this.state.user
               ? this.state.user.id + "-notification"
               : "notification";
@@ -73196,7 +73196,7 @@
               e.actions.getPermissions();
             }, []),
             new (hd())("09f950cd54a3bae697ec", { cluster: "ap2" })
-              .subscribe("Prakriti_channel")
+              .subscribe("Ratnvihar_channel")
               .bind("permission_updated", (t) => {
                 e.actions.getPermissions();
               }),
