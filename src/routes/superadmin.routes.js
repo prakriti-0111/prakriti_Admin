@@ -176,6 +176,9 @@ const ReturnSalePageViewPage = Loadable(lazy(() => import('../pages/SuperAdmin/R
 //banners
 const BannerPage = Loadable(lazy(() => import('../pages/SuperAdmin/Banner')));
 
+//new arrivals
+const NewArrivalPage = Loadable(lazy(() => import('../pages/SuperAdmin/NewArrival')));
+
 //search
 const SearchPage = Loadable(lazy(() => import('../pages/SuperAdmin/Search')));
 
@@ -226,6 +229,10 @@ const SuperAdminRoutes = (isLoggedIn) => [
       {
         path: 'banners',
         element: <BannerPage />
+      },
+      {
+        path: 'new-arrivals',
+        element: <NewArrivalPage />
       },
       {
         path: 'categories',

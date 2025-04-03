@@ -320,7 +320,14 @@ const superadminMenus = [
             type: 'item',
             url: urlPrefix + '/promocodes',
             breadcrumbs: false
-          }
+          },
+          {
+            id: 'new-arrivals',
+            title: 'New Arrivals',
+            type: 'item',
+            url: urlPrefix + '/new-arrivals',
+            breadcrumbs: false
+          },
         ]
       },
       {
