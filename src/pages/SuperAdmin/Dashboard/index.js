@@ -268,7 +268,7 @@ class DashboardPage extends Component {
 
   render() {
     const { dashboard, permissions, profile, auth } = this.state;
-    console.log("profile.own : ",profile);
+    console.log("profile.own : ", profile);
     console.log("auth : ", auth);
     //this.chartLabels = this.state.months_name;
     // this.chartData = {
@@ -491,8 +491,10 @@ class DashboardPage extends Component {
           (!this.isSuperAdmin ||
             (this.isSuperAdmin &&
               hasPermission(permissions, "supplier", "list"))) &&
-          !this.isDistributor && 
-          (this.isAdmin && profile && profile.own == false) ? (
+          !this.isDistributor &&
+          this.isAdmin &&
+          profile &&
+          profile.own == false ? (
             <CardContent
               onClick={() => this.handleClick("suppliers")}
               className="dashboard_card_content bg-color-3"
@@ -632,11 +634,7 @@ class DashboardPage extends Component {
                   </span>{" "}
                 </h1>
                 <h2>
-                  {dashboard ? (
-                    dashboard.sale_due_amount
-                  ) : (
-                    <CircularProgress />
-                  )}
+                  {dashboard ? dashboard.sale_due_amount : <CircularProgress />}
                 </h2>
                 {/*<h2
                   onClick={() =>
@@ -681,11 +679,11 @@ class DashboardPage extends Component {
                   </span>{" "}
                 </h1>
                 <h2>
-                    {dashboard ? (
-                        dashboard.total_other_distributor_due_amount
-                      ) : (
-                        <CircularProgress />
-                    )}
+                  {dashboard ? (
+                    dashboard.total_other_distributor_due_amount
+                  ) : (
+                    <CircularProgress />
+                  )}
                 </h2>
                 {/*<h2
                   onClick={() =>
@@ -769,9 +767,9 @@ class DashboardPage extends Component {
                   </h1>
                   <h2>
                     {dashboard ? (
-                        dashboard.total_other_distributor_due_amount
-                      ) : (
-                        <CircularProgress />
+                      dashboard.total_other_distributor_due_amount
+                    ) : (
+                      <CircularProgress />
                     )}
                   </h2>
                   {/*<h2
@@ -796,9 +794,10 @@ class DashboardPage extends Component {
           ) : null}
 
           {!this.isSalesExecutive &&
-          (this.isAdmin || (!this.isSuperAdmin ||
+          (this.isAdmin ||
+            !this.isSuperAdmin ||
             (this.isSuperAdmin &&
-              hasPermission(permissions, "sales_executive", "list")))) ? (
+              hasPermission(permissions, "sales_executive", "list"))) ? (
             <CardContent
               className="dashboard_card_content bg-color-5"
               sx={{ display: "flex", justifyContent: "space-between" }}
@@ -815,7 +814,11 @@ class DashboardPage extends Component {
                     &nbsp;{" "}
                     <span>
                       {dashboard ? (
-                        this.isAdmin && this.isDistributor?dashboard.total_own_sales_executive:dashboard.total_sales_executive
+                        this.isAdmin && this.isDistributor ? (
+                          dashboard.total_own_sales_executive
+                        ) : (
+                          dashboard.total_sales_executive
+                        )
                       ) : (
                         <CircularProgress />
                       )}
@@ -862,7 +865,8 @@ class DashboardPage extends Component {
             </CardContent>
           ) : null}
 
-          {this.isSuperAdmin || (this.isAdmin && profile && profile.own == false) ? (
+          {this.isSuperAdmin ||
+          (this.isAdmin && profile && profile.own == false) ? (
             <CardContent
               onClick={() => this.handleClick("purchase-products")}
               className="dashboard_card_content bg-color-1"
@@ -949,7 +953,11 @@ class DashboardPage extends Component {
                   </span>{" "}
                 </h1>
                 <h2>
-                  {dashboard ? dashboard.total_return_amount : <CircularProgress />}
+                  {dashboard ? (
+                    dashboard.total_return_amount
+                  ) : (
+                    <CircularProgress />
+                  )}
                 </h2>
               </Typography>
               <div className="card-icon">
@@ -958,9 +966,7 @@ class DashboardPage extends Component {
             </CardContent>
           ) : null}
 
-          {(this.isAdmin ||
-          this.isDistributor ||
-          this.isSalesExecutive)/* && 
+          {this.isAdmin || this.isDistributor || this.isSalesExecutive /* && 
           (profile && profile.own == false)*/ ? (
             <CardContent
               onClick={() =>
@@ -1034,6 +1040,50 @@ class DashboardPage extends Component {
                     <span style={{ fontSize: "16px" }}>
                       {" "}
                       {dashboard.super_admin_total_avl_stock_price}{" "}
+                    </span>
+                  ) : (
+                    <CircularProgress />
+                  )}
+                </h2>
+              </Typography>
+              <div className="card-icon">
+                <DiamondIcon />
+              </div>
+            </CardContent>
+          ) : null}
+
+          {this.isSuperAdmin ||
+          this.isAdmin ||
+          this.isDistributor ||
+          this.isSalesExecutive ? (
+            <CardContent
+              onClick={() =>
+                this.handleClick("transfer")
+              }
+              className="dashboard_card_content bg-color-1"
+              sx={{ display: "flex", justifyContent: "space-between" }}
+            >
+              <Typography
+                sx={{ fontSize: 14, margin: 0 }}
+                color="text.secondary"
+                gutterBottom
+                component="span"
+              >
+                <h1>
+                  Pending Stock &nbsp;{" "}
+                  <span>
+                    {dashboard ? (
+                      dashboard.total_avl_pending_stock
+                    ) : (
+                      <CircularProgress />
+                    )}
+                  </span>
+                </h1>
+                <h2>
+                  {dashboard ? (
+                    <span style={{ fontSize: "16px" }}>
+                      {" "}
+                      {dashboard.total_avl_pending_stock_price}{" "}
                     </span>
                   ) : (
                     <CircularProgress />
@@ -1172,9 +1222,10 @@ class DashboardPage extends Component {
             </CardContent>
           ) : null}
 
-          {!this.isAdmin && (!this.isSuperAdmin ||
-          (this.isSuperAdmin &&
-            hasPermission(permissions, "customer", "list"))) ? (
+          {!this.isAdmin &&
+          (!this.isSuperAdmin ||
+            (this.isSuperAdmin &&
+              hasPermission(permissions, "customer", "list"))) ? (
             <CardContent
               onClick={() => this.handleClick("customers")}
               className="dashboard_card_content bg-color-7"
@@ -1197,7 +1248,10 @@ class DashboardPage extends Component {
             </CardContent>
           ) : null}
 
-          {this.isSuperAdmin || this.isSalesExecutive || this.isAdmin|| this.isDistributor ? (
+          {this.isSuperAdmin ||
+          this.isSalesExecutive ||
+          this.isAdmin ||
+          this.isDistributor ? (
             <CardContent
               onClick={() => this.handleClick("sale-on-approve")}
               className="dashboard_card_content bg-color-2"
@@ -1236,7 +1290,7 @@ class DashboardPage extends Component {
             </CardContent>
           ) : null}
 
-          {this.isSuperAdmin || this.isAdmin? (
+          {this.isSuperAdmin || this.isAdmin ? (
             <CardContent
               onClick={() => this.handleClick("purchase-on-approve")}
               className="dashboard_card_content bg-color-2"
@@ -1351,17 +1405,16 @@ class DashboardPage extends Component {
                 height={100}
               />
             </div>
+          ) : !this.isAdmin ? (
+            <div>
+              <Bar
+                options={this.chartCustomerOptions}
+                data={chartCustomerData}
+                height={100}
+              />
+            </div>
           ) : (
-            !this.isAdmin
-            ?
-              <div>
-                <Bar
-                  options={this.chartCustomerOptions}
-                  data={chartCustomerData}
-                  height={100}
-                />
-              </div>
-            : <></>
+            <></>
           )}
         </>
       </>
