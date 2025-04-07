@@ -1719,13 +1719,13 @@ class SaleForm extends React.Component {
     } else if (this.isDistributor) {
       if (this.state.isAssign) {
         let suppList = [];
-        if (this.state.profile && this.state.profile.own) {
+        //if (this.state.profile && this.state.profile.own) {
           for (let i = 0; i < this.state.supplierList.length; i++) {
-            if (this.state.supplierList[i].own) {
+            //if (this.state.supplierList[i].own) {
               suppList.push(this.state.supplierList[i]);
-            }
+            //}
           }
-        }
+        //}
         userList = this.state.salesExecutiveList.concat(suppList);
       } else {
         userList = this.state.retailerList;
