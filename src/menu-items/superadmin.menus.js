@@ -320,7 +320,25 @@ const superadminMenus = [
             type: 'item',
             url: urlPrefix + '/promocodes',
             breadcrumbs: false
+<<<<<<< Updated upstream
           }
+=======
+          },
+          {
+            id: 'new-arrivals',
+            title: 'New Arrivals',
+            type: 'item',
+            url: urlPrefix + '/new-arrivals',
+            breadcrumbs: false
+          },
+          {
+            id: 'festive-offers-arrivals',
+            title: 'Festive Offers',
+            type: 'item',
+            url: urlPrefix + '/festive-offers',
+            breadcrumbs: false
+          },
+>>>>>>> Stashed changes
         ]
       },
       {

@@ -236,7 +236,7 @@ class BannerPage extends Component {
   render() {
 
     return (
-      <MainCard title="Banners" secondary={hasPermission(this.state.permissions, 'banners', 'add') ? <Button variant="contained" onClick={this.handleCreate}>Add</Button> : null} >
+      <MainCard title="Slider Banners" secondary={hasPermission(this.state.permissions, 'banners', 'add') ? <Button variant="contained" onClick={this.handleCreate}>Add</Button> : null} >
         {/*<Box sx={{ flexGrow: 1, m: 0.5 }} className='ratn-dialog-inner'>
           <Grid container spacing={2} className='tax-input loans_view p_view'>
             <Grid item xs={3} className='create-input'>
