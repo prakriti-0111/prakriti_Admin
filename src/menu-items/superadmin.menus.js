@@ -328,6 +328,13 @@ const superadminMenus = [
             url: urlPrefix + '/new-arrivals',
             breadcrumbs: false
           },
+          {
+            id: 'festive-offers',
+            title: 'Festive Offers',
+            type: 'item',
+            url: urlPrefix + '/festive-offers',
+            breadcrumbs: false
+          },
         ]
       },
       {
