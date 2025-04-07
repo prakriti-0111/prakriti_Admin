@@ -43,11 +43,8 @@ import notificationReducer from './notification.reducer';
 import visitReducer from './visit.reducer';
 import bannerReducer from './banner.reducer';
 import promocodeReducer from './promocode.reducer';
-<<<<<<< Updated upstream
-=======
 import newArrivalReducer from './newArrival.reducer';
 import festiveOfferReducer from './festiveOffer.reducer';
->>>>>>> Stashed changes
 import my_performanceReducer from './my_performance.reducer';
 import returnOrdersReducer from './returnOrders.reducer';
 import holidayReducer from './holiday.reducer';
@@ -96,11 +93,8 @@ export const SUPERADMIN_REDUCERS = {
     visit: visitReducer,
     banner: bannerReducer,
     promocode: promocodeReducer,
-<<<<<<< Updated upstream
-=======
     newArrival: newArrivalReducer,
     festiveoffer: festiveOfferReducer,
->>>>>>> Stashed changes
     my_performance: my_performanceReducer,
     returnOrders: returnOrdersReducer,
     holiday: holidayReducer,
