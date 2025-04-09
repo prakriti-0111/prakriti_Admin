@@ -335,6 +335,13 @@ const superadminMenus = [
             url: urlPrefix + '/festive-offers',
             breadcrumbs: false
           },
+          {
+            id: 'stock-products',
+            title: 'Stock Products',
+            type: 'item',
+            url: urlPrefix + '/stock-products',
+            breadcrumbs: false
+          },
         ]
       },
       {

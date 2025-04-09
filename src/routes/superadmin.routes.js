@@ -96,6 +96,11 @@ const FestiveofferPage = Loadable(lazy(() => import('../pages/SuperAdmin/Festive
 const FestiveofferCreatePage = Loadable(lazy(() => import('../pages/SuperAdmin/FestiveOffer/Create')));
 const FestiveofferEditPage = Loadable(lazy(() => import('../pages/SuperAdmin/FestiveOffer/Edit')));
 
+// StockProductBannerPage
+const StockProductBannerPage = Loadable(lazy(() => import('../pages/SuperAdmin/StockProductBanner')));
+const StockProductBannerCreatePage = Loadable(lazy(() => import('../pages/SuperAdmin/StockProductBanner/Create')));
+const StockProductBannerEditPage = Loadable(lazy(() => import('../pages/SuperAdmin/StockProductBanner/Edit')));
+
 //material price
 const MaterialPricePage = Loadable(lazy(() => import('../pages/SuperAdmin/MaterialPrice')));
 const MaterialPriceCreatePage = Loadable(lazy(() => import('../pages/SuperAdmin/MaterialPrice/Create')));
@@ -306,6 +311,18 @@ const SuperAdminRoutes = (isLoggedIn) => [
       {
         path: 'festive-offers/Edit/:id',
         element: <FestiveofferEditPage />
+      },
+      {
+        path: 'stock-products',
+        element: <StockProductBannerPage />
+      },
+      {
+        path: 'stock-products/Create',
+        element: <StockProductBannerCreatePage />
+      },
+      {
+        path: 'stock-products/Edit/:id',
+        element: <StockProductBannerEditPage />
       },
       {
         path: 'countries',

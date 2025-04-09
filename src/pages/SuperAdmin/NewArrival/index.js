@@ -44,6 +44,7 @@ class NewArrivalPage extends Component {
       actionCalled: this.props.actionCalled,
       successMessage: this.props.successMessage,
       errorMessage: this.props.errorMessage,
+      inProgress: false
     }
     this.columns = [
       {
@@ -162,6 +163,9 @@ class NewArrivalPage extends Component {
     }else{
       data.image = '';
     }
+    this.setState({
+      inProgress: true
+    });
     if (this.state.editRow) {
       this.props.actions.newArrivalUpdate(this.state.editRow.id, data);
     } else {
@@ -171,6 +175,9 @@ class NewArrivalPage extends Component {
 
   componentDidUpdate() {
     if (this.state.actionCalled) {
+      this.setState({
+        inProgress: false
+      });
       if (this.state.createSuccess) {
         this.props.enqueueSnackbar(this.state.successMessage, { variant: 'success' });
         this.props.dispatch({type: RESET_NEW_ARRIVAL});
@@ -304,7 +311,7 @@ class NewArrivalPage extends Component {
             </DialogTitle>
             <DialogContent>
               <DialogContentText></DialogContentText>
-              <NewArrivalForm onSubmit={this.submit} formData={this.state.editRow} handleCancel={this.handleCancel} />
+              <NewArrivalForm onSubmit={this.submit} inProgress={this.state.inProgress} formData={this.state.editRow} handleCancel={this.handleCancel} />
             </DialogContent>
           </Dialog>
 

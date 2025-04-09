@@ -1,7 +1,7 @@
 import React from 'react';
 import { connect } from 'react-redux';
 import { Field, reduxForm, getFormValues } from 'redux-form/immutable';
-import {Box, TextField, Button, Grid, Stack, FormControl, InputLabel, Select, MenuItem, FormHelperText  } from '@mui/material';
+import {Box, TextField, Button, Grid, Stack, FormControl, InputLabel, Select, MenuItem, FormHelperText, CircularProgress  } from '@mui/material';
 import { ContactPageSharp } from '@mui/icons-material';
 import withRouter from 'src/helpers/withRouter';
 import {isEmpty} from 'src/helpers/helper';
@@ -110,7 +110,7 @@ class NewArrivalForm extends React.Component {
   }
 
   render() {
-    const { handleSubmit, pristine, submitting, formValues } = this.props;
+    const { handleSubmit, pristine, submitting, formValues, inProgress } = this.props;
     return (
       <form onSubmit={ handleSubmit } className="category_form">
          <Box sx={{ flexGrow: 1 }}>
@@ -149,8 +149,10 @@ class NewArrivalForm extends React.Component {
               </Grid>
             </Grid>
             <Stack spacing={1} mt={2} direction="row" className='modal-button-area'>
+            {inProgress?<CircularProgress />:<>
               <Button variant="contained" type="submit">Submit</Button>
-              <Button variant="outlined" onClick={() => this.props.handleCancel() }>Cancel</Button>
+              <Button variant="outlined" onClick={() => this.props.handleCancel() }>Cancel</Button></>
+            }
             </Stack>
         </Box>
       </form>
