@@ -4,7 +4,7 @@ import { Field, reduxForm, getFormValues, change } from 'redux-form/immutable';
 import { Box, TextField, Button, Grid, Link, TextareaAutosize, Stack, Select, MenuItem, InputLabel, FormControl, FormControlLabel, Checkbox, FormHelperText, ListItemText, Accordion, AccordionSummary, Typography, AccordionDetails, Paper, Tab, CircularProgress } from '@mui/material';
 import { toBase64 } from 'src/helpers/helper';
 import { bindActionCreators } from 'redux';
-import { festiveofferCreate, festiveofferStore, festiveofferUpdate } from 'actions/superadmin/festiveoffer.actions';
+import { stockproductCreate, stockproductStore, stockproductUpdate } from 'actions/superadmin/stockproduct.actions';
 import { productList } from 'actions/superadmin/product.actions';
 import { categoryList } from 'actions/superadmin/category.actions';
 import { subCategoryList } from 'actions/superadmin/subCategory.actions';
@@ -39,7 +39,7 @@ const validate = values => {
     //'description',
     'category_id',
     //'sub_category_id',
-    'code',
+    'price',
     'discount'
   ]
   requiredFields.forEach(field => {
@@ -51,7 +51,7 @@ const validate = values => {
   return errors
 }
 
-class FestiveofferForm extends React.Component {
+class StockProductBannerForm extends React.Component {
 
   constructor(props) {
     super(props);
@@ -66,10 +66,6 @@ class FestiveofferForm extends React.Component {
       banner_file: null,
       existing_banner_image: null,
       productList: this.props.productList,
-      start_date: moment().format('MM/DD/YYYY'),
-      end_date: moment().format('MM/DD/YYYY'),
-      start_date_err: '',
-      end_date_err: '',
       inProgress: false
     }
 
@@ -84,8 +80,7 @@ class FestiveofferForm extends React.Component {
       this.initializeFormData();
     } else {
       this.props.initialize({
-        status: 1,
-        discount_type: 'percentage'
+        status: 1
       });
     }
   }
@@ -121,8 +116,6 @@ class FestiveofferForm extends React.Component {
     this.props.initialize(formValues);
     this.setState({
       existing_banner_image: this.state.formData.banner,
-      start_date: formValues.start_date,
-      end_date: formValues.end_date,
     });
   }
 
@@ -136,13 +129,12 @@ class FestiveofferForm extends React.Component {
       sub_category_id: '',
       title: '',
       description: '',
-      code: '',
+      button_txt: '',
       products: [],
+      price: '',
       discount: '',
-      discount_type: 'percentage',
-      status: '1',
-      start_date: moment().format('MM/DD/YYYY'),
-      end_date: moment().format('MM/DD/YYYY')
+      final_price: '',
+      status: '1'
     }
   }
 
@@ -380,7 +372,7 @@ class FestiveofferForm extends React.Component {
 
   handleCategoryChange = (event, val) => {
     this.props.actions.subCategoryList({ all: 1, category_id: val });
-    this.props.dispatch(change('FestiveofferForm', 'sub_category_id', ''));
+    this.props.dispatch(change('StockProductBannerForm', 'sub_category_id', ''));
     this.props.dispatch({
       type: RESET_PRODUCT_LIST
     });
@@ -405,7 +397,7 @@ class FestiveofferForm extends React.Component {
     let errors = false;
     let values = { ...this.getDefaultValues(), ...data };
     /*if (values.products.length == 0) {
-      this.props.dispatch(updateSyncErrors('FestiveofferForm', {
+      this.props.dispatch(updateSyncErrors('StockProductBannerForm', {
         products: 'Product is required.'
       }));
       errors = true;
@@ -418,41 +410,17 @@ class FestiveofferForm extends React.Component {
         errors = true;
       }
     }
-    if(!this.state.start_date){
-      this.setState({
-        start_date_err: 'Required'
-      })
-      errors = true;
-    }else{
-      this.setState({
-        start_date_err: ''
-      })
-    }
-    if(!this.state.end_date){
-      this.setState({
-        end_date_err: 'Required'
-      })
-      errors = true;
-    }else{
-      this.setState({
-        end_date_err: ''
-      })
-    }
 
     if (!errors) {
       this.setState({
         inProgress: true 
       });
-      values.start_date = this.state.start_date;
-      values.end_date = this.state.end_date;
       if (this.state.isCreateFrom) {
-        return this.props.actions.festiveofferStore(values);
+        return this.props.actions.stockproductStore(values);
       } else {
-        return this.props.actions.festiveofferUpdate(this.state.formData.id, values);
+        return this.props.actions.stockproductUpdate(this.state.formData.id, values);
       }
     }
-
-    
   }
 
   handleFieldChange = (e, vl) => {
@@ -482,7 +450,8 @@ class FestiveofferForm extends React.Component {
 
   render() {
     const { handleSubmit, pristine, submitting } = this.props;
-    const {inProgress} = this.state;
+    const {inProgress} =  this.state;
+
     return (
       <form onSubmit={handleSubmit(this.handleFormSubmit)} className="ratn-dialog-wrapper" ref={this.formRef}>
         <Box sx={{ flexGrow: 1, m: 0.5 }} className='ratn-dialog-inner'>
@@ -535,15 +504,15 @@ class FestiveofferForm extends React.Component {
                 placeholder="Description"
               />
             </Grid>
-            <Grid item xs={2} className='create-input'>
+            <Grid item xs={4} className='create-input'>
               <Field
                 className='input-inner'
-                name="code"
+                name="price"
                 component={this.renderTextField}
-                label="Code"
+                label="Price"
               />
             </Grid>
-            <Grid item xs={2} className='create-input'>
+            <Grid item xs={4} className='create-input'>
               <Field
                 className='input-inner'
                 name="discount"
@@ -551,37 +520,21 @@ class FestiveofferForm extends React.Component {
                 label="Discount"
               />
             </Grid>
-            <Grid item xs={2} className='create-input'>
+            <Grid item xs={4} className='create-input'>
               <Field
                 className='input-inner'
-                name="discount_type"
-                component={this.renderDiscountField}
-                label="Discount Type"
-                type="select"
-                onChange={(event) => this.handleFieldChange(event)}
+                name="final_price"
+                component={this.renderTextField}
+                label="Final Price"
               />
             </Grid>
-            <Grid item xs={2} className='create-input'>
-              <LocalizationProvider dateAdapter={AdapterDayjs}>
-                <DatePicker
-                  label="Start Date"
-                  value={this.state.start_date}
-                  inputFormat="DD/MM/YYYY"
-                  onChange={(newValue) => this.setState({start_date: newValue})}
-                  renderInput={(params) => <TextField {...params} error={this.state.start_date_err ? true : false} />}
-                />
-              </LocalizationProvider>
-            </Grid>
-            <Grid item xs={2} className='create-input'>
-              <LocalizationProvider dateAdapter={AdapterDayjs}>
-                <DatePicker
-                  label="End Date"
-                  value={this.state.end_date}
-                  inputFormat="DD/MM/YYYY"
-                  onChange={(newValue) => this.setState({end_date: newValue})}
-                  renderInput={(params) => <TextField {...params} error={this.state.end_date_err ? true : false} />}
-                />
-              </LocalizationProvider>
+            <Grid item xs={6} className='create-input'>
+              <Field
+                className='input-inner'
+                name="button_txt"
+                component={this.renderTextField}
+                label="Button Text"
+              />
             </Grid>
             <Grid item xs={2} className='create-input'>
               <Field
@@ -636,8 +589,7 @@ class FestiveofferForm extends React.Component {
           <Grid container spacing={0} className="loans_view p_view">
             <Grid item xs={12} className='create-input' style = {{ paddingTop: "10px" }}>
               <Stack spacing={1} direction="row" justifyContent="flex-end" className='p-submit-button' sx={{ marginTop: "0px" }}>
-              {inProgress?<CircularProgress />:<>
-                <LoadingButton
+                {inProgress?<CircularProgress />:<><LoadingButton
                   variant="contained"
                   type="button"
                   loading={submitting}
@@ -648,10 +600,9 @@ class FestiveofferForm extends React.Component {
                 </LoadingButton>
                 {
                   !submitting ?
-                    <Button variant="outlined" onClick={() => this.props.navigate(getUserDashboardRoute(getRoleName(this.state.auth)) + '/festive-offers')}>Cancel</Button>
+                    <Button variant="outlined" onClick={() => this.props.navigate(getUserDashboardRoute(getRoleName(this.state.auth)) + '/stock-products')}>Cancel</Button>
                     : null
-                }</>
-              }
+                }</>}
               </Stack>
             </Grid>
           </Grid>
@@ -667,16 +618,16 @@ const mapStateToProps = (state) => ({
   sub_categories: state.superadmin.subCategory.items,
   auth: state.auth,
   productList: state.superadmin.product.items,
-  formValues: getFormValues('FestiveofferForm')(state, 'status'),
-  actionCalled: state.superadmin.festiveoffer.actionCalled
+  formValues: getFormValues('StockProductBannerForm')(state, 'status'),
+  actionCalled: state.superadmin.stockproduct.actionCalled,
 });
 
 const mapDispatchToProps = dispatch => ({
   dispatch,
   actions: bindActionCreators({
-    festiveofferCreate,
-    festiveofferUpdate,
-    festiveofferStore,
+    stockproductCreate,
+    stockproductUpdate,
+    stockproductStore,
     subCategoryList,
     productList,
     categoryList,
@@ -685,9 +636,9 @@ const mapDispatchToProps = dispatch => ({
 });
 
 export default withRouter(withSnackbar(connect(mapStateToProps, mapDispatchToProps)(reduxForm({
-  form: 'FestiveofferForm',
+  form: 'StockProductBannerForm',
   validate
-})(FestiveofferForm))));
+})(StockProductBannerForm))));
 
 
 

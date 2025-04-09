@@ -1,19 +1,19 @@
 import {
-    LIST_FESTIVEOFFER,
-    CREATE_FESTIVEOFFER,
-    ADD_FESTIVEOFFER,
-    GET_FESTIVEOFFER,
-    UPDATE_FESTIVEOFFER,
-    DELETE_FESTIVEOFFER,
-    RESET_FESTIVEOFFER,
-    RESET_FESTIVEOFFER_LIST
-} from '../../actionTypes/superadmin/festiveoffer.types';
+    LIST_STOCKPRODUCT,
+    CREATE_STOCKPRODUCT,
+    ADD_STOCKPRODUCT,
+    GET_STOCKPRODUCT,
+    UPDATE_STOCKPRODUCT,
+    DELETE_STOCKPRODUCT,
+    RESET_STOCKPRODUCT,
+    RESET_STOCKPRODUCT_LIST
+} from '../../actionTypes/superadmin/stockproduct.types';
 
 const initialState = {
     categories: [],
     items: [],
     total: 0,
-    festiveoffer: null,
+    stockproduct: null,
     actionCalled: false,
     createSuccess: false,
     deleteSuccess: false,
@@ -25,12 +25,12 @@ const initialState = {
 export default function (state = initialState, action) {
     const { type, payload } = action;
     switch (type) {
-        case LIST_FESTIVEOFFER:
+        case LIST_STOCKPRODUCT:
             return {
                 ...state,
                 ...payload
             }
-        case CREATE_FESTIVEOFFER:
+        case CREATE_STOCKPRODUCT:
             return {
                 ...state,
                 categoriescategories: payload.categories,
@@ -38,7 +38,7 @@ export default function (state = initialState, action) {
                 materials: payload.materials,
                 sizes: payload.sizes
             }
-        case ADD_FESTIVEOFFER:
+        case ADD_STOCKPRODUCT:
             return {
                 ...state,
                 actionCalled: true,
@@ -46,12 +46,12 @@ export default function (state = initialState, action) {
                 successMessage: payload.success ? payload.message : null,
                 errorMessage: !payload.success ? payload.message : null,
             }
-        case GET_FESTIVEOFFER:
+        case GET_STOCKPRODUCT:
             return {
                 ...state,
-                festiveoffer: payload
+                stockproduct: payload
             }
-        case UPDATE_FESTIVEOFFER:
+        case UPDATE_STOCKPRODUCT:
             return {
                 ...state,
                 actionCalled: true,
@@ -59,7 +59,7 @@ export default function (state = initialState, action) {
                 successMessage: payload.success ? payload.message : null,
                 errorMessage: !payload.success ? payload.message : null,
             }
-        case DELETE_FESTIVEOFFER:
+        case DELETE_STOCKPRODUCT:
             return {
                 ...state,
                 actionCalled: true,
@@ -67,7 +67,7 @@ export default function (state = initialState, action) {
                 successMessage: payload.success ? payload.message : null,
                 errorMessage: !payload.success ? payload.message : null,
             }
-        case RESET_FESTIVEOFFER:
+        case RESET_STOCKPRODUCT:
             return {
                 ...state,
                 actionCalled: false,
@@ -77,7 +77,7 @@ export default function (state = initialState, action) {
                 successMessage: null,
                 errorMessage: null
             }
-        case RESET_FESTIVEOFFER_LIST:
+        case RESET_STOCKPRODUCT_LIST:
             return {
                 ...state,
                 items: [],
