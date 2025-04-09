@@ -11,19 +11,19 @@ import DialogActions from '@mui/material/DialogActions';
 import DialogContent from '@mui/material/DialogContent';
 import DialogContentText from '@mui/material/DialogContentText';
 import DialogTitle from '@mui/material/DialogTitle';
-import { bannerCreate, bannerUpdate, bannerList, bannerDelete } from 'actions/superadmin/banner.actions';
-import BannerForm from 'forms/SuperAdmin/BannerForm';
+import { newArrivalCreate, newArrivalUpdate, newArrivalList, newArrivalDelete } from 'actions/superadmin/new_arrival.actions';
+import NewArrivalForm from 'forms/SuperAdmin/NewArrivalForm';
 import { withSnackbar } from 'notistack';
 import {
-  ADD_BANNER,
-  UPDATE_BANNER,
-  DELETE_BANNER,
-  RESET_BANNER
-} from '../../../actionTypes/superadmin/banner.types';
+  ADD_NEW_ARRIVAL,
+  UPDATE_NEW_ARRIVAL,
+  DELETE_NEW_ARRIVAL,
+  RESET_NEW_ARRIVAL
+} from '../../../actionTypes/superadmin/newArrival.types';
 import {isEmpty, toBase64, hasPermission} from 'src/helpers/helper';
 import ClearIcon from '@mui/icons-material/Clear';
 
-class BannerPage extends Component {
+class NewArrivalPage extends Component {
 
   constructor(props) {
     super(props);
@@ -44,6 +44,7 @@ class BannerPage extends Component {
       actionCalled: this.props.actionCalled,
       successMessage: this.props.successMessage,
       errorMessage: this.props.errorMessage,
+      inProgress: false
     }
     this.columns = [
       {
@@ -123,7 +124,7 @@ class BannerPage extends Component {
   }
 
   loadListData = () => {
-    this.props.actions.bannerList(this.state.queryParams);
+    this.props.actions.newArrivalList(this.state.queryParams);
   }
 
   handleEdit = (row) => {
@@ -135,7 +136,7 @@ class BannerPage extends Component {
   }
 
   handleDelete = (row) => {
-    this.props.actions.bannerDelete(row.id);
+    this.props.actions.newArrivalDelete(row.id);
 
   }
 
@@ -162,18 +163,24 @@ class BannerPage extends Component {
     }else{
       data.image = '';
     }
+    this.setState({
+      inProgress: true
+    });
     if (this.state.editRow) {
-      this.props.actions.bannerUpdate(this.state.editRow.id, data);
+      this.props.actions.newArrivalUpdate(this.state.editRow.id, data);
     } else {
-      this.props.actions.bannerCreate(data);
+      this.props.actions.newArrivalCreate(data);
     }
   }
 
   componentDidUpdate() {
     if (this.state.actionCalled) {
+      this.setState({
+        inProgress: false
+      });
       if (this.state.createSuccess) {
         this.props.enqueueSnackbar(this.state.successMessage, { variant: 'success' });
-        this.props.dispatch({type: RESET_BANNER});
+        this.props.dispatch({type: RESET_NEW_ARRIVAL});
         this.setState({
           queryParams: {
             ...this.state.queryParams,
@@ -186,7 +193,7 @@ class BannerPage extends Component {
         })
       } else if (this.state.editSuccess) {
         this.props.enqueueSnackbar(this.state.successMessage, { variant: 'success' });
-        this.props.dispatch({type: RESET_BANNER});
+        this.props.dispatch({type: RESET_NEW_ARRIVAL});
         this.setState({
           queryParams: {
             ...this.state.queryParams,
@@ -199,12 +206,12 @@ class BannerPage extends Component {
         })
       } else if (this.state.deleteSuccess) {
         this.props.enqueueSnackbar(this.state.successMessage, { variant: 'success' });
-        this.props.dispatch({type: RESET_BANNER});
+        this.props.dispatch({type: RESET_NEW_ARRIVAL});
         this.handlePagination(1);
       }
       else if (this.state.errorMessage != null) {
         this.props.enqueueSnackbar(this.state.errorMessage, { variant: 'error' });
-        this.props.dispatch({type: RESET_BANNER});
+        this.props.dispatch({type: RESET_NEW_ARRIVAL});
       }
     }
   }
@@ -236,7 +243,7 @@ class BannerPage extends Component {
   render() {
 
     return (
-      <MainCard title="Slider Banners" secondary={hasPermission(this.state.permissions, 'banners', 'add') ? <Button variant="contained" onClick={this.handleCreate}>Add</Button> : null} >
+      <MainCard title="New Arrivals" secondary={hasPermission(this.state.permissions, 'new-arrivals', 'add') ? <Button variant="contained" onClick={this.handleCreate}>Add</Button> : null} >
         {/*<Box sx={{ flexGrow: 1, m: 0.5 }} className='ratn-dialog-inner'>
           <Grid container spacing={2} className='tax-input loans_view p_view'>
             <Grid item xs={3} className='create-input'>
@@ -277,14 +284,14 @@ class BannerPage extends Component {
                 label: 'Edit',
                 onClick: this.handleEdit,
                 color: 'primary',
-                show: hasPermission(this.state.permissions, 'banners', 'edit')
+                show: hasPermission(this.state.permissions, 'new-arrivals', 'edit')
               },
               {
                 label: 'Delete',
                 onClick: this.handleDelete,
                 isDelete: true,
                 color: 'error',
-                show: hasPermission(this.state.permissions, 'banners', 'delete')
+                show: hasPermission(this.state.permissions, 'new-arrivals', 'delete')
               }
             ]}
           />
@@ -304,7 +311,7 @@ class BannerPage extends Component {
             </DialogTitle>
             <DialogContent>
               <DialogContentText></DialogContentText>
-              <BannerForm onSubmit={this.submit} formData={this.state.editRow} handleCancel={this.handleCancel} />
+              <NewArrivalForm onSubmit={this.submit} inProgress={this.state.inProgress} formData={this.state.editRow} handleCancel={this.handleCancel} />
             </DialogContent>
           </Dialog>
 
@@ -314,21 +321,21 @@ class BannerPage extends Component {
 }
 
 const mapStateToProps = (state) => ({
-  items: state.superadmin.banner.items,
-  total: state.superadmin.banner.total,
-  actionCalled: state.superadmin.banner.actionCalled,
-  createSuccess: state.superadmin.banner.createSuccess,
-  editSuccess: state.superadmin.banner.editSuccess,
-  deleteSuccess: state.superadmin.banner.deleteSuccess,
-  successMessage: state.superadmin.banner.successMessage,
-  errorMessage: state.superadmin.banner.errorMessage,
+  items: state.superadmin.newArrival.items,
+  total: state.superadmin.newArrival.total,
+  actionCalled: state.superadmin.newArrival.actionCalled,
+  createSuccess: state.superadmin.newArrival.createSuccess,
+  editSuccess: state.superadmin.newArrival.editSuccess,
+  deleteSuccess: state.superadmin.newArrival.deleteSuccess,
+  successMessage: state.superadmin.newArrival.successMessage,
+  errorMessage: state.superadmin.newArrival.errorMessage,
   permissions: state.employee.permissions.permissions
 });
 
 const mapDispatchToProps = dispatch => ({
   dispatch,
-  actions: bindActionCreators({ bannerList, bannerCreate, bannerUpdate, bannerDelete, bannerList }, dispatch)
+  actions: bindActionCreators({ newArrivalList, newArrivalCreate, newArrivalUpdate, newArrivalDelete, newArrivalList }, dispatch)
 });
 
 
-export default withSnackbar(withRouter(connect(mapStateToProps, mapDispatchToProps)(BannerPage)));
+export default withSnackbar(withRouter(connect(mapStateToProps, mapDispatchToProps)(NewArrivalPage)));

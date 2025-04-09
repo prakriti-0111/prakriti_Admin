@@ -91,6 +91,16 @@ const PromocodePage = Loadable(lazy(() => import('../pages/SuperAdmin/Promocode'
 const PromocodeCreatePage = Loadable(lazy(() => import('../pages/SuperAdmin/Promocode/Create')));
 const PromocodeEditPage = Loadable(lazy(() => import('../pages/SuperAdmin/Promocode/Edit')));
 
+// Festiveoffer
+const FestiveofferPage = Loadable(lazy(() => import('../pages/SuperAdmin/FestiveOffer')));
+const FestiveofferCreatePage = Loadable(lazy(() => import('../pages/SuperAdmin/FestiveOffer/Create')));
+const FestiveofferEditPage = Loadable(lazy(() => import('../pages/SuperAdmin/FestiveOffer/Edit')));
+
+// StockProductBannerPage
+const StockProductBannerPage = Loadable(lazy(() => import('../pages/SuperAdmin/StockProductBanner')));
+const StockProductBannerCreatePage = Loadable(lazy(() => import('../pages/SuperAdmin/StockProductBanner/Create')));
+const StockProductBannerEditPage = Loadable(lazy(() => import('../pages/SuperAdmin/StockProductBanner/Edit')));
+
 //material price
 const MaterialPricePage = Loadable(lazy(() => import('../pages/SuperAdmin/MaterialPrice')));
 const MaterialPriceCreatePage = Loadable(lazy(() => import('../pages/SuperAdmin/MaterialPrice/Create')));
@@ -176,6 +186,9 @@ const ReturnSalePageViewPage = Loadable(lazy(() => import('../pages/SuperAdmin/R
 //banners
 const BannerPage = Loadable(lazy(() => import('../pages/SuperAdmin/Banner')));
 
+//new arrivals
+const NewArrivalPage = Loadable(lazy(() => import('../pages/SuperAdmin/NewArrival')));
+
 //search
 const SearchPage = Loadable(lazy(() => import('../pages/SuperAdmin/Search')));
 
@@ -226,6 +239,10 @@ const SuperAdminRoutes = (isLoggedIn) => [
       {
         path: 'banners',
         element: <BannerPage />
+      },
+      {
+        path: 'new-arrivals',
+        element: <NewArrivalPage />
       },
       {
         path: 'categories',
@@ -282,6 +299,30 @@ const SuperAdminRoutes = (isLoggedIn) => [
       {
         path: 'promocodes/Edit/:id',
         element: <PromocodeEditPage />
+      },
+      {
+        path: 'festive-offers',
+        element: <FestiveofferPage />
+      },
+      {
+        path: 'festive-offers/Create',
+        element: <FestiveofferCreatePage />
+      },
+      {
+        path: 'festive-offers/Edit/:id',
+        element: <FestiveofferEditPage />
+      },
+      {
+        path: 'stock-products',
+        element: <StockProductBannerPage />
+      },
+      {
+        path: 'stock-products/Create',
+        element: <StockProductBannerCreatePage />
+      },
+      {
+        path: 'stock-products/Edit/:id',
+        element: <StockProductBannerEditPage />
       },
       {
         path: 'countries',

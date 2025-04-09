@@ -2,20 +2,20 @@ import { React, Component } from 'react';
 import { matchRoutes, useLocation } from "react-router-dom"
 import { connect } from 'react-redux';
 import {Select, CssBaseline, InputLabel, Box, FormControl, MenuItem, TextField, Grid, Button } from '@mui/material';
-import LoginForm from 'forms/SuperAdmin/LoginForm';
+
 import { bindActionCreators } from 'redux';
 import { gridSpacing } from 'store/constant';
 import MainCard from 'ui-component/cards/MainCard';
 import withRouter from 'src/helpers/withRouter';
-import { promocodeList, promocodeCreate, promocodeStore, promocodeView, promocodeUpdate, promocodeDelete } from 'actions/superadmin/promocode.actions';
+import { stockproductList, stockproductCreate, stockproductStore, stockproductView, stockproductUpdate, stockproductDelete } from 'actions/superadmin/stockproduct.actions';
 import { subCategoryList } from 'actions/superadmin/subCategory.actions';
 import DataTable from 'src/utils/DataTable';
-import {RESET_PROMOCODE} from '../../../actionTypes/superadmin/promocode.types';
+import {RESET_STOCKPRODUCT} from '../../../actionTypes/superadmin/stockproduct.types';
 import { categoryList } from 'actions/superadmin/category.actions';
 import { withSnackbar } from 'notistack';
 import {hasPermission} from 'src/helpers/helper';
 
-class PromocodePage extends Component {
+class StockProductBannerPage extends Component {
 
   constructor(props) {
     super(props);
@@ -114,7 +114,7 @@ class PromocodePage extends Component {
   }
 
   loadListData = () => {
-    this.props.promocodeList(this.state.queryParams);
+    this.props.stockproductList(this.state.queryParams);
   }
 
   handlePagination = (page, all) => {
@@ -135,7 +135,7 @@ class PromocodePage extends Component {
   }
 
   handleDelete = (row) => {
-    this.props.promocodeDelete(row.id);
+    this.props.stockproductDelete(row.id);
   }
 
   handleCategoryChange = (event) => {
@@ -190,7 +190,7 @@ class PromocodePage extends Component {
       const { dispatch } = this.props;
       this.props.enqueueSnackbar(this.state.successMessage, {variant: 'success'});
       dispatch({
-        type: RESET_PROMOCODE
+        type: RESET_STOCKPRODUCT
       });
       this.handlePagination(1);
     }
@@ -199,7 +199,7 @@ class PromocodePage extends Component {
   render() {
     
     return (
-      <MainCard title="Promocode Banners" secondary={hasPermission(this.state.permissions, 'promocodes', 'add') ? (<Button variant="contained" onClick={() => this.props.navigate('create')}>Add</Button>) : null} >
+      <MainCard title="Stock Product Banners" secondary={hasPermission(this.state.permissions, 'stockproducts', 'add') ? (<Button variant="contained" onClick={() => this.props.navigate('create')}>Add</Button>) : null} >
         {/*<Box sx={{ flexGrow: 1, m: 0.5 }} className='ratn-dialog-inner'>
             <Grid container spacing={2} className='tax-input loans_view p_view'>
               <Grid item xs={12} md={2} className='create-input'>
@@ -287,14 +287,14 @@ class PromocodePage extends Component {
                 label: 'Edit',
                 onClick: this.handleEdit,
                 color: 'primary',
-                show: hasPermission(this.state.permissions, 'promocodes', 'edit')
+                show: hasPermission(this.state.permissions, 'stockproducts', 'edit')
               },
               {
                 label: 'Delete',
                 onClick: this.handleDelete,
                 isDelete: true,
                 color: 'error',
-                show: hasPermission(this.state.permissions, 'promocodes', 'delete')
+                show: hasPermission(this.state.permissions, 'stockproducts', 'delete')
               }
             ]}
           />
@@ -305,11 +305,11 @@ class PromocodePage extends Component {
 }
 
 const mapStateToProps = (state) => ({
-  items: state.superadmin.promocode.items,
-  total: state.superadmin.promocode.total,
-  actionCalled: state.superadmin.promocode.actionCalled,
-  deleteSuccess: state.superadmin.promocode.deleteSuccess,
-  successMessage: state.superadmin.promocode.successMessage,
+  items: state.superadmin.stockproduct.items,
+  total: state.superadmin.stockproduct.total,
+  actionCalled: state.superadmin.stockproduct.actionCalled,
+  deleteSuccess: state.superadmin.stockproduct.deleteSuccess,
+  successMessage: state.superadmin.stockproduct.successMessage,
   categories: state.superadmin.category.items,
   sub_categories: state.superadmin.subCategory.items,
   permissions: state.employee.permissions.permissions
@@ -319,12 +319,12 @@ const mapDispatchToProps = dispatch => {
   return {
     dispatch,
     ...bindActionCreators({
-      promocodeList,
-      promocodeCreate,
-      promocodeStore,
-      promocodeView,
-      promocodeUpdate,
-      promocodeDelete,
+      stockproductList,
+      stockproductCreate,
+      stockproductStore,
+      stockproductView,
+      stockproductUpdate,
+      stockproductDelete,
       subCategoryList,
       categoryList,
       subCategoryList,
@@ -333,4 +333,4 @@ const mapDispatchToProps = dispatch => {
 };
 
 
-export default withSnackbar(withRouter(connect(mapStateToProps, mapDispatchToProps)(PromocodePage)));
+export default withSnackbar(withRouter(connect(mapStateToProps, mapDispatchToProps)(StockProductBannerPage)));
