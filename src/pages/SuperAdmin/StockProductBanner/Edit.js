@@ -7,9 +7,9 @@ import { bindActionCreators } from 'redux';
 import { gridSpacing } from 'store/constant';
 import MainCard from 'ui-component/cards/MainCard';
 import withRouter from 'src/helpers/withRouter';
-import {stockproductView } from 'actions/superadmin/stockproduct.actions';
+import {stockproductView } from 'actions/superadmin/stockproductbanner.actions';
 import { withSnackbar } from 'notistack';
-import {RESET_STOCKPRODUCT} from '../../../actionTypes/superadmin/stockproduct.types';
+import {RESET_STOCKPRODUCT} from '../../../actionTypes/superadmin/stockproductbanner.types';
 import {getRoleName, getUserDashboardRoute} from 'src/helpers/helper';
 
 class StockProductBannerEditPage extends Component {
@@ -22,7 +22,7 @@ class StockProductBannerEditPage extends Component {
       editSuccess: this.props.editSuccess,
       successMessage: this.props.successMessage,
       errorMessage: this.props.errorMessage,
-      stockproduct: this.props.stockproduct,
+      stockproductbanner: this.props.stockproductbanner,
       id: this.props.params.id,
 	    auth: this.props.auth
     }
@@ -49,8 +49,8 @@ class StockProductBannerEditPage extends Component {
     if(props.errorMessage !== state.errorMessage){
       update.errorMessage = props.errorMessage;
     }
-    if(props.stockproduct !== state.stockproduct){
-      update.stockproduct = props.stockproduct;
+    if(props.stockproductbanner !== state.stockproductbanner){
+      update.stockproductbanner = props.stockproductbanner;
     }
 	if(props.auth !== state.auth){
       update.auth = props.auth;
@@ -83,8 +83,8 @@ class StockProductBannerEditPage extends Component {
       <MainCard title="Stock Product Banner Edit">
         <div>
           {
-            this.state.stockproduct ? 
-            <StockProductBannerForm formData={this.state.stockproduct} />
+            this.state.stockproductbanner ? 
+            <StockProductBannerForm formData={this.state.stockproductbanner} />
             : 
             <Grid container justifyContent="center">
               <CircularProgress />
@@ -97,11 +97,11 @@ class StockProductBannerEditPage extends Component {
 }
 
 const mapStateToProps = (state) => ({
-  actionCalled: state.superadmin.stockproduct.actionCalled,
-  editSuccess: state.superadmin.stockproduct.editSuccess,
-  successMessage: state.superadmin.stockproduct.successMessage,
-  errorMessage: state.superadmin.stockproduct.errorMessage,
-  stockproduct: state.superadmin.stockproduct.stockproduct,
+  actionCalled: state.superadmin.stockproductbanner.actionCalled,
+  editSuccess: state.superadmin.stockproductbanner.editSuccess,
+  successMessage: state.superadmin.stockproductbanner.successMessage,
+  errorMessage: state.superadmin.stockproductbanner.errorMessage,
+  stockproductbanner: state.superadmin.stockproductbanner.stockproductbanner,
   auth: state.auth
 });
 

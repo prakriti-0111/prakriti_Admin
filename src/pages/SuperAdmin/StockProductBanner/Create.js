@@ -8,7 +8,7 @@ import { gridSpacing } from 'store/constant';
 import MainCard from 'ui-component/cards/MainCard';
 import withRouter from 'src/helpers/withRouter';
 import { withSnackbar } from 'notistack';
-import {RESET_STOCKPRODUCT} from '../../../actionTypes/superadmin/stockproduct.types';
+import {RESET_STOCKPRODUCT} from '../../../actionTypes/superadmin/stockproductbanner.types';
 import {getRoleName, getUserDashboardRoute} from 'src/helpers/helper';
 
 class StockProductBannerCreatePage extends Component {
@@ -79,10 +79,10 @@ class StockProductBannerCreatePage extends Component {
 }
 
 const mapStateToProps = (state) => ({
-  actionCalled: state.superadmin.stockproduct.actionCalled,
-  createSuccess: state.superadmin.stockproduct.createSuccess,
-  successMessage: state.superadmin.stockproduct.successMessage,
-  errorMessage: state.superadmin.stockproduct.errorMessage,
+  actionCalled: state.superadmin.stockproductbanner.actionCalled,
+  createSuccess: state.superadmin.stockproductbanner.createSuccess,
+  successMessage: state.superadmin.stockproductbanner.successMessage,
+  errorMessage: state.superadmin.stockproductbanner.errorMessage,
   auth: state.auth
 });
 

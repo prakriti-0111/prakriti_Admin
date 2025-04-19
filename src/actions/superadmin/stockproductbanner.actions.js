@@ -1,12 +1,12 @@
 import axios from 'actions/axios';
 import {
-    LIST_STOCKPRODUCT,
-    CREATE_STOCKPRODUCT,
-    ADD_STOCKPRODUCT,
-    GET_STOCKPRODUCT,
-    UPDATE_STOCKPRODUCT,
-    DELETE_STOCKPRODUCT,
-} from '../../actionTypes/superadmin/stockproduct.types';
+    LIST_STOCKPRODUCTBANNER,
+    CREATE_STOCKPRODUCTBANNER,
+    ADD_STOCKPRODUCTBANNER,
+    GET_STOCKPRODUCTBANNER,
+    UPDATE_STOCKPRODUCTBANNER,
+    DELETE_STOCKPRODUCTBANNER,
+} from '../../actionTypes/superadmin/stockproductbanner.types';
 import {objectToQuery} from 'src/helpers/helper';
 
 export const stockproductList = (params) => {
@@ -16,7 +16,7 @@ export const stockproductList = (params) => {
         .then(response => {
             if(response.data.success){
                 dispatch({
-                    type: LIST_STOCKPRODUCT,
+                    type: LIST_STOCKPRODUCTBANNER,
                     payload: response.data.data
                 });
             }
@@ -33,7 +33,7 @@ export const stockproductCreate = (params) => {
         .then(response => {
             if(response.data.success){
                 dispatch({
-                    type: CREATE_STOCKPRODUCT,
+                    type: CREATE_STOCKPRODUCTBANNER,
                     payload: response.data.data
                 });
             }
@@ -48,7 +48,7 @@ export const stockproductStore = (data) => {
         axios.post("/superadmin/stockproducts/store", data)
         .then(response => {
             dispatch({
-                type: ADD_STOCKPRODUCT,
+                type: ADD_STOCKPRODUCTBANNER,
                 payload: response.data
             });
         })
@@ -63,7 +63,7 @@ export const stockproductView = (id) => {
         .then(response => {
             if(response.data.success){
                 dispatch({
-                    type: GET_STOCKPRODUCT,
+                    type: GET_STOCKPRODUCTBANNER,
                     payload: response.data.data
                 });
             }
@@ -78,7 +78,7 @@ export const stockproductUpdate = (id, data) => {
         axios.post(`/superadmin/stockproducts/update/${id}`, data)
         .then(response => {
             dispatch({
-                type: UPDATE_STOCKPRODUCT,
+                type: UPDATE_STOCKPRODUCTBANNER,
                 payload: response.data
             });
         })
@@ -92,7 +92,7 @@ export const stockproductDelete = (id, data) => {
         axios.delete(`/superadmin/stockproducts/delete/${id}`, data)
         .then(response => {
             dispatch({
-                type: DELETE_STOCKPRODUCT,
+                type: DELETE_STOCKPRODUCTBANNER,
                 payload: response.data
             });
         })
