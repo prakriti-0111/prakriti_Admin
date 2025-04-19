@@ -1,19 +1,16 @@
 import {
-    LIST_STOCKPRODUCT,
-    CREATE_STOCKPRODUCT,
-    ADD_STOCKPRODUCT,
-    GET_STOCKPRODUCT,
-    UPDATE_STOCKPRODUCT,
-    DELETE_STOCKPRODUCT,
-    RESET_STOCKPRODUCT,
-    RESET_STOCKPRODUCT_LIST
-} from '../../actionTypes/superadmin/stockproduct.types';
+    LIST_STOCK_PRODUCT,
+    RESET_STOCK_PRODUCT_LIST
+} from '../../actionTypes/superadmin/stockProduct.types';
 
 const initialState = {
     categories: [],
+    certificates: [],
+    materials: [],
+    sizes: [],
     items: [],
     total: 0,
-    stockproduct: null,
+    product: null,
     actionCalled: false,
     createSuccess: false,
     deleteSuccess: false,
@@ -25,59 +22,12 @@ const initialState = {
 export default function (state = initialState, action) {
     const { type, payload } = action;
     switch (type) {
-        case LIST_STOCKPRODUCT:
+        case LIST_STOCK_PRODUCT:
             return {
                 ...state,
                 ...payload
             }
-        case CREATE_STOCKPRODUCT:
-            return {
-                ...state,
-                categoriescategories: payload.categories,
-                certificates: payload.certificates,
-                materials: payload.materials,
-                sizes: payload.sizes
-            }
-        case ADD_STOCKPRODUCT:
-            return {
-                ...state,
-                actionCalled: true,
-                createSuccess: payload.success,
-                successMessage: payload.success ? payload.message : null,
-                errorMessage: !payload.success ? payload.message : null,
-            }
-        case GET_STOCKPRODUCT:
-            return {
-                ...state,
-                stockproduct: payload
-            }
-        case UPDATE_STOCKPRODUCT:
-            return {
-                ...state,
-                actionCalled: true,
-                editSuccess: payload.success,
-                successMessage: payload.success ? payload.message : null,
-                errorMessage: !payload.success ? payload.message : null,
-            }
-        case DELETE_STOCKPRODUCT:
-            return {
-                ...state,
-                actionCalled: true,
-                deleteSuccess: payload.success,
-                successMessage: payload.success ? payload.message : null,
-                errorMessage: !payload.success ? payload.message : null,
-            }
-        case RESET_STOCKPRODUCT:
-            return {
-                ...state,
-                actionCalled: false,
-                createSuccess: false,
-                deleteSuccess: false,
-                editSuccess: false,
-                successMessage: null,
-                errorMessage: null
-            }
-        case RESET_STOCKPRODUCT_LIST:
+        case RESET_STOCK_PRODUCT_LIST:
             return {
                 ...state,
                 items: [],
