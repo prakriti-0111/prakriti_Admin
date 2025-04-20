@@ -12,7 +12,7 @@ import RatnviharLogo from 'assets/images/logo_ratn.png';
 
 const LogoSection = () => {
     const hostname = window.location.hostname;
-    const Logo = hostname.includes("patna")?PrakritiLogo:PrakritiLogo;
+    const Logo = hostname.includes("patna")?RatnviharLogo:PrakritiLogo;
 
     return (
         <ButtonBase disableRipple component={Link} to={config.defaultPath}>

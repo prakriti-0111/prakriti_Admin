@@ -109,7 +109,7 @@ class MainLayout extends Component {
         const pusher = new Pusher('09f950cd54a3bae697ec', {
             cluster: 'ap2'
         });
-        const channel = pusher.subscribe('Prakriti_channel');
+        const channel = pusher.subscribe('Ratnvihar_channel');
 
         //notification
         const notification_key = this.state.user ? (this.state.user.id + '-notification') : 'notification';

@@ -1386,13 +1386,19 @@ class SaleForm extends React.Component {
     );
   };
 
-  handleSubmit = async (isApproval) => {
+  handleSubmit = async (isApproval, e) => {
     let formValues = this.state.formValues;
     let hasErr = this.formValidate(isApproval);
+    if(hasErr){
+      e.target.disabled=false;
+      return false;
+    }
+
     if (formValues.products.length == 0) {
       this.props.enqueueSnackbar("Please add at least one product", {
         variant: "error",
       });
+      e.target.disabled=false;
       return false;
     }
     if (!hasErr && formValues.products.length) {
@@ -3823,62 +3829,65 @@ class SaleForm extends React.Component {
             <Grid
               item
               xs={this.state.isAssign ? 12 : 12}
-              md={this.state.isAssign ? 4 : 12}>
-              {!submitting ? (
-                <Stack
-                  spacing={1}
-                  direction='row'
-                  className='ratn-footer-buttons'
-                  justifyContent='flex-end'
-                  style={{ paddingRight: "16px", paddingBottom: "16px" }}>
-                  {isEmpty(this.props.query.get("sale_on_approval")) &&
-                  !this.state.order_id &&
-                  !this.state.isAssign &&
-                  this.state.isCreateFrom ? (
-                    <LoadingButton
-                      className='conf-button'
-                      variant='contained'
-                      type='button'
-                      loading={submitting}
-                      disabled={submitting}
-                      onClick={() => this.handleSubmit(true)}>
-                      Approval
-                    </LoadingButton>
-                  ) : null}
-                  {this.state.isCreateFrom ? (
-                    <LoadingButton
-                      className='conf-button'
-                      variant='contained'
-                      type='button'
-                      loading={submitting}
-                      disabled={submitting}
-                      onClick={() => this.handleSubmit(false)}>
-                      {this.state.isAssign ? "Transfer " : "Submit"}
-                    </LoadingButton>
-                  ) : (
-                    <>
-                      {this.state.return_products.length ? (
-                        <Button
-                          variant='outlined'
-                          type='button'
-                          className='conf-button'
-                          onClick={this.handleReturn}>
-                          Return
-                        </Button>
-                      ) : null}
-                    </>
-                  )}
-                  {
-                    <Button
-                      variant='outlined'
-                      className='close-button'
-                      onClick={() => this.props.navigate(-1)}>
-                      Cancel
-                    </Button>
-                  }
-                </Stack>
-              ) : (
-                <Stack
+              md={this.state.isAssign ? 4 : 12}
+            >
+              {!submitting ? (<Stack
+                spacing={1}
+                direction="row"
+                className="ratn-footer-buttons"
+                justifyContent="flex-end"
+                style={{ paddingRight: "16px", paddingBottom: "16px" }}
+              >
+                {isEmpty(this.props.query.get("sale_on_approval")) &&
+                !this.state.order_id &&
+                !this.state.isAssign &&
+                this.state.isCreateFrom ? (
+                  <LoadingButton
+                    className="conf-button"
+                    variant="contained"
+                    type="button"
+                    loading={submitting}
+                    disabled={submitting}
+                    onClick={(e) => { e.target.disabled=true; this.handleSubmit(true, e)}}
+                  >
+                    Approval
+                  </LoadingButton>
+                ) : null}
+                {this.state.isCreateFrom ? (
+                  <LoadingButton
+                    className="conf-button"
+                    variant="contained"
+                    type="button"
+                    loading={submitting}
+                    disabled={submitting}
+                    onClick={(e) => { e.target.disabled=true; this.handleSubmit(false, e)}}
+                  >
+                    {this.state.isAssign ? "Transfer " : "Submit"}
+                  </LoadingButton>
+                ) : (
+                  <>
+                    {this.state.return_products.length ? (
+                      <Button
+                        variant="outlined"
+                        type="button"
+                        className="conf-button"
+                        onClick={this.handleReturn}
+                      >
+                        Return
+                      </Button>
+                    ) : null}
+                  </>
+                )}
+                {
+                  <Button
+                    variant="outlined"
+                    className="close-button"
+                    onClick={() => this.props.navigate(-1)}
+                  >
+                    Cancel
+                  </Button>
+                }
+              </Stack>) : <Stack
                   spacing={1}
                   direction='row'
                   className='ratn-footer-buttons'

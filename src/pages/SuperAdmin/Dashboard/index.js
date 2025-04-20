@@ -874,7 +874,8 @@ class DashboardPage extends Component {
             </CardContent>
           ) : null}
 
-          {this.isSuperAdmin || this.isAdmin ? (
+          {this.isSuperAdmin ||
+          (this.isAdmin && profile && profile.own == false) ? (
             <CardContent
               onClick={() => this.handleClick("purchase-products")}
               className='dashboard_card_content bg-indigo-200 shadow-sm hover:shadow-lg transform transition-transform hover:-translate-y-1  rounded p-4'
@@ -1045,6 +1046,50 @@ class DashboardPage extends Component {
                 <h2 className='text-dark sm:text-xl text-lg font-bold'>
                   {dashboard ? (
                     <span> {dashboard.super_admin_total_avl_stock_price} </span>
+                  ) : (
+                   <CircularProgress size='20px' />
+                  )}
+                </h2>
+              </Typography>
+              <div className='card-icon'>
+                <i class='bi bi-basket3-fill text-indigo-900 p-2 px-3 bg-indigo-300 rounded-circle'></i>
+              </div>
+            </CardContent>
+          ) : null}
+
+          {this.isSuperAdmin ||
+          this.isAdmin ||
+          this.isDistributor ||
+          this.isSalesExecutive ? (
+            <CardContent
+              onClick={() =>
+                this.handleClick("transfer")
+              }
+              className="dashboard_card_content bg-color-1"
+              sx={{ display: "flex", justifyContent: "space-between" }}
+            >
+              <Typography
+                sx={{ fontSize: 14, margin: 0 }}
+                color='text.secondary'
+                gutterBottom
+                component="span"
+              >
+                <h1>
+                  Total Available &nbsp;{" "}
+                  <span className='badge bg-opacity-75 text-bg-dark'>
+                    {dashboard ? (
+                      dashboard.total_avl_pending_stock
+                    ) : (
+                      <CircularProgress size='15px' />
+                    )}
+                  </span>
+                </h1>
+                <h2 className='text-dark sm:text-xl text-lg font-bold'>
+                  {dashboard ? (
+                    <span >
+                      {" "}
+                      {dashboard.super_admin_total_avl_stock_price}{" "}
+                    </span>
                   ) : (
                    <CircularProgress size='20px' />
                   )}

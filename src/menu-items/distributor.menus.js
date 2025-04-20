@@ -108,6 +108,13 @@ const distributorMenus = (permissions) => [
         icon: IconUsers,
         children: [
           {
+            id: 'supplier',
+            title: 'Supplier',
+            type: 'item',
+            url: urlPrefix + '/suppliers',
+            breadcrumbs: false
+          },
+          {
             id: 'retailer',
             title: 'Retailer',
             type: 'item',

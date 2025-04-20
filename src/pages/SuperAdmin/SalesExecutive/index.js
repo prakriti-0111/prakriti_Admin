@@ -8,7 +8,7 @@ import withRouter from 'src/helpers/withRouter';
 import { salesExecutiveList, salesExecutiveDelete } from 'actions/superadmin/salesExecutive.actions';
 import DataTable from 'src/utils/DataTable';
 import {SUPERADMIN_RESET_SALESEXECUTIVE} from '../../../actionTypes/superadmin/salesExecutive.types';
-import {isDistributor, isSuperAdmin, hasPermission } from 'src/helpers/helper';
+import {isAdmin, isDistributor, isSuperAdmin, hasPermission } from 'src/helpers/helper';
 
 class SalesExecutivePage extends Component {
 
@@ -24,6 +24,7 @@ class SalesExecutivePage extends Component {
       },
       deleteSuccess: this.props.deleteSuccess,
     }
+    this.isAdmin = isAdmin();
     this.isDistributor = isDistributor();
     this.isSuperAdmin = isSuperAdmin();
     this.columns = [
@@ -39,6 +40,14 @@ class SalesExecutivePage extends Component {
         name: 'email',
         display_name: 'Email'
       }*/
+      {
+        name: 'company_name',
+        display_name: 'Company name'
+      },
+      {
+        name: 'state_name',
+        display_name: 'State'
+      },
     ];
     if(!this.isDistributor){
       this.columns = [...this.columns, {
@@ -46,7 +55,7 @@ class SalesExecutivePage extends Component {
         display_name: 'Distributor'
       }];
     }
-    if(this.isDistributor || this.isSuperAdmin){
+    if(this.isAdmin || this.isDistributor || this.isSuperAdmin){
       this.columns = [...this.columns, ...[
         {
           name: 'total_stock',
