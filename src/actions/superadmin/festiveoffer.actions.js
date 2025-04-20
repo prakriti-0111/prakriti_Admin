@@ -1,23 +1,22 @@
 import axios from 'actions/axios';
 import {
-    LIST_PRODUCT,
-    CREATE_PRODUCT,
-    ADD_PRODUCT,
-    GET_PRODUCT,
-    UPDATE_PRODUCT,
-    DELETE_PRODUCT,
-    LIST_STOCK_PRODUCT
-} from '../../actionTypes/superadmin/product.types';
+    LIST_FESTIVEOFFER,
+    CREATE_FESTIVEOFFER,
+    ADD_FESTIVEOFFER,
+    GET_FESTIVEOFFER,
+    UPDATE_FESTIVEOFFER,
+    DELETE_FESTIVEOFFER,
+} from '../../actionTypes/superadmin/festiveoffer.types';
 import {objectToQuery} from 'src/helpers/helper';
 
-export const productList = (params) => {
+export const festiveofferList = (params) => {
     params = objectToQuery(params, true)
     return (dispatch) => {
-        axios.get(`/superadmin/product${params}`)
+        axios.get(`/superadmin/festiveoffers${params}`)
         .then(response => {
             if(response.data.success){
                 dispatch({
-                    type: LIST_PRODUCT,
+                    type: LIST_FESTIVEOFFER,
                     payload: response.data.data
                 });
             }
@@ -27,14 +26,14 @@ export const productList = (params) => {
     }
 }
 
-export const productCreate = (params) => {
+export const festiveofferCreate = (params) => {
     params = objectToQuery(params, true)
     return (dispatch) => {
-        axios.get(`/superadmin/product/create`)
+        axios.get(`/superadmin/festiveoffers/create`)
         .then(response => {
             if(response.data.success){
                 dispatch({
-                    type: CREATE_PRODUCT,
+                    type: CREATE_FESTIVEOFFER,
                     payload: response.data.data
                 });
             }
@@ -44,12 +43,12 @@ export const productCreate = (params) => {
     }
 }
 
-export const productStore = (data) => {
+export const festiveofferStore = (data) => {
     return (dispatch) => {
-        axios.post("/superadmin/product/store", data)
+        axios.post("/superadmin/festiveoffers/store", data)
         .then(response => {
             dispatch({
-                type: ADD_PRODUCT,
+                type: ADD_FESTIVEOFFER,
                 payload: response.data
             });
         })
@@ -58,13 +57,13 @@ export const productStore = (data) => {
     }
 }
 
-export const productView = (id) => {
+export const festiveofferView = (id) => {
     return (dispatch) => {
-        axios.get(`/superadmin/product/view/${id}`)
+        axios.get(`/superadmin/festiveoffers/fetch/${id}`)
         .then(response => {
             if(response.data.success){
                 dispatch({
-                    type: GET_PRODUCT,
+                    type: GET_FESTIVEOFFER,
                     payload: response.data.data
                 });
             }
@@ -74,12 +73,12 @@ export const productView = (id) => {
     }
 }
 
-export const productUpdate = (id, data) => {
+export const festiveofferUpdate = (id, data) => {
     return (dispatch) => {
-        axios.post(`/superadmin/product/update/${id}`, data)
+        axios.post(`/superadmin/festiveoffers/update/${id}`, data)
         .then(response => {
             dispatch({
-                type: UPDATE_PRODUCT,
+                type: UPDATE_FESTIVEOFFER,
                 payload: response.data
             });
         })
@@ -88,31 +87,14 @@ export const productUpdate = (id, data) => {
     }
 }
 
-export const productDelete = (id, data) => {
+export const festiveofferDelete = (id, data) => {
     return (dispatch) => {
-        axios.delete(`/superadmin/product/delete/${id}`, data)
+        axios.delete(`/superadmin/festiveoffers/delete/${id}`, data)
         .then(response => {
             dispatch({
-                type: DELETE_PRODUCT,
+                type: DELETE_FESTIVEOFFER,
                 payload: response.data
             });
-        })
-        .catch(error => {
-        })
-    }
-}
-
-export const stockProductList = (params) => {
-    params = objectToQuery(params, true)
-    return (dispatch) => {
-        axios.get(`/superadmin/stock-product${params}`)
-        .then(response => {
-            if(response.data.success){
-                dispatch({
-                    type: LIST_STOCK_PRODUCT,
-                    payload: response.data.data
-                });
-            }
         })
         .catch(error => {
         })
