@@ -391,24 +391,23 @@ class PurchaseAllViewPage extends React.Component {
   render() {
     const { purchase, formValues, formErros } = this.state;
     return (
-      <MainCard title="Purchase Details">
+      <MainCard title='Purchase Details'>
         {!purchase ? (
-          <Grid container justifyContent="center">
-            <CircularProgress />
+          <Grid container justifyContent='center'>
+            <CircularProgress size='30px' />
           </Grid>
         ) : (
           <>
-            <div className="return-wrapper">
-              <div className="return-header">
+            <div className='return-wrapper'>
+              <div className='return-header'>
                 <p>Invoice Date: {purchase.invoice_date}</p>
                 <p>Dues Date:{purchase.due_date}</p>
               </div>
-              <div className="">
+              <div className=''>
                 <Button
-                  className="add-button"
-                  variant="contained"
-                  onClick={() => this.props.navigate(-1)}
-                >
+                  className='add-button'
+                  variant='contained'
+                  onClick={() => this.props.navigate(-1)}>
                   Back
                 </Button>
               </div>
@@ -416,16 +415,14 @@ class PurchaseAllViewPage extends React.Component {
             <Grid
               container
               spacing={gridSpacing}
-              className="details-header ratn-pur-wrapper loans_view"
-            >
+              className='details-header ratn-pur-wrapper loans_view'>
               <Grid item xs={12}>
                 <TableContainer component={Paper}>
-                  <div className="ratn-table-purchase-wrapper">
+                  <div className='ratn-table-purchase-wrapper'>
                     <Table
-                      aria-label="collapsible table"
-                      className="invoice_product_list"
-                    >
-                      <TableHead className="ratn-table-header">
+                      aria-label='collapsible table'
+                      className='invoice_product_list'>
+                      <TableHead className='ratn-table-header'>
                         <TableRow>
                           <TableCell>Supplier</TableCell>
                           <TableCell>Total Amt</TableCell>
@@ -438,9 +435,9 @@ class PurchaseAllViewPage extends React.Component {
                           <TableCell>Status</TableCell>
                         </TableRow>
                       </TableHead>
-                      <TableBody className="pur-details-table-body">
+                      <TableBody className='pur-details-table-body'>
                         <TableRow>
-                          <TableCell component="th" scope="row">
+                          <TableCell component='th' scope='row'>
                             {purchase.supplier_name}
                           </TableCell>
                           <TableCell>{purchase.total_amount}</TableCell>
@@ -450,7 +447,7 @@ class PurchaseAllViewPage extends React.Component {
                           <TableCell>{purchase.paid_amount_display}</TableCell>
                           <TableCell>{purchase.due_amount_display}</TableCell>
                           <TableCell>{purchase.invoice_number}</TableCell>
-                          <TableCell className="sales-status">
+                          <TableCell className='sales-status'>
                             <Chip
                               label={purchase.approve_status}
                               color={getApprovalColor(purchase.is_approved)}
@@ -466,17 +463,15 @@ class PurchaseAllViewPage extends React.Component {
             <Grid
               container
               spacing={gridSpacing}
-              className="details-header ratn-pur-wrapper loans_view"
-            >
-              <Grid item xs={12} className="p-add-product create-input">
-                <h3 className="p_heading_list">Product List</h3>
+              className='details-header ratn-pur-wrapper loans_view'>
+              <Grid item xs={12} className='p-add-product create-input'>
+                <h3 className='p_heading_list'>Product List</h3>
                 <TableContainer component={Paper}>
-                  <div className="ratn-table-purchase-wrapper">
+                  <div className='ratn-table-purchase-wrapper'>
                     <Table
-                      aria-label="collapsible table"
-                      className="invoice_product_list"
-                    >
-                      <TableHead className="ratn-table-header">
+                      aria-label='collapsible table'
+                      className='invoice_product_list'>
+                      <TableHead className='ratn-table-header'>
                         <TableRow>
                           <TableCell />
                           <TableCell>#</TableCell>
@@ -549,22 +544,20 @@ function Row(props) {
     <React.Fragment>
       <TableRow
         sx={{ "& > *": { borderBottom: "unset" } }}
-        className={(row.is_return ? "strike_through " : "") + odd_even_class}
-      >
+        className={(row.is_return ? "strike_through " : "") + odd_even_class}>
         <TableCell>
           <IconButton
-            aria-label="expand row"
-            size="small"
+            aria-label='expand row'
+            size='small'
             onClick={() => setOpen(!open)}
-            className="expand_icon"
-          >
+            className='expand_icon'>
             {open ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
           </IconButton>
         </TableCell>
-        <TableCell component="th" scope="row">
+        <TableCell component='th' scope='row'>
           {sl_no <= 9 ? "0" + sl_no : sl_no}
         </TableCell>
-        <TableCell component="th" scope="row">
+        <TableCell component='th' scope='row'>
           {row.product_name}
         </TableCell>
         <TableCell>{row.category_name}</TableCell>
@@ -580,16 +573,15 @@ function Row(props) {
       </TableRow>
       <TableRow className={"table-inner-row sub_table " + odd_even_class}>
         <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={11}>
-          <Collapse in={open} timeout="auto" unmountOnExit>
+          <Collapse in={open} timeout='auto' unmountOnExit>
             <Box sx={{ margin: 1 }}>
               <Typography
-                variant="h6"
+                variant='h6'
                 gutterBottom
-                component="div"
-              ></Typography>
-              <Table size="medium" aria-label="purchases">
+                component='div'></Typography>
+              <Table size='medium' aria-label='purchases'>
                 <TableHead>
-                  <TableRow className="pur-details-inner-table">
+                  <TableRow className='pur-details-inner-table'>
                     <TableCell>Material Name</TableCell>
                     <TableCell>Purity</TableCell>
                     <TableCell>Quantity</TableCell>
@@ -600,11 +592,11 @@ function Row(props) {
                     <TableCell>Dist</TableCell>
                   </TableRow>
                 </TableHead>
-                <TableBody className="pur-details-table-body">
+                <TableBody className='pur-details-table-body'>
                   {row.materials.map((item, i) =>
                     !(item.weight == 0 && item.quantity == 0) ? (
                       <TableRow key={i}>
-                        <TableCell scope="row">
+                        <TableCell scope='row'>
                           {item.material_name}
                           {console.log(
                             "---------------- view",
