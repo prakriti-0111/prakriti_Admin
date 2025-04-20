@@ -77,7 +77,7 @@ class HomepagesettingForm extends React.Component {
   }
 
   componentDidMount() {
-    this.loadFormExternalData();
+    
 
     if (this.state.formData) {
       this.initializeFormData();
@@ -110,6 +110,7 @@ class HomepagesettingForm extends React.Component {
     }
 
     if(this.state.actionCalled){
+      this.loadFormExternalData();
       this.setState({
         inProgress: false 
       });
@@ -127,7 +128,7 @@ class HomepagesettingForm extends React.Component {
   }
 
   loadFormExternalData = () => {
-    //this.props.actions.homepagesettingList({all: 1});
+    this.props.actions.homepagesettingList({all: 1});
   }
 
   getDefaultValues = () => {
@@ -246,7 +247,18 @@ class HomepagesettingForm extends React.Component {
           {homepagesettingList.length > 0 && homepagesettingList.map((item, index) => {
             console.log(item);
             return (<>
-            <Grid item xs={4} className='create-input'>
+            <Grid item xs={1} className='create-input'>
+              {/* <Field
+                className='input-inner'
+                name="section_name"
+                defaultValue={'Home'}
+                component={this.renderTextField}
+                label="Section Name"
+              /> */}
+              {(index+1)}.
+             
+            </Grid>
+            <Grid item xs={3} className='create-input'>
               {/* <Field
                 className='input-inner'
                 name="section_name"
@@ -341,7 +353,7 @@ const mapStateToProps = (state) => ({
 const mapDispatchToProps = dispatch => ({
   dispatch,
   actions: bindActionCreators({
-    //homepagesettingList,
+    homepagesettingList,
     homepagesettingUpdate,
     change
   }, dispatch)
