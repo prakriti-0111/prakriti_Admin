@@ -1,41 +1,65 @@
-import React from 'react';
-import { connect } from 'react-redux';
-import { Grid, Button, CircularProgress, IconButton, Collapse, Box, Typography, TextareaAutosize, Stack, Select, MenuItem, InputLabel, FormControl, TextField, InputAdornment, Chip } from '@mui/material';
-import { gridSpacing } from 'store/constant';
-import MainCard from 'ui-component/cards/MainCard';
-import withRouter from 'src/helpers/withRouter';
-import DataTable from 'src/utils/DataTable';
-import { withSnackbar } from 'notistack';
-import { salesView, salesDownloadInvoice, salesDownloadInvoiceInfo, salesDownloadInvoiceItems } from 'actions/superadmin/sales.actions';
-import { bindActionCreators } from 'redux';
-import { Table, TableHead } from '@mui/material';
-import TableBody from '@mui/material/TableBody';
-import TableCell from '@mui/material/TableCell';
-import TableContainer from '@mui/material/TableContainer';
-import TableFooter from '@mui/material/TableFooter';
-import TablePagination from '@mui/material/TablePagination';
-import TableRow from '@mui/material/TableRow';
-import Paper from '@mui/material/Paper';
-import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
-import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
-import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import moment from 'moment';
-import Dialog from '@mui/material/Dialog';
-import DialogContent from '@mui/material/DialogContent';
-import DialogContentText from '@mui/material/DialogContentText';
-import DialogTitle from '@mui/material/DialogTitle';
-import { isEmpty } from 'src/helpers/helper';
-import { paymentStore, paymentList } from 'actions/superadmin/payment.actions';
-import { SUPERADMIN_RESET_PAYMENT } from '../../../actionTypes/superadmin/payment.types';
-import { getRoleName, getUserDashboardRoute, getApprovalColor } from 'src/helpers/helper';
-import { getNotifiactions } from 'actions/superadmin/notification.actions';
-import FileDownloadIcon from '@mui/icons-material/FileDownload';
-
+import React from "react";
+import { connect } from "react-redux";
+import {
+  Grid,
+  Button,
+  CircularProgress,
+  IconButton,
+  Collapse,
+  Box,
+  Typography,
+  TextareaAutosize,
+  Stack,
+  Select,
+  MenuItem,
+  InputLabel,
+  FormControl,
+  TextField,
+  InputAdornment,
+  Chip,
+} from "@mui/material";
+import { gridSpacing } from "store/constant";
+import MainCard from "ui-component/cards/MainCard";
+import withRouter from "src/helpers/withRouter";
+import DataTable from "src/utils/DataTable";
+import { withSnackbar } from "notistack";
+import {
+  salesView,
+  salesDownloadInvoice,
+  salesDownloadInvoiceInfo,
+  salesDownloadInvoiceItems,
+} from "actions/superadmin/sales.actions";
+import { bindActionCreators } from "redux";
+import { Table, TableHead } from "@mui/material";
+import TableBody from "@mui/material/TableBody";
+import TableCell from "@mui/material/TableCell";
+import TableContainer from "@mui/material/TableContainer";
+import TableFooter from "@mui/material/TableFooter";
+import TablePagination from "@mui/material/TablePagination";
+import TableRow from "@mui/material/TableRow";
+import Paper from "@mui/material/Paper";
+import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
+import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
+import { DatePicker } from "@mui/x-date-pickers/DatePicker";
+import moment from "moment";
+import Dialog from "@mui/material/Dialog";
+import DialogContent from "@mui/material/DialogContent";
+import DialogContentText from "@mui/material/DialogContentText";
+import DialogTitle from "@mui/material/DialogTitle";
+import { isEmpty } from "src/helpers/helper";
+import { paymentStore, paymentList } from "actions/superadmin/payment.actions";
+import { SUPERADMIN_RESET_PAYMENT } from "../../../actionTypes/superadmin/payment.types";
+import {
+  getRoleName,
+  getUserDashboardRoute,
+  getApprovalColor,
+} from "src/helpers/helper";
+import { getNotifiactions } from "actions/superadmin/notification.actions";
+import FileDownloadIcon from "@mui/icons-material/FileDownload";
 
 class SaleViewPage extends React.Component {
-
   constructor(props) {
     super(props);
 
@@ -55,34 +79,34 @@ class SaleViewPage extends React.Component {
         limit: 50,
         date_from: null,
         date_to: null,
-        table_type: "sale"
+        table_type: "sale",
       },
       auth: this.props.auth,
       downloadingInfo: false,
-      downloadingItem: false
-    }
+      downloadingItem: false,
+    };
 
     this.columns = [
       {
-        name: 'payment_date',
-        display_name: 'Payment Date'
+        name: "payment_date",
+        display_name: "Payment Date",
       },
       {
-        name: 'amount',
-        display_name: 'Amount'
+        name: "amount",
+        display_name: "Amount",
       },
       {
-        name: 'payment_mode',
-        display_name: 'Payment Mode'
+        name: "payment_mode",
+        display_name: "Payment Mode",
       },
       {
-        name: 'cheque_no',
-        display_name: 'Cheque #'
+        name: "cheque_no",
+        display_name: "Cheque #",
       },
       {
-        name: 'txn_id',
-        display_name: 'Transaction #'
-      }
+        name: "txn_id",
+        display_name: "Transaction #",
+      },
     ];
   }
 
@@ -94,37 +118,42 @@ class SaleViewPage extends React.Component {
   loadListData = () => {
     let data = { ...this.state.queryParams, table_id: this.props.params.id };
     this.props.actions.paymentList(data);
-  }
+  };
 
   handlePagination = (page) => {
-    this.setState({
-      queryParams: {
-        ...this.state.queryParams,
-        page: page
+    this.setState(
+      {
+        queryParams: {
+          ...this.state.queryParams,
+          page: page,
+        },
+      },
+      () => {
+        this.loadListData();
       }
-    }, () => {
-      this.loadListData();
-    })
-
-  }
+    );
+  };
 
   handleDownloadInfo = async (id) => {
     this.setState({
-      downloadingInfo: true
+      downloadingInfo: true,
     });
 
     let response = await salesDownloadInvoiceInfo(id);
-    if(response.data.success){
+    if (response.data.success) {
       /*if(response.data.data.html){
         var newWindow = window.open();
         newWindow.document.write(response.data.data.html);
         return false;
       }*/
-      this.setState({
-        downloadingInfo: false
-      }, () => {
-        window.open(response.data.data.url, '_blank').focus();
-      });
+      this.setState(
+        {
+          downloadingInfo: false,
+        },
+        () => {
+          window.open(response.data.data.url, "_blank").focus();
+        }
+      );
 
       /*var xhr = new XMLHttpRequest();
       xhr.responseType = 'blob';
@@ -143,23 +172,26 @@ class SaleViewPage extends React.Component {
       xhr.send();*/
     } else {
       this.setState({
-        downloadingInfo: false
+        downloadingInfo: false,
       });
     }
-  }
+  };
 
   handleDownloadItems = async (id) => {
     this.setState({
-      downloadingItem: true
+      downloadingItem: true,
     });
 
     let response = await salesDownloadInvoiceItems(id);
-    if(response.data.success){
-      this.setState({
-        downloadingItem: false
-      }, () => {
-        window.open(response.data.data.url, '_blank').focus();
-      });
+    if (response.data.success) {
+      this.setState(
+        {
+          downloadingItem: false,
+        },
+        () => {
+          window.open(response.data.data.url, "_blank").focus();
+        }
+      );
 
       /*var xhr = new XMLHttpRequest();
       xhr.responseType = 'blob';
@@ -178,10 +210,10 @@ class SaleViewPage extends React.Component {
       xhr.send();*/
     } else {
       this.setState({
-        downloadingItem: false
+        downloadingItem: false,
       });
     }
-  }
+  };
 
   static getDerivedStateFromProps(props, state) {
     let update = {};
@@ -216,44 +248,44 @@ class SaleViewPage extends React.Component {
 
   handlePayNow = () => {
     this.setState({
-      openDialog: true
-    })
-  }
+      openDialog: true,
+    });
+  };
 
   handleDialogClose = (event, reason) => {
     if (reason && reason == "backdropClick") return;
     this.setState({
-      openDialog: false
-    })
-  }
+      openDialog: false,
+    });
+  };
 
   handleSupplierChange = (event) => {
-    this.updateFormValue(event.target.value, 'user_id');
-    this.props.actions.paymentTotalDue(event.target.value)
-  }
+    this.updateFormValue(event.target.value, "user_id");
+    this.props.actions.paymentTotalDue(event.target.value);
+  };
 
   updateFormValue = (value, key) => {
     this.setState({
       formValues: {
         ...this.state.formValues,
-        [key]: value
-      }
-    })
-  }
+        [key]: value,
+      },
+    });
+  };
 
   defaultFormValues = () => {
     return {
       formValues: {
-        user_id: '',
-        payment_mode: '',
-        payment_date: moment().format('MM/DD/YYYY'),
-        due_date: '',
-        amount: '',
-        notes: '',
-        cheque_no: '',
-        txn_id: '',
+        user_id: "",
+        payment_mode: "",
+        payment_date: moment().format("MM/DD/YYYY"),
+        due_date: "",
+        amount: "",
+        notes: "",
+        cheque_no: "",
+        txn_id: "",
         table_type: "sale",
-        table_id: ''
+        table_id: "",
       },
       formErros: {
         user_id: false,
@@ -263,28 +295,37 @@ class SaleViewPage extends React.Component {
         notes: false,
         cheque_no: false,
         txn_id: false,
-        due_date: false
-      }
-    }
-  }
+        due_date: false,
+      },
+    };
+  };
 
   handleSubmit = () => {
     if (!this.formValidate()) {
       this.setState({
-        processing: true
+        processing: true,
       });
-      let data = { ...this.state.formValues, user_id: this.state.sale.user_id, table_id: this.state.sale.id }
+      let data = {
+        ...this.state.formValues,
+        user_id: this.state.sale.user_id,
+        table_id: this.state.sale.id,
+      };
       this.props.actions.paymentStore(data);
     }
-  }
+  };
 
   formValidate = () => {
     let formValues = this.state.formValues;
     let formErros = this.state.formErros;
     let hasErr = false;
-    if (parseFloat(formValues.amount) > parseFloat(this.state.sale.due_amount)) {
+    if (
+      parseFloat(formValues.amount) > parseFloat(this.state.sale.due_amount)
+    ) {
       hasErr = true;
-      this.props.enqueueSnackbar("Amount must be less than or equal due amount.", { variant: 'error' });
+      this.props.enqueueSnackbar(
+        "Amount must be less than or equal due amount.",
+        { variant: "error" }
+      );
     }
     if (isEmpty(formValues.amount)) {
       formErros.amount = true;
@@ -311,10 +352,10 @@ class SaleViewPage extends React.Component {
       formErros.due_date = false;
     }
     this.setState({
-      formErros: formErros
-    })
+      formErros: formErros,
+    });
     return hasErr;
-  }
+  };
 
   componentDidUpdate(prevProps) {
     if (this.props.params.id != prevProps.params.id) {
@@ -324,268 +365,360 @@ class SaleViewPage extends React.Component {
 
     if (this.state.actionCalled) {
       if (this.state.createSuccess) {
-        this.props.enqueueSnackbar(this.state.successMessage, { variant: 'success' });
+        this.props.enqueueSnackbar(this.state.successMessage, {
+          variant: "success",
+        });
         this.setState({
           processing: false,
           openDialog: false,
           queryParams: {
             ...this.state.queryParams,
-            page: 1
+            page: 1,
           },
-          ...this.defaultFormValues()
+          ...this.defaultFormValues(),
         });
         this.loadViewData();
         this.loadListData();
         this.props.actions.getNotifiactions();
       } else {
-        this.props.enqueueSnackbar(this.state.errorMessage, { variant: 'error' });
+        this.props.enqueueSnackbar(this.state.errorMessage, {
+          variant: "error",
+        });
         this.setState({
-          processing: false
+          processing: false,
         });
       }
       this.props.dispatch({
-        type: SUPERADMIN_RESET_PAYMENT
+        type: SUPERADMIN_RESET_PAYMENT,
       });
     }
-
   }
 
   loadViewData = () => {
     this.props.actions.salesView(this.props.params.id);
     console.log(this.props.actions.salesView(this.props.params.id));
-    
-  }
+  };
 
   render() {
-    const { sale, formValues, formErros, downloadingInfo, downloadingItem } = this.state;
+    const { sale, formValues, formErros, downloadingInfo, downloadingItem } =
+      this.state;
     console.log("sale : ", sale);
     return (
-      <MainCard title="Sale Details" secondary={<Button variant="contained" onClick={() => this.props.navigate(-1)}>Back</Button>}>
-
-        {
-          !sale ?
-            <Grid container justifyContent="center">
-              <CircularProgress />
+      <MainCard
+        title='Sale Details'
+        secondary={
+          <Button variant='contained' onClick={() => this.props.navigate(-1)}>
+            Back
+          </Button>
+        }>
+        {!sale ? (
+          <Grid container justifyContent='center'>
+            <CircularProgress size='30px' />
+          </Grid>
+        ) : (
+          <>
+            <Grid
+              container
+              spacing={{ xs: 2, md: 3 }}
+              columns={{ xs: 4, sm: 8, md: 12 }}>
+              <Grid item xs={11}>
+                <h3 className='p_heading_list text-center'>Sale Details</h3>
+              </Grid>
+              <Grid item xs={1} className='action_btn'>
+                {downloadingInfo ? (
+                  <CircularProgress size='30px' />
+                ) : (
+                  <Button
+                    variant='contained'
+                    style={{ paddingLeft: "8%" }}
+                    onClick={() =>
+                      this.handleDownloadInfo(this.props.params.id)
+                    }>
+                    <FileDownloadIcon />
+                  </Button>
+                )}
+              </Grid>
             </Grid>
-            :
-            <>
 
-              <Grid container spacing={{ xs: 2, md: 3 }} columns={{ xs: 4, sm: 8, md: 12 }}>
-                <Grid item xs={11}>
-                  <h3 className='p_heading_list text-center' >Sale Details</h3>
-                </Grid>
-                <Grid item xs={1} className='action_btn'>
-                  {downloadingInfo?<CircularProgress />:<Button variant="contained" style={{paddingLeft : '8%'}} onClick={() => this.handleDownloadInfo(this.props.params.id)}><FileDownloadIcon /></Button>}
-                </Grid>
+            <Grid
+              container
+              spacing={{ xs: 2, md: 3 }}
+              columns={{ xs: 4, sm: 8, md: 12 }}
+              className='details-header'>
+              <Grid item xs={3}>
+                <div className='single-item'>
+                  <p>
+                    <span>Seller: </span> <br />
+                    {sale.user_name}, {sale.user_mobile}
+                  </p>
+                </div>
               </Grid>
-              
-              <Grid container spacing={{ xs: 2, md: 3 }} columns={{ xs: 4, sm: 8, md: 12 }} className="details-header">
-                
-                  <Grid item xs={3}>
-                    <div className='single-item'>
-                      <p><span>Seller: </span> <br />{sale.user_name}, {sale.user_mobile}</p>
-                    </div>
-                  </Grid>
-                  <Grid item xs={3}>
-                    <div className='single-item'>
-                      <p><span>Company Name: </span> <br /> {sale?.user_details?.company_name}</p>
-                    </div>
-                  </Grid>
-                  <Grid item xs={3}>
-                    <div className='single-item'>
-                      <p><span>Invoice Number: </span> <br /> {sale.invoice_number}</p>
-                    </div>
-                  </Grid>
-                  <Grid item xs={3}>
-                    <div><span>Status: </span>  <br />
-                      <Chip label={sale.approve_status} color={getApprovalColor(sale.is_approved)} />
-                    </div>
-                  </Grid>
-                  <Grid item xs={3}>
-                    <div className='single-item'>
-                      <p><span>Invoice Date: </span> <br /> {sale.invoice_date}</p>
-                    </div>
-                  </Grid>
-                  <Grid item xs={3}>
-                    <div className='single-item'>
-                      <p><span>Due Date: </span>  <br />{sale.due_date}</p>
-                    </div>
-                  </Grid>
-                  <Grid item xs={3}>
-                    <div className='single-item'>
-                      <p><span>Settlement Date: </span>  <br />{sale.settlement_date}</p>
-                    </div>
-                  </Grid>
-                  <Grid item xs={3}>
-                    <div className='single-item'>
-                      <p><span>Taxable Amount: </span> <br /> {sale.taxable_amount}</p>
-                    </div>
-                  </Grid>
-                  <Grid item xs={3}>
-                    <div className='single-item'>
-                      <p><span>Cgst Tax: </span> <br /> {sale.cgst_tax}</p>
-                    </div>
-                  </Grid>
-                  <Grid item xs={3}>
-                    <div className='single-item'>
-                      <p><span>Sgst Tax: </span> <br /> {sale.sgst_tax}</p>
-                    </div>
-                  </Grid>
-                  <Grid item xs={3}>
-                    <div className='single-item'>
-                      <p><span>Igst Tax: </span> <br /> {sale.igst_tax}</p>
-                    </div>
-                  </Grid>
-                  <Grid item xs={3}>
-                    <div className='single-item'>
-                      <p><span>Total Amount: </span> <br /> {sale.total_amount}</p>
-                    </div>
-                  </Grid>
-                  <Grid item xs={3}>
-                    <div className='single-item'>
-                      <p><span>Discount: </span>  <br />{sale.discount}</p>
-                    </div>
-                  </Grid>
-                  <Grid item xs={3}>
-                    <div className='single-item'>
-                      <p><span>Total Payable: </span>  <br />{sale.total_payable}</p>
-                    </div>
-                  </Grid>
-                  <Grid item xs={3}>
-                    <div className='single-item'>
-                      <p><span>Paid Amount: </span>  <br />{sale.paid_amount}</p>
-                    </div>
-                  </Grid>
-                  <Grid item xs={3}>
-                    <div className='single-item'>
-                      <p><span>Due Amount: </span>  <br />{sale.due_amount_display}</p>
-                    </div>
-                  </Grid>
-                  <Grid item xs={3}>
-                    <div className='single-item'>
+              <Grid item xs={3}>
+                <div className='single-item'>
+                  <p>
+                    <span>Company Name: </span> <br />{" "}
+                    {sale?.user_details?.company_name}
+                  </p>
+                </div>
+              </Grid>
+              <Grid item xs={3}>
+                <div className='single-item'>
+                  <p>
+                    <span>Invoice Number: </span> <br /> {sale.invoice_number}
+                  </p>
+                </div>
+              </Grid>
+              <Grid item xs={3}>
+                <div>
+                  <span>Status: </span> <br />
+                  <Chip
+                    label={sale.approve_status}
+                    color={getApprovalColor(sale.is_approved)}
+                  />
+                </div>
+              </Grid>
+              <Grid item xs={3}>
+                <div className='single-item'>
+                  <p>
+                    <span>Invoice Date: </span> <br /> {sale.invoice_date}
+                  </p>
+                </div>
+              </Grid>
+              <Grid item xs={3}>
+                <div className='single-item'>
+                  <p>
+                    <span>Due Date: </span> <br />
+                    {sale.due_date}
+                  </p>
+                </div>
+              </Grid>
+              <Grid item xs={3}>
+                <div className='single-item'>
+                  <p>
+                    <span>Settlement Date: </span> <br />
+                    {sale.settlement_date}
+                  </p>
+                </div>
+              </Grid>
+              <Grid item xs={3}>
+                <div className='single-item'>
+                  <p>
+                    <span>Taxable Amount: </span> <br /> {sale.taxable_amount}
+                  </p>
+                </div>
+              </Grid>
+              <Grid item xs={3}>
+                <div className='single-item'>
+                  <p>
+                    <span>Cgst Tax: </span> <br /> {sale.cgst_tax}
+                  </p>
+                </div>
+              </Grid>
+              <Grid item xs={3}>
+                <div className='single-item'>
+                  <p>
+                    <span>Sgst Tax: </span> <br /> {sale.sgst_tax}
+                  </p>
+                </div>
+              </Grid>
+              <Grid item xs={3}>
+                <div className='single-item'>
+                  <p>
+                    <span>Igst Tax: </span> <br /> {sale.igst_tax}
+                  </p>
+                </div>
+              </Grid>
+              <Grid item xs={3}>
+                <div className='single-item'>
+                  <p>
+                    <span>Total Amount: </span> <br /> {sale.total_amount}
+                  </p>
+                </div>
+              </Grid>
+              <Grid item xs={3}>
+                <div className='single-item'>
+                  <p>
+                    <span>Discount: </span> <br />
+                    {sale.discount}
+                  </p>
+                </div>
+              </Grid>
+              <Grid item xs={3}>
+                <div className='single-item'>
+                  <p>
+                    <span>Total Payable: </span> <br />
+                    {sale.total_payable}
+                  </p>
+                </div>
+              </Grid>
+              <Grid item xs={3}>
+                <div className='single-item'>
+                  <p>
+                    <span>Paid Amount: </span> <br />
+                    {sale.paid_amount}
+                  </p>
+                </div>
+              </Grid>
+              <Grid item xs={3}>
+                <div className='single-item'>
+                  <p>
+                    <span>Due Amount: </span> <br />
+                    {sale.due_amount_display}
+                  </p>
+                </div>
+              </Grid>
+              <Grid item xs={3}>
+                <div className='single-item'>
+                  {sale.notes ? <p>Notes: {sale.notes}</p> : null}
+                </div>
+              </Grid>
+            </Grid>
+
+            <Grid
+              container
+              spacing={gridSpacing}
+              className='details-header ratn-pur-wrapper loans_view'>
+              <Grid item xs={12}>
+                <TableContainer component={Paper}>
+                  <div className='ratn-table-purchase-wrapper'>
+                    <Table
+                      aria-label='collapsible table'
+                      className='invoice_product_list'>
+                      <TableHead className='ratn-table-header'>
+                        <TableRow>
+                          <TableCell />
+                          <TableCell>SL</TableCell>
+                          <TableCell>Product Name</TableCell>
+                          <TableCell>QTY</TableCell>
+                          <TableCell>HSN</TableCell>
+                          <TableCell>Material</TableCell>
+                          <TableCell>WT</TableCell>
+                          <TableCell>Unit</TableCell>
+                          <TableCell>Rate</TableCell>
+                          <TableCell>Tax@</TableCell>
+                          <TableCell>Taxable Amt.</TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {sale.subCatItems.map((row, i) => (
+                          <SubCatRow key={i} row={row} index={i} />
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </TableContainer>
+              </Grid>
+            </Grid>
+
+            <Grid
+              container
+              spacing={{ xs: 2, md: 3 }}
+              columns={{ xs: 4, sm: 8, md: 12 }}>
+              <Grid item xs={11}>
+                <h3 className='p_heading_list text-center'>Payment Details</h3>
+              </Grid>
+            </Grid>
+
+            {!sale.is_assigned ? (
+              <Grid
+                item
+                xs={12}
+                className='p-add-product create-input button-right'>
+                <h3 className='p_heading_list sales_heading_list'>
+                  Payment List
+                </h3>
+                <DataTable
+                  columns={this.columns}
+                  rows={this.state.items}
+                  page={this.state.queryParams.page}
+                  limit={this.state.queryParams.limit}
+                  total={this.state.total}
+                  handlePagination={this.handlePagination}
+                  actions={[]}
+                  actionValue={"action_value"}
+                  actionValueColorConditions={[
                     {
-                      sale.notes ?
-                        <p>Notes: {sale.notes}</p>
-                        : null
-                    }
-                    </div>
-                  </Grid>
-                  
+                      value: "Accepted",
+                      color: "green",
+                    },
+                    {
+                      value: "Declined",
+                      color: "red",
+                    },
+                  ]}
+                />
               </Grid>
+            ) : null}
 
-              <Grid container spacing={gridSpacing} className="details-header ratn-pur-wrapper loans_view">
-               
-                <Grid item xs={12}>
-                  <TableContainer component={Paper}>
-                    <div className='ratn-table-purchase-wrapper'>
-                      <Table aria-label="collapsible table" className='invoice_product_list'>
-                        <TableHead className='ratn-table-header'>
-                          <TableRow>
-                            <TableCell />
-                            <TableCell>SL</TableCell>
-                            <TableCell>Product Name</TableCell>
-                            <TableCell>QTY</TableCell>
-                            <TableCell>HSN</TableCell>
-                            <TableCell>Material</TableCell>
-                            <TableCell>WT</TableCell>
-                            <TableCell>Unit</TableCell>
-                            <TableCell>Rate</TableCell>
-                            <TableCell>Tax@</TableCell>
-                            <TableCell>Taxable Amt.</TableCell>
-                          </TableRow>
-                        </TableHead>
-                        <TableBody>
-                          {sale.subCatItems.map((row, i) => (
-                            <SubCatRow key={i} row={row} index={i} />
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </div>
-                  </TableContainer>
-                </Grid>
+            <Grid
+              container
+              spacing={{ xs: 2, md: 3 }}
+              columns={{ xs: 4, sm: 8, md: 12 }}
+              className='details-header'>
+              <Grid item xs={12}>
+                <div style={{ width: "98%", border: "2px solid black" }}></div>
               </Grid>
+            </Grid>
 
-              <Grid container spacing={{ xs: 2, md: 3 }} columns={{ xs: 4, sm: 8, md: 12 }}>
-                <Grid item xs={11}>
-                  <h3 className='p_heading_list text-center' >Payment Details</h3>
-                </Grid>
+            <Grid
+              container
+              spacing={{ xs: 2, md: 3 }}
+              columns={{ xs: 4, sm: 8, md: 12 }}>
+              <Grid item xs={11}>
+                <h3 className='p_heading_list text-center'>Product List</h3>
               </Grid>
-
-              {
-                !sale.is_assigned ?
-                  <Grid item xs={12} className="p-add-product create-input button-right">
-                    <h3 className='p_heading_list sales_heading_list'>Payment List</h3>
-                    <DataTable
-                      columns={this.columns}
-                      rows={this.state.items}
-                      page={this.state.queryParams.page}
-                      limit={this.state.queryParams.limit}
-                      total={this.state.total}
-                      handlePagination={this.handlePagination}
-                      actions={[]}
-                      actionValue={'action_value'}
-                      actionValueColorConditions={[
-                        {
-                          value: "Accepted",
-                          color: "green"
-                        },
-                        {
-                          value: "Declined",
-                          color: "red"
-                        }
-                      ]}
-                    />
-                  </Grid>
-                  : null
-              }
-
-              <Grid container spacing={{ xs: 2, md: 3 }} columns={{ xs: 4, sm: 8, md: 12 }} className="details-header">
-                <Grid item xs={12}>
-                  <div style={{width:"98%", border:"2px solid black"}}></div>
-                </Grid>
+              <Grid item xs={1} className='action_btn'>
+                {downloadingItem ? (
+                  <CircularProgress size='30px' />
+                ) : (
+                  <Button
+                    variant='contained'
+                    style={{ paddingLeft: "8%" }}
+                    onClick={() =>
+                      this.handleDownloadItems(this.props.params.id)
+                    }>
+                    <FileDownloadIcon />
+                  </Button>
+                )}
               </Grid>
-            
-              <Grid container spacing={{ xs: 2, md: 3 }} columns={{ xs: 4, sm: 8, md: 12 }}>
-                <Grid item xs={11}>
-                  <h3 className='p_heading_list text-center' >Product List</h3>
-                </Grid>
-                <Grid item xs={1} className='action_btn'>
-                  {downloadingItem?<CircularProgress />:<Button variant="contained" style={{paddingLeft : '8%'}} onClick={() => this.handleDownloadItems(this.props.params.id)}><FileDownloadIcon /></Button>}
-                </Grid>
-              </Grid>
+            </Grid>
 
-              <Grid container spacing={gridSpacing} className="details-header ratn-pur-wrapper loans_view">
-               
-                <Grid item xs={12}>
-                  <TableContainer component={Paper}>
-                    <div className='ratn-table-purchase-wrapper'>
-                      <Table aria-label="collapsible table" className='invoice_product_list'>
-                        <TableHead className='ratn-table-header'>
-                          <TableRow>
-                            <TableCell />
-                            <TableCell>#</TableCell>
-                            <TableCell>Product Name</TableCell>
-                            <TableCell>Category Name</TableCell>
-                            <TableCell>Certificate Number</TableCell>
-                            <TableCell>Total Weight</TableCell>
-                            <TableCell>Size</TableCell>
-                            <TableCell>Making Charge</TableCell>
-                            <TableCell>Sub Total</TableCell>
-                            <TableCell>Dist</TableCell>
-                            <TableCell>Tax</TableCell>
-                            <TableCell colSpan="2">Total</TableCell>
-                          </TableRow>
-                        </TableHead>
-                        <TableBody>
-                          {sale.products.map((row, i) => (
-                            <Row key={i} row={row} index={i} />
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </div>
-                  </TableContainer>
-                </Grid>
-                {/* 
+            <Grid
+              container
+              spacing={gridSpacing}
+              className='details-header ratn-pur-wrapper loans_view'>
+              <Grid item xs={12}>
+                <TableContainer component={Paper}>
+                  <div className='ratn-table-purchase-wrapper'>
+                    <Table
+                      aria-label='collapsible table'
+                      className='invoice_product_list'>
+                      <TableHead className='ratn-table-header'>
+                        <TableRow>
+                          <TableCell />
+                          <TableCell>#</TableCell>
+                          <TableCell>Product Name</TableCell>
+                          <TableCell>Category Name</TableCell>
+                          <TableCell>Certificate Number</TableCell>
+                          <TableCell>Total Weight</TableCell>
+                          <TableCell>Size</TableCell>
+                          <TableCell>Making Charge</TableCell>
+                          <TableCell>Sub Total</TableCell>
+                          <TableCell>Dist</TableCell>
+                          <TableCell>Tax</TableCell>
+                          <TableCell colSpan='2'>Total</TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {sale.products.map((row, i) => (
+                          <Row key={i} row={row} index={i} />
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </TableContainer>
+              </Grid>
+              {/* 
                   !sale.is_assigned ?
                     <Grid item xs={12} className="p-add-product create-input button-right">
                       <h3 className='p_heading_list sales_heading_list'>Payment List {parseFloat(sale.due_amount) > 0 ? <Button variant="contained" className='add-button' onClick={() => this.handlePayNow()}>Pay Now</Button> : null}</h3>
@@ -612,13 +745,9 @@ class SaleViewPage extends React.Component {
                     </Grid>
                     : null
                 */}
-              </Grid>
-              
-             
-              
-              
-            </>
-        }
+            </Grid>
+          </>
+        )}
 
         {/*<Dialog
           className="ratn-dialog-wrapper"
@@ -739,8 +868,6 @@ class SaleViewPage extends React.Component {
             </Box>
           </DialogContent>
         </Dialog>*/}
-
-
       </MainCard>
     );
   }
@@ -757,39 +884,56 @@ const mapStateToProps = (state) => ({
   auth: state.auth,
 });
 
-const mapDispatchToProps = dispatch => {
+const mapDispatchToProps = (dispatch) => {
   return {
     dispatch,
-    actions: bindActionCreators({
-      salesView,
-      paymentStore,
-      paymentList,
-      getNotifiactions
-    }, dispatch)
-  }
+    actions: bindActionCreators(
+      {
+        salesView,
+        paymentStore,
+        paymentList,
+        getNotifiactions,
+      },
+      dispatch
+    ),
+  };
 };
 
-
-export default withSnackbar(withRouter(connect(mapStateToProps, mapDispatchToProps)(SaleViewPage)));
+export default withSnackbar(
+  withRouter(connect(mapStateToProps, mapDispatchToProps)(SaleViewPage))
+);
 
 function SubCatRow(props) {
   const { row, index } = props;
   const [open, setOpen] = React.useState(false);
   const sl_no = index + 1;
-  let odd_even_class = sl_no % 2 == 0 ? 'SubCatRow_even' : 'SubCatRow_odd';
+  let odd_even_class = sl_no % 2 == 0 ? "SubCatRow_even" : "SubCatRow_odd";
   if (row.is_return) {
-    odd_even_class += ' strike_through';
+    odd_even_class += " strike_through";
   }
 
-  let materialNames = row.material.map((itm) => itm.name).join("\n").replace(/\n/g, '<br/>');
-  let materialWts = row.material.map((itm) => itm.weight.toFixed(2)).join("\n").replace(/\n/g, '<br/>');
-  let materialUnits = row.material.map((itm) => itm.unit).join("\n").replace(/\n/g, '<br/>');
-  let materialRates = row.material.map((itm) => itm.rate.toFixed(2)).join("\n").replace(/\n/g, '<br/>');
-
+  let materialNames = row.material
+    .map((itm) => itm.name)
+    .join("\n")
+    .replace(/\n/g, "<br/>");
+  let materialWts = row.material
+    .map((itm) => itm.weight.toFixed(2))
+    .join("\n")
+    .replace(/\n/g, "<br/>");
+  let materialUnits = row.material
+    .map((itm) => itm.unit)
+    .join("\n")
+    .replace(/\n/g, "<br/>");
+  let materialRates = row.material
+    .map((itm) => itm.rate.toFixed(2))
+    .join("\n")
+    .replace(/\n/g, "<br/>");
 
   return (
     <React.Fragment>
-      <TableRow sx={{ '& > *': { borderBottom: 'unset' } }} className={odd_even_class}>
+      <TableRow
+        sx={{ "& > *": { borderBottom: "unset" } }}
+        className={odd_even_class}>
         <TableCell>
           {/* <IconButton
             aria-label="expand row"
@@ -800,18 +944,22 @@ function SubCatRow(props) {
             {open ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
           </IconButton> */}
         </TableCell>
-        <TableCell component="th" scope="row">
-          {(sl_no <= 9) ? '0' + sl_no : sl_no}
+        <TableCell component='th' scope='row'>
+          {sl_no <= 9 ? "0" + sl_no : sl_no}
         </TableCell>
-        <TableCell component="th" scope="row">
+        <TableCell component='th' scope='row'>
           {row.name}
         </TableCell>
         <TableCell>{row.qty}</TableCell>
         <TableCell>{row.hsn}</TableCell>
-        <TableCell dangerouslySetInnerHTML={{__html: materialNames}}></TableCell>
-        <TableCell dangerouslySetInnerHTML={{__html: materialWts}}></TableCell>
-        <TableCell dangerouslySetInnerHTML={{__html: materialUnits}}></TableCell>
-        <TableCell dangerouslySetInnerHTML={{__html: materialRates}}></TableCell>
+        <TableCell
+          dangerouslySetInnerHTML={{ __html: materialNames }}></TableCell>
+        <TableCell
+          dangerouslySetInnerHTML={{ __html: materialWts }}></TableCell>
+        <TableCell
+          dangerouslySetInnerHTML={{ __html: materialUnits }}></TableCell>
+        <TableCell
+          dangerouslySetInnerHTML={{ __html: materialRates }}></TableCell>
         <TableCell>{row.tax}%</TableCell>
         <TableCell>{row.taxableAmount.toFixed(2)}</TableCell>
       </TableRow>
@@ -876,72 +1024,78 @@ function SubCatRow(props) {
   );
 }
 
-
 function Row(props) {
   const { row, index } = props;
   const [open, setOpen] = React.useState(true);
   const sl_no = index + 1;
-  let odd_even_class = sl_no % 2 == 0 ? 'even' : 'odd';
+  let odd_even_class = sl_no % 2 == 0 ? "even" : "odd";
   if (row.is_return) {
-    odd_even_class += ' strike_through';
+    odd_even_class += " strike_through";
   }
   return (
     <React.Fragment>
       <TableRow
         sx={{ "& > *": { borderBottom: "unset" } }}
-        className={odd_even_class}
-      >
+        className={odd_even_class}>
         <TableCell>
           <IconButton
-            aria-label="expand row"
-            size="small"
+            aria-label='expand row'
+            size='small'
             onClick={() => setOpen(!open)}
-            className="expand_icon"
-          >
+            className='expand_icon'>
             {open ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
           </IconButton>
         </TableCell>
-        <TableCell component="th" scope="row" style={{color: "#fff"}}>
+        <TableCell component='th' scope='row' style={{ color: "#fff" }}>
           {sl_no <= 9 ? "0" + sl_no : sl_no}
         </TableCell>
-        <TableCell component="th" scope="row"  style={{color: "#fff"}}>
+        <TableCell component='th' scope='row' style={{ color: "#fff" }}>
           {row.product_name}
         </TableCell>
-        <TableCell  style={{color: "#fff"}}>{row.category_name}</TableCell>
-        <TableCell  style={{color: "#fff"}}>{row.certificate_no}</TableCell>
-        <TableCell style={{color: "#fff"}}>{row.total_weight}</TableCell>
-        <TableCell style={{color: "#fff"}}>{row.size_name}</TableCell>
-        <TableCell style={{color: "#fff"}}>{row.making_charge}</TableCell>
+        <TableCell style={{ color: "#fff" }}>{row.category_name}</TableCell>
+        <TableCell style={{ color: "#fff" }}>{row.certificate_no}</TableCell>
+        <TableCell style={{ color: "#fff" }}>{row.total_weight}</TableCell>
+        <TableCell style={{ color: "#fff" }}>{row.size_name}</TableCell>
+        <TableCell style={{ color: "#fff" }}>{row.making_charge}</TableCell>
         {/* <TableCell style={{color: "#fff"}}>{row.rep}</TableCell> */}
-        <TableCell style={{color: "#fff"}}>{row.sub_total}</TableCell>
-        <TableCell style={{color: "#fff"}}>{row.total_discount}</TableCell>
-        <TableCell style={{color: "#fff"}}>{row.tax}</TableCell>
-        <TableCell style={{color: "#fff"}}>{row.total}</TableCell>
+        <TableCell style={{ color: "#fff" }}>{row.sub_total}</TableCell>
+        <TableCell style={{ color: "#fff" }}>{row.total_discount}</TableCell>
+        <TableCell style={{ color: "#fff" }}>{row.tax}</TableCell>
+        <TableCell style={{ color: "#fff" }}>{row.total}</TableCell>
       </TableRow>
       <TableRow className={"table-inner-row sub_table " + odd_even_class}>
         <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={11}>
-          <Collapse in={open} timeout="auto" unmountOnExit>
+          <Collapse in={open} timeout='auto' unmountOnExit>
             <Box sx={{ margin: 1 }}>
               <Typography
-                variant="h6"
+                variant='h6'
                 gutterBottom
-                component="div"
-              ></Typography>
-              <Table size="medium" aria-label="purchases">
+                component='div'></Typography>
+              <Table size='medium' aria-label='purchases'>
                 <TableHead>
-                  <TableRow className="pur-details-inner-table">
-                    <TableCell className={odd_even_class}>Material Name</TableCell>
+                  <TableRow className='pur-details-inner-table'>
+                    <TableCell className={odd_even_class}>
+                      Material Name
+                    </TableCell>
                     <TableCell className={odd_even_class}>Purity</TableCell>
                     <TableCell className={odd_even_class}>Quantity</TableCell>
-                    <TableCell className={odd_even_class}>Total Weight</TableCell>
-                    {row.product_code == ""?<TableCell className={odd_even_class}>Pakka Weight</TableCell>:""}
+                    <TableCell className={odd_even_class}>
+                      Total Weight
+                    </TableCell>
+                    {row.product_code == "" ? (
+                      <TableCell className={odd_even_class}>
+                        Pakka Weight
+                      </TableCell>
+                    ) : (
+                      ""
+                    )}
                     <TableCell className={odd_even_class}>Unit</TableCell>
                     <TableCell className={odd_even_class}>Rate</TableCell>
                     <TableCell className={odd_even_class}>Amount</TableCell>
                     <TableCell className={odd_even_class}>Dist</TableCell>
                   </TableRow>
                 </TableHead>
-                <TableBody className="pur-details-table-body">
+                <TableBody className='pur-details-table-body'>
                   {row.materials.map((item, i) =>
                     !(item.weight == 0 && item.quantity == 0) ? (
                       <TableRow key={i}>
@@ -954,15 +1108,37 @@ function Row(props) {
                           "--------------row.materials",
                           row.materials
                         )} */}
-                        <TableCell scope="row" className={odd_even_class}>{item.material_name}</TableCell>
-                        <TableCell className={odd_even_class}>{item.purity_name}</TableCell>
-                        <TableCell className={odd_even_class}>{item.quantity}</TableCell>
-                        <TableCell className={odd_even_class}>{item.weight}</TableCell>
-                        {row.product_code == ""?<TableCell className={odd_even_class}>{item.pakka_weight}</TableCell>:""}
-                        <TableCell className={odd_even_class}>{item.unit_name}</TableCell>
-                        <TableCell className={odd_even_class}>{item.rate}</TableCell>
-                        <TableCell className={odd_even_class}>{item.amount}</TableCell>
-                        <TableCell className={odd_even_class}>{item.discount_amount}</TableCell>
+                        <TableCell scope='row' className={odd_even_class}>
+                          {item.material_name}
+                        </TableCell>
+                        <TableCell className={odd_even_class}>
+                          {item.purity_name}
+                        </TableCell>
+                        <TableCell className={odd_even_class}>
+                          {item.quantity}
+                        </TableCell>
+                        <TableCell className={odd_even_class}>
+                          {item.weight}
+                        </TableCell>
+                        {row.product_code == "" ? (
+                          <TableCell className={odd_even_class}>
+                            {item.pakka_weight}
+                          </TableCell>
+                        ) : (
+                          ""
+                        )}
+                        <TableCell className={odd_even_class}>
+                          {item.unit_name}
+                        </TableCell>
+                        <TableCell className={odd_even_class}>
+                          {item.rate}
+                        </TableCell>
+                        <TableCell className={odd_even_class}>
+                          {item.amount}
+                        </TableCell>
+                        <TableCell className={odd_even_class}>
+                          {item.discount_amount}
+                        </TableCell>
                       </TableRow>
                     ) : null
                   )}
