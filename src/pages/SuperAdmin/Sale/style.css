@@ -12,7 +12,7 @@
   }
   
   .unique_materials {
-    flex: 0 0 calc(25% - 15px); /* Default: 4 items per row for desktop */
+    flex: 0 0 calc(45% - 15px); /* Default: 4 items per row for desktop */
     box-sizing: border-box;
   }
 
