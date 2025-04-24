@@ -1846,7 +1846,7 @@ class PurchaseForm extends React.Component {
             <Grid
               item
               xs={!formValues.supplier_id ? 12 : 12}
-              md={!formValues.supplier_id ? 6 : 4}
+              md={!formValues.supplier_id ? 6 : 2}
               className='create-input'>
               <TextField
                 label='Supplier'
@@ -1892,6 +1892,25 @@ class PurchaseForm extends React.Component {
               </FormControl>
             </Grid>
           )}
+          {!this.state.isCreateFrom ? <><Grid
+              item
+              xs={12}
+              md={2}
+              className='create-input'>
+              <TextField
+                label='Added By'
+                variant='outlined'
+                fullWidth
+                value={this.props.formData.added_by_details?.user_name}
+                disabled
+                InputProps={{
+                  className: "non_disable_text",
+                }}
+                InputLabelProps={{ shrink: true }}
+              />
+            </Grid></> : <></>}
+            
+          
           {formValues.supplier_id ? (
             <>
               <Grid item xs={12} md={2} className='create-input'>

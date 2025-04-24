@@ -424,6 +424,24 @@
                 "add" : false,
                 "edit" : false,
                 "delete" : false
+            },
+            {
+                "title" : "New Arrivals",
+                "name" : "new-arrivals",
+                "list" : false,
+                "view" : false,
+                "add" : false,
+                "edit" : false,
+                "delete" : false
+            },
+            {
+                "title" : "Festive Offers",
+                "name" : "festive-offers",
+                "list" : false,
+                "view" : false,
+                "add" : false,
+                "edit" : false,
+                "delete" : false
             }
         ]
     },

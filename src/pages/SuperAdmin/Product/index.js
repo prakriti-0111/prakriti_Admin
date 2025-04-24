@@ -68,6 +68,10 @@ class ProductPage extends Component {
         name: 'mrp_display',
         display_name: 'Tag Price'
       },
+      {
+        name: 'added_by_name',
+        display_name: 'Added By'
+      },
       /*{
         name: 'type_diplay',
         display_name: 'Product Type'
