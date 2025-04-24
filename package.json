@@ -1,5 +1,5 @@
 {
-  "name": "Prakriti",
+  "name": "prakriti",
   "version": "1.0.0",
   "private": true,
   "dependencies": {
@@ -14,7 +14,7 @@
     "@mui/utils": "^5.10.3",
     "@mui/x-date-pickers-pro": "^5.0.3",
     "@tabler/icons": "^1.92.0",
-    "axios": "^1.7.2",
+    "axios": "1.8.2",
     "chart.js": "^3.9.1",
     "classnames": "^2.3.1",
     "dayjs": "^1.11.5",
@@ -48,7 +48,9 @@
     "redux-thunk": "^2.4.1",
     "sass": "^1.54.8",
     "swiper": "^8.4.2",
-    "web-vitals": "^2.1.4"
+    "web-vitals": "^2.1.4",
+    "@react-buddy/ide-toolbox": "^2.4.0",
+    "@react-buddy/palette-mui": "^5.0.1"
   },
   "scripts": {
     "start": "webpack-dev-server --mode development --open",
