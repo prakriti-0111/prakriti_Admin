@@ -506,6 +506,7 @@ class PurchaseViewPage extends React.Component {
                       <TableHead className='ratn-table-header'>
                         <TableRow>
                           <TableCell>Supplier</TableCell>
+                          <TableCell>Added By</TableCell>
                           <TableCell>Total Amt</TableCell>
                           <TableCell>Cash Disc</TableCell>
                           <TableCell>Bill Amount</TableCell>
@@ -521,6 +522,7 @@ class PurchaseViewPage extends React.Component {
                           <TableCell component='th' scope='row'>
                             {purchase.supplier_name}
                           </TableCell>
+                          <TableCell>{purchase.added_by_details.user_name}</TableCell>  
                           <TableCell>{purchase.total_amount}</TableCell>
                           <TableCell>{purchase.discount}</TableCell>
                           <TableCell>{purchase.bill_amount}</TableCell>

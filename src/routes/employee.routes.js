@@ -134,6 +134,7 @@ const PurchaseViewPage = Loadable(lazy(() => import('../pages/SuperAdmin/Purchas
 const PurchaseAllViewPage = Loadable(lazy(() => import('../pages/SuperAdmin/Purchase/AllView')));
 const PurchaseReturnPage = Loadable(lazy(() => import('../pages/SuperAdmin/Purchase/Return')));
 const PurchaseProductsPage = Loadable(lazy(() => import('../pages/SuperAdmin/Purchase/PurchaseProducts')));
+const PurchaseDownloadViewPage = Loadable(lazy(() => import('../pages/SuperAdmin/Purchase/DownloadView')));
 
 //loan
 const LoanPage = Loadable(lazy(() => import('../pages/SuperAdmin/Loans')));
@@ -547,6 +548,10 @@ const EmployeeRoutes = (isLoggedIn, permissions) => [
         path: 'purchases/Return/:id',
         element: <PurchaseReturnPage />,
         permission: hasPermission(permissions, 'return_purchase', 'view')
+      },
+      {
+        path: 'purchases/Download-View/:id',
+        element: <PurchaseDownloadViewPage />
       },
       {
         path: 'sales',
