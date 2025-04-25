@@ -434,7 +434,7 @@ class OrderViewPage extends React.Component {
                 <DialogActions>
                   <Stack spacing={2} direction="row" justifyContent="flex-end">
                     <Button variant="outlined" onClick={this.handleSaleDialogClose}>Cancel</Button>
-                    <Button variant="contained" type="button" onClick={this.handleSaleSubmit}>Yes, Confirm</Button>
+                    <Button variant="contained" disabled={this.state.processing} type="button" onClick={this.handleSaleSubmit}>Yes, Confirm</Button>
                   </Stack>
                 </DialogActions>
               </Dialog>

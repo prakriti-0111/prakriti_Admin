@@ -46,6 +46,7 @@ class PurchaseOnApproveViewPage extends React.Component {
       successMessage: this.props.successMessage,
       errorMessage: this.props.errorMessage,
       processing: false,
+      approve_declined_processing: false,
       items: this.props.items,
       total: this.props.total,
       queryParams: {
@@ -151,6 +152,7 @@ class PurchaseOnApproveViewPage extends React.Component {
             this.props.enqueueSnackbar(this.state.successMessage, {variant: 'success'});
             this.setState({
                 processing: false,
+                approve_declined_processing: false,
                 openDialog: false,
                 queryParams: {
                   ...this.state.queryParams,
@@ -163,7 +165,8 @@ class PurchaseOnApproveViewPage extends React.Component {
         }else{
             this.props.enqueueSnackbar(this.state.errorMessage, {variant: 'error'});
             this.setState({
-                processing: false
+                processing: false,
+                approve_declined_processing: false,
             });
         }
         this.props.dispatch({
@@ -309,11 +312,15 @@ class PurchaseOnApproveViewPage extends React.Component {
 
   handleConfirmSubmit = async() => {
     let data = {approve_status: this.state.status_changing, decline_type: this.state.decline_type};
+    this.setState({
+      approve_declined_processing: true
+    });
     let status_response = await purchaseStatusChange(this.props.params.id, data);
     if(status_response.data.success == true){
         this.props.enqueueSnackbar(status_response.data.message, {variant: 'success'});
         this.setState({
-          confirmDialog: false
+          confirmDialog: false,
+          approve_declined_processing: false
         });
         if(this.state.status_changing == 4){
           this.props.navigate(getUserDashboardRoute(getRoleName(this.state.auth)) + '/purchases/create?purchase_on_approve=' + this.props.params.id);
@@ -322,6 +329,9 @@ class PurchaseOnApproveViewPage extends React.Component {
         }
     }else{
         this.props.enqueueSnackbar(status_response.data.message, {variant: 'error'});
+        this.setState({
+          approve_declined_processing: false
+        });
     }
   }
 
@@ -551,8 +561,8 @@ class PurchaseOnApproveViewPage extends React.Component {
                 </DialogContent>
                 <DialogActions>
                     <Stack spacing={2} direction="row" justifyContent="flex-end">
-                        <Button variant="outlined" onClick={this.handleConfirmDialogClose}>Cancel</Button>
-                        <Button variant="contained" type="button" onClick={this.handleConfirmSubmit}>Yes, Confirm</Button>
+                    {!this.state.approve_declined_processing?<><Button variant="outlined" onClick={this.handleConfirmDialogClose}>Cancel</Button>
+                        <Button variant="contained" type="button" onClick={this.handleConfirmSubmit}>Yes, Confirm</Button></>:<CircularProgress />}
                     </Stack>
                 </DialogActions>
             </Dialog>
