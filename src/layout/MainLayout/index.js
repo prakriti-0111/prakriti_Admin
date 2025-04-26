@@ -144,7 +144,7 @@ class MainLayout extends Component {
                 <CssBaseline />
                 {/* header */}
                 <AppBar
-                    className='menubar '
+                    className='menubar z-1 '
                   
                     enableColorOnDark
                     position="fixed"
