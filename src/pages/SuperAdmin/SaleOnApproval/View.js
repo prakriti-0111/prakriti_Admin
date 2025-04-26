@@ -71,6 +71,7 @@ class SaleOnApproveViewPage extends React.Component {
       successMessage: this.props.successMessage,
       errorMessage: this.props.errorMessage,
       processing: false,
+      approve_declined_processing: false,
       items: this.props.items,
       total: this.props.total,
       queryParams: {
@@ -292,6 +293,7 @@ class SaleOnApproveViewPage extends React.Component {
         });
         this.setState({
           processing: false,
+          approve_declined_processing: false,
           openDialog: false,
           queryParams: {
             ...this.state.queryParams,
@@ -307,6 +309,7 @@ class SaleOnApproveViewPage extends React.Component {
         });
         this.setState({
           processing: false,
+          approve_declined_processing: false,
         });
       }
       this.props.dispatch({
@@ -332,6 +335,10 @@ class SaleOnApproveViewPage extends React.Component {
       decline_type: this.state.decline_type,
       return_payment_mode: this.state.return_payment_mode,
     };
+    this.setState({
+      approve_declined_processing: true,
+    });
+
     let status_response = await salesStatusChange(this.props.params.id, data);
     if (status_response.data.success == true) {
       this.props.enqueueSnackbar(status_response.data.message, {
@@ -339,6 +346,7 @@ class SaleOnApproveViewPage extends React.Component {
       });
       this.setState({
         confirmDialog: false,
+        approve_declined_processing: false,
       });
       if (this.state.status_changing == 4) {
         this.props.actions.cartList();
@@ -354,6 +362,9 @@ class SaleOnApproveViewPage extends React.Component {
       this.props.enqueueSnackbar(status_response.data.message, {
         variant: "error",
       });
+      this.setState({
+        approve_declined_processing: false,
+      });
     }
   };
 
@@ -368,14 +379,13 @@ class SaleOnApproveViewPage extends React.Component {
     return (
       <MainCard
         secondary={
-          <Button variant="contained" onClick={() => this.props.navigate(-1)}>
+          <Button variant='contained' onClick={() => this.props.navigate(-1)}>
             Back
           </Button>
-        }
-      >
+        }>
         {!sale ? (
-          <Grid container justifyContent="center">
-            <CircularProgress />
+          <Grid container justifyContent='center'>
+            <CircularProgress size='30px' />
           </Grid>
         ) : (
           <>
@@ -442,19 +452,18 @@ class SaleOnApproveViewPage extends React.Component {
                   </div>
 
                 </div> */}
-            <div className="return-wrapper">
-              <div className="return-header">
+            <div className='return-wrapper'>
+              <div className='return-header'>
                 <p>Sale On Approval Details</p>
                 <p>Invoice Date: {sale.invoice_date}</p>
                 <p>Dues Date:{sale.due_date}</p>
                 {sale.notes ? <p>Notes: {sale.notes}</p> : null}
               </div>
-              <div className="">
+              <div className=''>
                 <Button
-                  className="add-button"
-                  variant="contained"
-                  onClick={() => this.props.navigate(-1)}
-                >
+                  className='add-button'
+                  variant='contained'
+                  onClick={() => this.props.navigate(-1)}>
                   Back
                 </Button>
               </div>
@@ -462,16 +471,14 @@ class SaleOnApproveViewPage extends React.Component {
             <Grid
               container
               spacing={gridSpacing}
-              className="details-header ratn-pur-wrapper loans_view"
-            >
+              className='details-header ratn-pur-wrapper loans_view'>
               <Grid item xs={12}>
                 <TableContainer component={Paper}>
-                  <div className="ratn-table-purchase-wrapper">
+                  <div className='ratn-table-purchase-wrapper'>
                     <Table
-                      aria-label="collapsible table"
-                      className="invoice_product_list"
-                    >
-                      <TableHead className="ratn-table-header">
+                      aria-label='collapsible table'
+                      className='invoice_product_list'>
+                      <TableHead className='ratn-table-header'>
                         <TableRow>
                           <TableCell>Company Name</TableCell>
                           <TableCell>Total Amt</TableCell>
@@ -484,9 +491,9 @@ class SaleOnApproveViewPage extends React.Component {
                           <TableCell>Status</TableCell>
                         </TableRow>
                       </TableHead>
-                      <TableBody className="pur-details-table-body">
+                      <TableBody className='pur-details-table-body'>
                         <TableRow>
-                          <TableCell component="th" scope="row">
+                          <TableCell component='th' scope='row'>
                             {sale.user_details.company_name}
                           </TableCell>
                           <TableCell>{sale.total_amount}</TableCell>
@@ -496,11 +503,11 @@ class SaleOnApproveViewPage extends React.Component {
                           <TableCell>{sale.paid_amount_display}</TableCell>
                           <TableCell>{sale.due_amount_display}</TableCell>
                           <TableCell>{sale.invoice_number}</TableCell>
-                          <TableCell className="sales-status">
+                          <TableCell className='sales-status'>
                             <Chip
                               label={sale.approve_status}
                               color={getApprovalColor(sale.is_approved)}
-                              className="bg-info"
+                              className='bg-info'
                             />
                           </TableCell>
                         </TableRow>
@@ -511,19 +518,17 @@ class SaleOnApproveViewPage extends React.Component {
               </Grid>
             </Grid>
             {sale.is_approved == 3 ? (
-              <div className="sale-view-button">
+              <div className='sale-view-button'>
                 <Button
-                  variant="contained"
-                  className="primary accept"
-                  onClick={() => this.handleStatusChange(4)}
-                >
+                  variant='contained'
+                  className='primary accept'
+                  onClick={() => this.handleStatusChange(4)}>
                   Transfer To Sale
                 </Button>
                 <Button
-                  variant="contained"
-                  className="danger decline"
-                  onClick={() => this.handleStatusChange(2)}
-                >
+                  variant='contained'
+                  className='danger decline'
+                  onClick={() => this.handleStatusChange(2)}>
                   Decline
                 </Button>
               </div>
@@ -531,16 +536,14 @@ class SaleOnApproveViewPage extends React.Component {
             <Grid
               container
               spacing={gridSpacing}
-              className="details-header ratn-pur-wrapper loans_view"
-            >
+              className='details-header ratn-pur-wrapper loans_view'>
               <Grid item xs={12}>
                 <TableContainer component={Paper}>
-                  <div className="ratn-table-purchase-wrapper">
+                  <div className='ratn-table-purchase-wrapper'>
                     <Table
-                      aria-label="collapsible table"
-                      className="invoice_product_list"
-                    >
-                      <TableHead className="ratn-table-header">
+                      aria-label='collapsible table'
+                      className='invoice_product_list'>
+                      <TableHead className='ratn-table-header'>
                         <TableRow>
                           <TableCell />
                           <TableCell>#</TableCell>
@@ -553,7 +556,7 @@ class SaleOnApproveViewPage extends React.Component {
                           <TableCell>Sub Total</TableCell>
                           <TableCell>Dist</TableCell>
                           <TableCell>Tax</TableCell>
-                          <TableCell colSpan="2">Total</TableCell>
+                          <TableCell colSpan='2'>Total</TableCell>
                         </TableRow>
                       </TableHead>
                       <TableBody>
@@ -573,14 +576,13 @@ class SaleOnApproveViewPage extends React.Component {
           open={this.state.confirmDialog}
           onClose={this.handleConfirmDialogClose}
           fullWidth
-          maxWidth="xs"
-          className="ratn-dialog-wrapper"
-        >
+          maxWidth='xs'
+          className='ratn-dialog-wrapper'>
           <DialogTitle>
             {this.state.status_changing == 4 ? "Transfer To Sale" : "Decline"}
           </DialogTitle>
           <DialogContent>
-            <DialogContentText id="alert-dialog-slide-description">
+            <DialogContentText id='alert-dialog-slide-description'>
               {this.state.status_changing == 4
                 ? "Are you sure want to transfer?"
                 : "Are you sure want to decline?"}
@@ -591,21 +593,20 @@ class SaleOnApproveViewPage extends React.Component {
                   <FormControl>
                     <RadioGroup
                       row
-                      name="row-radio-buttons-group"
+                      name='row-radio-buttons-group'
                       value={this.state.decline_type}
                       onChange={(e) =>
                         this.setState({ decline_type: e.target.value })
-                      }
-                    >
+                      }>
                       <FormControlLabel
-                        value="advance"
+                        value='advance'
                         control={<Radio />}
                         label={`Payment move to advance ${displayAmount(
                           sale.paid_amount
                         )}`}
                       />
                       <FormControlLabel
-                        value="return"
+                        value='return'
                         control={<Radio />}
                         label={`Payment Return ${displayAmount(
                           sale.paid_amount
@@ -618,18 +619,17 @@ class SaleOnApproveViewPage extends React.Component {
                     <FormControl fullWidth>
                       <InputLabel>Payment Mode</InputLabel>
                       <Select
-                        className="input-inner"
+                        className='input-inner'
                         value={this.state.return_payment_mode}
                         fullWidth
-                        label="Payment Mode"
+                        label='Payment Mode'
                         onChange={(e) =>
                           this.setState({ return_payment_mode: e.target.value })
-                        }
-                      >
-                        <MenuItem value="cash">Cash</MenuItem>
-                        <MenuItem value="cheque">Cheque</MenuItem>
-                        <MenuItem value="imps_neft">NEFT/IMPS/UPI</MenuItem>
-                        <MenuItem value="online">Online</MenuItem>
+                        }>
+                        <MenuItem value='cash'>Cash</MenuItem>
+                        <MenuItem value='cheque'>Cheque</MenuItem>
+                        <MenuItem value='imps_neft'>NEFT/IMPS/UPI</MenuItem>
+                        <MenuItem value='online'>Online</MenuItem>
                       </Select>
                     </FormControl>
                   ) : null}
@@ -638,20 +638,24 @@ class SaleOnApproveViewPage extends React.Component {
             </DialogContentText>
           </DialogContent>
           <DialogActions>
-            <Stack spacing={2} direction="row" justifyContent="flex-end">
-              <Button
-                variant="outlined"
-                onClick={this.handleConfirmDialogClose}
-              >
-                Cancel
-              </Button>
-              <Button
-                variant="contained"
-                type="button"
-                onClick={this.handleConfirmSubmit}
-              >
-                Yes, Confirm
-              </Button>
+            <Stack spacing={2} direction='row' justifyContent='flex-end'>
+            {!this.state.approve_declined_processing ? (
+              <>
+                <Button
+                  variant='outlined'
+                  onClick={this.handleConfirmDialogClose}>
+                  Cancel
+                </Button>
+                <Button
+                  variant='contained'
+                  type='button'
+                  onClick={this.handleConfirmSubmit}>
+                  Yes, Confirm
+                </Button>
+              </>
+            ) : (
+              <CircularProgress size='30px' />
+            )}
             </Stack>
           </DialogActions>
         </Dialog>
@@ -696,67 +700,74 @@ function Row(props) {
   const { row, index } = props;
   const [open, setOpen] = React.useState(true);
   const sl_no = index + 1;
-  let odd_even_class = sl_no % 2 == 0 ? 'even' : 'odd';
+  let odd_even_class = sl_no % 2 == 0 ? "even" : "odd";
   if (row.is_return) {
-    odd_even_class += ' strike_through';
+    odd_even_class += " strike_through";
   }
   return (
     <React.Fragment>
       <TableRow
         sx={{ "& > *": { borderBottom: "unset" } }}
-        className={odd_even_class}
-      >
+        className={odd_even_class}>
         <TableCell>
           <IconButton
-            aria-label="expand row"
-            size="small"
+            aria-label='expand row'
+            size='small'
             onClick={() => setOpen(!open)}
-            className="expand_icon"
-          >
+            className='expand_icon'>
             {open ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
           </IconButton>
         </TableCell>
-        <TableCell component="th" scope="row" style={{color: "#fff"}}>
+        <TableCell component='th' scope='row' style={{ color: "#fff" }}>
           {sl_no <= 9 ? "0" + sl_no : sl_no}
         </TableCell>
-        <TableCell component="th" scope="row"  style={{color: "#fff"}}>
+        <TableCell component='th' scope='row' style={{ color: "#fff" }}>
           {row.product_name}
         </TableCell>
-        <TableCell  style={{color: "#fff"}}>{row.category_name}</TableCell>
-        <TableCell  style={{color: "#fff"}}>{row.certificate_no}</TableCell>
-        <TableCell style={{color: "#fff"}}>{row.total_weight}</TableCell>
-        <TableCell style={{color: "#fff"}}>{row.size_name}</TableCell>
-        <TableCell style={{color: "#fff"}}>{row.making_charge}</TableCell>
-        <TableCell style={{color: "#fff"}}>{row.rep}</TableCell>
-        <TableCell style={{color: "#fff"}}>{row.sub_total}</TableCell>
-        <TableCell style={{color: "#fff"}}>{row.total_discount}</TableCell>
-        <TableCell style={{color: "#fff"}}>{row.tax}</TableCell>
-        <TableCell style={{color: "#fff"}}>{row.total}</TableCell>
+        <TableCell style={{ color: "#fff" }}>{row.category_name}</TableCell>
+        <TableCell style={{ color: "#fff" }}>{row.certificate_no}</TableCell>
+        <TableCell style={{ color: "#fff" }}>{row.total_weight}</TableCell>
+        <TableCell style={{ color: "#fff" }}>{row.size_name}</TableCell>
+        <TableCell style={{ color: "#fff" }}>{row.making_charge}</TableCell>
+        <TableCell style={{ color: "#fff" }}>{row.rep}</TableCell>
+        <TableCell style={{ color: "#fff" }}>{row.sub_total}</TableCell>
+        <TableCell style={{ color: "#fff" }}>{row.total_discount}</TableCell>
+        <TableCell style={{ color: "#fff" }}>{row.tax}</TableCell>
+        <TableCell style={{ color: "#fff" }}>{row.total}</TableCell>
       </TableRow>
       <TableRow className={"table-inner-row sub_table " + odd_even_class}>
         <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={11}>
-          <Collapse in={open} timeout="auto" unmountOnExit>
+          <Collapse in={open} timeout='auto' unmountOnExit>
             <Box sx={{ margin: 1 }}>
               <Typography
-                variant="h6"
+                variant='h6'
                 gutterBottom
-                component="div"
-              ></Typography>
-              <Table size="medium" aria-label="purchases">
+                component='div'></Typography>
+              <Table size='medium' aria-label='purchases'>
                 <TableHead>
-                  <TableRow className="pur-details-inner-table">
-                    <TableCell className={odd_even_class}>Material Name</TableCell>
+                  <TableRow className='pur-details-inner-table'>
+                    <TableCell className={odd_even_class}>
+                      Material Name
+                    </TableCell>
                     <TableCell className={odd_even_class}>Purity</TableCell>
                     <TableCell className={odd_even_class}>Quantity</TableCell>
-                    <TableCell className={odd_even_class}>Total Weight</TableCell>
-                    {row.product_code == ""?<TableCell className={odd_even_class}>Pakka Weight</TableCell>:""}
+                    <TableCell className={odd_even_class}>
+                      Total Weight
+                    </TableCell>
+                    {row.product_code == "" ? (
+                      <TableCell className={odd_even_class}>
+                        Pakka Weight
+                      </TableCell>
+                    ) : (
+                      ""
+                    )}
                     <TableCell className={odd_even_class}>Unit</TableCell>
                     <TableCell className={odd_even_class}>Rate</TableCell>
                     <TableCell className={odd_even_class}>Amount</TableCell>
                     <TableCell className={odd_even_class}>Dist</TableCell>
                   </TableRow>
                 </TableHead>
-                <TableBody className="pur-details-table-body">
+                <TableBody className='pur-details-table-body'>
                   {row.materials.map((item, i) =>
                     !(item.weight == 0 && item.quantity == 0) ? (
                       <TableRow key={i}>
@@ -769,15 +780,37 @@ function Row(props) {
                           "--------------row.materials",
                           row.materials
                         )} */}
-                        <TableCell scope="row" className={odd_even_class}>{item.material_name}</TableCell>
-                        <TableCell className={odd_even_class}>{item.purity_name}</TableCell>
-                        <TableCell className={odd_even_class}>{item.quantity}</TableCell>
-                        <TableCell className={odd_even_class}>{item.weight}</TableCell>
-                        {row.product_code == ""?<TableCell className={odd_even_class}>{item.pakka_weight}</TableCell>:""}
-                        <TableCell className={odd_even_class}>{item.unit_name}</TableCell>
-                        <TableCell className={odd_even_class}>{item.rate}</TableCell>
-                        <TableCell className={odd_even_class}>{item.amount}</TableCell>
-                        <TableCell className={odd_even_class}>{item.discount_amount}</TableCell>
+                        <TableCell scope='row' className={odd_even_class}>
+                          {item.material_name}
+                        </TableCell>
+                        <TableCell className={odd_even_class}>
+                          {item.purity_name}
+                        </TableCell>
+                        <TableCell className={odd_even_class}>
+                          {item.quantity}
+                        </TableCell>
+                        <TableCell className={odd_even_class}>
+                          {item.weight}
+                        </TableCell>
+                        {row.product_code == "" ? (
+                          <TableCell className={odd_even_class}>
+                            {item.pakka_weight}
+                          </TableCell>
+                        ) : (
+                          ""
+                        )}
+                        <TableCell className={odd_even_class}>
+                          {item.unit_name}
+                        </TableCell>
+                        <TableCell className={odd_even_class}>
+                          {item.rate}
+                        </TableCell>
+                        <TableCell className={odd_even_class}>
+                          {item.amount}
+                        </TableCell>
+                        <TableCell className={odd_even_class}>
+                          {item.discount_amount}
+                        </TableCell>
                       </TableRow>
                     ) : null
                   )}

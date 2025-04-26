@@ -199,7 +199,7 @@ class PromocodePage extends Component {
   render() {
     
     return (
-      <MainCard title="Promocodes" secondary={hasPermission(this.state.permissions, 'promocodes', 'add') ? (<Button variant="contained" onClick={() => this.props.navigate('create')}>Add</Button>) : null} >
+      <MainCard title="Promocode Banners" secondary={hasPermission(this.state.permissions, 'promocodes', 'add') ? (<Button variant="contained" onClick={() => this.props.navigate('create')}>Add</Button>) : null} >
         {/*<Box sx={{ flexGrow: 1, m: 0.5 }} className='ratn-dialog-inner'>
             <Grid container spacing={2} className='tax-input loans_view p_view'>
               <Grid item xs={12} md={2} className='create-input'>

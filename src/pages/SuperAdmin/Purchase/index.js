@@ -330,7 +330,7 @@ class PurchasePage extends Component {
                     value: "Accepted"
                   }
                 ],
-                show: (!isDistributor() && !isAdmin() && hasPermission(this.state.permissions, 'purchase', 'edit') && this.props.query.get('all_purchase') != 1)
+                show: (!isDistributor() && !isAdmin() && hasPermission(this.state.permissions, 'purchase', 'view') && this.props.query.get('all_purchase') != 1)
               },
               {
                 label: 'Edit',
@@ -364,7 +364,7 @@ class PurchasePage extends Component {
                 label: 'Download',
                 onClick: this.handleDownloadView,
                 color: 'primary',
-                show: hasPermission(this.state.permissions, 'purchase', 'view')
+                show: hasPermission(this.state.permissions, 'purchase', 'list')
               },
             ]}
           />

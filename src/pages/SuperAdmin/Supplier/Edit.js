@@ -1,30 +1,32 @@
-import { React, Component } from 'react';
-import { connect } from 'react-redux';
-import {Grid, CircularProgress  } from '@mui/material';
-import SupplierForm from 'forms/SuperAdmin/SupplierForm';
-import { bindActionCreators } from 'redux';
-import MainCard from 'ui-component/cards/MainCard';
-import withRouter from 'src/helpers/withRouter';
-import { supplierFetch, supplierUpdate } from 'actions/superadmin/supplier.actions';
+import { React, Component } from "react";
+import { connect } from "react-redux";
+import { Grid, CircularProgress } from "@mui/material";
+import SupplierForm from "forms/SuperAdmin/SupplierForm";
+import { bindActionCreators } from "redux";
+import MainCard from "ui-component/cards/MainCard";
+import withRouter from "src/helpers/withRouter";
+import {
+  supplierFetch,
+  supplierUpdate,
+} from "actions/superadmin/supplier.actions";
 
 class SupplierEditPage extends Component {
-
-  constructor(props) { 
+  constructor(props) {
     super(props);
 
     this.state = {
-      item: this.props.item
-    }
+      item: this.props.item,
+    };
   }
 
-  componentDidMount(){
+  componentDidMount() {
     this.props.actions.supplierFetch(this.props.params.id);
   }
 
-  static getDerivedStateFromProps(props, state){
+  static getDerivedStateFromProps(props, state) {
     let update = {};
 
-    if(props.item !== state.item){
+    if (props.item !== state.item) {
       update.item = props.item;
     }
 
@@ -33,16 +35,15 @@ class SupplierEditPage extends Component {
 
   render() {
     return (
-      <MainCard title="Supplier Edit">
+      <MainCard title='Supplier Edit'>
         <div>
-          {
-            this.state.item ? 
+          {this.state.item ? (
             <SupplierForm formData={this.state.item} />
-            : 
-            <Grid container justifyContent="center">
-              <CircularProgress />
+          ) : (
+            <Grid container justifyContent='center'>
+              <CircularProgress size='30px' />
             </Grid>
-          }
+          )}
         </div>
       </MainCard>
     );
@@ -50,12 +51,14 @@ class SupplierEditPage extends Component {
 }
 
 const mapStateToProps = (state) => ({
-  item: state.superadmin.supplier.item || null
+  item: state.superadmin.supplier.item || null,
 });
 
-const mapDispatchToProps = dispatch => ({
+const mapDispatchToProps = (dispatch) => ({
   dispatch,
-  actions: bindActionCreators({supplierFetch}, dispatch)
+  actions: bindActionCreators({ supplierFetch }, dispatch),
 });
 
-export default withRouter(connect(mapStateToProps, mapDispatchToProps)(SupplierEditPage));
+export default withRouter(
+  connect(mapStateToProps, mapDispatchToProps)(SupplierEditPage)
+);
