@@ -59,6 +59,8 @@ class ReturnSaleViewPage extends React.Component {
     super(props);
 
     this.state = {
+      actionCalled: this.props.actionCalled,
+      approve_declined_processing: false,
       returnSale: this.props.returnSale,
       confirmDialog: false,
       status_changing: "",
@@ -80,6 +82,9 @@ class ReturnSaleViewPage extends React.Component {
     if (props.returnSale !== state.returnSale) {
       update.returnSale = props.returnSale;
     }
+    if (props.actionCalled !== state.actionCalled) {
+      update.actionCalled = props.actionCalled;
+    }
     if (props.auth !== state.auth) {
       update.auth = props.auth;
     }
@@ -90,6 +95,12 @@ class ReturnSaleViewPage extends React.Component {
   componentDidUpdate(prevProps) {
     if (this.props.params.id != prevProps.params.id) {
       this.loadViewData();
+    }
+
+    if (this.state.actionCalled) {
+      this.setState({
+        approve_declined_processing: false,
+      });
     }
   }
 
@@ -106,6 +117,9 @@ class ReturnSaleViewPage extends React.Component {
 
   handleConfirmSubmit = async () => {
     let data = { status: this.state.status_changing };
+    this.setState({
+      approve_declined_processing: true,
+    });
     let status_response = await returnSaleUpdateStatus(
       this.props.params.id,
       data
@@ -116,6 +130,7 @@ class ReturnSaleViewPage extends React.Component {
       });
       this.setState({
         confirmDialog: false,
+        approve_declined_processing: false,
       });
       this.loadViewData();
       if (this.state.status_changing == "complete") {
@@ -128,6 +143,9 @@ class ReturnSaleViewPage extends React.Component {
     } else {
       this.props.enqueueSnackbar(status_response.data.message, {
         variant: "error",
+      });
+      this.setState({
+        approve_declined_processing: false,
       });
     }
   };
@@ -460,17 +478,23 @@ class ReturnSaleViewPage extends React.Component {
           </DialogContent>
           <DialogActions>
             <Stack spacing={2} direction='row' justifyContent='flex-end'>
-              <Button
-                variant='outlined'
-                onClick={this.handleConfirmDialogClose}>
-                Cancel
-              </Button>
-              <Button
-                variant='contained'
-                type='button'
-                onClick={this.handleConfirmSubmit}>
-                Yes, Confirm
-              </Button>
+            {!this.state.approve_declined_processing ? (
+              <>
+                <Button
+                  variant='outlined'
+                  onClick={this.handleConfirmDialogClose}>
+                  Cancel
+                </Button>
+                <Button
+                  variant='contained'
+                  type='button'
+                  onClick={this.handleConfirmSubmit}>
+                  Yes, Confirm
+                </Button>
+              </>
+            ) : (
+              <CircularProgress size='30px' />
+            )}
             </Stack>
           </DialogActions>
         </Dialog>
@@ -481,6 +505,7 @@ class ReturnSaleViewPage extends React.Component {
 
 const mapStateToProps = (state) => ({
   returnSale: state.superadmin.returnSale.returnSale,
+  actionCalled: state.superadmin.returnSale.actionCalled,
   auth: state.auth,
 });
 

@@ -58,6 +58,7 @@ class ReceivedViewPage extends React.Component {
       successMessage: this.props.successMessage,
       errorMessage: this.props.errorMessage,
       processing: false,
+      approve_declined_processing: false,
       items: this.props.items,
       total: this.props.total,
       queryParams: {
@@ -123,6 +124,7 @@ class ReceivedViewPage extends React.Component {
         });
         this.setState({
           processing: false,
+          approve_declined_processing: false,
           openDialog: false,
           queryParams: {
             ...this.state.queryParams,
@@ -136,6 +138,7 @@ class ReceivedViewPage extends React.Component {
         });
         this.setState({
           processing: false,
+          approve_declined_processing: false,
         });
       }
       this.props.dispatch({
@@ -160,6 +163,10 @@ class ReceivedViewPage extends React.Component {
       approve_status: this.state.status_changing,
       decline_type: this.state.decline_type,
     };
+    this.setState({
+      approve_declined_processing: true,
+    });
+
     let status_response = await purchaseStatusChange(
       this.props.params.id,
       data
@@ -170,11 +177,15 @@ class ReceivedViewPage extends React.Component {
       });
       this.setState({
         confirmDialog: false,
+        approve_declined_processing: false,
       });
       this.loadViewData();
     } else {
       this.props.enqueueSnackbar(status_response.data.message, {
         variant: "error",
+      });
+      this.setState({
+        approve_declined_processing: false,
       });
     }
   };
@@ -321,17 +332,23 @@ class ReceivedViewPage extends React.Component {
           </DialogContent>
           <DialogActions>
             <Stack spacing={2} direction='row' justifyContent='flex-end'>
-              <Button
-                variant='outlined'
-                onClick={this.handleConfirmDialogClose}>
-                Cancel
-              </Button>
-              <Button
-                variant='contained'
-                type='button'
-                onClick={this.handleConfirmSubmit}>
-                Yes, Confirm
-              </Button>
+            {!this.state.approve_declined_processing ? (
+              <>
+                <Button
+                  variant='outlined'
+                  onClick={this.handleConfirmDialogClose}>
+                  Cancel
+                </Button>
+                <Button
+                  variant='contained'
+                  type='button'
+                  onClick={this.handleConfirmSubmit}>
+                  Yes, Confirm
+                </Button>
+              </>
+            ) : (
+              <CircularProgress size='30px' />
+            )}
             </Stack>
           </DialogActions>
         </Dialog>

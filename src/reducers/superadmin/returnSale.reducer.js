@@ -20,11 +20,13 @@ export default function (state = initialState, action) {
     switch (type) {
         case LIST_RETURN_SALE:
             return {
+                actionCalled: true,
                 ...state,
                 ...payload
             }
         case GET_RETURN_SALE:
             return {
+                actionCalled: true,
                 ...state,
                 returnSale: payload
             }
