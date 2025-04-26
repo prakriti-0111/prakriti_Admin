@@ -497,6 +497,7 @@ class OrderViewPage extends React.Component {
                   <Button
                     variant='contained'
                     type='button'
+                    disabled={this.state.processing}
                     onClick={this.handleSaleSubmit}>
                     Yes, Confirm
                   </Button>

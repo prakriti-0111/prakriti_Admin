@@ -1,7 +1,7 @@
 import React from 'react';
 import { connect } from 'react-redux';
 import { Field, reduxForm } from 'redux-form/immutable';
-import { Box, TextField, Button, Grid, Link, TextareaAutosize, Stack, Select, MenuItem, InputLabel, FormControl, FormControlLabel, Checkbox, FormHelperText, ToggleButtonGroup, Typography, Collapse, ImageList, ImageListItem, InputAdornment, IconButton, Autocomplete } from '@mui/material';
+import { Box, TextField, Button, Grid, Link, TextareaAutosize, Stack, Select, MenuItem, InputLabel, FormControl, FormControlLabel, Checkbox, FormHelperText, ToggleButtonGroup, Typography, Collapse, ImageList, ImageListItem, InputAdornment, IconButton, Autocomplete, CircularProgress } from '@mui/material';
 import { ContactPageSharp, ThirtyFpsSelect } from '@mui/icons-material';
 import { calculateProductPrice, convertUnitToGram, displayAmount, isEmpty, calculateGST } from 'src/helpers/helper';
 import { bindActionCreators } from 'redux';
@@ -104,7 +104,7 @@ class PurchaseForm extends React.Component {
             deletingIndex: 0,
             submitting: false,
             ...this.getDefaultProductFormData(),
-
+            approve_declined_processing: false,
             actionCalled: this.props.actionCalled,
             createSuccess: this.props.createSuccess,
             editSuccess: this.props.editSuccess,
@@ -253,6 +253,10 @@ class PurchaseForm extends React.Component {
                     });
                 }
             }
+
+            this.setState({
+                approve_declined_processing: false,
+            });
         }
     }
 
@@ -883,11 +887,22 @@ class PurchaseForm extends React.Component {
             return_amount: this.state.return_amount,
             return_date: this.state.return_date
         });
+
+        this.setState({
+            approve_declined_processing: true,
+        });
+
         if(res.data.success){
+            this.setState({
+                approve_declined_processing: false,
+            });
             this.props.enqueueSnackbar(res.data.message, { variant: 'success' });
             this.props.navigate(getUserDashboardRoute(getRoleName(this.state.auth)) + '/purchases');
         }else{
             this.props.enqueueSnackbar(res.data.message, { variant: 'error' });
+            this.setState({
+                approve_declined_processing: false
+            });
         }
     }
 
@@ -2401,8 +2416,14 @@ class PurchaseForm extends React.Component {
                     </DialogContent>
                     <DialogActions>
                         <Stack spacing={2} direction="row" justifyContent="flex-end">
+                        {!this.state.approve_declined_processing ? (
+                        <>
                             <Button variant="outlined" onClick={this.returnDialogClose}>Cancel</Button>
                             <Button variant="contained" type="button" onClick={this.handleReturnConfirm}>Yes, Confirm</Button>
+                        </>
+                        ) : (
+                            <CircularProgress size='30px' />
+                        )}
                         </Stack>
                     </DialogActions>
                 </Dialog>

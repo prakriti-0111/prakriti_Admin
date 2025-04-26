@@ -873,7 +873,7 @@ class OrderCreatePage extends React.Component {
                         <DialogActions>
                             <div className='ratn-footer-buttons'>
                                 <Button onClick={this.handleOrderDialogCofirmClose} className='close-button'>Close</Button>
-                                <Button onClick={this.handleSubmit} className='conf-button'>
+                                <Button disabled={this.state.submitting} onClick={this.handleSubmit} className='conf-button'>
                                     {
                                         this.state.submitting ? "Processing" : "Yes, Confirm"
                                     }
