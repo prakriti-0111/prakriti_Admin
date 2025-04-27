@@ -8,6 +8,7 @@ import { gridSpacing } from 'store/constant';
 import MainCard from 'ui-component/cards/MainCard';
 import withRouter from 'src/helpers/withRouter';
 import { withSnackbar } from 'notistack';
+import './style.css';
 
 class SaleCreatePage extends Component {
 
