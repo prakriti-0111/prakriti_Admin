@@ -978,8 +978,8 @@ class DashboardPage extends Component {
           ) : null}
 
           {(this.isAdmin || this.isDistributor || this.isSalesExecutive) &&
-          profile &&
-          profile.own == false ? (
+          profile ? ( /*  &&
+            profile.own == false */
             <CardContent
               onClick={() =>
                 this.handleClick("stocks?total_avl_stock=1&by_specific=1")
