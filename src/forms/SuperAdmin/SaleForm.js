@@ -26,7 +26,7 @@ import {
   Radio,
   Collapse,
   Alert,
-  CircularProgress
+  CircularProgress,
 } from "@mui/material";
 import { ContactPageSharp } from "@mui/icons-material";
 import {
@@ -106,7 +106,11 @@ import { retailerList } from "actions/superadmin/retailer.actions";
 import { distributorList } from "actions/superadmin/distributor.actions";
 import { salesExecutiveList } from "actions/superadmin/salesExecutive.actions";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
-import { getRoleName, getUserDashboardRoute, convertGramToUnit } from "src/helpers/helper";
+import {
+  getRoleName,
+  getUserDashboardRoute,
+  convertGramToUnit,
+} from "src/helpers/helper";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import noImage from "src/assets/images/no_image.jpg";
 import DataTable from "src/utils/DataTable";
@@ -136,7 +140,7 @@ class SaleForm extends React.Component {
       subCategoryList: this.props.subCategoryList,
       supplierList: this.props.supplierList,
       materialList: [],
-      materialDiscountType: 'discount',
+      materialDiscountType: "discount",
       sizeList: [],
       materials: [],
       product_type: "",
@@ -226,6 +230,7 @@ class SaleForm extends React.Component {
       discount_per_product: 0,
       approval_processing: false,
       processing: false,
+      isMobile: window.innerWidth < 600, // adjust breakpoint as needed
     };
 
     this.isSuperAdmin = isSuperAdmin();
@@ -287,6 +292,10 @@ class SaleForm extends React.Component {
     ];
   }
 
+  updateIsMobile = () => {
+    this.setState({ isMobile: window.innerWidth < 600 });
+  };
+
   componentDidMount() {
     if (this.isSuperAdmin) {
       this.props.actions.adminList({ all: 1 });
@@ -316,6 +325,12 @@ class SaleForm extends React.Component {
     }
 
     this.loadProfile();
+
+    window.addEventListener("resize", this.updateIsMobile);
+  }
+
+  componentWillUnmount() {
+    window.removeEventListener("resize", this.updateIsMobile);
   }
 
   loadProfile = async () => {
@@ -406,23 +421,23 @@ class SaleForm extends React.Component {
       let products = [];
       let unique_materials = [];
 
-
       let material_total_by_unit = [];
       for (let i = 0; i < cartList.length; i++) {
         let cart = cartList[i];
 
         for (let item of cart.materials) {
           //let m_unit_name = item.unit_name.toLowerCase();
-          if(typeof material_total_by_unit[item.material_id] === "undefined"){
-            material_total_by_unit[item.material_id] = 0.00;
-          } 
-          
-          if(item.purity_id == 4 || item.purity_id == 18){
-            material_total_by_unit[item.material_id] += parseFloat(cart.total_weight);
+          if (typeof material_total_by_unit[item.material_id] === "undefined") {
+            material_total_by_unit[item.material_id] = 0.0;
+          }
+
+          if (item.purity_id == 4 || item.purity_id == 18) {
+            material_total_by_unit[item.material_id] += parseFloat(
+              cart.total_weight
+            );
           } else {
             material_total_by_unit[item.material_id] += parseFloat(item.weight);
           }
-          
         }
       }
 
@@ -455,7 +470,7 @@ class SaleForm extends React.Component {
           });
 
           let m_unit_name = item.unit_name.toLowerCase();
-          
+
           let index = _.findIndex(
             unique_materials,
             (p) => p.material_id == item.material_id
@@ -468,7 +483,8 @@ class SaleForm extends React.Component {
               amount: "",
               max_discount: item.max_discount_percent,
               unit: m_unit_name,
-              ["total_"+item.material_id]: material_total_by_unit[item.material_id],
+              ["total_" + item.material_id]:
+                material_total_by_unit[item.material_id],
             });
           }
         }
@@ -643,7 +659,7 @@ class SaleForm extends React.Component {
           this.setState({
             submitting: false,
             approval_processing: false,
-            processing: false
+            processing: false,
           });
           this.props.enqueueSnackbar(this.state.errorMessage, {
             variant: "error",
@@ -673,7 +689,7 @@ class SaleForm extends React.Component {
           this.setState({
             submitting: false,
             approval_processing: false,
-            processing: false
+            processing: false,
           });
           this.props.enqueueSnackbar(this.state.errorMessage, {
             variant: "error",
@@ -775,9 +791,8 @@ class SaleForm extends React.Component {
       },
       () => {
         if (
-          (this.isSuperAdmin || this.isAdmin || this.isDistributor
-            /* (this.isAdmin && this.state.profile && this.state.profile.own) */) &&
-          m.length &&
+          (this.isSuperAdmin || this.isAdmin || this.isDistributor) &&
+          /* (this.isAdmin && this.state.profile && this.state.profile.own) */ m.length &&
           m[0].own
         ) {
           this.handleTransfer(val);
@@ -1002,11 +1017,7 @@ class SaleForm extends React.Component {
         discount_percent = !isAssign ? discount_percent : 0;
         let disPerGramPrice = priceFormat(
           parseFloat(per_gram_price) -
-            parseFloat(
-              (per_gram_price *
-                parseFloat(discount_percent)) /
-                100
-            )
+            parseFloat((per_gram_price * parseFloat(discount_percent)) / 100)
         );
         let thisPrice = priceFormat(
           parseFloat(per_gram_price) *
@@ -1389,8 +1400,8 @@ class SaleForm extends React.Component {
   handleSubmit = async (isApproval, e) => {
     let formValues = this.state.formValues;
     let hasErr = this.formValidate(isApproval);
-    if(hasErr){
-      e.target.disabled=false;
+    if (hasErr) {
+      e.target.disabled = false;
       return false;
     }
 
@@ -1398,15 +1409,15 @@ class SaleForm extends React.Component {
       this.props.enqueueSnackbar("Please add at least one product", {
         variant: "error",
       });
-      e.target.disabled=false;
+      e.target.disabled = false;
       return false;
     }
     if (!hasErr && formValues.products.length) {
       this.setState({
         submitting: true,
         isOnApprove: isApproval,
-        approval_processing: isApproval?true:false,
-        processing: !isApproval?true:false      
+        approval_processing: isApproval ? true : false,
+        processing: !isApproval ? true : false,
       });
       let data = {
         ...this.state.formValues,
@@ -1430,8 +1441,8 @@ class SaleForm extends React.Component {
             }*/
       data.is_assigned = this.state.isAssign;
       data.image_file = data.image_file ? await toBase64(data.image_file) : "";
-      console.log("sales ------- admin code ",data);
-      
+      console.log("sales ------- admin code ", data);
+
       if (this.state.isCreateFrom) {
         this.props.actions.salesStore(data);
       } else {
@@ -1567,7 +1578,7 @@ class SaleForm extends React.Component {
     let unique_materials = this.state.unique_materials;
     let { value, max } = event.target;
 
-    if(unique_materials[index].disc_type == "discount"){
+    if (unique_materials[index].disc_type == "discount") {
       if (!this.isSuperAdmin) {
         if (value != "") {
           value = Math.max(Number(0), Math.min(Number(max), Number(value)));
@@ -1580,73 +1591,42 @@ class SaleForm extends React.Component {
     }
 
     unique_materials[index].amount = value;
-    this.setState({
-      unique_materials: unique_materials,
-    }, () => {
-      let formValues = this.state.formValues;
-      console.log("unique_materials[index] : ", unique_materials[index]);
-      for (let i = 0; i < formValues.products.length; i++) {
-        for (let x = 0; x < formValues.products[i].materials.length; x++) {
-          console.log("formValues.products[i].materials[x]: ",formValues.products[i].materials[x]);
-          if (
-            unique_materials[index].material_id ==
-            formValues.products[i].materials[x].material_id
-          ) {
-            if(unique_materials[index].disc_type == "discount"){
-              formValues.products[i].materials[x].discount_percent = value;
-              formValues.products[i].materials[x].rate = formValues.products[i].materials[x].org_rate;
-              formValues.products[i].materials[x].per_gram_price = formValues.products[i].materials[x].org_per_gram_price;
-            } else {
-              formValues.products[i].materials[x].rate = value;
-              formValues.products[i].materials[x].per_gram_price = convertGramToUnit(formValues.products[i].materials[x].unit_name, value);
-              formValues.products[i].materials[x].discount_percent = 0.00;
-            }
-          }
-        }
-      }
-
-      this.setState(
-        {
-          formValues: formValues,
-        },
-        () => {
-          this.calculateProductPrice();
-        }
-      );
-    });
-  };
-
-  handleDiscountType = (event, index) => {
-    let unique_materials = this.state.unique_materials;
-    let { value, max } = event.target;
-    unique_materials[index].disc_type = value;
-    unique_materials[index].amount = 0.00;
-    
-    this.setState({
-      unique_materials: unique_materials,
-    }, () => {
+    this.setState(
+      {
+        unique_materials: unique_materials,
+      },
+      () => {
         let formValues = this.state.formValues;
-        //console.log("unique_materials[index] : ", unique_materials[index]);
+        console.log("unique_materials[index] : ", unique_materials[index]);
         for (let i = 0; i < formValues.products.length; i++) {
           for (let x = 0; x < formValues.products[i].materials.length; x++) {
+            console.log(
+              "formValues.products[i].materials[x]: ",
+              formValues.products[i].materials[x]
+            );
             if (
               unique_materials[index].material_id ==
               formValues.products[i].materials[x].material_id
             ) {
-              //Object.keys(document.querySelectorAll(".unique_materials .custom_input")).map((itm) => document.querySelectorAll(".unique_materials .custom_input")[itm].value = 0.00);
-              if(value == "discount"){
-                formValues.products[i].materials[x].discount_percent = formValues.products[i].materials[x].org_discount_percent;
+              if (unique_materials[index].disc_type == "discount") {
+                formValues.products[i].materials[x].discount_percent = value;
+                formValues.products[i].materials[x].rate =
+                  formValues.products[i].materials[x].org_rate;
+                formValues.products[i].materials[x].per_gram_price =
+                  formValues.products[i].materials[x].org_per_gram_price;
               } else {
-                formValues.products[i].materials[x].discount_percent = 0.00;
+                formValues.products[i].materials[x].rate = value;
+                formValues.products[i].materials[x].per_gram_price =
+                  convertGramToUnit(
+                    formValues.products[i].materials[x].unit_name,
+                    value
+                  );
+                formValues.products[i].materials[x].discount_percent = 0.0;
               }
-
-              formValues.products[i].materials[x].rate = formValues.products[i].materials[x].org_rate;
-              formValues.products[i].materials[x].per_gram_price = formValues.products[i].materials[x].org_per_gram_price;
-              
             }
           }
         }
-  
+
         this.setState(
           {
             formValues: formValues,
@@ -1657,7 +1637,54 @@ class SaleForm extends React.Component {
         );
       }
     );
-  }
+  };
+
+  handleDiscountType = (event, index) => {
+    let unique_materials = this.state.unique_materials;
+    let { value, max } = event.target;
+    unique_materials[index].disc_type = value;
+    unique_materials[index].amount = 0.0;
+
+    this.setState(
+      {
+        unique_materials: unique_materials,
+      },
+      () => {
+        let formValues = this.state.formValues;
+        //console.log("unique_materials[index] : ", unique_materials[index]);
+        for (let i = 0; i < formValues.products.length; i++) {
+          for (let x = 0; x < formValues.products[i].materials.length; x++) {
+            if (
+              unique_materials[index].material_id ==
+              formValues.products[i].materials[x].material_id
+            ) {
+              //Object.keys(document.querySelectorAll(".unique_materials .custom_input")).map((itm) => document.querySelectorAll(".unique_materials .custom_input")[itm].value = 0.00);
+              if (value == "discount") {
+                formValues.products[i].materials[x].discount_percent =
+                  formValues.products[i].materials[x].org_discount_percent;
+              } else {
+                formValues.products[i].materials[x].discount_percent = 0.0;
+              }
+
+              formValues.products[i].materials[x].rate =
+                formValues.products[i].materials[x].org_rate;
+              formValues.products[i].materials[x].per_gram_price =
+                formValues.products[i].materials[x].org_per_gram_price;
+            }
+          }
+        }
+
+        this.setState(
+          {
+            formValues: formValues,
+          },
+          () => {
+            this.calculateProductPrice();
+          }
+        );
+      }
+    );
+  };
 
   handleCommonMakingDis = (event) => {
     this.setState({
@@ -1725,13 +1752,13 @@ class SaleForm extends React.Component {
     } else if (this.isDistributor) {
       if (this.state.isAssign) {
         let suppList = [];
-        if (this.state.profile && this.state.profile.own) {
-          for (let i = 0; i < this.state.supplierList.length; i++) {
-            if (this.state.supplierList[i].own) {
-              suppList.push(this.state.supplierList[i]);
-            }
-          }
+        //if (this.state.profile && this.state.profile.own) {
+        for (let i = 0; i < this.state.supplierList.length; i++) {
+          //if (this.state.supplierList[i].own) {
+          suppList.push(this.state.supplierList[i]);
+          //}
         }
+        //}
         userList = this.state.salesExecutiveList.concat(suppList);
       } else {
         userList = this.state.retailerList;
@@ -1873,7 +1900,7 @@ class SaleForm extends React.Component {
 
   handleReturnConfirm = async () => {
     this.setState({
-      submitting: true
+      submitting: true,
     });
     let result = this.hasReturn();
     if (!result.isReturn) {
@@ -1903,7 +1930,7 @@ class SaleForm extends React.Component {
       );
     } else {
       this.setState({
-        submitting: false
+        submitting: false,
       });
       this.props.enqueueSnackbar(res.data.message, { variant: "error" });
     }
@@ -2157,11 +2184,12 @@ class SaleForm extends React.Component {
       submitting,
       order,
       actionProductIndex,
-      unique_materials
+      unique_materials,
+      isMobile
     } = this.state;
 
-  console.log("this is the state of salefprm ", this.state);
-  console.log("unique_materials : ", unique_materials);
+    console.log("this is the state of salefprm ", this.state);
+    console.log("unique_materials : ", unique_materials);
 
     const actionProduct = formValues.products.length
       ? formValues.products[actionProductIndex]
@@ -2226,22 +2254,19 @@ class SaleForm extends React.Component {
     return (
       <Box
         sx={{ flexGrow: 1, m: 0.5 }}
-        className="ratn-dialog-inner sale_create_page"
-      >
+        className='ratn-dialog-inner sale_create_page'>
         <Grid
           container
           spacing={2}
           columnSpacing={{ xs: 1, sm: 2, md: 2 }}
-          className="tax-input loans_view p_view"
-        >
+          className='tax-input loans_view p_view'>
           {order ? (
-            <Grid item xs={12} md={12} className="create-input">
-              <Accordion className="rtn_accordion">
+            <Grid item xs={12} md={12} className='create-input'>
+              <Accordion className='rtn_accordion'>
                 <AccordionSummary
                   expandIcon={<ExpandMoreIcon />}
-                  aria-controls="panel1a-content"
-                  id="panel1a-header"
-                >
+                  aria-controls='panel1a-content'
+                  id='panel1a-header'>
                   <Typography>
                     Order # {order.order_no} | {order.order_from} |{" "}
                     {order.order_date}
@@ -2262,20 +2287,19 @@ class SaleForm extends React.Component {
           ) : null}
           <Grid container spacing={2} columnSpacing={{ xs: 1, sm: 2, md: 2 }}>
             {this.state.isAssign ? (
-              <Grid item xs={12} md={2} className="create-input">
+              <Grid item xs={12} md={2} className='create-input'>
                 <FormControl fullWidth>
                   <Button
-                    variant="contained"
-                    size="small"
+                    variant='contained'
+                    size='small'
                     onClick={this.handleBackAssign}
-                    startIcon={<ArrowBackIcon />}
-                  >
+                    startIcon={<ArrowBackIcon />}>
                     Back
                   </Button>
                 </FormControl>
               </Grid>
             ) : null}
-            <Grid item md={userIdColumnXs} xs={12} className="create-input">
+            <Grid item md={userIdColumnXs} xs={6} className='create-input'>
               {/*<FormControl fullWidth error={formErros.user_id}>
                                 <InputLabel>{this.state.isAssign ? "Transfer To" : "Company Name"}</InputLabel>
                                 <Select
@@ -2297,8 +2321,8 @@ class SaleForm extends React.Component {
               <FormControl fullWidth error={formErros.user_id}>
                 {order && order.is_customer ? (
                   <TextField
-                    label="Name"
-                    variant="outlined"
+                    label='Name'
+                    variant='outlined'
                     fullWidth
                     value={order.user_details.name}
                     disabled
@@ -2306,7 +2330,7 @@ class SaleForm extends React.Component {
                   />
                 ) : (
                   <Autocomplete
-                    className="autocomplete-selectbox"
+                    className='autocomplete-selectbox'
                     fullWidth
                     options={userList}
                     value={userIdValue}
@@ -2348,7 +2372,7 @@ class SaleForm extends React.Component {
                         }}
                         fullWidth
                         error={formErros.user_id}
-                        className="non_disable_text"
+                        className='non_disable_text'
                       />
                     )}
                     onChange={(event, newValue) => {
@@ -2368,139 +2392,288 @@ class SaleForm extends React.Component {
                 )}
               </FormControl>
             </Grid>
+
             {formValues.user_id ? (
               <>
-                <Grid item xs={6} md={2} className="create-input">
+                <Grid item xs={6} md={2} className='create-input'>
                   <TextField
-                    label="Owner Name"
-                    variant="outlined"
+                    label='Owner Name'
+                    variant='outlined'
                     fullWidth
                     value={this.state.admin_details.name}
                     disabled
                     inputProps={{ className: "non_disable_text" }}
                   />
                 </Grid>
-                <Grid item xs={6} md={2} className="create-input">
-                  <TextField
-                    label="Contact Number"
-                    variant="outlined"
-                    fullWidth
-                    value={this.state.admin_details.mobile}
-                    disabled
-                    inputProps={{ className: "non_disable_text" }}
-                  />
-                </Grid>
-                <Grid item xs={6} md={2} className="create-input">
-                  <TextField
-                    label="City"
-                    variant="outlined"
-                    fullWidth
-                    value={this.state.admin_details.city}
-                    disabled
-                    inputProps={{ className: "non_disable_text" }}
-                  />
-                </Grid>
-              </>
-            ) : null}
-            {!formValues.user_id ? (
-              <Grid item xs={6} md={3} className="create-input">
+              </>):null}
+            
+            {isMobile ? <>
+              <Grid item xs={6} md={2} className='create-input'>
                 <TextField
-                  label="Invoice Number"
-                  variant="outlined"
+                  label='Contact Number'
+                  variant='outlined'
                   fullWidth
-                  value={formValues.invoice_number}
-                  onChange={(event) =>
-                    this.handleDefaultChange(event, "invoice_number")
-                  }
-                  disabled={!this.state.isCreateFrom}
-                  className="non_disable_text"
+                  value={this.state.admin_details.mobile}
+                  disabled
+                  inputProps={{ className: "non_disable_text" }}
                 />
               </Grid>
-            ) : null}
-            <Grid
-              item
-              xs={!formValues.user_id ? 6 : 6}
-              md={!formValues.user_id ? 3 : 2}
-              className="create-input p-invoice-date"
-            >
-              <LocalizationProvider dateAdapter={AdapterDayjs}>
-                <DatePicker
-                  label="Invoice Date"
-                  value={formValues.invoice_date}
-                  inputFormat="DD/MM/YYYY"
-                  disabled={!this.state.isCreateFrom}
-                  onChange={(newValue) =>
-                    this.updateFormValues(newValue, "invoice_date")
-                  }
-                  renderInput={(params) => (
-                    <TextField
-                      {...params}
-                      error={formErros.invoice_date}
-                      className="non_disable_text"
-                    />
-                  )}
-                />
-              </LocalizationProvider>
-            </Grid>
-            {formValues.user_id ? (
+              <Grid item xs={6} md={2} className='create-input'>
+                <Accordion >
+                  <AccordionSummary
+                    expandIcon={<ExpandMoreIcon />}
+                    aria-controls='panel1a-content'
+                    id='panel1a-header'>
+                    <Typography
+                      style={{
+                        color: "#1e2746",
+                        width: "100%",
+                        textAlign: "right",
+                      }}
+                    >
+                      See more
+                    </Typography>
+                  </AccordionSummary>
+                  <AccordionDetails className="see-more-details-sec">
+                    
+                    {formValues.user_id ? (
+                      <>
+                        <Grid item xs={6} md={2} className='create-input'>
+                          <TextField
+                            label='Owner Name'
+                            variant='outlined'
+                            fullWidth
+                            value={this.state.admin_details.name}
+                            disabled
+                            inputProps={{ className: "non_disable_text" }}
+                          />
+                        </Grid>
+                        <Grid item xs={6} md={2} className='create-input'>
+                          <TextField
+                            label='City'
+                            variant='outlined'
+                            fullWidth
+                            value={this.state.admin_details.city}
+                            disabled
+                            inputProps={{ className: "non_disable_text" }}
+                          />
+                        </Grid>
+                        <Grid item xs={6} md={2} className='create-input'>
+                          <TextField
+                            label='Pincode'
+                            variant='outlined'
+                            fullWidth
+                            value={this.state.admin_details.pincode}
+                            disabled
+                            inputProps={{ className: "non_disable_text" }}
+                          />
+                        </Grid>
+                      </>
+                    ) : null}
+
+                    {!formValues.user_id ? (<>
+                      <Grid item xs={6} md={3} className='create-input'>
+                        <TextField
+                          label='Invoice Number'
+                          variant='outlined'
+                          fullWidth
+                          value={formValues.invoice_number}
+                          onChange={(event) =>
+                            this.handleDefaultChange(event, "invoice_number")
+                          }
+                          disabled={!this.state.isCreateFrom}
+                          className='non_disable_text'
+                        />
+                      </Grid>
+                      <Grid
+                        item
+                        xs={!formValues.user_id ? 6 : 6}
+                        md={!formValues.user_id ? 3 : 2}
+                        className='create-input p-invoice-date'>
+                        <LocalizationProvider dateAdapter={AdapterDayjs}>
+                          <DatePicker
+                            label='Invoice Date'
+                            value={formValues.invoice_date}
+                            inputFormat='DD/MM/YYYY'
+                            disabled={!this.state.isCreateFrom}
+                            onChange={(newValue) =>
+                              this.updateFormValues(newValue, "invoice_date")
+                            }
+                            renderInput={(params) => (
+                              <TextField
+                                fullWidth
+                                {...params}
+                                error={formErros.invoice_date}
+                                className='non_disable_text'
+                              />
+                            )}
+                          />
+                        </LocalizationProvider>
+                      </Grid></>
+                    ) : null}
+                    
+                    {formValues.user_id ? (
+                      <>
+                        <Grid item xs={6} md={8} className='create-input'>
+                          <TextField
+                            label='Full Address'
+                            variant='outlined'
+                            fullWidth
+                            value={this.state.admin_details.address}
+                            disabled
+                            inputProps={{ className: "non_disable_text" }}
+                          />
+                        </Grid>
+                        <Grid item xs={6} md={2} className='create-input'>
+                          <TextField
+                            label='GST Number'
+                            variant='outlined'
+                            fullWidth
+                            value={this.state.admin_details.gst}
+                            disabled
+                            inputProps={{ className: "non_disable_text" }}
+                          />
+                        </Grid>
+                        <Grid item xs={6} md={2} className='create-input'>
+                          <TextField
+                            label='Invoice Number'
+                            variant='outlined'
+                            fullWidth
+                            value={formValues.invoice_number}
+                            onChange={(event) =>
+                              this.handleDefaultChange(event, "invoice_number")
+                            }
+                            className='non_disable_text'
+                            disabled={!this.state.isCreateFrom}
+                          />
+                        </Grid>
+                      </>
+                    ) : null}
+                    
+                  </AccordionDetails>
+                </Accordion>
+              
+              </Grid>
+              </> : 
               <>
-                <Grid item xs={12} md={8} className="create-input">
-                  <TextField
-                    label="Full Address"
-                    variant="outlined"
-                    fullWidth
-                    value={this.state.admin_details.address}
-                    disabled
-                    inputProps={{ className: "non_disable_text" }}
-                  />
-                </Grid>
-                <Grid item xs={6} md={2} className="create-input">
-                  <TextField
-                    label="GST Number"
-                    variant="outlined"
-                    fullWidth
-                    value={this.state.admin_details.gst}
-                    disabled
-                    inputProps={{ className: "non_disable_text" }}
-                  />
-                </Grid>
-                <Grid item xs={6} md={2} className="create-input">
-                  <TextField
-                    label="Invoice Number"
-                    variant="outlined"
-                    fullWidth
-                    value={formValues.invoice_number}
-                    onChange={(event) =>
-                      this.handleDefaultChange(event, "invoice_number")
-                    }
-                    className="non_disable_text"
-                    disabled={!this.state.isCreateFrom}
-                  />
-                </Grid>
-              </>
-            ) : null}
+                {formValues.user_id ? (
+                  <>
+                    <Grid item xs={6} md={2} className='create-input'>
+                      <TextField
+                        label='Owner Name'
+                        variant='outlined'
+                        fullWidth
+                        value={this.state.admin_details.name}
+                        disabled
+                        inputProps={{ className: "non_disable_text" }}
+                      />
+                    </Grid>
+                    <Grid item xs={6} md={2} className='create-input'>
+                      <TextField
+                        label='Contact Number'
+                        variant='outlined'
+                        fullWidth
+                        value={this.state.admin_details.mobile}
+                        disabled
+                        inputProps={{ className: "non_disable_text" }}
+                      />
+                    </Grid>
+                    <Grid item xs={6} md={2} className='create-input'>
+                      <TextField
+                        label='City'
+                        variant='outlined'
+                        fullWidth
+                        value={this.state.admin_details.city}
+                        disabled
+                        inputProps={{ className: "non_disable_text" }}
+                      />
+                    </Grid>
+                    <Grid item xs={6} md={2} className='create-input'>
+                      <TextField
+                        label='Pincode'
+                        variant='outlined'
+                        fullWidth
+                        value={this.state.admin_details.pincode}
+                        disabled
+                        inputProps={{ className: "non_disable_text" }}
+                      />
+                    </Grid>
+                  </>
+                ) : null}
+
+                {!formValues.user_id ? (
+                  <Grid item xs={6} md={3} className='create-input'>
+                    <TextField
+                      label='Invoice Number'
+                      variant='outlined'
+                      fullWidth
+                      value={formValues.invoice_number}
+                      onChange={(event) =>
+                        this.handleDefaultChange(event, "invoice_number")
+                      }
+                      disabled={!this.state.isCreateFrom}
+                      className='non_disable_text'
+                    />
+                  </Grid>
+                ) : null}
+                
+                {formValues.user_id ? (
+                  <>
+                    <Grid item xs={12} md={8} className='create-input'>
+                      <TextField
+                        label='Full Address'
+                        variant='outlined'
+                        fullWidth
+                        value={this.state.admin_details.address}
+                        disabled
+                        inputProps={{ className: "non_disable_text" }}
+                      />
+                    </Grid>
+                    <Grid item xs={6} md={2} className='create-input'>
+                      <TextField
+                        label='GST Number'
+                        variant='outlined'
+                        fullWidth
+                        value={this.state.admin_details.gst}
+                        disabled
+                        inputProps={{ className: "non_disable_text" }}
+                      />
+                    </Grid>
+                    <Grid item xs={6} md={2} className='create-input'>
+                      <TextField
+                        label='Invoice Number'
+                        variant='outlined'
+                        fullWidth
+                        value={formValues.invoice_number}
+                        onChange={(event) =>
+                          this.handleDefaultChange(event, "invoice_number")
+                        }
+                        className='non_disable_text'
+                        disabled={!this.state.isCreateFrom}
+                      />
+                    </Grid>
+                  </>
+                ) : null}
+              </>}
           </Grid>
         </Grid>
         <Grid
           container
           spacing={2}
           columnSpacing={{ xs: 1, sm: 2, md: 2 }}
-          className="tax-input loans_view"
-        >
+          className='tax-input loans_view'>
           <Grid
             item
             xs={12}
             md={12}
-            className=" create-input p-add-product border-radius-0"
-          >
+            className=' create-input p-add-product border-radius-0'>
             {/*<h3 className='p_heading_list'>Product List <Button variant="contained" className='add-button' onClick={() => this.handleAddNewProduct()}>Add Product</Button></h3>*/}
             <TableContainer component={Paper}>
               <Table
                 sx={{ minWidth: 650 }}
-                aria-label="simple table"
-                className="ratn-table-product-wrapper sale_form_table"
-              >
-                <TableHead className="ratn-table-header p_view">
+                aria-label='simple table'
+                className='ratn-table-product-wrapper sale_form_table'>
+                <TableHead className='ratn-table-header p_view'>
                   <TableRow>
                     {!this.state.isCreateFrom ? (
                       <TableCell sx={{ width: "30px" }}></TableCell>
@@ -2522,18 +2695,22 @@ class SaleForm extends React.Component {
                 </TableHead>
                 <TableBody>
                   {formValues.products.map((item, index) => {
-                    
-                    let getUnit = item.materials.filter((itm) => itm.purity_id == 4 || itm.purity_id == 18);
-                    let productWeightUnitName = getUnit.length > 0?getUnit[0].unit_name:"";
+                    let getUnit = item.materials.filter(
+                      (itm) => itm.purity_id == 4 || itm.purity_id == 18
+                    );
+                    let productWeightUnitName =
+                      getUnit.length > 0 ? getUnit[0].unit_name : "";
 
                     return (
                       <React.Fragment key={index}>
-                        <TableRow className="product_details">
+                        <TableRow className='product_details'>
                           {!this.state.isCreateFrom ? (
                             <TableCell>
                               {!item.is_return ? (
                                 <Checkbox
-                                  onChange={(e) => this.handleCheckBox(e, index)}
+                                  onChange={(e) =>
+                                    this.handleCheckBox(e, index)
+                                  }
                                   checked={
                                     this.state.return_products[index].is_return
                                   }
@@ -2544,10 +2721,9 @@ class SaleForm extends React.Component {
                               item.product_type == "material" &&
                               item.materials[0].return_weight ? (
                                 <IconButton
-                                  aria-label="expand row"
-                                  size="small"
-                                  onClick={() => this.setOpen(item.id)}
-                                >
+                                  aria-label='expand row'
+                                  size='small'
+                                  onClick={() => this.setOpen(item.id)}>
                                   {this.checkOpen(item.id) ? (
                                     <KeyboardArrowUpIcon />
                                   ) : (
@@ -2562,29 +2738,14 @@ class SaleForm extends React.Component {
                             {item.product_name} X {item.quantity}
                           </TableCell>
                           <TableCell>{item.size_name}</TableCell>
-                          <TableCell >{item.certificate_no}</TableCell>
-                          <TableCell colSpan={6}>{item.total_weight}{" "}{productWeightUnitName}</TableCell>
-                          {this.state.isCreateFrom ? (
-                            <TableCell
-                              rowSpan={2}
-                              className="action_column"
-                              style={{ textAlign: "center" }}
-                            >
-                              {/*<IconButton className='del-icon' color="error" component="label"  onClick={() => this.handleProductDelete(index)}>
-                                                              <CloseIcon />
-                                                              </IconButton> */}
-                              <Button
-                                variant="contained"
-                                className="sale-cross-icon"
-                                onClick={() => this.handleProductDelete(index)}
-                              >
-                                {" "}
-                                X{" "}
-                              </Button>
-                            </TableCell>
-                          ) : null}
+                          <TableCell>{item.certificate_no}</TableCell>
+                          <TableCell colSpan={6}>
+                            {item.total_weight} {productWeightUnitName}
+                          </TableCell>
+                          <TableCell></TableCell>
+                          
                         </TableRow>
-                        <TableRow className="material_details">
+                        <TableRow className='material_details'>
                           <TableCell></TableCell>
                           {!this.state.isCreateFrom ? (
                             <>
@@ -2593,18 +2754,19 @@ class SaleForm extends React.Component {
                           ) : null}
                           <TableCell colSpan={2}>
                             {item.materials.map((m, key) => (
-                              <div className="products-data-container" key={key}>
-                                <div className="products-data-row">
+                              <div
+                                className='products-data-container'
+                                key={key}>
+                                <div className='products-data-row'>
                                   <div
-                                    className="products-data"
+                                    className='products-data'
                                     key={key}
-                                    style={{ position: "relative" }}
-                                  >
+                                    style={{ position: "relative" }}>
                                     {m.material_name} &nbsp;({m.purity}) &nbsp;
-                                    {m.weight} &nbsp;{m.unit_name} &nbsp; x &nbsp;{" "}
-                                    {m.rate}{" "}
+                                    {m.weight} &nbsp;{m.unit_name} &nbsp; x
+                                    &nbsp; {m.rate}{" "}
                                   </div>
-                                  <div className="products-amount">
+                                  <div className='products-amount'>
                                     {" "}
                                     = &nbsp; &nbsp;{m.amount}
                                   </div>
@@ -2614,15 +2776,15 @@ class SaleForm extends React.Component {
                           </TableCell>
                           <TableCell>
                             {item.materials.map((m, key) => (
-                              <div className="sale-discount-wrapper" key={key}>
+                              <div className='sale-discount-wrapper' key={key}>
                                 <>
                                   {m.max_discount_percent > 0 &&
                                   !this.state.isAssign ? (
                                     <>
                                       Dis@{" "}
-                                      <div className="sale-discount">
+                                      <div className='sale-discount'>
                                         <input
-                                          type="text"
+                                          type='text'
                                           value={m.discount_percent}
                                           onChange={(event) =>
                                             this.handleMaterialDisc(
@@ -2631,11 +2793,11 @@ class SaleForm extends React.Component {
                                               key
                                             )
                                           }
-                                          className="custom_input"
+                                          className='custom_input'
                                           max={m.max_discount_percent}
                                           disabled={isReturn ? "disabled" : ""}
                                         />
-                                        <div className="sale-discount-inner">
+                                        <div className='sale-discount-inner'>
                                           {" "}
                                           %
                                         </div>
@@ -2664,13 +2826,15 @@ class SaleForm extends React.Component {
                                 @{" "}
                                 <span style={{ position: "relative" }}>
                                   <input
-                                    type="text"
+                                    type='text'
                                     value={item.making_charge_discount_percent}
                                     onChange={(event) =>
                                       this.handleMakingDiscount(event, index)
                                     }
-                                    className="custom_input"
-                                    max={item.max_making_charge_discount_percent}
+                                    className='custom_input'
+                                    max={
+                                      item.max_making_charge_discount_percent
+                                    }
                                     disabled={isReturn ? "disabled" : ""}
                                   />
                                   <span
@@ -2678,8 +2842,7 @@ class SaleForm extends React.Component {
                                       position: "absolute",
                                       right: "1px",
                                       top: "0px",
-                                    }}
-                                  >
+                                    }}>
                                     {" "}
                                     %
                                   </span>
@@ -2696,37 +2859,51 @@ class SaleForm extends React.Component {
                           <TableCell>{item.total_discount}</TableCell>
                           <TableCell>{item.total_tax}</TableCell>
                           <TableCell>{item.total}</TableCell>
+                          {this.state.isCreateFrom ? (
+                            <TableCell
+                              
+                              className='action_column'
+                              style={{ textAlign: "center" }}>
+                              {/*<IconButton className='del-icon' color="error" component="label"  onClick={() => this.handleProductDelete(index)}>
+                                                              <CloseIcon />
+                                                              </IconButton> */}
+                              <Button
+                                variant='contained'
+                                className='sale-cross-icon'
+                                onClick={() => this.handleProductDelete(index)}>
+                                {" "}
+                                X{" "}
+                              </Button>
+                            </TableCell>
+                          ) : null}
                         </TableRow>
                         {!this.state.isCreateFrom &&
                         item.materials.length == 1 &&
                         this.checkOpen(item.id) ? (
-                          <TableRow className="table-inner-row">
+                          <TableRow className='table-inner-row'>
                             <TableCell
                               style={{ paddingBottom: 0, paddingTop: 0 }}
-                              colSpan={12}
-                            >
+                              colSpan={12}>
                               <Collapse
                                 in={this.checkOpen(item.id)}
-                                timeout="auto"
-                                unmountOnExit
-                              >
+                                timeout='auto'
+                                unmountOnExit>
                                 <Box sx={{ margin: 1 }}>
                                   <Typography
-                                    variant="h6"
+                                    variant='h6'
                                     gutterBottom
-                                    component="div"
-                                  ></Typography>
-                                  <Table size="medium" aria-label="purchases">
+                                    component='div'></Typography>
+                                  <Table size='medium' aria-label='purchases'>
                                     <TableHead>
-                                      <TableRow className="pur-details-inner-table">
+                                      <TableRow className='pur-details-inner-table'>
                                         <TableCell>Quantity</TableCell>
                                         <TableCell>Weight</TableCell>
                                         <TableCell>Unit</TableCell>
                                       </TableRow>
                                     </TableHead>
-                                    <TableBody className="pur-details-table-body">
+                                    <TableBody className='pur-details-table-body'>
                                       <TableRow>
-                                        <TableCell scope="row">
+                                        <TableCell scope='row'>
                                           {item.materials[0].return_qty}
                                         </TableCell>
                                         <TableCell>
@@ -2828,26 +3005,24 @@ class SaleForm extends React.Component {
           </Grid>
 
           <div
-            class="modal fade"
-            id="noteModal"
-            tabindex="-1"
-            aria-labelledby="exampleModalLabel"
-            aria-hidden="true"
-          >
-            <div class="modal-dialog modal-dialog-centered">
-              <div class="modal-content">
-                <div class="modal-header">
-                  <h1 class="modal-title fs-5" id="exampleModalLabel">
+            class='modal fade'
+            id='noteModal'
+            tabindex='-1'
+            aria-labelledby='exampleModalLabel'
+            aria-hidden='true'>
+            <div class='modal-dialog modal-dialog-centered'>
+              <div class='modal-content'>
+                <div class='modal-header'>
+                  <h1 class='modal-title fs-5' id='exampleModalLabel'>
                     sales Notes
                   </h1>
                   <button
-                    type="button"
-                    class="btn-close"
-                    data-bs-dismiss="modal"
-                    aria-label="Close"
-                  ></button>
+                    type='button'
+                    class='btn-close'
+                    data-bs-dismiss='modal'
+                    aria-label='Close'></button>
                 </div>
-                <div class="modal-body">
+                <div class='modal-body'>
                   {/* <Grid
                     item
                     xs={12}
@@ -2864,48 +3039,63 @@ class SaleForm extends React.Component {
                     />
                   </Grid> */}
                   <textarea
-                    class="form-control"
-                    placeholder="Leave a comment here"
-                    id="floatingTextarea2"
+                    class='form-control'
+                    placeholder='Leave a comment here'
+                    id='floatingTextarea2'
                     style={{ height: "100px" }}
                     value={formValues.notes}
                     onChange={(event) =>
                       this.handleDefaultChange(event, "notes")
-                    }
-                  ></textarea>
+                    }></textarea>
                   {/* <label for="floatingTextarea2">Comments</label> */}
                 </div>
               </div>
             </div>
           </div>
+          <Grid
+            item
+            xs={12}
+            md={12}
+            className='materialContainerGrid create-input p-add-product border-radius-0'>
           {!this.state.isAssign ? (
             <>
+            <TableContainer component={Paper}>
+              <Table
+                sx={{ minWidth: 650 }}
+                aria-label='simple table'
+                className='materialContainer'>
               <TableRow
-                style={{
-                  width: "95%",
+                sx={{
+                  width: "100%",
                   display: "flex",
-                  justifyContent: "space-between",
+                  flexDirection: { xs: "column", sm: "row" },
+                  justifyContent: { xs: "flex-start", sm: "flex-start" },
+                  gap: { xs: 0, sm: 0 },
                 }}
               >
-                <TableCell></TableCell>
-                <TableCell colSpan="4">
-                  <div className="unique-wrapper d-flex align-items-center">
+                <TableCell className=' mob-hide'></TableCell>
+                <TableCell className="materialDiscSec" colSpan='3'>
+                  <div className='unique-wrapper d-flex align-items-center'>
                     {/*  */}
-                    <div className=" d-flex align-items-center ">
+                    <div className=' d-flex align-items-center '>
                       {this.state.unique_materials.map((item, index) => (
                         <React.Fragment key={index}>
-                          <div className="unique_materials ms-3">
-                            <p className="mb-2" style={{ fontSize: "smaller", color:"#000000" }}>
-                              {item.material_name} ({item["total_"+item.material_id].toFixed(3)} {item.unit})
+                          <div className='unique_materials ms-3'>
+                            <p
+                              className='mb-2'
+                              style={{ fontSize: "smaller", color: "#000000" }}>
+                              {item.material_name} (
+                              {item["total_" + item.material_id].toFixed(3)}{" "}
+                              {item.unit})
                             </p>
                             <span style={{ position: "relative" }}>
                               <input
-                                type="text"
+                                type='text'
                                 value={item.amount}
                                 onChange={(event) =>
                                   this.handleCommonDis(event, index)
                                 }
-                                className="custom_input"
+                                className='custom_input'
                                 style={{
                                   width: "100%",
                                   height: "40px",
@@ -2918,14 +3108,15 @@ class SaleForm extends React.Component {
                                   position: "absolute",
                                   right: "5px",
                                   top: "0px",
-                                }}
-                              >
+                                }}>
                                 {" "}
-                                <select onChange={(event) => this.handleDiscountType(event, index)}>
-                                  <option value="discount" >Discount %</option>
-                                  <option value="rate" >Flat rate</option>
+                                <select
+                                  onChange={(event) =>
+                                    this.handleDiscountType(event, index)
+                                  }>
+                                  <option value='discount'>Discount %</option>
+                                  <option value='rate'>Flat rate</option>
                                 </select>
-                                
                               </span>
                             </span>
                           </div>
@@ -2948,20 +3139,23 @@ class SaleForm extends React.Component {
                                                         />
                                                 */}
                 </TableCell>
-                <TableCell sx={{ verticalAlign: "top" }}>
+                <TableCell className="makingDiscSec" sx={{ verticalAlign: "top" }}>
                   {this.haveMakingComonDis() ? (
                     <>
-                      <p className="mb-2" style={{ fontSize: "smaller", color:"#000000" }}>
+                    <div class="unique_materials ms-3" >
+                      <p
+                        className='mb-2'
+                        style={{ fontSize: "smaller", color: "#000000" }}>
                         Making Disc
                       </p>
                       <span style={{ position: "relative" }}>
                         <input
-                          type="text"
+                          type='text'
                           value={this.state.common_making_discount}
                           onChange={(event) =>
                             this.handleCommonMakingDis(event)
                           }
-                          className="custom_input"
+                          className='custom_input'
                           style={{
                             width: "90%",
                             height: "40px",
@@ -2974,60 +3168,62 @@ class SaleForm extends React.Component {
                             position: "absolute",
                             right: "5px",
                             top: "0px",
-                          }}
-                        >
+                          }}>
                           {" "}
                           %
                         </span>
                       </span>
+                    </div>
                     </>
                   ) : null}
                 </TableCell>
-                <TableCell className="d-flex align-items-center">
-                  <i
-                    class="bi bi-pencil-square fs-4 "
-                    data-bs-toggle="modal"
-                    data-bs-target="#noteModal"
-                  ></i>
-                </TableCell>
-                <TableCell className="d-flex align-items-center">
-                  <b className="mob-hide">
-                    Price
+                
+                <TableCell className=' align-items-center mob-hide'>
+                  <b className='price-cal '> {/*  */}
+                    <span>Price</span>
                     <br />
                     {priceFormat(formValues.total_tag_price)}
                   </b>
                 </TableCell>
-                <TableCell className="d-flex align-items-center">
-                  <b className="mob-hide">
-                    Dist
+                <TableCell className=' align-items-center mob-hide'>
+                  <b className='price-cal '> {/*  */}
+                    <span>Dist</span>
                     <br />
                     {priceFormat(formValues.product_discount)}
                   </b>
                 </TableCell>
-                <TableCell className="d-flex align-items-center">
-                  <b className="mob-hide">
-                    Tax
+                <TableCell className=' align-items-center mob-hide'>
+                  <b className='price-cal '> {/*  */}
+                    <span>Tax</span>
                     <br />
                     {priceFormat(formValues.total_tax)}
                   </b>
                 </TableCell>
-                {/* <TableCell colSpan="2" className="d-flex align-items-center">
-                        <b className="mob-hide">
-                          Total Amount
-                          <br />
-                          {displayAmount(formValues.total_amount)}
-                        </b>
-                      </TableCell> */}
+                <TableCell className=" align-items-center mob-hide">
+                  <b className="price-cal">
+                    Total
+                    <br />
+                    {formValues.total_amount}
+                  </b>
+                </TableCell>
+                <TableCell className=' align-items-center mob-hide'>
+                  <div className="sticky-note"><i
+                    class='bi bi-pencil-square fs-4 '
+                    data-bs-toggle='modal'
+                    data-bs-target='#noteModal'></i></div>
+                </TableCell>
               </TableRow>
+              </Table>
+            </TableContainer>
             </>
           ) : null}
+          </Grid>
           <Grid item xs={12} md={8} style={{}}>
             <Grid
               container
               spacing={2}
-              className="mob_responsive_purchase_input"
-            >
-              <ul className="sale_total">
+              className='mob_responsive_purchase_input'>
+              <ul className='sale_total'>
                 <li>
                   Price <span>{priceFormat(formValues.total_tag_price)}</span>
                 </li>
@@ -3043,38 +3239,36 @@ class SaleForm extends React.Component {
               </ul>
             </Grid>
           </Grid>
-          {!this.state.formValues.user_id?<Grid item xs={12} md={8} style={{}}>
-            <Grid
-              container
-              spacing={2}
-              columnSpacing={{ xs: 1, sm: 2, md: 2 }}
-              className="mob_responsive_purchase_input"
-            >
-              {(this.isSalesExecutive ||
-                this.isDistributor ||
-                this.isSuperAdmin ||
-                this.isAdmin) &&
-              !this.state.isAssign &&
-              !formValues.user_id &&
-              this.state.isCreateFrom &&
-              isEmpty(this.props.query.get("sale_on_approval")) ? (
-                <Grid
-                  item
-                  xs={12}
-                  className="create-input button-right  "
-                  style={{ paddingTop: "0px", paddingBottom: "7px" }}
-                >
-                  <Button
-                    variant="contained"
-                    size="small"
-                    className="d-flex m-auto"
-                    onClick={this.handleTransfer}
-                  >
-                    Transfer
-                  </Button>
-                </Grid>
-              ) : null}
-              {/* <Grid item xs={12} md={12} className='create-input' style={{ paddingTop: '0px' }}>
+          {!this.state.formValues.user_id ? (
+            <Grid item xs={12} md={8} style={{}}>
+              <Grid
+                container
+                spacing={2}
+                columnSpacing={{ xs: 1, sm: 2, md: 2 }}
+                className='mob_responsive_purchase_input'>
+                {(this.isSalesExecutive ||
+                  this.isDistributor ||
+                  this.isSuperAdmin ||
+                  this.isAdmin) &&
+                !this.state.isAssign &&
+                !formValues.user_id &&
+                this.state.isCreateFrom &&
+                isEmpty(this.props.query.get("sale_on_approval")) ? (
+                  <Grid
+                    item
+                    xs={12}
+                    className='create-input button-right  '
+                    style={{ paddingTop: "0px", paddingBottom: "7px" }}>
+                    <Button
+                      variant='contained'
+                      size='small'
+                      className='d-flex m-auto'
+                      onClick={this.handleTransfer}>
+                      Transfer
+                    </Button>
+                  </Grid>
+                ) : null}
+                {/* <Grid item xs={12} md={12} className='create-input' style={{ paddingTop: '0px' }}>
                                 <TextareaAutosize
                                     className='description'
                                     minRows={3}
@@ -3084,84 +3278,81 @@ class SaleForm extends React.Component {
                                     onChange={(event) => this.handleDefaultChange(event, 'notes')}
                                 />
                             </Grid> */}
-              {this.props.query.get("all_added") == 0 ? (
-                <Grid item xs={12} md={12} className="create-input">
-                  <Alert variant="filled" severity="error">
-                    You doesn't have enough stock.
-                  </Alert>
-                </Grid>
-              ) : null}
-              {(this.isSalesExecutive || this.isDistributor) &&
-              this.state.isAssign ? (
-                <>
-                  {formValues.image_file ? (
-                    <Grid
-                      item
-                      xs={12}
-                      md={2}
-                      className="create-input"
-                      style={{ position: "relative" }}
-                    >
-                      <DeleteIcon
-                        onClick={this.deleteImage}
-                        className="image_delete"
-                        style={{
-                          position: "absolute",
-                          right: 0,
-                          color: "#ff0000",
-                          cursor: "pointer",
-                        }}
-                      />
-                      <img
-                        src={this.getImageSrc(formValues.image_file)}
-                        id="logo-img"
-                        style={{ height: "100px", width: "100px" }}
-                      />
-                    </Grid>
-                  ) : (
-                    <Grid item xs={12} md={2} className="create-input">
-                      <img
-                        src={noImage}
-                        id="logo-img1"
-                        style={{ height: "100px", width: "100px" }}
-                      />
-                    </Grid>
-                  )}
-                  <Grid item xs={12} md={4} className="create-input">
-                    <Button
-                      variant="contained"
-                      className="image-button"
-                      component="label"
-                      endIcon={<CloudUploadIcon />}
-                    >
-                      Image
-                      <input
-                        name="main_image"
-                        hidden
-                        accept="image/*"
-                        type="file"
-                        onChange={(e) => this.onChangeImage(e)}
-                        ref={this.imageFileRef}
-                      />
-                    </Button>
+                {this.props.query.get("all_added") == 0 ? (
+                  <Grid item xs={12} md={12} className='create-input'>
+                    <Alert variant='filled' severity='error'>
+                      You doesn't have enough stock.
+                    </Alert>
                   </Grid>
-                </>
-              ) : null}
+                ) : null}
+                {(this.isSalesExecutive || this.isDistributor) &&
+                this.state.isAssign ? (
+                  <>
+                    {formValues.image_file ? (
+                      <Grid
+                        item
+                        xs={12}
+                        md={2}
+                        className='create-input'
+                        style={{ position: "relative" }}>
+                        <DeleteIcon
+                          onClick={this.deleteImage}
+                          className='image_delete'
+                          style={{
+                            position: "absolute",
+                            right: 0,
+                            color: "#ff0000",
+                            cursor: "pointer",
+                          }}
+                        />
+                        <img
+                          src={this.getImageSrc(formValues.image_file)}
+                          id='logo-img'
+                          style={{ height: "100px", width: "100px" }}
+                        />
+                      </Grid>
+                    ) : (
+                      <Grid item xs={12} md={2} className='create-input'>
+                        <img
+                          src={noImage}
+                          id='logo-img1'
+                          style={{ height: "100px", width: "100px" }}
+                        />
+                      </Grid>
+                    )}
+                    <Grid item xs={12} md={4} className='create-input'>
+                      <Button
+                        variant='contained'
+                        className='image-button'
+                        component='label'
+                        endIcon={<CloudUploadIcon />}>
+                        Image
+                        <input
+                          name='main_image'
+                          hidden
+                          accept='image/*'
+                          type='file'
+                          onChange={(e) => this.onChangeImage(e)}
+                          ref={this.imageFileRef}
+                        />
+                      </Button>
+                    </Grid>
+                  </>
+                ) : null}
+              </Grid>
             </Grid>
-          </Grid>:null}
+          ) : null}
           {!this.state.isAssign && formValues.user_id ? (
             <Grid
               item
               xs={12}
               md={4}
-              style={{ paddingRight: "16px", paddingTop: "8px" }}
-            >
+              style={{ paddingRight: "16px", paddingTop: "8px" }}>
               <Grid
                 container
                 spacing={2}
                 columnSpacing={{ xs: 1, sm: 2, md: 2 }}
-                className="mob_responsive_purchase_input_table"
-              >
+                className='mob_responsive_purchase_input_table'>
                 {/*<Grid item xs={12}>
                                     <TextField
                                         label="Taxable Amount"
@@ -3176,26 +3367,26 @@ class SaleForm extends React.Component {
                                 </Grid>*/}
                 {!isReturn ? (
                   <>
-                    
-                    <Grid item xs={12} className="pt-5">
+                    <Grid item xs={12} className='pt-5'>
                       <Grid
                         container
                         spacing={2}
                         columnSpacing={{ xs: 1, sm: 2, md: 2 }}
-                        className="display_center justify-content-end"
-                      >
-                        <Grid item xs={4} md={6} className="text-right pt-0">
-                          <span className="tax-text"> Sub Total </span>
+                        className='display_center justify-content-end'>
+                        <Grid item xs={4} md={6} className='text-right pt-0'>
+                          <span className='tax-text'> Sub Total </span>
                         </Grid>
-                        <Grid item xs={5} md={6} className="pt-0">
+                        <Grid item xs={5} md={6} className='pt-0'>
                           <TextField
-                            className="ft-amount"
+                            className='ft-amount'
                             fullWidth
-                            value={priceFormat(formValues.taxable_amount).toFixed(2)}
+                            value={priceFormat(
+                              formValues.taxable_amount
+                            ).toFixed(2)}
                             disabled
                             InputProps={{
                               startAdornment: (
-                                <InputAdornment position="start">
+                                <InputAdornment position='start'>
                                   ₹
                                 </InputAdornment>
                               ),
@@ -3204,29 +3395,28 @@ class SaleForm extends React.Component {
                           />
                         </Grid>
                       </Grid>
-                    </Grid>  
-                    
+                    </Grid>
+
                     {formValues.cgst_tax > 0 ? (
-                      <Grid item xs={12} md={12} className="pt-5">
+                      <Grid item xs={12} md={12} className='pt-5'>
                         <Grid
                           container
                           columnSpacing={{ xs: 1, sm: 2, md: 2 }}
                           spacing={2}
-                          className="display_center justify-content-end"
-                        >
-                          <Grid item xs={4} md={6} className="text-right pt-0">
-                            <span className="tax-text">CGST Amount</span>
+                          className='display_center justify-content-end'>
+                          <Grid item xs={4} md={6} className='text-right pt-0'>
+                            <span className='tax-text'>CGST Amount</span>
                           </Grid>
-                          <Grid item xs={5} md={6} className="pt-0">
+                          <Grid item xs={5} md={6} className='pt-0'>
                             <TextField
-                              label="CGST"
-                              variant="outlined"
+                              label='CGST'
+                              variant='outlined'
                               fullWidth
                               value={formValues.cgst_tax}
                               disabled
                               InputProps={{
                                 startAdornment: (
-                                  <InputAdornment position="start">
+                                  <InputAdornment position='start'>
                                     ₹
                                   </InputAdornment>
                                 ),
@@ -3238,24 +3428,23 @@ class SaleForm extends React.Component {
                       </Grid>
                     ) : null}
                     {formValues.sgst_tax > 0 ? (
-                      <Grid item xs={12} md={12} className="pt-5">
+                      <Grid item xs={12} md={12} className='pt-5'>
                         <Grid
                           container
                           spacing={2}
                           columnSpacing={{ xs: 1, sm: 2, md: 2 }}
-                          className="display_center justify-content-end"
-                        >
-                          <Grid item xs={4} md={6} className="text-right pt-0">
-                            <span className="tax-text">SGST Amount</span>
+                          className='display_center justify-content-end'>
+                          <Grid item xs={4} md={6} className='text-right pt-0'>
+                            <span className='tax-text'>SGST Amount</span>
                           </Grid>
-                          <Grid item xs={5} md={6} className="pt-0">
+                          <Grid item xs={5} md={6} className='pt-0'>
                             <TextField
                               fullWidth
                               value={formValues.sgst_tax}
                               disabled
                               InputProps={{
                                 startAdornment: (
-                                  <InputAdornment position="start">
+                                  <InputAdornment position='start'>
                                     ₹
                                   </InputAdornment>
                                 ),
@@ -3273,20 +3462,19 @@ class SaleForm extends React.Component {
                           container
                           spacing={2}
                           columnSpacing={{ xs: 1, sm: 2, md: 2 }}
-                          className="display_center justify-content-end"
-                        >
-                          <Grid item xs={4} md={6} className="text-right pt-0">
-                            <span className="tax-text">IGST Amount</span>
+                          className='display_center justify-content-end'>
+                          <Grid item xs={4} md={6} className='text-right pt-0'>
+                            <span className='tax-text'>IGST Amount</span>
                           </Grid>
-                          <Grid item xs={5} md={6} className="pt-0">
+                          <Grid item xs={5} md={6} className='pt-0'>
                             <TextField
-                              className="ft-amount"
+                              className='ft-amount'
                               fullWidth
                               value={formValues.igst_tax}
                               disabled
                               InputProps={{
                                 startAdornment: (
-                                  <InputAdornment position="start">
+                                  <InputAdornment position='start'>
                                     ₹
                                   </InputAdornment>
                                 ),
@@ -3297,25 +3485,24 @@ class SaleForm extends React.Component {
                         </Grid>
                       </Grid>
                     ) : null}
-                    <Grid item xs={12} className="pt-5">
+                    <Grid item xs={12} className='pt-5'>
                       <Grid
                         container
                         spacing={2}
                         columnSpacing={{ xs: 1, sm: 2, md: 2 }}
-                        className="display_center justify-content-end"
-                      >
-                        <Grid item xs={4} md={6} className="text-right pt-0">
-                          <span className="tax-text">Total Amount</span>
+                        className='display_center justify-content-end'>
+                        <Grid item xs={4} md={6} className='text-right pt-0'>
+                          <span className='tax-text'>Total Amount</span>
                         </Grid>
-                        <Grid item xs={8} md={6} className="pt-0">
+                        <Grid item xs={5} md={6} className='pt-0'>
                           <TextField
-                            className="ft-amount"
+                            className='ft-amount'
                             fullWidth
                             value={formValues.total_amount}
                             disabled
                             InputProps={{
                               startAdornment: (
-                                <InputAdornment position="start">
+                                <InputAdornment position='start'>
                                   ₹
                                 </InputAdornment>
                               ),
@@ -3323,23 +3510,21 @@ class SaleForm extends React.Component {
                             }}
                           />
                         </Grid>
-                      </Grid> 
+                      </Grid>
                     </Grid>
-                    
-                    
-                    <Grid item xs={12} className="pt-5">
+
+                    <Grid item xs={12} className='pt-5'>
                       <Grid
                         container
                         spacing={2}
                         columnSpacing={{ xs: 1, sm: 2, md: 2 }}
-                        className="display_center justify-content-end"
-                      >
-                        <Grid item xs={4} md={6} className="text-right pt-0">
-                          <span className="tax-text"> Cash Discount </span>
+                        className='display_center justify-content-end'>
+                        <Grid item xs={4} md={6} className='text-right pt-0'>
+                          <span className='tax-text'> Cash Discount </span>
                         </Grid>
-                        <Grid item xs={5} md={6} className="pt-0">
+                        <Grid item xs={5} md={6} className='pt-0'>
                           <TextField
-                            className="ft-amount"
+                            className='ft-amount'
                             fullWidth
                             value={formValues.discount}
                             onChange={(event) =>
@@ -3347,7 +3532,7 @@ class SaleForm extends React.Component {
                             }
                             InputProps={{
                               startAdornment: (
-                                <InputAdornment position="start">
+                                <InputAdornment position='start'>
                                   ₹
                                 </InputAdornment>
                               ),
@@ -3356,26 +3541,25 @@ class SaleForm extends React.Component {
                         </Grid>
                       </Grid>
                     </Grid>
-                    
+
                     {formValues.advance_amount > 0 ? (
-                      <Grid item xs={12} className="pt-5">
+                      <Grid item xs={12} className='pt-5'>
                         <Grid
                           container
                           spacing={2}
                           columnSpacing={{ xs: 1, sm: 2, md: 2 }}
-                          className="display_center justify-content-end"
-                        >
-                          <Grid item xs={4} md={6} className="text-right pt-0">
-                            <span className="tax-text"> Advance Amount </span>
+                          className='display_center justify-content-end'>
+                          <Grid item xs={4} md={6} className='text-right pt-0'>
+                            <span className='tax-text'> Advance Amount </span>
                           </Grid>
-                          <Grid item xs={5} md={6} className="pt-0">
+                          <Grid item xs={5} md={6} className='pt-0'>
                             <TextField
-                              className="ft-amount"
+                              className='ft-amount'
                               fullWidth
                               value={formValues.advance_amount}
                               InputProps={{
                                 startAdornment: (
-                                  <InputAdornment position="start">
+                                  <InputAdornment position='start'>
                                     ₹
                                   </InputAdornment>
                                 ),
@@ -3394,25 +3578,24 @@ class SaleForm extends React.Component {
                       </Grid>
                     ) : null}
 
-                    <Grid item xs={12} className="pt-5">
+                    <Grid item xs={12} className='pt-5'>
                       <Grid
                         container
                         spacing={2}
                         columnSpacing={{ xs: 1, sm: 2, md: 2 }}
-                        className="display_center justify-content-end"
-                      >
-                        <Grid item xs={4} md={6} className="text-right pt-0">
-                          <span className="tax-text">Total Payable</span>
+                        className='display_center justify-content-end'>
+                        <Grid item xs={4} md={6} className='text-right pt-0'>
+                          <span className='tax-text'>Total Payable</span>
                         </Grid>
-                        <Grid item xs={8} md={6} className="pt-0">
+                        <Grid item xs={5} md={6} className='pt-0'>
                           <TextField
-                            className="ft-amount"
+                            className='ft-amount'
                             fullWidth
                             value={formValues.total_payable}
                             disabled
                             InputProps={{
                               startAdornment: (
-                                <InputAdornment position="start">
+                                <InputAdornment position='start'>
                                   ₹
                                 </InputAdornment>
                               ),
@@ -3420,25 +3603,28 @@ class SaleForm extends React.Component {
                             }}
                           />
                         </Grid>
-                      </Grid> 
+                      </Grid>
                     </Grid>
                   </>
                 ) : (
                   <>
-                    <Grid item xs={12} md={12} className="pt-5">
-                      <Grid container spacing={2} className="display_center justify-content-end">
-                        <Grid item xs={4} md={6} className="text-right pt-0">
+                    <Grid item xs={12} md={12} className='pt-5'>
+                      <Grid
+                        container
+                        spacing={2}
+                        className='display_center justify-content-end'>
+                        <Grid item xs={4} md={6} className='text-right pt-0'>
                           Return Product Amt
                         </Grid>
-                        <Grid item xs={5} md={6} className="pt-0">
+                        <Grid item xs={5} md={6} className='pt-0'>
                           <TextField
-                            className="ft-amount"
+                            className='ft-amount'
                             fullWidth
                             value={this.state.product_amount}
                             disabled
                             InputProps={{
                               startAdornment: (
-                                <InputAdornment position="start">
+                                <InputAdornment position='start'>
                                   ₹
                                 </InputAdornment>
                               ),
@@ -3449,20 +3635,23 @@ class SaleForm extends React.Component {
                       </Grid>
                     </Grid>
                     {this.state.return_discount > 0 ? (
-                      <Grid item xs={12} md={12} className="pt-5">
-                        <Grid container spacing={2} className="display_center justify-content-end">
-                          <Grid item xs={4} md={6} className="text-right pt-0">
+                      <Grid item xs={12} md={12} className='pt-5'>
+                        <Grid
+                          container
+                          spacing={2}
+                          className='display_center justify-content-end'>
+                          <Grid item xs={4} md={6} className='text-right pt-0'>
                             Discount
                           </Grid>
-                          <Grid item xs={5} md={6} className="pt-0">
+                          <Grid item xs={5} md={6} className='pt-0'>
                             <TextField
-                              className="ft-amount"
+                              className='ft-amount'
                               fullWidth
                               value={this.state.return_discount}
                               disabled
                               InputProps={{
                                 startAdornment: (
-                                  <InputAdornment position="start">
+                                  <InputAdornment position='start'>
                                     ₹
                                   </InputAdornment>
                                 ),
@@ -3474,20 +3663,23 @@ class SaleForm extends React.Component {
                       </Grid>
                     ) : null}
                     {formValues.have_return_charge ? (
-                      <Grid item xs={12} md={12} className="pt-5">
-                        <Grid container spacing={2} className="display_center justify-content-end">
-                          <Grid item xs={4} md={6} className="text-right pt-0">
+                      <Grid item xs={12} md={12} className='pt-5'>
+                        <Grid
+                          container
+                          spacing={2}
+                          className='display_center justify-content-end'>
+                          <Grid item xs={4} md={6} className='text-right pt-0'>
                             Return Charge
                           </Grid>
-                          <Grid item xs={5} md={6} className="pt-0">
+                          <Grid item xs={5} md={6} className='pt-0'>
                             <TextField
-                              className="ft-amount"
+                              className='ft-amount'
                               fullWidth
                               value={this.state.return_charge}
                               disabled
                               InputProps={{
                                 startAdornment: (
-                                  <InputAdornment position="start">
+                                  <InputAdornment position='start'>
                                     ₹
                                   </InputAdornment>
                                 ),
@@ -3499,19 +3691,18 @@ class SaleForm extends React.Component {
                       </Grid>
                     ) : null}
                     {formValues.products.length == 1 ? (
-                      <Grid item xs={12} className="pt-5">
+                      <Grid item xs={12} className='pt-5'>
                         <Grid
                           container
                           spacing={2}
                           columnSpacing={{ xs: 1, sm: 2, md: 2 }}
-                          className="display_center justify-content-end"
-                        >
-                          <Grid item xs={4} md={6} className="text-right pt-0">
-                            <span className="tax-text"> Cash Discount </span>
+                          className='display_center justify-content-end'>
+                          <Grid item xs={4} md={6} className='text-right pt-0'>
+                            <span className='tax-text'> Cash Discount </span>
                           </Grid>
-                          <Grid item xs={5} md={6} className="pt-0">
+                          <Grid item xs={5} md={6} className='pt-0'>
                             <TextField
-                              className="ft-amount"
+                              className='ft-amount'
                               fullWidth
                               value={formValues.discount}
                               onChange={(event) =>
@@ -3519,7 +3710,7 @@ class SaleForm extends React.Component {
                               }
                               InputProps={{
                                 startAdornment: (
-                                  <InputAdornment position="start">
+                                  <InputAdornment position='start'>
                                     ₹
                                   </InputAdornment>
                                 ),
@@ -3530,14 +3721,17 @@ class SaleForm extends React.Component {
                         </Grid>
                       </Grid>
                     ) : null}
-                    <Grid item xs={12} md={12} className="pt-5">
-                      <Grid container spacing={2} className="display_center justify-content-end">
-                        <Grid item xs={4} md={6} className="text-right pt-0">
+                    <Grid item xs={12} md={12} className='pt-5'>
+                      <Grid
+                        container
+                        spacing={2}
+                        className='display_center justify-content-end'>
+                        <Grid item xs={4} md={6} className='text-right pt-0'>
                           <b>Return Amount</b>
                         </Grid>
-                        <Grid item xs={5} md={6} className="pt-0">
+                        <Grid item xs={5} md={6} className='pt-0'>
                           <TextField
-                            className="ft-amount"
+                            className='ft-amount'
                             fullWidth
                             value={this.state.return_amount}
                             onChange={(e) =>
@@ -3545,7 +3739,7 @@ class SaleForm extends React.Component {
                             }
                             InputProps={{
                               startAdornment: (
-                                <InputAdornment position="start">
+                                <InputAdornment position='start'>
                                   ₹
                                 </InputAdornment>
                               ),
@@ -3559,30 +3753,28 @@ class SaleForm extends React.Component {
                 )}
 
                 {!isReturn ? (
-                  <Grid item xs={12} className="pt-5">
+                  <Grid item xs={12} className='pt-5'>
                     <Grid
                       container
                       spacing={2}
                       columnSpacing={{ xs: 1, sm: 2, md: 2 }}
-                      className="display_center justify-content-end"
-                    >
-                      <Grid item xs={4} md={6} className="text-right pt-0">
-                        <span className="tax-text"> Payment Mode </span>
+                      className='display_center justify-content-end'>
+                      <Grid item xs={4} md={6} className='text-right pt-0'>
+                        <span className='tax-text'> Payment Mode </span>
                       </Grid>
-                      <Grid item xs={5} md={6} className="pt-0">
-                        <FormControl fullWidth className="ft-amount">
+                      <Grid item xs={5} md={6} className='pt-0'>
+                        <FormControl fullWidth className='ft-amount'>
                           <Select
-                            className="input-inner"
+                            className='input-inner'
                             value={formValues.payment_mode}
                             fullWidth
                             onChange={(event) =>
                               this.handleDefaultChange(event, "payment_mode")
-                            }
-                          >
-                            <MenuItem value="cash">Cash</MenuItem>
-                            <MenuItem value="cheque">Cheque</MenuItem>
-                            <MenuItem value="imps_neft">NEFT/IMPS/UPI</MenuItem>
-                            <MenuItem value="online">Online</MenuItem>
+                            }>
+                            <MenuItem value='cash'>Cash</MenuItem>
+                            <MenuItem value='cheque'>Cheque</MenuItem>
+                            <MenuItem value='imps_neft'>BANKING/RTGS/NEFT</MenuItem>
+                            <MenuItem value='online'>UPI/PhonePe/Gpay</MenuItem>
                           </Select>
                         </FormControl>
                       </Grid>
@@ -3591,19 +3783,18 @@ class SaleForm extends React.Component {
                 ) : null}
                 {formValues.payment_mode == "imps_neft" ||
                 formValues.payment_mode == "upi" ? (
-                  <Grid item xs={12} className="pt-5">
+                  <Grid item xs={12} className='pt-5'>
                     <Grid
                       container
                       spacing={2}
                       columnSpacing={{ xs: 1, sm: 2, md: 2 }}
-                      className="display_center justify-content-end"
-                    >
-                      <Grid item xs={4} md={6} className="text-right pt-0">
-                        <span className="tax-text"> Transaction No </span>
+                      className='display_center justify-content-end'>
+                      <Grid item xs={4} md={6} className='text-right pt-0'>
+                        <span className='tax-text'> Transaction No </span>
                       </Grid>
-                      <Grid item xs={5} md={6} className="pt-0">
+                      <Grid item xs={5} md={6} className='pt-0'>
                         <TextField
-                          className="ft-amount"
+                          className='ft-amount'
                           fullWidth
                           value={formValues.transaction_no}
                           onChange={(event) =>
@@ -3615,19 +3806,18 @@ class SaleForm extends React.Component {
                   </Grid>
                 ) : null}
                 {formValues.payment_mode == "cheque" ? (
-                  <Grid item xs={12} className="pt-5">
+                  <Grid item xs={12} className='pt-5'>
                     <Grid
                       container
                       spacing={2}
                       columnSpacing={{ xs: 1, sm: 2, md: 2 }}
-                      className="display_center justify-content-end"
-                    >
-                      <Grid item xs={4} md={6} className="text-right pt-0">
-                        <span className="tax-text"> Cheque No </span>
+                      className='display_center justify-content-end'>
+                      <Grid item xs={4} md={6} className='text-right pt-0'>
+                        <span className='tax-text'> Cheque No </span>
                       </Grid>
-                      <Grid item xs={5} md={6} className="pt-0">
+                      <Grid item xs={5} md={6} className='pt-0'>
                         <TextField
-                          className="ft-amount"
+                          className='ft-amount'
                           fullWidth
                           value={formValues.cheque_no}
                           onChange={(event) =>
@@ -3640,19 +3830,18 @@ class SaleForm extends React.Component {
                 ) : null}
                 {!isReturn ? (
                   <>
-                    <Grid item xs={12} className="pt-5">
+                    <Grid item xs={12} className='pt-5'>
                       <Grid
                         container
                         spacing={2}
                         columnSpacing={{ xs: 1, sm: 2, md: 2 }}
-                        className="display_center justify-content-end"
-                      >
-                        <Grid item xs={4} md={6} className="text-right pt-0">
-                          <span className="tax-text"> Pay Now </span>
+                        className='display_center justify-content-end'>
+                        <Grid item xs={4} md={6} className='text-right pt-0'>
+                          <span className='tax-text'> Pay Now </span>
                         </Grid>
-                        <Grid item xs={5} md={6} className="pt-0">
+                        <Grid item xs={5} md={6} className='pt-0'>
                           <TextField
-                            className="ft-amount"
+                            className='ft-amount'
                             fullWidth
                             value={formValues.paid_amount}
                             onChange={(event) =>
@@ -3661,7 +3850,7 @@ class SaleForm extends React.Component {
                             error={formErros.paid_amount}
                             InputProps={{
                               startAdornment: (
-                                <InputAdornment position="start">
+                                <InputAdornment position='start'>
                                   ₹
                                 </InputAdornment>
                               ),
@@ -3670,25 +3859,26 @@ class SaleForm extends React.Component {
                         </Grid>
                       </Grid>
                     </Grid>
-                    <Grid item xs={12} className="pt-5">
+                    <Grid item xs={12} className='pt-5'>
                       <Grid
                         container
                         spacing={2}
                         columnSpacing={{ xs: 1, sm: 2, md: 2 }}
-                        className="display_center justify-content-end"
-                      >
-                        <Grid item xs={4} md={6} className="text-right pt-0">
-                          <span className="tax-text"> Due Amount </span>
+                        className='display_center justify-content-end'>
+                        <Grid item xs={4} md={6} className='text-right pt-0'>
+                          <span className='tax-text'> Due Amount </span>
                         </Grid>
-                        <Grid item xs={5} md={6} className="pt-0">
+                        <Grid item xs={5} md={6} className='pt-0'>
                           <TextField
-                            className="ft-amount"
+                            className='ft-amount'
                             fullWidth
-                            value={priceFormat(formValues.due_amount).toFixed(2)}
+                            value={priceFormat(formValues.due_amount).toFixed(
+                              2
+                            )}
                             disabled
                             InputProps={{
                               startAdornment: (
-                                <InputAdornment position="start">
+                                <InputAdornment position='start'>
                                   ₹
                                 </InputAdornment>
                               ),
@@ -3703,29 +3893,26 @@ class SaleForm extends React.Component {
                         <Grid
                           item
                           xs={12}
-                          className="p-invoice-date create-input pt-5"
-                        >
+                          className='p-invoice-date create-input pt-5'>
                           <Grid
                             container
                             spacing={2}
                             columnSpacing={{ xs: 1, sm: 2, md: 2 }}
-                            className="display_center justify-content-end"
-                          >
+                            className='display_center justify-content-end'>
                             <Grid
                               item
                               xs={4}
                               md={6}
-                              className="text-right pt-0"
-                            >
-                              <span className="tax-text"> Due Date </span>
+                              className='text-right pt-0'>
+                              <span className='tax-text'> Due Date </span>
                             </Grid>
-                            <Grid item xs={5} md={6} className="pt-0">
+                            <Grid item xs={5} md={6} className='pt-0'>
                               <LocalizationProvider dateAdapter={AdapterDayjs}>
                                 <DatePicker
                                   value={formValues.due_date}
                                   fullWidth
-                                  className="ft-amount"
-                                  inputFormat="DD/MM/YYYY"
+                                  className='ft-amount'
+                                  inputFormat='DD/MM/YYYY'
                                   onChange={(newValue) =>
                                     this.updateFormValues(newValue, "due_date")
                                   }
@@ -3744,32 +3931,29 @@ class SaleForm extends React.Component {
                         <Grid
                           item
                           xs={12}
-                          className="p-invoice-date create-input pt-5"
-                        >
+                          className='p-invoice-date create-input pt-5'>
                           <Grid
                             container
                             spacing={2}
                             columnSpacing={{ xs: 1, sm: 2, md: 2 }}
-                            className="display_center justify-content-end"
-                          >
+                            className='display_center justify-content-end'>
                             <Grid
                               item
                               xs={4}
                               md={6}
-                              className="text-right pt-0"
-                            >
-                              <span className="tax-text">
+                              className='text-right pt-0'>
+                              <span className='tax-text'>
                                 {" "}
                                 Settlement Date{" "}
                               </span>
                             </Grid>
-                            <Grid item xs={5} md={6} className="pt-0">
+                            <Grid item xs={5} md={6} className='pt-0'>
                               <LocalizationProvider dateAdapter={AdapterDayjs}>
                                 <DatePicker
-                                  className="ft-amount"
+                                  className='ft-amount'
                                   value={formValues.settlement_date}
                                   fullWidth
-                                  inputFormat="DD/MM/YYYY"
+                                  inputFormat='DD/MM/YYYY'
                                   onChange={(newValue) =>
                                     this.updateFormValues(
                                       newValue,
@@ -3796,19 +3980,21 @@ class SaleForm extends React.Component {
                     item
                     xs={12}
                     md={12}
-                    className="p-invoice-date create-input pt-5"
-                  >
-                    <Grid container spacing={2} className="display_center justify-content-end">
-                      <Grid item xs={4} md={6} className="text-right pt-0">
+                    className='p-invoice-date create-input pt-5'>
+                    <Grid
+                      container
+                      spacing={2}
+                      className='display_center justify-content-end'>
+                      <Grid item xs={4} md={6} className='text-right pt-0'>
                         Return Date
                       </Grid>
-                      <Grid item xs={5} md={6} className="pt-0">
+                      <Grid item xs={5} md={6} className='pt-0'>
                         <LocalizationProvider dateAdapter={AdapterDayjs}>
                           <DatePicker
-                            className="ft-amount"
+                            className='ft-amount'
                             value={this.state.return_date}
                             fullWidth
-                            inputFormat="DD/MM/YYYY"
+                            inputFormat='DD/MM/YYYY'
                             onChange={(newValue) =>
                               this.setState({ return_date: newValue })
                             }
@@ -3829,72 +4015,76 @@ class SaleForm extends React.Component {
             <Grid
               item
               xs={this.state.isAssign ? 12 : 12}
-              md={this.state.isAssign ? 4 : 12}
-            >
-              {!submitting ? (<Stack
-                spacing={1}
-                direction="row"
-                className="ratn-footer-buttons"
-                justifyContent="flex-end"
-                style={{ paddingRight: "16px", paddingBottom: "16px" }}
-              >
-                {isEmpty(this.props.query.get("sale_on_approval")) &&
-                !this.state.order_id &&
-                !this.state.isAssign &&
-                this.state.isCreateFrom ? (
-                  <LoadingButton
-                    className="conf-button"
-                    variant="contained"
-                    type="button"
-                    loading={submitting}
-                    disabled={submitting}
-                    onClick={(e) => { e.target.disabled=true; this.handleSubmit(true, e)}}
-                  >
-                    Approval
-                  </LoadingButton>
-                ) : null}
-                {this.state.isCreateFrom ? (
-                  <LoadingButton
-                    className="conf-button"
-                    variant="contained"
-                    type="button"
-                    loading={submitting}
-                    disabled={submitting}
-                    onClick={(e) => { e.target.disabled=true; this.handleSubmit(false, e)}}
-                  >
-                    {this.state.isAssign ? "Transfer " : "Submit"}
-                  </LoadingButton>
-                ) : (
-                  <>
-                    {this.state.return_products.length ? (
-                      <Button
-                        variant="outlined"
-                        type="button"
-                        className="conf-button"
-                        onClick={this.handleReturn}
-                      >
-                        Return
-                      </Button>
-                    ) : null}
-                  </>
-                )}
-                {
-                  <Button
-                    variant="outlined"
-                    className="close-button"
-                    onClick={() => this.props.navigate(-1)}
-                  >
-                    Cancel
-                  </Button>
-                }
-              </Stack>) : <Stack
+              md={this.state.isAssign ? 4 : 12}>
+              {!submitting ? (
+                <Stack
                   spacing={1}
-                  direction="row"
-                  className="ratn-footer-buttons"
-                  justifyContent="flex-end"
-                  style={{ paddingRight: "16px", paddingBottom: "16px" }}
-                ><CircularProgress />
-              </Stack> }
+                  direction='row'
+                  className='ratn-footer-buttons'
+                  justifyContent='flex-end'
+                  style={{ paddingRight: "16px", paddingBottom: "16px" }}>
+                  {isEmpty(this.props.query.get("sale_on_approval")) &&
+                  !this.state.order_id &&
+                  !this.state.isAssign &&
+                  this.state.isCreateFrom ? (
+                    <LoadingButton
+                      className='conf-button'
+                      variant='contained'
+                      type='button'
+                      loading={submitting}
+                      disabled={submitting}
+                      onClick={(e) => {
+                        e.target.disabled = true;
+                        this.handleSubmit(true, e);
+                      }}>
+                      Approval
+                    </LoadingButton>
+                  ) : null}
+                  {this.state.isCreateFrom ? (
+                    <LoadingButton
+                      className='conf-button'
+                      variant='contained'
+                      type='button'
+                      loading={submitting}
+                      disabled={submitting}
+                      onClick={(e) => {
+                        e.target.disabled = true;
+                        this.handleSubmit(false, e);
+                      }}>
+                      {this.state.isAssign ? "Transfer " : "Submit"}
+                    </LoadingButton>
+                  ) : (
+                    <>
+                      {this.state.return_products.length ? (
+                        <Button
+                          variant='outlined'
+                          type='button'
+                          className='conf-button'
+                          onClick={this.handleReturn}>
+                          Return
+                        </Button>
+                      ) : null}
+                    </>
+                  )}
+                  {
+                    <Button
+                      variant='outlined'
+                      className='close-button'
+                      onClick={() => this.props.navigate(-1)}>
+                      Cancel
+                    </Button>
+                  }
+                </Stack>
+              ) : (
+                <Stack
+                  spacing={1}
+                  direction='row'
+                  className='ratn-footer-buttons'
+                  justifyContent='flex-end'
+                  style={{ paddingRight: "16px", paddingBottom: "16px" }}>
+                  <CircularProgress size='30px' />
+                </Stack>
+              )}
             </Grid>
           ) : null}
         </Grid>
@@ -3903,9 +4093,8 @@ class SaleForm extends React.Component {
           open={this.state.productDialog}
           onClose={this.handleProductDialogClose}
           fullWidth
-          maxWidth="lg"
-          className="ratn-dialog-wrapper"
-        >
+          maxWidth='lg'
+          className='ratn-dialog-wrapper'>
           <DialogTitle>Add Product</DialogTitle>
           <DialogContent>
             <DialogContentText></DialogContentText>
@@ -3913,18 +4102,16 @@ class SaleForm extends React.Component {
               <Grid
                 container
                 spacing={2}
-                columnSpacing={{ xs: 1, sm: 2, md: 2 }}
-              >
+                columnSpacing={{ xs: 1, sm: 2, md: 2 }}>
                 <Grid item xs={12} md={3}>
                   <FormControl fullWidth error={productFormErros.category_id}>
                     <InputLabel>Category</InputLabel>
                     <Select
                       value={productFormValues.category_id}
-                      label="Category"
+                      label='Category'
                       onChange={this.handleCategoryChange}
-                      defaultValue=""
-                    >
-                      <MenuItem value=""></MenuItem>
+                      defaultValue=''>
+                      <MenuItem value=''></MenuItem>
                       {this.state.categoryList.map((item, index) => (
                         <MenuItem value={item.id} key={index}>
                           {item.name}
@@ -3936,16 +4123,14 @@ class SaleForm extends React.Component {
                 <Grid item xs={12} md={3}>
                   <FormControl
                     fullWidth
-                    error={productFormErros.sub_category_id}
-                  >
+                    error={productFormErros.sub_category_id}>
                     <InputLabel>Sub Category</InputLabel>
                     <Select
                       value={productFormValues.sub_category_id}
-                      label="Sub Category"
+                      label='Sub Category'
                       onChange={this.handleSubCategoryChange}
-                      defaultValue=""
-                    >
-                      <MenuItem value=""></MenuItem>
+                      defaultValue=''>
+                      <MenuItem value=''></MenuItem>
                       {this.state.subCategoryList.map((item, index) => (
                         <MenuItem value={item.id} key={index}>
                           {item.name}
@@ -3959,11 +4144,10 @@ class SaleForm extends React.Component {
                     <InputLabel>Product</InputLabel>
                     <Select
                       value={productFormValues.product_id}
-                      label="Product"
+                      label='Product'
                       onChange={this.handleProductChange}
-                      defaultValue=""
-                    >
-                      <MenuItem value=""></MenuItem>
+                      defaultValue=''>
+                      <MenuItem value=''></MenuItem>
                       {this.state.stockProductList.map((item, index) => (
                         <MenuItem value={item.id} key={index}>
                           {item.name}
@@ -4009,10 +4193,9 @@ class SaleForm extends React.Component {
                   <Grid item xs={12}>
                     <FormControl fullWidth>
                       <RadioGroup
-                        name="stock_id"
+                        name='stock_id'
                         value={productFormValues.stock_id}
-                        onChange={this.handleProductFormStockChange}
-                      >
+                        onChange={this.handleProductFormStockChange}>
                         {!this.checkIfAllStockAdded() ? (
                           <TableContainer component={Paper}>
                             <Table>
@@ -4035,8 +4218,7 @@ class SaleForm extends React.Component {
                                       <React.Fragment key={i}>
                                         <TableRow>
                                           <TableCell
-                                            rowSpan={itm.materials.length + 1}
-                                          >
+                                            rowSpan={itm.materials.length + 1}>
                                             <FormControlLabel
                                               value={itm.stock_id}
                                               control={<Radio />}
@@ -4124,26 +4306,25 @@ class SaleForm extends React.Component {
                     <TableContainer component={Paper}>
                       <Table
                         sx={{ minWidth: 650 }}
-                        aria-label="simple table"
-                        className="ratn-table-product-wrapper"
-                      >
-                        <TableHead className="ratn-table-header">
-                          <TableRow className="pur-details-inner-table">
+                        aria-label='simple table'
+                        className='ratn-table-product-wrapper'>
+                        <TableHead className='ratn-table-header'>
+                          <TableRow className='pur-details-inner-table'>
                             <TableCell>Material Name</TableCell>
                             <TableCell>Purity</TableCell>
                             <TableCell>Quantity</TableCell>
                             <TableCell>Weight</TableCell>
                           </TableRow>
                         </TableHead>
-                        <TableBody className="pur-details-table-body">
+                        <TableBody className='pur-details-table-body'>
                           {productFormValues.materials.map((item, index) => (
                             <TableRow key={index}>
                               <TableCell>{item.material_name}</TableCell>
                               <TableCell>{item.purity}</TableCell>
                               <TableCell>
                                 <TextField
-                                  label="Quantity"
-                                  variant="outlined"
+                                  label='Quantity'
+                                  variant='outlined'
                                   fullWidth
                                   value={item.quantity}
                                   onChange={(event) =>
@@ -4158,8 +4339,8 @@ class SaleForm extends React.Component {
                               </TableCell>
                               <TableCell>
                                 <TextField
-                                  label="Weight"
-                                  variant="outlined"
+                                  label='Weight'
+                                  variant='outlined'
                                   fullWidth
                                   value={item.weight}
                                   onChange={(event) =>
@@ -4171,7 +4352,7 @@ class SaleForm extends React.Component {
                                   }
                                   InputProps={{
                                     endAdornment: (
-                                      <InputAdornment position="start">
+                                      <InputAdornment position='start'>
                                         {item.unit_name}
                                       </InputAdornment>
                                     ),
@@ -4306,18 +4487,16 @@ class SaleForm extends React.Component {
                                     />
                                 </Grid>*/}
                 <Grid item xs={12}>
-                  <Stack spacing={1} direction="row" justifyContent="flex-end">
+                  <Stack spacing={1} direction='row' justifyContent='flex-end'>
                     <Button
-                      variant="contained"
-                      type="button"
-                      onClick={this.handleProductSubmit}
-                    >
+                      variant='contained'
+                      type='button'
+                      onClick={this.handleProductSubmit}>
                       Add Product
                     </Button>
                     <Button
-                      variant="outlined"
-                      onClick={this.handleProductDialogClose}
-                    >
+                      variant='outlined'
+                      onClick={this.handleProductDialogClose}>
                       Cancel
                     </Button>
                   </Stack>
@@ -4331,25 +4510,23 @@ class SaleForm extends React.Component {
           open={this.state.deleteDialogOpen}
           onClose={this.handleDialogClose}
           fullWidth
-          maxWidth="xs"
-          className="ratn-dialog-wrapper"
-        >
+          maxWidth='xs'
+          className='ratn-dialog-wrapper'>
           <DialogTitle>Delete</DialogTitle>
           <DialogContent>
-            <DialogContentText id="alert-dialog-slide-description">
+            <DialogContentText id='alert-dialog-slide-description'>
               Are you sure want to delete this record?
             </DialogContentText>
           </DialogContent>
           <DialogActions>
-            <Stack spacing={2} direction="row" justifyContent="flex-end">
-              <Button variant="outlined" onClick={this.handleDialogClose}>
+            <Stack spacing={2} direction='row' justifyContent='flex-end'>
+              <Button variant='outlined' onClick={this.handleDialogClose}>
                 Cancel
               </Button>
               <Button
-                variant="contained"
-                type="button"
-                onClick={this.handleDeleteConfirm}
-              >
+                variant='contained'
+                type='button'
+                onClick={this.handleDeleteConfirm}>
                 Yes, Confirm
               </Button>
             </Stack>
@@ -4360,12 +4537,11 @@ class SaleForm extends React.Component {
           open={this.state.returnDialogOpen}
           onClose={this.returnDialogClose}
           fullWidth
-          maxWidth="xs"
-          className="ratn-dialog-wrapper"
-        >
+          maxWidth='xs'
+          className='ratn-dialog-wrapper'>
           <DialogTitle>Return</DialogTitle>
           <DialogContent>
-            <DialogContentText id="alert-dialog-slide-description">
+            <DialogContentText id='alert-dialog-slide-description'>
               Are you sure want to return these product(s)?
             </DialogContentText>
             {return_from_wallet > 0 ? (
@@ -4373,15 +4549,14 @@ class SaleForm extends React.Component {
                 <FormControl>
                   <RadioGroup
                     row
-                    name="row-radio-buttons-group"
+                    name='row-radio-buttons-group'
                     value={this.state.payment_type}
                     onChange={(e) =>
                       this.setState({ payment_type: e.target.value })
-                    }
-                  >
+                    }>
                     {!will_return_charge_apply ? (
                       <FormControlLabel
-                        value="advance"
+                        value='advance'
                         control={<Radio />}
                         label={
                           "Payment move to advance " +
@@ -4390,7 +4565,7 @@ class SaleForm extends React.Component {
                       />
                     ) : null}
                     <FormControlLabel
-                      value="return"
+                      value='return'
                       control={<Radio />}
                       label={
                         "Payment Return " + displayAmount(return_from_wallet)
@@ -4403,18 +4578,17 @@ class SaleForm extends React.Component {
                   <FormControl fullWidth>
                     <InputLabel>Payment Mode</InputLabel>
                     <Select
-                      className="input-inner"
+                      className='input-inner'
                       value={this.state.return_payment_mode}
                       fullWidth
-                      label="Payment Mode"
+                      label='Payment Mode'
                       onChange={(e) =>
                         this.setState({ return_payment_mode: e.target.value })
-                      }
-                    >
-                      <MenuItem value="cash">Cash</MenuItem>
-                      <MenuItem value="cheque">Cheque</MenuItem>
-                      <MenuItem value="imps_neft">NEFT/IMPS/UPI</MenuItem>
-                      <MenuItem value="online">Online</MenuItem>
+                      }>
+                      <MenuItem value='cash'>Cash</MenuItem>
+                      <MenuItem value='cheque'>Cheque</MenuItem>
+                      <MenuItem value='imps_neft'>NEFT/IMPS/UPI</MenuItem>
+                      <MenuItem value='online'>Online</MenuItem>
                     </Select>
                   </FormControl>
                 ) : null}
@@ -4422,18 +4596,23 @@ class SaleForm extends React.Component {
             ) : null}
           </DialogContent>
           <DialogActions>
-            {!submitting ? <Stack spacing={2} direction="row" justifyContent="flex-end">
-              <Button variant="outlined" onClick={this.returnDialogClose}>
-                Cancel
-              </Button>
-              <Button
-                variant="contained"
-                type="button"
-                onClick={this.handleReturnConfirm}
-              >
-                Yes, Confirm
-              </Button>
-            </Stack> : <Stack spacing={2} direction="row" justifyContent="flex-end"><CircularProgress /></Stack> }
+            {!submitting ? (
+              <Stack spacing={2} direction='row' justifyContent='flex-end'>
+                <Button variant='outlined' onClick={this.returnDialogClose}>
+                  Cancel
+                </Button>
+                <Button
+                  variant='contained'
+                  type='button'
+                  onClick={this.handleReturnConfirm}>
+                  Yes, Confirm
+                </Button>
+              </Stack>
+            ) : (
+              <Stack spacing={2} direction='row' justifyContent='flex-end'>
+                <CircularProgress size='30px' />
+              </Stack>
+            )}
           </DialogActions>
         </Dialog>
 
@@ -4441,9 +4620,8 @@ class SaleForm extends React.Component {
           open={this.state.materialReturnDialog}
           onClose={this.handleReturnDialogClose}
           fullWidth
-          maxWidth="md"
-          className="ratn-dialog-wrapper"
-        >
+          maxWidth='md'
+          className='ratn-dialog-wrapper'>
           <DialogTitle>Return Product</DialogTitle>
           <DialogContent>
             <DialogContentText></DialogContentText>
@@ -4452,8 +4630,8 @@ class SaleForm extends React.Component {
                 <Grid container spacing={2}>
                   <Grid item xs={12} md={6}>
                     <TextField
-                      label="Name"
-                      variant="outlined"
+                      label='Name'
+                      variant='outlined'
                       fullWidth
                       value={actionProduct.product_name}
                       disabled
@@ -4464,8 +4642,8 @@ class SaleForm extends React.Component {
                   </Grid>
                   <Grid item xs={12} md={2}>
                     <TextField
-                      label="Purity"
-                      variant="outlined"
+                      label='Purity'
+                      variant='outlined'
                       fullWidth
                       value={actionProduct.materials[0].purity_name}
                       disabled
@@ -4476,8 +4654,8 @@ class SaleForm extends React.Component {
                   </Grid>
                   <Grid item xs={12} md={2}>
                     <TextField
-                      label="Avl Qty"
-                      variant="outlined"
+                      label='Avl Qty'
+                      variant='outlined'
                       fullWidth
                       value={actionProduct.materials[0].avl_qty}
                       disabled
@@ -4488,15 +4666,15 @@ class SaleForm extends React.Component {
                   </Grid>
                   <Grid item xs={12} md={2}>
                     <TextField
-                      label="Avl Weight"
-                      variant="outlined"
+                      label='Avl Weight'
+                      variant='outlined'
                       fullWidth
                       value={actionProduct.materials[0].avl_weight}
                       disabled
                       InputProps={{
                         className: "non_disable_text",
                         endAdornment: (
-                          <InputAdornment position="start">
+                          <InputAdornment position='start'>
                             {actionProduct.materials[0].unit_name}
                           </InputAdornment>
                         ),
@@ -4505,8 +4683,8 @@ class SaleForm extends React.Component {
                   </Grid>
                   <Grid item xs={12} md={4}>
                     <TextField
-                      label="Quantity"
-                      variant="outlined"
+                      label='Quantity'
+                      variant='outlined'
                       fullWidth
                       value={actionProduct.materials[0].return_qty}
                       onChange={(event) =>
@@ -4520,8 +4698,8 @@ class SaleForm extends React.Component {
                   </Grid>
                   <Grid item xs={12} md={4}>
                     <TextField
-                      label="Weight"
-                      variant="outlined"
+                      label='Weight'
+                      variant='outlined'
                       fullWidth
                       value={actionProduct.materials[0].return_weight}
                       onChange={(event) =>
@@ -4534,7 +4712,7 @@ class SaleForm extends React.Component {
                       InputProps={{
                         className: "non_disable_text",
                         endAdornment: (
-                          <InputAdornment position="start">
+                          <InputAdornment position='start'>
                             {actionProduct.materials[0].unit_name}
                           </InputAdornment>
                         ),
@@ -4544,30 +4722,26 @@ class SaleForm extends React.Component {
                   <Grid item xs={12} md={12}>
                     <Stack
                       spacing={1}
-                      direction="row"
-                      justifyContent="flex-end"
-                    >
+                      direction='row'
+                      justifyContent='flex-end'>
                       <Button
-                        variant="outlined"
-                        onClick={this.handleReturnDialogClose}
-                      >
+                        variant='outlined'
+                        onClick={this.handleReturnDialogClose}>
                         Close
                       </Button>
                       {this.state.return_products.length &&
                       this.state.return_products[actionProductIndex]
                         .is_return ? (
                         <Button
-                          variant="outlined"
-                          onClick={this.handleCancelReturn}
-                        >
+                          variant='outlined'
+                          onClick={this.handleCancelReturn}>
                           Cancel Return
                         </Button>
                       ) : null}
                       <Button
-                        variant="contained"
-                        type="button"
-                        onClick={this.handleReturnMaterialSubmit}
-                      >
+                        variant='contained'
+                        type='button'
+                        onClick={this.handleReturnMaterialSubmit}>
                         Save
                       </Button>
                     </Stack>
@@ -4652,14 +4826,13 @@ function Row(props) {
       <TableRow sx={{ "& > *": { borderBottom: "unset" } }}>
         <TableCell>
           <IconButton
-            aria-label="expand row"
-            size="small"
-            onClick={() => setOpen(!open)}
-          >
+            aria-label='expand row'
+            size='small'
+            onClick={() => setOpen(!open)}>
             {open ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
           </IconButton>
         </TableCell>
-        <TableCell component="th" scope="row">
+        <TableCell component='th' scope='row'>
           {row.product_name}
         </TableCell>
         <TableCell>{row.size_name}</TableCell>
@@ -4667,11 +4840,11 @@ function Row(props) {
       </TableRow>
       <TableRow>
         <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={11}>
-          <Collapse in={open} timeout="auto" unmountOnExit>
+          <Collapse in={open} timeout='auto' unmountOnExit>
             <Box sx={{ margin: 1 }}>
-              <Table size="medium" aria-label="orders">
+              <Table size='medium' aria-label='orders'>
                 <TableHead>
-                  <TableRow className="pur-details-inner-table">
+                  <TableRow className='pur-details-inner-table'>
                     <TableCell>Material Name</TableCell>
                     <TableCell>Purity</TableCell>
                     <TableCell>Quantity</TableCell>
@@ -4679,10 +4852,10 @@ function Row(props) {
                     <TableCell>Unit</TableCell>
                   </TableRow>
                 </TableHead>
-                <TableBody className="pur-details-table-body">
+                <TableBody className='pur-details-table-body'>
                   {row.materials.map((item, i) => (
                     <TableRow key={i}>
-                      <TableCell scope="row">{item.material_name}</TableCell>
+                      <TableCell scope='row'>{item.material_name}</TableCell>
                       <TableCell>{item.purity_name}</TableCell>
                       <TableCell>{item.quantity}</TableCell>
                       <TableCell>{item.weight}</TableCell>

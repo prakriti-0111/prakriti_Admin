@@ -7,10 +7,10 @@ import { bindActionCreators } from 'redux';
 import { gridSpacing } from 'store/constant';
 import MainCard from 'ui-component/cards/MainCard';
 import withRouter from 'src/helpers/withRouter';
-import { stockproductList, stockproductCreate, stockproductStore, stockproductView, stockproductUpdate, stockproductDelete } from 'actions/superadmin/stockproduct.actions';
+import { stockproductList, stockproductCreate, stockproductStore, stockproductView, stockproductUpdate, stockproductDelete } from 'actions/superadmin/stockproductbanner.actions';
 import { subCategoryList } from 'actions/superadmin/subCategory.actions';
 import DataTable from 'src/utils/DataTable';
-import {RESET_STOCKPRODUCT} from '../../../actionTypes/superadmin/stockproduct.types';
+import {RESET_STOCKPRODUCT} from '../../../actionTypes/superadmin/stockproductbanner.types';
 import { categoryList } from 'actions/superadmin/category.actions';
 import { withSnackbar } from 'notistack';
 import {hasPermission} from 'src/helpers/helper';
@@ -305,11 +305,11 @@ class StockProductBannerPage extends Component {
 }
 
 const mapStateToProps = (state) => ({
-  items: state.superadmin.stockproduct.items,
-  total: state.superadmin.stockproduct.total,
-  actionCalled: state.superadmin.stockproduct.actionCalled,
-  deleteSuccess: state.superadmin.stockproduct.deleteSuccess,
-  successMessage: state.superadmin.stockproduct.successMessage,
+  items: state.superadmin.stockproductbanner.items,
+  total: state.superadmin.stockproductbanner.total,
+  actionCalled: state.superadmin.stockproductbanner.actionCalled,
+  deleteSuccess: state.superadmin.stockproductbanner.deleteSuccess,
+  successMessage: state.superadmin.stockproductbanner.successMessage,
   categories: state.superadmin.category.items,
   sub_categories: state.superadmin.subCategory.items,
   permissions: state.employee.permissions.permissions

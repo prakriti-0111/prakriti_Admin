@@ -4,7 +4,8 @@ import { Field, reduxForm, getFormValues, change } from 'redux-form/immutable';
 import { Box, TextField, Button, Grid, Link, TextareaAutosize, Stack, Select, MenuItem, InputLabel, FormControl, FormControlLabel, Checkbox, FormHelperText, ListItemText, Accordion, AccordionSummary, Typography, AccordionDetails, Paper, Tab, CircularProgress } from '@mui/material';
 import { toBase64 } from 'src/helpers/helper';
 import { bindActionCreators } from 'redux';
-import { stockproductCreate, stockproductStore, stockproductUpdate } from 'actions/superadmin/stockproduct.actions';
+import { stockproductCreate, stockproductStore, stockproductUpdate } from 'actions/superadmin/stockproductbanner.actions';
+import { stockProductList } from 'actions/superadmin/stockProduct.actions';
 import { productList } from 'actions/superadmin/product.actions';
 import { categoryList } from 'actions/superadmin/category.actions';
 import { subCategoryList } from 'actions/superadmin/subCategory.actions';
@@ -65,7 +66,7 @@ class StockProductBannerForm extends React.Component {
       sub_categories: this.props.sub_categories,
       banner_file: null,
       existing_banner_image: null,
-      productList: this.props.productList,
+      stockProductList: this.props.stockProductList,
       inProgress: false
     }
 
@@ -112,7 +113,7 @@ class StockProductBannerForm extends React.Component {
     formValues.status = formValues.status ? 1 : 0;
     delete formValues.banner;
     this.props.actions.subCategoryList({ all: 1, category_id: formValues.category_id });
-    this.props.actions.productList({ all: 1, sub_category_id: formValues.sub_category_id });
+    this.props.actions.stockProductList({ all: 1, sub_category_id: formValues.sub_category_id });
     this.props.initialize(formValues);
     this.setState({
       existing_banner_image: this.state.formData.banner,
@@ -150,8 +151,8 @@ class StockProductBannerForm extends React.Component {
     if (props.sub_categories !== state.sub_categories) {
       update.sub_categories = props.sub_categories;
     }
-    if (props.productList !== state.productList) {
-      update.productList = props.productList;
+    if (props.stockProductList !== state.stockProductList) {
+      update.stockProductList = props.stockProductList;
     }
 
     return update;
@@ -247,6 +248,8 @@ class StockProductBannerForm extends React.Component {
   renderProductField = ({
     input,
     label,
+    value = [],
+    defaultValue = [],
     meta: { touched, error },
     ...custom
   }) => (
@@ -262,14 +265,14 @@ class StockProductBannerForm extends React.Component {
         multiple
         {...input}
         {...custom}
-        value={input.value === "" ? [] : input.value}
+        value={input.value === "" ? value : input.value}
         multi="true"
         renderValue={(selected) => this.getSelectedProductNames(selected).join(", ")}
       >
-        {this.state.productList.map((item) => (
+        {this.state.stockProductList.map((item) => (
           <MenuItem key={item.id} value={item.id} className='multi-select'>
             <Checkbox checked={(input.value && input.value.indexOf(item.id) > -1) ? true : false} />
-            <ListItemText primary={item.name} />
+            <ListItemText primary={item.certificate_no} />
           </MenuItem>
         ))}
 
@@ -286,9 +289,9 @@ class StockProductBannerForm extends React.Component {
   getSelectedProductNames = (selected) => {
     let arr = [];
     for (let i = 0; i < selected.length; i++) {
-      let item = _.filter(this.state.productList, { id: selected[i] });
+      let item = _.filter(this.state.stockProductList, { id: selected[i] });
       if (item.length)
-        arr.push(item[0].name);
+        arr.push(item[0].certificate_no);
 
     }
     return arr;
@@ -381,7 +384,7 @@ class StockProductBannerForm extends React.Component {
 
   handleSubCategoryChange = (event, val) => {
     if (val) {
-      this.props.actions.productList({ all: 1, sub_category_id: val });
+      this.props.actions.stockProductList({ all: 1, sub_category_id: val });
     } else {
       this.props.dispatch({
         type: RESET_PRODUCT_LIST
@@ -450,8 +453,8 @@ class StockProductBannerForm extends React.Component {
 
   render() {
     const { handleSubmit, pristine, submitting } = this.props;
-    const {inProgress} =  this.state;
-
+    const {inProgress, formData} =  this.state;
+    console.log("this.state.stockProductList : ", this.state.stockProductList);
     return (
       <form onSubmit={handleSubmit(this.handleFormSubmit)} className="ratn-dialog-wrapper" ref={this.formRef}>
         <Box sx={{ flexGrow: 1, m: 0.5 }} className='ratn-dialog-inner'>
@@ -484,7 +487,8 @@ class StockProductBannerForm extends React.Component {
                 label="Products"
                 multi
                 type="select"
-                defaultValue={[]}
+                value={formData ? formData.products : []}
+                defaultValue={formData ? formData.products : []}
                 onChange={(event) => this.handleFieldChange(event)}
               />
             </Grid>
@@ -617,9 +621,9 @@ const mapStateToProps = (state) => ({
   categories: state.superadmin.category.items,
   sub_categories: state.superadmin.subCategory.items,
   auth: state.auth,
-  productList: state.superadmin.product.items,
+  stockProductList: state.superadmin.stockProduct.items,
   formValues: getFormValues('StockProductBannerForm')(state, 'status'),
-  actionCalled: state.superadmin.stockproduct.actionCalled,
+  actionCalled: state.superadmin.stockproductbanner.actionCalled,
 });
 
 const mapDispatchToProps = dispatch => ({
@@ -629,7 +633,7 @@ const mapDispatchToProps = dispatch => ({
     stockproductUpdate,
     stockproductStore,
     subCategoryList,
-    productList,
+    stockProductList,
     categoryList,
     change
   }, dispatch)

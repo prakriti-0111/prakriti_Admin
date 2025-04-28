@@ -1348,8 +1348,18 @@ class ProductForm extends React.Component {
                 disabled={onlyView}
               />
             </Grid>
+            {this.props.formData && <Grid item xs={6} md={2} className="create-input">
+              <Field
+                className="input-inner"
+                name="added_by_name"
+                component={this.renderTextField}
+                label="Added by"
+                value={this.props.formData?.added_by_name}
+                disabled={true}
+              />
+            </Grid>}
             {this.state.product_type != "material" ? (
-              <Grid item xs={6} md={3} className="create-input">
+              <Grid item xs={6} md={`${this.props.formData?'1':'3'}`} className="create-input">
                 <Field
                   className="input-inner"
                   name="tax_rate_id"

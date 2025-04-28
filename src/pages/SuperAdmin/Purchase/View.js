@@ -201,7 +201,7 @@ class PurchaseViewPage extends React.Component {
         });
         this.setState({
           processing: false,
-          approve_declined_processing: false
+          approve_declined_processing: false,
         });
       }
       this.props.dispatch({
@@ -367,7 +367,7 @@ class PurchaseViewPage extends React.Component {
       decline_type: this.state.decline_type,
     };
     this.setState({
-      approve_declined_processing: true
+      approve_declined_processing: true,
     });
     let status_response = await purchaseStatusChange(
       this.props.params.id,
@@ -379,7 +379,7 @@ class PurchaseViewPage extends React.Component {
       });
       this.setState({
         confirmDialog: false,
-        approve_declined_processing: false
+        approve_declined_processing: false,
       });
       this.loadViewData();
     } else {
@@ -387,7 +387,7 @@ class PurchaseViewPage extends React.Component {
         variant: "error",
       });
       this.setState({
-        approve_declined_processing: false
+        approve_declined_processing: false,
       });
     }
   };
@@ -401,10 +401,10 @@ class PurchaseViewPage extends React.Component {
   render() {
     const { purchase, formValues, formErros } = this.state;
     return (
-      <MainCard title="Purchase Details">
+      <MainCard title='Purchase Details'>
         {!purchase ? (
-          <Grid container justifyContent="center">
-            <CircularProgress />
+          <Grid container justifyContent='center'>
+            <CircularProgress size='30px' />
           </Grid>
         ) : (
           <>
@@ -478,18 +478,17 @@ class PurchaseViewPage extends React.Component {
                 }
 
               </div>*/}
-            <div className="return-wrapper">
-              <div className="return-header">
+            <div className='return-wrapper'>
+              <div className='return-header'>
                 <p>Invoice Date: {purchase.invoice_date}</p>
                 <p>Dues Date:{purchase.due_date}</p>
                 {purchase.notes ? <p>Notes: {purchase.notes}</p> : null}
               </div>
-              <div className="">
+              <div className=''>
                 <Button
-                  className="add-button"
-                  variant="contained"
-                  onClick={() => this.props.navigate(-1)}
-                >
+                  className='add-button'
+                  variant='contained'
+                  onClick={() => this.props.navigate(-1)}>
                   Back
                 </Button>
               </div>
@@ -497,18 +496,17 @@ class PurchaseViewPage extends React.Component {
             <Grid
               container
               spacing={gridSpacing}
-              className="details-header ratn-pur-wrapper loans_view"
-            >
+              className='details-header ratn-pur-wrapper loans_view'>
               <Grid item xs={12}>
                 <TableContainer component={Paper}>
-                  <div className="ratn-table-purchase-wrapper">
+                  <div className='ratn-table-purchase-wrapper'>
                     <Table
-                      aria-label="collapsible table"
-                      className="invoice_product_list"
-                    >
-                      <TableHead className="ratn-table-header">
+                      aria-label='collapsible table'
+                      className='invoice_product_list'>
+                      <TableHead className='ratn-table-header'>
                         <TableRow>
                           <TableCell>Supplier</TableCell>
+                          <TableCell>Added By</TableCell>
                           <TableCell>Total Amt</TableCell>
                           <TableCell>Cash Disc</TableCell>
                           <TableCell>Bill Amount</TableCell>
@@ -519,11 +517,12 @@ class PurchaseViewPage extends React.Component {
                           <TableCell>Status</TableCell>
                         </TableRow>
                       </TableHead>
-                      <TableBody className="pur-details-table-body">
+                      <TableBody className='pur-details-table-body'>
                         <TableRow>
-                          <TableCell component="th" scope="row">
+                          <TableCell component='th' scope='row'>
                             {purchase.supplier_name}
                           </TableCell>
+                          <TableCell>{purchase.added_by_details.user_name}</TableCell>  
                           <TableCell>{purchase.total_amount}</TableCell>
                           <TableCell>{purchase.discount}</TableCell>
                           <TableCell>{purchase.bill_amount}</TableCell>
@@ -531,7 +530,7 @@ class PurchaseViewPage extends React.Component {
                           <TableCell>{purchase.paid_amount_display}</TableCell>
                           <TableCell>{purchase.due_amount_display}</TableCell>
                           <TableCell>{purchase.invoice_number}</TableCell>
-                          <TableCell className="sales-status">
+                          <TableCell className='sales-status'>
                             <Chip
                               label={purchase.approve_status}
                               color={getApprovalColor(purchase.is_approved)}
@@ -545,19 +544,17 @@ class PurchaseViewPage extends React.Component {
               </Grid>
             </Grid>
             {purchase.is_approved == 0 ? (
-              <div className="sale-view-button">
+              <div className='sale-view-button'>
                 <Button
-                  variant="contained"
-                  className="primary accept"
-                  onClick={() => this.handleStatusChange(1)}
-                >
+                  variant='contained'
+                  className='primary accept'
+                  onClick={() => this.handleStatusChange(1)}>
                   Accept
                 </Button>
                 <Button
-                  variant="contained"
-                  className="danger decline"
-                  onClick={() => this.handleStatusChange(2)}
-                >
+                  variant='contained'
+                  className='danger decline'
+                  onClick={() => this.handleStatusChange(2)}>
                   Decline
                 </Button>
               </div>
@@ -565,17 +562,15 @@ class PurchaseViewPage extends React.Component {
             <Grid
               container
               spacing={gridSpacing}
-              className="details-header ratn-pur-wrapper loans_view"
-            >
-              <Grid item xs={12} className="p-add-product create-input">
-                <h3 className="p_heading_list">Product List</h3>
+              className='details-header ratn-pur-wrapper loans_view'>
+              <Grid item xs={12} className='p-add-product create-input'>
+                <h3 className='p_heading_list'>Product List</h3>
                 <TableContainer component={Paper}>
-                  <div className="ratn-table-purchase-wrapper">
+                  <div className='ratn-table-purchase-wrapper'>
                     <Table
-                      aria-label="collapsible table"
-                      className="invoice_product_list"
-                    >
-                      <TableHead className="ratn-table-header">
+                      aria-label='collapsible table'
+                      className='invoice_product_list'>
+                      <TableHead className='ratn-table-header'>
                         <TableRow>
                           <TableCell />
                           <TableCell>#</TableCell>
@@ -589,7 +584,7 @@ class PurchaseViewPage extends React.Component {
                           <TableCell>Sub Total</TableCell>
                           <TableCell>Dist</TableCell>
                           <TableCell>Tax</TableCell>
-                          <TableCell colSpan="2">Total</TableCell>
+                          <TableCell colSpan='2'>Total</TableCell>
                         </TableRow>
                       </TableHead>
                       <TableBody>
@@ -605,16 +600,14 @@ class PurchaseViewPage extends React.Component {
                 <Grid
                   item
                   xs={12}
-                  className="p-add-product create-input button-right"
-                >
-                  <h3 className="p_heading_list">
+                  className='p-add-product create-input button-right'>
+                  <h3 className='p_heading_list'>
                     Payment List{" "}
                     {parseFloat(purchase.due_amount) > 0 ? (
                       <Button
-                        variant="contained"
-                        className="add-button"
-                        onClick={() => this.handlePayNow()}
-                      >
+                        variant='contained'
+                        className='add-button'
+                        onClick={() => this.handlePayNow()}>
                         Pay Now
                       </Button>
                     ) : null}
@@ -646,12 +639,11 @@ class PurchaseViewPage extends React.Component {
         )}
 
         <Dialog
-          className="ratn-dialog-wrapper"
+          className='ratn-dialog-wrapper'
           open={this.state.openDialog}
           onClose={this.handleDialogClose}
           fullWidth
-          maxWidth="md"
-        >
+          maxWidth='md'>
           <DialogTitle>Pay Now</DialogTitle>
           <DialogContent>
             <DialogContentText></DialogContentText>
@@ -668,13 +660,12 @@ class PurchaseViewPage extends React.Component {
                   item
                   md={4}
                   xs={12}
-                  className="p-invoice-date create-input"
-                >
+                  className='p-invoice-date create-input'>
                   <LocalizationProvider dateAdapter={AdapterDayjs}>
                     <DatePicker
-                      label="Payment Date"
+                      label='Payment Date'
                       value={formValues.payment_date}
-                      inputFormat="DD/MM/YYYY"
+                      inputFormat='DD/MM/YYYY'
                       onChange={(newValue) =>
                         this.updateFormValue(newValue, "payment_date")
                       }
@@ -688,15 +679,15 @@ class PurchaseViewPage extends React.Component {
                     />
                   </LocalizationProvider>
                 </Grid>
-                <Grid item md={4} xs={12} className="create-input">
+                <Grid item md={4} xs={12} className='create-input'>
                   <TextField
-                    label="Amount"
-                    variant="outlined"
+                    label='Amount'
+                    variant='outlined'
                     fullWidth
                     value={formValues.amount}
                     InputProps={{
                       startAdornment: (
-                        <InputAdornment position="start">₹</InputAdornment>
+                        <InputAdornment position='start'>₹</InputAdornment>
                       ),
                     }}
                     error={formErros.amount}
@@ -706,31 +697,30 @@ class PurchaseViewPage extends React.Component {
                   />
                 </Grid>
 
-                <Grid item md={4} xs={12} className="create-input">
+                <Grid item md={4} xs={12} className='create-input'>
                   <FormControl fullWidth error={formErros.payment_mode}>
                     <InputLabel>Payment Mode</InputLabel>
                     <Select
-                      className="input-inner"
+                      className='input-inner'
                       value={formValues.payment_mode}
                       fullWidth
-                      label="Payment Mode"
+                      label='Payment Mode'
                       onChange={(event) =>
                         this.updateFormValue(event.target.value, "payment_mode")
-                      }
-                    >
-                      <MenuItem value=""></MenuItem>
-                      <MenuItem value="cash">Cash</MenuItem>
-                      <MenuItem value="cheque">Cheque</MenuItem>
-                      <MenuItem value="imps_neft">NEFT/IMPS/UPI</MenuItem>
-                      <MenuItem value="online">Online</MenuItem>
+                      }>
+                      <MenuItem value=''></MenuItem>
+                      <MenuItem value='cash'>Cash</MenuItem>
+                      <MenuItem value='cheque'>Cheque</MenuItem>
+                      <MenuItem value='imps_neft'>NEFT/IMPS/UPI</MenuItem>
+                      <MenuItem value='online'>Online</MenuItem>
                     </Select>
                   </FormControl>
                 </Grid>
                 {formValues.payment_mode == "cheque" ? (
-                  <Grid item md={4} xs={12} className="create-input">
+                  <Grid item md={4} xs={12} className='create-input'>
                     <TextField
-                      label="Cheque No"
-                      variant="outlined"
+                      label='Cheque No'
+                      variant='outlined'
                       fullWidth
                       value={formValues.cheque_no}
                       onChange={(event) =>
@@ -741,10 +731,10 @@ class PurchaseViewPage extends React.Component {
                 ) : null}
                 {formValues.payment_mode == "imps_neft" ||
                 formValues.payment_mode == "upi" ? (
-                  <Grid item md={4} xs={12} className="create-input">
+                  <Grid item md={4} xs={12} className='create-input'>
                     <TextField
-                      label="Transaction #"
-                      variant="outlined"
+                      label='Transaction #'
+                      variant='outlined'
                       fullWidth
                       value={formValues.txn_id}
                       onChange={(event) =>
@@ -753,11 +743,11 @@ class PurchaseViewPage extends React.Component {
                     />
                   </Grid>
                 ) : null}
-                <Grid item md={4} xs={12} className="create-input">
+                <Grid item md={4} xs={12} className='create-input'>
                   <TextareaAutosize
-                    className="description"
+                    className='description'
                     minRows={1}
-                    placeholder="Notes"
+                    placeholder='Notes'
                     style={{ width: "100%", height: "51px" }}
                     value={formValues.notes}
                     onChange={(event) =>
@@ -769,13 +759,12 @@ class PurchaseViewPage extends React.Component {
                   item
                   md={4}
                   xs={12}
-                  className="p-invoice-date create-input"
-                >
+                  className='p-invoice-date create-input'>
                   <LocalizationProvider dateAdapter={AdapterDayjs}>
                     <DatePicker
-                      label="Due Date"
+                      label='Due Date'
                       value={formValues.due_date}
-                      inputFormat="DD/MM/YYYY"
+                      inputFormat='DD/MM/YYYY'
                       onChange={(newValue) =>
                         this.updateFormValue(newValue, "due_date")
                       }
@@ -790,16 +779,15 @@ class PurchaseViewPage extends React.Component {
                   </LocalizationProvider>
                 </Grid>
                 <Grid item xs={12}>
-                  <Stack spacing={1} direction="row" justifyContent="flex-end">
+                  <Stack spacing={1} direction='row' justifyContent='flex-end'>
                     <Button
-                      variant="contained"
-                      type="button"
+                      variant='contained'
+                      type='button'
                       disabled={this.state.processing}
-                      onClick={this.handleSubmit}
-                    >
+                      onClick={this.handleSubmit}>
                       {this.state.processing ? "Processing" : "Submit"}
                     </Button>
-                    <Button variant="outlined" onClick={this.handleDialogClose}>
+                    <Button variant='outlined' onClick={this.handleDialogClose}>
                       Cancel
                     </Button>
                   </Stack>
@@ -813,14 +801,13 @@ class PurchaseViewPage extends React.Component {
           open={this.state.confirmDialog}
           onClose={this.handleConfirmDialogClose}
           fullWidth
-          maxWidth="xs"
-          className="ratn-dialog-wrapper"
-        >
+          maxWidth='xs'
+          className='ratn-dialog-wrapper'>
           <DialogTitle>
             {this.state.status_changing == 1 ? "Accept" : "Decline"}
           </DialogTitle>
           <DialogContent>
-            <DialogContentText id="alert-dialog-slide-description">
+            <DialogContentText id='alert-dialog-slide-description'>
               {this.state.status_changing == 1
                 ? "Are you sure want to accept this purchase?"
                 : "Are you sure want to decline this purchase?"}
@@ -831,21 +818,20 @@ class PurchaseViewPage extends React.Component {
                   <FormControl>
                     <RadioGroup
                       row
-                      name="row-radio-buttons-group"
+                      name='row-radio-buttons-group'
                       value={this.state.decline_type}
                       onChange={(e) =>
                         this.setState({ decline_type: e.target.value })
-                      }
-                    >
+                      }>
                       <FormControlLabel
-                        value="advance"
+                        value='advance'
                         control={<Radio />}
                         label={`Payment move to advance ${displayAmount(
                           purchase.paid_amount
                         )}`}
                       />
                       <FormControlLabel
-                        value="return"
+                        value='return'
                         control={<Radio />}
                         label={`Payment Return ${displayAmount(
                           purchase.paid_amount
@@ -858,20 +844,24 @@ class PurchaseViewPage extends React.Component {
             </DialogContentText>
           </DialogContent>
           <DialogActions>
-            <Stack spacing={2} direction="row" justifyContent="flex-end">
-            {!this.state.approve_declined_processing?<><Button
-                variant="outlined"
-                onClick={this.handleConfirmDialogClose}
-              >
-                Cancel
-              </Button>
-              <Button
-                variant="contained"
-                type="button"
-                onClick={this.handleConfirmSubmit}
-              >
-                Yes, Confirm
-              </Button></>:<CircularProgress />}
+            <Stack spacing={2} direction='row' justifyContent='flex-end'>
+              {!this.state.approve_declined_processing ? (
+                <>
+                  <Button
+                    variant='outlined'
+                    onClick={this.handleConfirmDialogClose}>
+                    Cancel
+                  </Button>
+                  <Button
+                    variant='contained'
+                    type='button'
+                    onClick={this.handleConfirmSubmit}>
+                    Yes, Confirm
+                  </Button>
+                </>
+              ) : (
+                <CircularProgress size='30px' />
+              )}
             </Stack>
           </DialogActions>
         </Dialog>
@@ -914,67 +904,74 @@ function Row(props) {
   const { row, index } = props;
   const [open, setOpen] = React.useState(true);
   const sl_no = index + 1;
-  let odd_even_class = sl_no % 2 == 0 ? 'even' : 'odd';
+  let odd_even_class = sl_no % 2 == 0 ? "even" : "odd";
   if (row.is_return) {
-    odd_even_class += ' strike_through';
+    odd_even_class += " strike_through";
   }
   return (
     <React.Fragment>
       <TableRow
         sx={{ "& > *": { borderBottom: "unset" } }}
-        className={odd_even_class}
-      >
+        className={odd_even_class}>
         <TableCell>
           <IconButton
-            aria-label="expand row"
-            size="small"
+            aria-label='expand row'
+            size='small'
             onClick={() => setOpen(!open)}
-            className="expand_icon"
-          >
+            className='expand_icon'>
             {open ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
           </IconButton>
         </TableCell>
-        <TableCell component="th" scope="row" style={{color: "#fff"}}>
+        <TableCell component='th' scope='row' style={{ color: "#fff" }}>
           {sl_no <= 9 ? "0" + sl_no : sl_no}
         </TableCell>
-        <TableCell component="th" scope="row"  style={{color: "#fff"}}>
+        <TableCell component='th' scope='row' style={{ color: "#fff" }}>
           {row.product_name}
         </TableCell>
-        <TableCell  style={{color: "#fff"}}>{row.category_name}</TableCell>
-        <TableCell  style={{color: "#fff"}}>{row.certificate_no}</TableCell>
-        <TableCell style={{color: "#fff"}}>{row.total_weight}</TableCell>
-        <TableCell style={{color: "#fff"}}>{row.size_name}</TableCell>
-        <TableCell style={{color: "#fff"}}>{row.making_charge}</TableCell>
-        <TableCell style={{color: "#fff"}}>{row.rep}</TableCell>
-        <TableCell style={{color: "#fff"}}>{row.sub_total}</TableCell>
-        <TableCell style={{color: "#fff"}}>{row.total_discount}</TableCell>
-        <TableCell style={{color: "#fff"}}>{row.tax}</TableCell>
-        <TableCell style={{color: "#fff"}}>{row.total}</TableCell>
+        <TableCell style={{ color: "#fff" }}>{row.category_name}</TableCell>
+        <TableCell style={{ color: "#fff" }}>{row.certificate_no}</TableCell>
+        <TableCell style={{ color: "#fff" }}>{row.total_weight}</TableCell>
+        <TableCell style={{ color: "#fff" }}>{row.size_name}</TableCell>
+        <TableCell style={{ color: "#fff" }}>{row.making_charge}</TableCell>
+        <TableCell style={{ color: "#fff" }}>{row.rep}</TableCell>
+        <TableCell style={{ color: "#fff" }}>{row.sub_total}</TableCell>
+        <TableCell style={{ color: "#fff" }}>{row.total_discount}</TableCell>
+        <TableCell style={{ color: "#fff" }}>{row.tax}</TableCell>
+        <TableCell style={{ color: "#fff" }}>{row.total}</TableCell>
       </TableRow>
       <TableRow className={"table-inner-row sub_table " + odd_even_class}>
         <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={11}>
-          <Collapse in={open} timeout="auto" unmountOnExit>
+          <Collapse in={open} timeout='auto' unmountOnExit>
             <Box sx={{ margin: 1 }}>
               <Typography
-                variant="h6"
+                variant='h6'
                 gutterBottom
-                component="div"
-              ></Typography>
-              <Table size="medium" aria-label="purchases">
+                component='div'></Typography>
+              <Table size='medium' aria-label='purchases'>
                 <TableHead>
-                  <TableRow className="pur-details-inner-table">
-                    <TableCell className={odd_even_class}>Material Name</TableCell>
+                  <TableRow className='pur-details-inner-table'>
+                    <TableCell className={odd_even_class}>
+                      Material Name
+                    </TableCell>
                     <TableCell className={odd_even_class}>Purity</TableCell>
                     <TableCell className={odd_even_class}>Quantity</TableCell>
-                    <TableCell className={odd_even_class}>Total Weight</TableCell>
-                    {row.product_code == ""?<TableCell className={odd_even_class}>Pakka Weight</TableCell>:""}
+                    <TableCell className={odd_even_class}>
+                      Total Weight
+                    </TableCell>
+                    {row.product_code == "" ? (
+                      <TableCell className={odd_even_class}>
+                        Pakka Weight
+                      </TableCell>
+                    ) : (
+                      ""
+                    )}
                     <TableCell className={odd_even_class}>Unit</TableCell>
                     <TableCell className={odd_even_class}>Rate</TableCell>
                     <TableCell className={odd_even_class}>Amount</TableCell>
                     <TableCell className={odd_even_class}>Dist</TableCell>
                   </TableRow>
                 </TableHead>
-                <TableBody className="pur-details-table-body">
+                <TableBody className='pur-details-table-body'>
                   {row.materials.map((item, i) =>
                     !(item.weight == 0 && item.quantity == 0) ? (
                       <TableRow key={i}>
@@ -987,15 +984,37 @@ function Row(props) {
                           "--------------row.materials",
                           row.materials
                         )} */}
-                        <TableCell scope="row" className={odd_even_class}>{item.material_name}</TableCell>
-                        <TableCell className={odd_even_class}>{item.purity_name}</TableCell>
-                        <TableCell className={odd_even_class}>{item.quantity}</TableCell>
-                        <TableCell className={odd_even_class}>{item.weight}</TableCell>
-                        {row.product_code == ""?<TableCell className={odd_even_class}>{item.pakka_weight}</TableCell>:""}
-                        <TableCell className={odd_even_class}>{item.unit_name}</TableCell>
-                        <TableCell className={odd_even_class}>{item.rate}</TableCell>
-                        <TableCell className={odd_even_class}>{item.amount}</TableCell>
-                        <TableCell className={odd_even_class}>{item.discount_amount}</TableCell>
+                        <TableCell scope='row' className={odd_even_class}>
+                          {item.material_name}
+                        </TableCell>
+                        <TableCell className={odd_even_class}>
+                          {item.purity_name}
+                        </TableCell>
+                        <TableCell className={odd_even_class}>
+                          {item.quantity}
+                        </TableCell>
+                        <TableCell className={odd_even_class}>
+                          {item.weight}
+                        </TableCell>
+                        {row.product_code == "" ? (
+                          <TableCell className={odd_even_class}>
+                            {item.pakka_weight}
+                          </TableCell>
+                        ) : (
+                          ""
+                        )}
+                        <TableCell className={odd_even_class}>
+                          {item.unit_name}
+                        </TableCell>
+                        <TableCell className={odd_even_class}>
+                          {item.rate}
+                        </TableCell>
+                        <TableCell className={odd_even_class}>
+                          {item.amount}
+                        </TableCell>
+                        <TableCell className={odd_even_class}>
+                          {item.discount_amount}
+                        </TableCell>
                       </TableRow>
                     ) : null
                   )}

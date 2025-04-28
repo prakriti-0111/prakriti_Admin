@@ -45,10 +45,12 @@ import bannerReducer from './banner.reducer';
 import promocodeReducer from './promocode.reducer';
 import newArrivalReducer from './newArrival.reducer';
 import festiveOfferReducer from './festiveOffer.reducer';
-import stockProductReducer from './stockProduct.reducer';
+import stockProductBannerReducer from './stockProductBanner.reducer';
 import my_performanceReducer from './my_performance.reducer';
 import returnOrdersReducer from './returnOrders.reducer';
 import holidayReducer from './holiday.reducer';
+import homepageSettingReducer from './homepageSetting.reducer';
+import stockProductReducer from './stockProduct.reducer';
 
 export const SUPERADMIN_REDUCERS = {
     //auth: authReducer,
@@ -96,8 +98,10 @@ export const SUPERADMIN_REDUCERS = {
     promocode: promocodeReducer,
     newArrival: newArrivalReducer,
     festiveoffer: festiveOfferReducer,
-    stockproduct: stockProductReducer,
+    stockproductbanner: stockProductBannerReducer,
     my_performance: my_performanceReducer,
     returnOrders: returnOrdersReducer,
     holiday: holidayReducer,
+    homepagesetting: homepageSettingReducer,
+    stockProduct: stockProductReducer,
 }

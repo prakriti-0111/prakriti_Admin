@@ -342,6 +342,13 @@ const superadminMenus = [
             url: urlPrefix + '/stock-products',
             breadcrumbs: false
           },
+          {
+            id: 'homepage-settings',
+            title: 'Homepage Settigs',
+            type: 'item',
+            url: urlPrefix + '/homepage-settings',
+            breadcrumbs: false
+          },
         ]
       },
       {

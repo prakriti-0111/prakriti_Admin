@@ -218,6 +218,9 @@ const ReturnStocksViewPage = Loadable(lazy(() => import('../pages/SuperAdmin/Ret
 //SubscriberPage
 const SubscriberPage =Loadable(lazy(() => import('../pages/SuperAdmin/Subscriber')));
 
+//homepage settings
+const HomepageSettingPage = Loadable(lazy(() => import('../pages/SuperAdmin/HomepageSetting')));
+
 const routePrefix = '/super-admin';
 const SuperAdminRoutes = (isLoggedIn) => [
   {
@@ -323,6 +326,10 @@ const SuperAdminRoutes = (isLoggedIn) => [
       {
         path: 'stock-products/Edit/:id',
         element: <StockProductBannerEditPage />
+      },
+      {
+        path: 'homepage-settings',
+        element: <HomepageSettingPage />
       },
       {
         path: 'countries',
