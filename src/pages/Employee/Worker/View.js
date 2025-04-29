@@ -1,18 +1,35 @@
-import React from 'react';
-import { connect } from 'react-redux';
-import { Grid, Button, CircularProgress, IconButton, Collapse, Box, Typography, Pagination, TextareaAutosize, Stack,  Select, MenuItem, InputLabel, FormControl, TextField, InputAdornment, OutlinedInput } from '@mui/material';
-import { gridSpacing } from 'store/constant';
-import MainCard from 'ui-component/cards/MainCard';
-import withRouter from 'src/helpers/withRouter';
-import DataTable from 'src/utils/DataTable';
-import { withSnackbar } from 'notistack';
-import { bindActionCreators } from 'redux';
-import { workerStock } from 'actions/manager/worker.actions';
-import { employeeFetch } from 'actions/superadmin/employee.actions';
-import { stocksList } from 'actions/superadmin/stocks.actions';
+import React from "react";
+import { connect } from "react-redux";
+import {
+  Grid,
+  Button,
+  CircularProgress,
+  IconButton,
+  Collapse,
+  Box,
+  Typography,
+  Pagination,
+  TextareaAutosize,
+  Stack,
+  Select,
+  MenuItem,
+  InputLabel,
+  FormControl,
+  TextField,
+  InputAdornment,
+  OutlinedInput,
+} from "@mui/material";
+import { gridSpacing } from "store/constant";
+import MainCard from "ui-component/cards/MainCard";
+import withRouter from "src/helpers/withRouter";
+import DataTable from "src/utils/DataTable";
+import { withSnackbar } from "notistack";
+import { bindActionCreators } from "redux";
+import { workerStock } from "actions/manager/worker.actions";
+import { employeeFetch } from "actions/superadmin/employee.actions";
+import { stocksList } from "actions/superadmin/stocks.actions";
 
 class WorkerViewPage extends React.Component {
-
   constructor(props) {
     super(props);
 
@@ -23,53 +40,52 @@ class WorkerViewPage extends React.Component {
       queryParams: {
         page: 1,
         limit: 50,
-        search: '',
-        type: 'material',
-        all: 0
+        search: "",
+        type: "material",
+        all: 0,
       },
-    }
+    };
 
     this.columns = [
       {
-        name: 'image',
-        display_name: 'Image',
-        isImage: true
+        name: "image",
+        display_name: "Image",
+        isImage: true,
       },
       {
-        name: 'name',
-        display_name: 'Material Name'
+        name: "name",
+        display_name: "Material Name",
       },
       {
-        name: 'purity_name',
-        display_name: 'Purity Name'
+        name: "purity_name",
+        display_name: "Purity Name",
       },
       {
-        name: 'total_weight_display',
-        display_name: 'Total Wt.',
-        width: '90px'
+        name: "total_weight_display",
+        display_name: "Total Wt.",
+        width: "90px",
       },
       /*{
         name: 'quantity',
         display_name: 'Qty'
       },*/
       {
-        name: 'weight_display',
-        display_name: 'Qty'
+        name: "weight_display",
+        display_name: "Qty",
       },
       {
-        name: 'unit_display',
-        display_name: 'Unit'
+        name: "unit_display",
+        display_name: "Unit",
       },
       /*{
         name: 'size_name',
         display_name: 'Size'
       },*/
       {
-        name: 'mrp_display',
-        display_name: 'Price'
-      }
+        name: "mrp_display",
+        display_name: "Price",
+      },
     ];
-    
   }
 
   componentDidMount() {
@@ -79,20 +95,20 @@ class WorkerViewPage extends React.Component {
   loadAllData = () => {
     this.loadViewData();
     this.loadStockData();
-  }
+  };
 
   loadViewData = () => {
     this.props.actions.employeeFetch(this.props.params.id, 10);
-  }
+  };
 
-  loadStockData = async() => {
-    let data = {...this.state.queryParams, user_id: this.props.params.id}
+  loadStockData = async () => {
+    let data = { ...this.state.queryParams, user_id: this.props.params.id };
     this.props.actions.stocksList(data);
-  }
+  };
 
-  static getDerivedStateFromProps(props, state){
+  static getDerivedStateFromProps(props, state) {
     let update = {};
-    if(props.item !== state.item){
+    if (props.item !== state.item) {
       update.item = props.item;
     }
     if (props.stocks !== state.stocks) {
@@ -104,88 +120,95 @@ class WorkerViewPage extends React.Component {
     return update;
   }
 
-  componentDidUpdate(previousProps){
-    if(previousProps.params.id != this.props.params.id){
+  componentDidUpdate(previousProps) {
+    if (previousProps.params.id != this.props.params.id) {
       this.loadAllData();
     }
-
   }
 
   handlePagination = (page, all) => {
-    this.setState({
-      queryParams: {
-        ...this.state.queryParams,
-        page: page,
-        all: all ? 1 : 0
+    this.setState(
+      {
+        queryParams: {
+          ...this.state.queryParams,
+          page: page,
+          all: all ? 1 : 0,
+        },
+      },
+      () => {
+        this.loadStockData();
       }
-    }, () => {
-      this.loadStockData();
-    })
-
-  }
-
+    );
+  };
 
   render() {
     const worker = this.state.item;
 
     return (
-      <MainCard title="Worker Details"  secondary={<Button variant="contained" onClick={() => this.props.navigate(-1)}>Back</Button>}>
-        {
-          !worker ?
-          <Grid container justifyContent="center">
-            <CircularProgress />
+      <MainCard
+        title='Worker Details'
+        secondary={
+          <Button variant='contained' onClick={() => this.props.navigate(-1)}>
+            Back
+          </Button>
+        }>
+        {!worker ? (
+          <Grid container justifyContent='center'>
+            <CircularProgress size='30px' />
           </Grid>
-          :
+        ) : (
           <>
             <Box sx={{ flexGrow: 1, m: 0.5 }} className='ratn-dialog-wrapper'>
-              <div autoComplete="off" className='ratn-dialog-inner'>
+              <div autoComplete='off' className='ratn-dialog-inner'>
                 <Grid container spacing={2} className='loans_view p_view'>
                   <Grid item xs={12} md={3} className='create-input'>
-                    <TextField  
-                      label="Name"
-                      variant="outlined"
+                    <TextField
+                      label='Name'
+                      variant='outlined'
                       fullWidth
                       value={worker.name}
                       disabled
                       InputProps={{
-                        className: "non_disable_text"
+                        className: "non_disable_text",
                       }}
                     />
                   </Grid>
                   <Grid item xs={12} md={3} className='create-input'>
-                    <TextField  
-                      label="Contact Number"
-                      variant="outlined"
+                    <TextField
+                      label='Contact Number'
+                      variant='outlined'
                       fullWidth
                       value={worker.mobile}
                       disabled
                       InputProps={{
-                        className: "non_disable_text"
+                        className: "non_disable_text",
                       }}
                     />
                   </Grid>
                   <Grid item xs={12} md={3} className='create-input'>
-                    <TextField  
-                      label="Email"
-                      variant="outlined"
+                    <TextField
+                      label='Email'
+                      variant='outlined'
                       fullWidth
                       value={worker.email}
                       disabled
                       InputProps={{
-                        className: "non_disable_text"
+                        className: "non_disable_text",
                       }}
                     />
                   </Grid>
                   <Grid item xs={12} md={3} className='create-input'>
-                    <TextField  
-                      label="Address"
-                      variant="outlined"
+                    <TextField
+                      label='Address'
+                      variant='outlined'
                       fullWidth
                       value={worker.address}
                       disabled
                       InputProps={{
-                        startAdornment: <InputAdornment position="start">₹</InputAdornment>,
-                        className: "non_disable_text"
+                        startAdornment: (
+                          <InputAdornment position='start'>₹</InputAdornment>
+                        ),
+                        className: "non_disable_text",
                       }}
                     />
                   </Grid>
@@ -206,8 +229,7 @@ class WorkerViewPage extends React.Component {
               />
             </Grid>
           </>
-        }
-        
+        )}
       </MainCard>
     );
   }
@@ -219,10 +241,11 @@ const mapStateToProps = (state) => ({
   total: state.superadmin.stocks.total,
 });
 
-const mapDispatchToProps = dispatch => ({
+const mapDispatchToProps = (dispatch) => ({
   dispatch,
-  actions: bindActionCreators({employeeFetch, stocksList}, dispatch)
+  actions: bindActionCreators({ employeeFetch, stocksList }, dispatch),
 });
 
-export default withSnackbar(withRouter(connect(mapStateToProps, mapDispatchToProps)(WorkerViewPage)));
-
+export default withSnackbar(
+  withRouter(connect(mapStateToProps, mapDispatchToProps)(WorkerViewPage))
+);

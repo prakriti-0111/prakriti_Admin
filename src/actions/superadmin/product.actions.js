@@ -6,6 +6,7 @@ import {
     GET_PRODUCT,
     UPDATE_PRODUCT,
     DELETE_PRODUCT,
+    LIST_STOCK_PRODUCT
 } from '../../actionTypes/superadmin/product.types';
 import {objectToQuery} from 'src/helpers/helper';
 
@@ -95,6 +96,23 @@ export const productDelete = (id, data) => {
                 type: DELETE_PRODUCT,
                 payload: response.data
             });
+        })
+        .catch(error => {
+        })
+    }
+}
+
+export const stockProductList = (params) => {
+    params = objectToQuery(params, true)
+    return (dispatch) => {
+        axios.get(`/superadmin/stock-product${params}`)
+        .then(response => {
+            if(response.data.success){
+                dispatch({
+                    type: LIST_STOCK_PRODUCT,
+                    payload: response.data.data
+                });
+            }
         })
         .catch(error => {
         })

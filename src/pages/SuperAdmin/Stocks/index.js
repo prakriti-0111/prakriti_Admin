@@ -30,6 +30,7 @@ import { materialList } from 'actions/superadmin/material.actions';
 import { displayAmount } from 'src/helpers/helper';
 import { FreeBreakfastOutlined } from '@mui/icons-material';
 import { unitList } from 'actions/superadmin/unit.actions';
+import { sizeList } from 'actions/superadmin/size.actions';
 import { convertUnitToGram, weightFormat } from 'src/helpers/helper';
 import _ from 'lodash';
 
@@ -49,6 +50,11 @@ class StockPage extends Component {
         category_id: '',
         sub_category_id: '',
         search: '',
+        qty:'',
+        unit: '',
+        pcode: '',
+        size: '',
+        price: '',
         all: 0,
         by_specific: this.props.query.get('by_specific') ?? "",
         own_distributor: this.props.query.get('own_distributor') ?? "",
@@ -75,6 +81,7 @@ class StockPage extends Component {
       sub_categories: this.props.sub_categories,
       price_by_categories: [],
       unitList: [],
+      sizeList: []
       //addToCartProcess: false
     }
 
@@ -185,7 +192,7 @@ class StockPage extends Component {
     this.loadListData();
     this.props.actions.categoryList({ all: 1 });
     this.props.actions.unitList({ all: 1 });
-
+    this.props.actions.sizeList({ all: 1 });
     this.loadPriceByCategory();
   }
 
@@ -252,6 +259,10 @@ class StockPage extends Component {
       update.unitList = props.unitList;
     }
 
+    if (props.sizeList !== state.sizeList) {
+      update.sizeList = props.sizeList;
+    }
+
     return update;
   }
 
@@ -281,6 +292,7 @@ class StockPage extends Component {
   }
 
   loadListData = () => {
+    console.log("loadListData", this.state.queryParams);
     this.props.actions.stocksList(this.state.queryParams);
   }
 
@@ -437,7 +449,54 @@ class StockPage extends Component {
     this.setState({
       queryParams: {
         ...this.state.queryParams,
-        search: event.target.value
+        search: event.target.value,
+        page: 1,
+        limit: 50
+      }
+    })
+  }
+
+  handleQtyChange = (event) => {
+    this.setState({
+      queryParams: {
+        ...this.state.queryParams,
+        qty: event.target.value
+      }
+    })
+  }
+
+  handleUnitChange = (event) => {
+    this.setState({
+      queryParams: {
+        ...this.state.queryParams,
+        unit: event.target.value
+      }
+    })
+  }
+
+  handlePCodeChange = (event) => {
+    this.setState({
+      queryParams: {
+        ...this.state.queryParams,
+        pcode: event.target.value
+      }
+    })
+  }
+
+  handleSizeChange = (event) => {
+    this.setState({
+      queryParams: {
+        ...this.state.queryParams,
+        size: event.target.value
+      }
+    })
+  }
+
+  handlePriceChange = (event) => {
+    this.setState({
+      queryParams: {
+        ...this.state.queryParams,
+        price: event.target.value
       }
     })
   }
@@ -543,6 +602,83 @@ class StockPage extends Component {
                   />
                 </FormControl>
               </Grid>
+              {/*<Grid item xs={6} md={3} className='create-input'>
+                <FormControl fullWidth>
+                  <TextField
+                    label="Qty"
+                    variant="outlined"
+                    value={this.state.qty}
+                    onChange={this.handleQtyChange}
+                  />
+                </FormControl>
+              </Grid>
+              <Grid item xs={6} md={3} className='create-input'>
+                <FormControl fullWidth>
+                  <InputLabel>Unit</InputLabel>
+                  <Select
+                    value={this.state.queryParams.unit}
+                    label="Unit"
+                    onChange={this.handleUnitChange}
+                    className='input-inner'
+                    defaultValue=""
+                  >
+                    <MenuItem value="">All</MenuItem>
+                    {
+                      this.state.unitList.map((item, index) => (
+                        <MenuItem value={item.id} key={index}>{item.name}</MenuItem>
+                      ))
+                    }
+                  </Select>
+                </FormControl>
+              </Grid>
+              <Grid item xs={6} md={3} className='create-input'>
+                <FormControl fullWidth>
+                  <InputLabel>P Code</InputLabel>
+                  <Select
+                    value={this.state.queryParams.pcode}
+                    label="Unit"
+                    onChange={this.handlePCodeChange}
+                    className='input-inner'
+                    defaultValue=""
+                  >
+                    <MenuItem value="">All</MenuItem>
+                    {
+                      this.state.items.map((item, index) => (
+                        <MenuItem value={item.product_code} key={index}>{item.product_code}</MenuItem>
+                      ))
+                    }
+                  </Select>
+                </FormControl>
+              </Grid>
+              <Grid item xs={6} md={3} className='create-input'>
+                <FormControl fullWidth>
+                  <InputLabel>Size</InputLabel>
+                  <Select
+                    value={this.state.queryParams.size}
+                    label="Size"
+                    onChange={this.handleSizeChange}
+                    className='input-inner'
+                    defaultValue=""
+                  >
+                    <MenuItem value="">All</MenuItem>
+                    {
+                      this.state.sizeList.map((item, index) => (
+                        <MenuItem value={item.id} key={index}>{item.name}</MenuItem>
+                      ))
+                    }
+                  </Select>
+                </FormControl>
+              </Grid>*/}
+              {/*<Grid item xs={6} md={3} className='create-input'>
+                <FormControl fullWidth>
+                  <TextField
+                    label="Price"
+                    variant="outlined"
+                    value={this.state.price}
+                    onChange={this.handlePriceChange}
+                  />
+                </FormControl>
+              </Grid>*/}
               <Grid item xs={6} md={3} className='create-input order-input button-right'>
                 <Button variant="contained" className='search-btn' onClick={this.handleSearch}>Search</Button>
               </Grid>
@@ -698,7 +834,8 @@ const mapStateToProps = (state) => ({
   categories: state.superadmin.category.items,
   materialList: state.superadmin.material.items,
   sub_categories: state.superadmin.subCategory.items,
-  unitList: state.superadmin.unit.items
+  unitList: state.superadmin.unit.items,
+  sizeList: state.superadmin.size.items,
 });
 
 const mapDispatchToProps = dispatch => {
@@ -711,7 +848,8 @@ const mapDispatchToProps = dispatch => {
       cartList,
       categoryList,
       materialList,
-      unitList
+      unitList,
+      sizeList
     }, dispatch)
   }
 };

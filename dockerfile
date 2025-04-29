@@ -1,11 +1,14 @@
 # Use an official Node.js runtime as a parent image
-FROM node:14 AS build
+FROM node:14-alpine AS build
 
 # Set the working directory
 WORKDIR /app
 
 # Copy package.json and package-lock.json
 COPY package*.json ./
+
+# Install build dependencies
+RUN apk add --no-cache build-base autoconf automake libtool nasm libpng-dev
 
 # Install dependencies
 RUN npm install
@@ -26,7 +29,7 @@ RUN rm /etc/nginx/conf.d/default.conf
 COPY --from=build /app/build /usr/share/nginx/html
 
 # Copy the Nginx configuration file
-COPY /default.conf /etc/nginx/conf.d/default.conf
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 
 # Expose port 80
 EXPOSE 80

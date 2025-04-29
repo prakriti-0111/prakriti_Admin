@@ -461,11 +461,6 @@ label {
 .MuiTable-root .MuiButton-containedError svg {
   color: red;
 }
-
-.changes {
-  color: #1eaae7;
-}
-
 .profile-dropdown svg {
   color: #1e2746 !important;
 }
@@ -682,7 +677,7 @@ label {
 .super-admin-login {
   position: relative;
   height: 100vh;
-  background-color: #003631;
+  background-color: #1eaae7;
   display: grid;
   place-items: center;
 }
@@ -843,7 +838,7 @@ span.forget_header h3 {
   color: #1eaae7;
 }
 .signin-btn {
-  background-color: #003631 !important;
+  background-color: #1eaae7 !important;
   color: #fff !important;
   font-family: "Poppins", sans-serif;
   font-weight: 400;
@@ -1641,8 +1636,7 @@ span.forget_header h3 {
 .dashboard_card_content h1 {
   font-family: "Poppins", sans-serif;
   font-weight: 400;
-  font-size: 16px;
-  color: #fff;
+  font-size: 28px;
   margin-top: 0;
   margin-bottom: 8px;
 }
@@ -1667,7 +1661,7 @@ span.forget_header h3 {
 .card-icon {
   display: flex;
   align-items: center;
-  font-size: 28px;
+  font-size: 25px;
 }
 .card-icon svg {
   color: #fff;
@@ -2799,7 +2793,7 @@ th.banner_img {
     margin-left: -10px !important;
     margin-bottom: 0px !important;
     padding: 8px;
-    gap:7px !important
+    gap: 7px !important;
   }
   .create-input .description {
     display: block;

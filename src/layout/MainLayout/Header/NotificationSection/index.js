@@ -124,136 +124,152 @@ const NotificationSection = () => {
     console.log('notification', notification)
 
     return (
-        <>
-            <Box
-                sx={{
-                    ml: 2,
-                    mr: 3,
-                    [theme.breakpoints.down('md')]: {
-                        mr: 2
-                    }
-                }}
-                className="cart_header_sec"
-            >
-                <ButtonBase sx={{ borderRadius: '12px' }}>
-                    <Avatar
-                        variant="rounded"
-                        className='header-avatar'
-                        sx={{
-                            ...theme.typography.commonAvatar,
-                            ...theme.typography.mediumAvatar,
-                            transition: 'all .2s ease-in-out',
-                            background: theme.palette.secondary.light,
-                            color: theme.palette.secondary.dark,
-                            '&[aria-controls="menu-list-grow"],&:hover': {
-                                background: theme.palette.secondary.dark,
-                                color: theme.palette.secondary.light
-                            }
-                        }}
-                        ref={anchorRef}
-                        aria-controls={open ? 'menu-list-grow' : undefined}
-                        aria-haspopup="true"
-                        onClick={handleToggle}
-                        color="inherit"
-                    >
-                        <div className='c-heading'>
-                            <Badge badgeContent={notification.new} color="secondary">
-                                <IconBell stroke={1.5} size="1.3rem" />
-                            </Badge>
-                        </div>
-                    </Avatar>
-                </ButtonBase>
-            </Box>
-            <Popper
-                className='notifation-list'
-                placement={matchesXs ? 'bottom' : 'bottom-end'}
-                open={open}
-                anchorEl={anchorRef.current}
-                role={undefined}
-                transition
-                disablePortal
-                popperOptions={{
-                    modifiers: [
-                        {
-                            name: 'offset',
-                            options: {
-                                offset: [matchesXs ? 5 : 0, 20]
-                            }
-                        }
-                    ]
-                }}
-            >
-                {({ TransitionProps }) => (
-                    <Transitions position={matchesXs ? 'top' : 'top-right'} in={open} {...TransitionProps}>
-                        <Paper>
-                            <ClickAwayListener onClickAway={handleClose}>
+      <>
+        <Box
+          sx={{
+            ml: 2,
+            mr: 3,
+            [theme.breakpoints.down("md")]: {
+              mr: 2,
+            },
+          }}
+          className='cart_header_sec'>
+          <ButtonBase sx={{ borderRadius: "12px" }}>
+            <Avatar
+              variant='rounded'
+              className='header-avatar'
+              sx={{
+                ...theme.typography.commonAvatar,
+                ...theme.typography.mediumAvatar,
+                transition: "all .2s ease-in-out",
+                background: theme.palette.secondary.light,
+                color: theme.palette.secondary.dark,
+                '&[aria-controls="menu-list-grow"],&:hover': {
+                  background: theme.palette.secondary.dark,
+                  color: theme.palette.secondary.light,
+                },
+              }}
+              ref={anchorRef}
+              aria-controls={open ? "menu-list-grow" : undefined}
+              aria-haspopup='true'
+              onClick={handleToggle}
+              color='inherit'>
+              <div className='c-heading'>
+                <Badge badgeContent={notification.new} color='secondary'>
+                  <i class='bi bi-bell-fill'></i>
+                </Badge>
+              </div>
+            </Avatar>
+          </ButtonBase>
+        </Box>
+        <Popper
+          className='notifation-list'
+          placement={matchesXs ? "bottom" : "bottom-end"}
+          open={open}
+          anchorEl={anchorRef.current}
+          role={undefined}
+          transition
+          disablePortal
+          popperOptions={{
+            modifiers: [
+              {
+                name: "offset",
+                options: {
+                  offset: [matchesXs ? 5 : 0, 20],
+                },
+              },
+            ],
+          }}>
+          {({ TransitionProps }) => (
+            <Transitions
+              position={matchesXs ? "top" : "top-right"}
+              in={open}
+              {...TransitionProps}>
+              <Paper>
+                <ClickAwayListener onClickAway={handleClose}>
+                  <MainCard
+                    border={false}
+                    elevation={16}
+                    content={false}
+                    boxShadow
+                    shadow={theme.shadows[16]}>
+                    <Box sx={{ p: 2 }} className='notification'>
+                      <Stack>
+                        <Stack
+                          direction='row'
+                          spacing={0.5}
+                          alignItems='center'
+                          className='notification_wrapper'>
+                          <Typography
+                            component='span'
+                            variant='h4'
+                            sx={{ fontWeight: 400 }}>
+                            <h2 className='notification_header'>
+                              {" "}
+                              Notifications{" "}
+                            </h2>
+                          </Typography>
+                        </Stack>
+                      </Stack>
+                    </Box>
+                    <List
+                      component='nav'
+                      className='single-notification'
+                      sx={{
+                        width: "100%",
+                        maxWidth: 400,
+                        backgroundColor: theme.palette.background.paper,
+                        borderRadius: "10px",
+                        [theme.breakpoints.down("md")]: {
+                          minWidth: "100%",
+                        },
+                        "& .MuiListItemButton-root": {
+                          mt: 0.5,
+                        },
+                      }}>
+                      <div className='wrapper_notification'>
+                        {notification.items.map((row, index) => (
+                          <ListItemButton
+                            key={index}
+                            className={!row.is_read ? "active" : ""}>
+                            <h6>{row.label}</h6>
+                            {row.items ? (
+                              <>
+                                {row.items.map((r, i) => (
+                                  <React.Fragment key={i}>
+                                    <div
+                                      className='notification_items'
+                                      onClick={() =>
+                                        handleNotificationClick(index, i, r)
+                                      }>
+                                      <ListItemIcon>
+                                        <CircleNotificationsIcon
+                                          stroke={1.5}
+                                          size='1.3rem'
+                                        />
+                                      </ListItemIcon>
+                                      <ListItemText
+                                        primary={
+                                          <Typography variant='body2'>
+                                            {r.message}
+                                          </Typography>
+                                        }
+                                      />
+                                    </div>
+                                    <div className='notification_date'>
+                                      {r.created_at}
+                                    </div>
+                                  </React.Fragment>
+                                ))}
+                              </>
+                            ) : null}
+                          </ListItemButton>
+                        ))}
+                      </div>
+                    </List>
+                  </MainCard>
 
-
-
-                                <MainCard border={false} elevation={16} content={false} boxShadow shadow={theme.shadows[16]}>
-                                    <Box sx={{ p: 2 }} className='notification'>
-                                        <Stack>
-                                            <Stack direction="row" spacing={0.5} alignItems="center" className='notification_wrapper'>
-                                                <Typography component="span" variant="h4" sx={{ fontWeight: 400 }}>
-                                                    <h2 className='notification_header'> Notifications </h2>
-                                                </Typography>
-                                            </Stack>
-                                        </Stack>
-                                    </Box>
-                                    <List
-                                        component="nav"
-                                        className='single-notification'
-                                        sx={{
-                                            width: '100%',
-                                            maxWidth: 400,
-                                            backgroundColor: theme.palette.background.paper,
-                                            borderRadius: '10px',
-                                            [theme.breakpoints.down('md')]: {
-                                                minWidth: '100%'
-                                            },
-                                            '& .MuiListItemButton-root': {
-                                                mt: 0.5
-                                            }
-                                        }}
-                                    >
-                                        <div className='wrapper_notification'>
-                                            {notification.items.map((row, index) => (
-
-                                                <ListItemButton key={index}
-                                                    className={!row.is_read ? "active" : ""}
-                                                >
-                                                    <h6>{row.label}</h6>
-                                                    {
-                                                        row.items ?
-                                                            <>
-                                                                {row.items.map((r, i) => (
-                                                                    <React.Fragment key={i}>
-                                                                        <div className='notification_items' onClick={() => handleNotificationClick(index, i, r)}>
-                                                                            <ListItemIcon>
-                                                                                <CircleNotificationsIcon stroke={1.5} size="1.3rem" />
-                                                                            </ListItemIcon>
-                                                                            <ListItemText primary={<Typography variant="body2">{r.message}</Typography>} />
-                                                                        </div>
-                                                                        <div className='notification_date'>{r.created_at}</div>
-                                                                    </React.Fragment>
-                                                                ))}
-                                                            </>
-                                                            : null
-                                                    }
-                                                </ListItemButton>
-
-                                            ))}
-
-                                        </div>
-
-                                    </List>
-                                </MainCard>
-
-
-
-
-
-                                {/*<MainCard border={false} elevation={16} content={false} boxShadow shadow={theme.shadows[16]}>
+                  {/*<MainCard border={false} elevation={16} content={false} boxShadow shadow={theme.shadows[16]}>
                                     <Grid container direction="column" spacing={2}>
                                         {/*<Grid item xs={12}>
                                             <Grid container alignItems="center" justifyContent="space-between" sx={{ pt: 2, px: 2 }}>
@@ -318,12 +334,12 @@ const NotificationSection = () => {
                                         </Button>
                                                                 </CardActions>
                                 </MainCard> */}
-                            </ClickAwayListener>
-                        </Paper>
-                    </Transitions>
-                )}
-            </Popper>
-        </>
+                </ClickAwayListener>
+              </Paper>
+            </Transitions>
+          )}
+        </Popper>
+      </>
     );
 };
 

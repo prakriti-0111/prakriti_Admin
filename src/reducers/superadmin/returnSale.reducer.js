@@ -26,6 +26,7 @@ export default function (state = initialState, action) {
             }
         case GET_RETURN_SALE:
             return {
+                actionCalled: true,
                 ...state,
                 actionCalled: true,
                 returnSale: payload

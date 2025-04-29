@@ -119,7 +119,7 @@ class LoginPage extends Component {
               <LoginForm onSubmit={this.submit} roleList={this.state.roleList} />
             </Box>
             <Typography variant="body2" color="text.secondary" align="center" sx={{ mt: 6, mb: 0 }} className='copyright'>
-              {'Copyright ©  Prakriti '}
+              {'Copyright ©  Ratnvihar '}
               {new Date().getFullYear()}
               <Link color="inherit" href="https://webappssol.com/" target="_blank">
                 &nbsp; 
