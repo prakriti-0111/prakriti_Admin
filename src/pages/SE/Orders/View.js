@@ -440,72 +440,54 @@ class OrderViewPage extends React.Component {
               </Grid>
             </Grid>
 
-            <Dialog
-              className='ratn-dialog-wrapper'
-              open={this.state.saleDialog}
-              onClose={this.handleSaleDialogClose}
-              fullWidth
-              maxWidth='xs'>
-              <DialogTitle>Sale Order</DialogTitle>
-              <DialogContent>
-                Are you sure want to sale this order?
-                {order.is_customer && order.paid_amount > 0 ? (
-                  <>
-                    <FormControl>
-                      <RadioGroup
-                        row
-                        name='row-radio-buttons-group'
-                        value={this.state.from_order_price}
-                        onChange={(e) =>
-                          this.setState({ from_order_price: e.target.value })
-                        }>
-                        <FormControlLabel
-                          value={1}
-                          control={<Radio />}
-                          label='Price will be same as order price.'
-                        />
-                        <FormControlLabel
-                          value={0}
-                          control={<Radio />}
-                          label='Price will be same as current price.'
-                        />
-                      </RadioGroup>
-                    </FormControl>
-                  </>
-                ) : (
-                  <FormControl>
-                    <RadioGroup
-                      row
-                      name='row-radio-buttons-group'
-                      value={this.state.from_order_price}>
-                      <FormControlLabel
-                        value={0}
-                        control={<Radio />}
-                        label='Price will be same as current price.'
-                      />
-                    </RadioGroup>
-                  </FormControl>
-                )}
-              </DialogContent>
-              <DialogActions>
-                <Stack spacing={2} direction='row' justifyContent='flex-end'>
-                  <Button
-                    variant='outlined'
-                    onClick={this.handleSaleDialogClose}>
-                    Cancel
-                  </Button>
-                  <Button
-                    variant='contained'
-                    type='button'
-                    disabled={this.state.processing}
-                    onClick={this.handleSaleSubmit}>
-                    Yes, Confirm
-                  </Button>
-                </Stack>
-              </DialogActions>
-            </Dialog>
-          </>
-        )}
+              <Dialog
+                className="ratn-dialog-wrapper"
+                open={this.state.saleDialog}
+                onClose={this.handleSaleDialogClose}
+                fullWidth
+                maxWidth="xs"
+              >
+                <DialogTitle>
+                  Sale Order
+                </DialogTitle>
+                <DialogContent>
+                  Are you sure want to sale this order?
+                  {
+                    (order.is_customer && order.paid_amount > 0) ?
+                      <>
+                        <FormControl>
+                          <RadioGroup
+                            row
+                            name="row-radio-buttons-group"
+                            value={this.state.from_order_price}
+                            onChange={(e) => this.setState({ from_order_price: e.target.value })}
+                          >
+                            <FormControlLabel value={1} control={<Radio />} label="Price will be same as order price." />
+                            <FormControlLabel value={0} control={<Radio />} label="Price will be same as current price." />
+                          </RadioGroup>
+                        </FormControl>
+                      </>
+                      :
+                      <FormControl>
+                        <RadioGroup
+                          row
+                          name="row-radio-buttons-group"
+                          value={this.state.from_order_price}
+                        >
+                          <FormControlLabel value={0} control={<Radio />} label="Price will be same as current price." />
+                        </RadioGroup>
+                      </FormControl>
+                  }
+                </DialogContent>
+                <DialogActions>
+                  <Stack spacing={2} direction="row" justifyContent="flex-end">
+                    <Button variant="outlined" onClick={this.handleSaleDialogClose}>Cancel</Button>
+                    <Button variant="contained" disabled={this.state.processing} type="button" onClick={this.handleSaleSubmit}>Yes, Confirm</Button>
+                  </Stack>
+                </DialogActions>
+              </Dialog>
+            </>
+        }
 
         <Dialog
           className='ratn-dialog-wrapper'

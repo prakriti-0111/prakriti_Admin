@@ -28,6 +28,7 @@ export default function (state = initialState, action) {
             return {
                 actionCalled: true,
                 ...state,
+                actionCalled: true,
                 returnSale: payload
             }
         default:

@@ -179,35 +179,31 @@ class PurchaseOnApproveViewPage extends React.Component {
       this.loadViewData();
     }
 
-    if (this.state.actionCalled) {
-      if (this.state.createSuccess) {
-        this.props.enqueueSnackbar(this.state.successMessage, {
-          variant: "success",
+    if(this.state.actionCalled){
+        if(this.state.createSuccess){
+            this.props.enqueueSnackbar(this.state.successMessage, {variant: 'success'});
+            this.setState({
+                processing: false,
+                approve_declined_processing: false,
+                openDialog: false,
+                queryParams: {
+                  ...this.state.queryParams,
+                  page: 1
+                },
+                ...this.defaultFormValues()
+            });
+            this.loadViewData();
+            this.loadListData();
+        }else{
+            this.props.enqueueSnackbar(this.state.errorMessage, {variant: 'error'});
+            this.setState({
+                processing: false,
+                approve_declined_processing: false,
+            });
+        }
+        this.props.dispatch({
+          type: SUPERADMIN_RESET_PAYMENT
         });
-        this.setState({
-          processing: false,
-          approve_declined_processing: false,
-          openDialog: false,
-          queryParams: {
-            ...this.state.queryParams,
-            page: 1,
-          },
-          ...this.defaultFormValues(),
-        });
-        this.loadViewData();
-        this.loadListData();
-      } else {
-        this.props.enqueueSnackbar(this.state.errorMessage, {
-          variant: "error",
-        });
-        this.setState({
-          processing: false,
-          approve_declined_processing: false,
-        });
-      }
-      this.props.dispatch({
-        type: SUPERADMIN_RESET_PAYMENT,
-      });
     }
   }
 
@@ -362,44 +358,28 @@ class PurchaseOnApproveViewPage extends React.Component {
     });
   };
 
-  handleConfirmSubmit = async () => {
-    let data = {
-      approve_status: this.state.status_changing,
-      decline_type: this.state.decline_type,
-    };
-
+  handleConfirmSubmit = async() => {
+    let data = {approve_status: this.state.status_changing, decline_type: this.state.decline_type};
     this.setState({
-      approve_declined_processing: true,
+      approve_declined_processing: true
     });
-
-    let status_response = await purchaseStatusChange(
-      this.props.params.id,
-      data
-    );
-    if (status_response.data.success == true) {
-      this.props.enqueueSnackbar(status_response.data.message, {
-        variant: "success",
-      });
-      this.setState({
-        confirmDialog: false,
-        approve_declined_processing: false,
-      });
-      if (this.state.status_changing == 4) {
-        this.props.navigate(
-          getUserDashboardRoute(getRoleName(this.state.auth)) +
-            "/purchases/create?purchase_on_approve=" +
-            this.props.params.id
-        );
-      } else {
-        this.loadViewData();
-      }
-    } else {
-      this.props.enqueueSnackbar(status_response.data.message, {
-        variant: "error",
-      });
-      this.setState({
-        approve_declined_processing: false,
-      });
+    let status_response = await purchaseStatusChange(this.props.params.id, data);
+    if(status_response.data.success == true){
+        this.props.enqueueSnackbar(status_response.data.message, {variant: 'success'});
+        this.setState({
+          confirmDialog: false,
+          approve_declined_processing: false
+        });
+        if(this.state.status_changing == 4){
+          this.props.navigate(getUserDashboardRoute(getRoleName(this.state.auth)) + '/purchases/create?purchase_on_approve=' + this.props.params.id);
+        }else{
+          this.loadViewData();
+        }
+    }else{
+        this.props.enqueueSnackbar(status_response.data.message, {variant: 'error'});
+        this.setState({
+          approve_declined_processing: false
+        });
     }
   };
 
@@ -609,76 +589,53 @@ class PurchaseOnApproveViewPage extends React.Component {
           </>
         )}
 
-        <Dialog
-          open={this.state.confirmDialog}
-          onClose={this.handleConfirmDialogClose}
-          fullWidth
-          maxWidth='xs'
-          className='ratn-dialog-wrapper'>
-          <DialogTitle>
-            {this.state.status_changing == 4
-              ? "Transfer To Purchase"
-              : "Decline"}
-          </DialogTitle>
-          <DialogContent>
-            <DialogContentText id='alert-dialog-slide-description'>
-              {this.state.status_changing == 4
-                ? "Are you sure want to transfer ti purchase?"
-                : "Are you sure want to decline?"}
-              {this.state.status_changing == 2 &&
-              purchase &&
-              parseFloat(purchase.paid_amount) > 0 ? (
-                <>
-                  <FormControl>
-                    <RadioGroup
-                      row
-                      name='row-radio-buttons-group'
-                      value={this.state.decline_type}
-                      onChange={(e) =>
-                        this.setState({ decline_type: e.target.value })
-                      }>
-                      <FormControlLabel
-                        value='advance'
-                        control={<Radio />}
-                        label={`Payment move to advance ${displayAmount(
-                          purchase.paid_amount
-                        )}`}
-                      />
-                      <FormControlLabel
-                        value='return'
-                        control={<Radio />}
-                        label={`Payment Return ${displayAmount(
-                          purchase.paid_amount
-                        )}`}
-                      />
-                    </RadioGroup>
-                  </FormControl>
-                </>
-              ) : null}
-            </DialogContentText>
-          </DialogContent>
-          <DialogActions>
-            <Stack spacing={2} direction='row' justifyContent='flex-end'>
-            {!this.state.approve_declined_processing ? (
-              <>
-                <Button
-                  variant='outlined'
-                  onClick={this.handleConfirmDialogClose}>
-                  Cancel
-                </Button>
-                <Button
-                  variant='contained'
-                  type='button'
-                  onClick={this.handleConfirmSubmit}>
-                  Yes, Confirm
-                </Button>
-              </>
-            ) : (
-              <CircularProgress size='30px' />
-            )}
-            </Stack>
-          </DialogActions>
-        </Dialog>
+            <Dialog
+                open={this.state.confirmDialog}
+                onClose={this.handleConfirmDialogClose}
+                fullWidth
+                maxWidth="xs"
+                className="ratn-dialog-wrapper"
+            >
+                <DialogTitle>
+                  {
+                    this.state.status_changing == 4 ? "Transfer To Purchase" : "Decline"
+                  }
+                </DialogTitle>
+                <DialogContent>
+                    <DialogContentText id="alert-dialog-slide-description">
+                      {
+                        this.state.status_changing == 4 ?
+                        "Are you sure want to transfer ti purchase?"
+                        :
+                        "Are you sure want to decline?"
+                      }
+                      {
+                        (this.state.status_changing == 2 && purchase && parseFloat(purchase.paid_amount) > 0) ?
+                        <>
+                        <FormControl>
+                          <RadioGroup
+                            row
+                            name="row-radio-buttons-group"
+                            value={this.state.decline_type}
+                            onChange={(e) => this.setState({decline_type: e.target.value})}
+                          >
+                            <FormControlLabel value="advance" control={<Radio />} label={`Payment move to advance ${displayAmount(purchase.paid_amount)}`} />
+                            <FormControlLabel value="return" control={<Radio />} label={`Payment Return ${displayAmount(purchase.paid_amount)}`} />
+                          </RadioGroup>
+                        </FormControl>
+                        </>
+                        : null
+                      }
+                    </DialogContentText>
+                </DialogContent>
+                <DialogActions>
+                    <Stack spacing={2} direction="row" justifyContent="flex-end">
+                    {!this.state.approve_declined_processing?<><Button variant="outlined" onClick={this.handleConfirmDialogClose}>Cancel</Button>
+                        <Button variant="contained" type="button" onClick={this.handleConfirmSubmit}>Yes, Confirm</Button></>:<CircularProgress />}
+                    </Stack>
+                </DialogActions>
+            </Dialog>
+        
       </MainCard>
     );
   }
