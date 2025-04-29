@@ -458,7 +458,7 @@ class DashboardPage extends Component {
           !this.isSalesExecutive &&
           !this.isDistributor ? (
             <CardContent
-              onClick={() => this.handleClick("material-stocks")}
+              onClick={() => this.handleClick("transfer")}
               className="dashboard_card_content bg-color-1"
               sx={{ display: "flex", justifyContent: "space-between" }}
             >
