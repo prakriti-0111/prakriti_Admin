@@ -363,7 +363,7 @@ class DashboardPage extends Component {
               >
                 <h1>My Wallet </h1>
                 <h2>
-                  {dashboard ? dashboard.wallet_balance : <CircularProgress />}
+                  {dashboard ? dashboard.wallet_balance :<CircularProgress size="20px" />}
                 </h2>
               </Typography>
               <div className="card-icon">
@@ -388,7 +388,7 @@ class DashboardPage extends Component {
                 <h1>
                   My Stock &nbsp;{" "}
                   <span>
-                    {dashboard ? dashboard.total_stock : <CircularProgress />}
+                    {dashboard ? dashboard.total_stock :<CircularProgress size="20px" />}
                   </span>
                 </h1>
                 <h2>
@@ -469,7 +469,7 @@ class DashboardPage extends Component {
                 component="span"
               >
                 <h1>
-                  Material Stock &nbsp;{" "}
+                  Pending Stock &nbsp;{" "}
                   <span>
                     {dashboard ? (
                       dashboard.total_avl_pending_stock
@@ -510,7 +510,7 @@ class DashboardPage extends Component {
                 <h1>
                   Total Return Stock &nbsp;{" "}
                   <span>
-                    {dashboard ? dashboard.return_stock : <CircularProgress />}
+                    {dashboard ? dashboard.return_stock :<CircularProgress size="20px" />}
                   </span>
                 </h1>
                 <h2>
@@ -588,7 +588,7 @@ class DashboardPage extends Component {
                 <h1 onClick={() => this.handleClick("admins?own=1")}>
                   Own Admin &nbsp;{" "}
                   <span>
-                    {dashboard ? dashboard.total_admin : <CircularProgress />}
+                    {dashboard ? dashboard.total_admin :<CircularProgress size="20px" />}
                   </span>{" "}
                 </h1>
                 <h2
@@ -928,7 +928,7 @@ class DashboardPage extends Component {
                   </span>{" "}
                 </h1>
                 <h2>
-                  {dashboard ? dashboard.total_purchase : <CircularProgress />}
+                  {dashboard ? dashboard.total_purchase :<CircularProgress size="20px" />}
                 </h2>
               </Typography>
               <div className="card-icon">
@@ -960,7 +960,7 @@ class DashboardPage extends Component {
                   </span>{" "}
                 </h1>
                 <h2>
-                  {dashboard ? dashboard.total_own_sale : <CircularProgress />}
+                  {dashboard ? dashboard.total_own_sale :<CircularProgress size="20px" />}
                 </h2>
               </Typography>
               <div className="card-icon">
@@ -992,7 +992,7 @@ class DashboardPage extends Component {
                   </span>{" "}
                 </h1>
                 <h2>
-                  {dashboard ? dashboard.total_return_amount : <CircularProgress />}
+                  {dashboard ? dashboard.total_return_amount :<CircularProgress size="20px" />}
                 </h2>
               </Typography>
               <div className="card-icon">
@@ -1160,7 +1160,7 @@ class DashboardPage extends Component {
                 <h1>
                   My Retailer &nbsp;{" "}
                   <span>
-                    {dashboard ? dashboard.my_retailer : <CircularProgress />}
+                    {dashboard ? dashboard.my_retailer :<CircularProgress size="20px" />}
                   </span>{" "}
                 </h1>
                 <h2>
@@ -1195,7 +1195,7 @@ class DashboardPage extends Component {
                 <h1>
                   My Retailer &nbsp;{" "}
                   <span>
-                    {dashboard ? dashboard.my_retailer : <CircularProgress />}
+                    {dashboard ? dashboard.my_retailer :<CircularProgress size="20px" />}
                   </span>{" "}
                 </h1>
                 <h2>
@@ -1231,7 +1231,7 @@ class DashboardPage extends Component {
               >
                 <h1>Total Customer </h1>
                 <h2>
-                  {dashboard ? dashboard.total_customer : <CircularProgress />}
+                  {dashboard ? dashboard.total_customer :<CircularProgress size="20px" />}
                 </h2>
               </Typography>
               <div className="card-icon">
@@ -1362,7 +1362,7 @@ class DashboardPage extends Component {
           {/* <CardContent className='dashboard_card_content bg-color-7' sx = {{ display: "flex", justifyContent: "space-between" }}>
             <Typography sx={{ fontSize: 14, margin: 0 }} color="text.secondary" gutterBottom component="span">
               <h1>Best Admin </h1>
-              <h2>{dashboard ? dashboard.best_admin : <CircularProgress />}</h2>
+              <h2>{dashboard ? dashboard.best_admin :<CircularProgress size="20px" />}</h2>
             </Typography>
             <div className="card-icon">
               <GroupIcon />
@@ -1371,7 +1371,7 @@ class DashboardPage extends Component {
           <CardContent className='dashboard_card_content bg-color-7' sx = {{ display: "flex", justifyContent: "space-between" }}>
             <Typography sx={{ fontSize: 14, margin: 0 }} color="text.secondary" gutterBottom component="span">
               <h1>Poor Admin </h1>
-              <h2>{dashboard ? dashboard.poor_admins : <CircularProgress />}</h2>
+              <h2>{dashboard ? dashboard.poor_admins :<CircularProgress size="20px" />}</h2>
             </Typography>
             <div className="card-icon">
               <GroupIcon />
