@@ -336,9 +336,8 @@ class SaleOnApproveViewPage extends React.Component {
       return_payment_mode: this.state.return_payment_mode,
     };
     this.setState({
-      approve_declined_processing: true,
+      approve_declined_processing: true
     });
-
     let status_response = await salesStatusChange(this.props.params.id, data);
     if (status_response.data.success == true) {
       this.props.enqueueSnackbar(status_response.data.message, {
@@ -346,7 +345,7 @@ class SaleOnApproveViewPage extends React.Component {
       });
       this.setState({
         confirmDialog: false,
-        approve_declined_processing: false,
+        approve_declined_processing: false
       });
       if (this.state.status_changing == 4) {
         this.props.actions.cartList();
@@ -363,7 +362,7 @@ class SaleOnApproveViewPage extends React.Component {
         variant: "error",
       });
       this.setState({
-        approve_declined_processing: false,
+        approve_declined_processing: false
       });
     }
   };
@@ -638,24 +637,20 @@ class SaleOnApproveViewPage extends React.Component {
             </DialogContentText>
           </DialogContent>
           <DialogActions>
-            <Stack spacing={2} direction='row' justifyContent='flex-end'>
-            {!this.state.approve_declined_processing ? (
-              <>
-                <Button
-                  variant='outlined'
-                  onClick={this.handleConfirmDialogClose}>
-                  Cancel
-                </Button>
-                <Button
-                  variant='contained'
-                  type='button'
-                  onClick={this.handleConfirmSubmit}>
-                  Yes, Confirm
-                </Button>
-              </>
-            ) : (
-              <CircularProgress size='30px' />
-            )}
+            <Stack spacing={2} direction="row" justifyContent="flex-end">
+            {!this.state.approve_declined_processing?<><Button
+                variant="outlined"
+                onClick={this.handleConfirmDialogClose}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="contained"
+                type="button"
+                onClick={this.handleConfirmSubmit}
+              >
+                Yes, Confirm
+              </Button></>:<CircularProgress />}
             </Stack>
           </DialogActions>
         </Dialog>
