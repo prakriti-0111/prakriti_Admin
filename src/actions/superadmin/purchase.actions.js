@@ -184,7 +184,9 @@ export const purchaseRawEdit = (id) => {
 }
 
 export const purchaseProducts = (params) => {
+    
     params = objectToQuery(params, true)
+    console.log("this is the params ---------",params)
     return axios.get(`/superadmin/purchases-products${params}`);
 }
 
