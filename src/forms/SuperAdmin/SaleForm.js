@@ -230,6 +230,7 @@ class SaleForm extends React.Component {
       discount_per_product: 0,
       approval_processing: false,
       processing: false,
+      isMobile: window.innerWidth < 600, // adjust breakpoint as needed
     };
 
     this.isSuperAdmin = isSuperAdmin();
@@ -291,6 +292,10 @@ class SaleForm extends React.Component {
     ];
   }
 
+  updateIsMobile = () => {
+    this.setState({ isMobile: window.innerWidth < 600 });
+  };
+
   componentDidMount() {
     if (this.isSuperAdmin) {
       this.props.actions.adminList({ all: 1 });
@@ -320,6 +325,12 @@ class SaleForm extends React.Component {
     }
 
     this.loadProfile();
+
+    window.addEventListener("resize", this.updateIsMobile);
+  }
+
+  componentWillUnmount() {
+    window.removeEventListener("resize", this.updateIsMobile);
   }
 
   loadProfile = async () => {
@@ -2174,6 +2185,7 @@ class SaleForm extends React.Component {
       order,
       actionProductIndex,
       unique_materials,
+      isMobile
     } = this.state;
 
     console.log("this is the state of salefprm ", this.state);
@@ -2287,7 +2299,7 @@ class SaleForm extends React.Component {
                 </FormControl>
               </Grid>
             ) : null}
-            <Grid item md={userIdColumnXs} xs={12} className='create-input'>
+            <Grid item md={userIdColumnXs} xs={6} className='create-input'>
               {/*<FormControl fullWidth error={formErros.user_id}>
                                 <InputLabel>{this.state.isAssign ? "Transfer To" : "Company Name"}</InputLabel>
                                 <Select
@@ -2380,6 +2392,7 @@ class SaleForm extends React.Component {
                 )}
               </FormControl>
             </Grid>
+
             {formValues.user_id ? (
               <>
                 <Grid item xs={6} md={2} className='create-input'>
@@ -2392,104 +2405,256 @@ class SaleForm extends React.Component {
                     inputProps={{ className: "non_disable_text" }}
                   />
                 </Grid>
-                <Grid item xs={6} md={2} className='create-input'>
-                  <TextField
-                    label='Contact Number'
-                    variant='outlined'
-                    fullWidth
-                    value={this.state.admin_details.mobile}
-                    disabled
-                    inputProps={{ className: "non_disable_text" }}
-                  />
-                </Grid>
-                <Grid item xs={6} md={2} className='create-input'>
-                  <TextField
-                    label='City'
-                    variant='outlined'
-                    fullWidth
-                    value={this.state.admin_details.city}
-                    disabled
-                    inputProps={{ className: "non_disable_text" }}
-                  />
-                </Grid>
-              </>
-            ) : null}
-            {!formValues.user_id ? (
-              <Grid item xs={6} md={3} className='create-input'>
+              </>):null}
+            
+            {isMobile ? <>
+              <Grid item xs={6} md={2} className='create-input'>
                 <TextField
-                  label='Invoice Number'
+                  label='Contact Number'
                   variant='outlined'
                   fullWidth
-                  value={formValues.invoice_number}
-                  onChange={(event) =>
-                    this.handleDefaultChange(event, "invoice_number")
-                  }
-                  disabled={!this.state.isCreateFrom}
-                  className='non_disable_text'
+                  value={this.state.admin_details.mobile}
+                  disabled
+                  inputProps={{ className: "non_disable_text" }}
                 />
               </Grid>
-            ) : null}
-            <Grid
-              item
-              xs={!formValues.user_id ? 6 : 6}
-              md={!formValues.user_id ? 3 : 2}
-              className='create-input p-invoice-date'>
-              <LocalizationProvider dateAdapter={AdapterDayjs}>
-                <DatePicker
-                  label='Invoice Date'
-                  value={formValues.invoice_date}
-                  inputFormat='DD/MM/YYYY'
-                  disabled={!this.state.isCreateFrom}
-                  onChange={(newValue) =>
-                    this.updateFormValues(newValue, "invoice_date")
-                  }
-                  renderInput={(params) => (
+              <Grid item xs={6} md={2} className='create-input'>
+                <Accordion >
+                  <AccordionSummary
+                    expandIcon={<ExpandMoreIcon />}
+                    aria-controls='panel1a-content'
+                    id='panel1a-header'>
+                    <Typography
+                      style={{
+                        color: "#1e2746",
+                        width: "100%",
+                        textAlign: "right",
+                      }}
+                    >
+                      See more
+                    </Typography>
+                  </AccordionSummary>
+                  <AccordionDetails className="see-more-details-sec">
+                    
+                    {formValues.user_id ? (
+                      <>
+                        <Grid item xs={6} md={2} className='create-input'>
+                          <TextField
+                            label='Owner Name'
+                            variant='outlined'
+                            fullWidth
+                            value={this.state.admin_details.name}
+                            disabled
+                            inputProps={{ className: "non_disable_text" }}
+                          />
+                        </Grid>
+                        <Grid item xs={6} md={2} className='create-input'>
+                          <TextField
+                            label='City'
+                            variant='outlined'
+                            fullWidth
+                            value={this.state.admin_details.city}
+                            disabled
+                            inputProps={{ className: "non_disable_text" }}
+                          />
+                        </Grid>
+                        <Grid item xs={6} md={2} className='create-input'>
+                          <TextField
+                            label='Pincode'
+                            variant='outlined'
+                            fullWidth
+                            value={this.state.admin_details.pincode}
+                            disabled
+                            inputProps={{ className: "non_disable_text" }}
+                          />
+                        </Grid>
+                      </>
+                    ) : null}
+
+                    {!formValues.user_id ? (<>
+                      <Grid item xs={6} md={3} className='create-input'>
+                        <TextField
+                          label='Invoice Number'
+                          variant='outlined'
+                          fullWidth
+                          value={formValues.invoice_number}
+                          onChange={(event) =>
+                            this.handleDefaultChange(event, "invoice_number")
+                          }
+                          disabled={!this.state.isCreateFrom}
+                          className='non_disable_text'
+                        />
+                      </Grid>
+                      <Grid
+                        item
+                        xs={!formValues.user_id ? 6 : 6}
+                        md={!formValues.user_id ? 3 : 2}
+                        className='create-input p-invoice-date'>
+                        <LocalizationProvider dateAdapter={AdapterDayjs}>
+                          <DatePicker
+                            label='Invoice Date'
+                            value={formValues.invoice_date}
+                            inputFormat='DD/MM/YYYY'
+                            disabled={!this.state.isCreateFrom}
+                            onChange={(newValue) =>
+                              this.updateFormValues(newValue, "invoice_date")
+                            }
+                            renderInput={(params) => (
+                              <TextField
+                                fullWidth
+                                {...params}
+                                error={formErros.invoice_date}
+                                className='non_disable_text'
+                              />
+                            )}
+                          />
+                        </LocalizationProvider>
+                      </Grid></>
+                    ) : null}
+                    
+                    {formValues.user_id ? (
+                      <>
+                        <Grid item xs={6} md={8} className='create-input'>
+                          <TextField
+                            label='Full Address'
+                            variant='outlined'
+                            fullWidth
+                            value={this.state.admin_details.address}
+                            disabled
+                            inputProps={{ className: "non_disable_text" }}
+                          />
+                        </Grid>
+                        <Grid item xs={6} md={2} className='create-input'>
+                          <TextField
+                            label='GST Number'
+                            variant='outlined'
+                            fullWidth
+                            value={this.state.admin_details.gst}
+                            disabled
+                            inputProps={{ className: "non_disable_text" }}
+                          />
+                        </Grid>
+                        <Grid item xs={6} md={2} className='create-input'>
+                          <TextField
+                            label='Invoice Number'
+                            variant='outlined'
+                            fullWidth
+                            value={formValues.invoice_number}
+                            onChange={(event) =>
+                              this.handleDefaultChange(event, "invoice_number")
+                            }
+                            className='non_disable_text'
+                            disabled={!this.state.isCreateFrom}
+                          />
+                        </Grid>
+                      </>
+                    ) : null}
+                    
+                  </AccordionDetails>
+                </Accordion>
+              
+              </Grid>
+              </> : 
+              <>
+                {formValues.user_id ? (
+                  <>
+                    <Grid item xs={6} md={2} className='create-input'>
+                      <TextField
+                        label='Owner Name'
+                        variant='outlined'
+                        fullWidth
+                        value={this.state.admin_details.name}
+                        disabled
+                        inputProps={{ className: "non_disable_text" }}
+                      />
+                    </Grid>
+                    <Grid item xs={6} md={2} className='create-input'>
+                      <TextField
+                        label='Contact Number'
+                        variant='outlined'
+                        fullWidth
+                        value={this.state.admin_details.mobile}
+                        disabled
+                        inputProps={{ className: "non_disable_text" }}
+                      />
+                    </Grid>
+                    <Grid item xs={6} md={2} className='create-input'>
+                      <TextField
+                        label='City'
+                        variant='outlined'
+                        fullWidth
+                        value={this.state.admin_details.city}
+                        disabled
+                        inputProps={{ className: "non_disable_text" }}
+                      />
+                    </Grid>
+                    <Grid item xs={6} md={2} className='create-input'>
+                      <TextField
+                        label='Pincode'
+                        variant='outlined'
+                        fullWidth
+                        value={this.state.admin_details.pincode}
+                        disabled
+                        inputProps={{ className: "non_disable_text" }}
+                      />
+                    </Grid>
+                  </>
+                ) : null}
+
+                {!formValues.user_id ? (
+                  <Grid item xs={6} md={3} className='create-input'>
                     <TextField
-                      {...params}
-                      error={formErros.invoice_date}
+                      label='Invoice Number'
+                      variant='outlined'
+                      fullWidth
+                      value={formValues.invoice_number}
+                      onChange={(event) =>
+                        this.handleDefaultChange(event, "invoice_number")
+                      }
+                      disabled={!this.state.isCreateFrom}
                       className='non_disable_text'
                     />
-                  )}
-                />
-              </LocalizationProvider>
-            </Grid>
-            {formValues.user_id ? (
-              <>
-                <Grid item xs={12} md={8} className='create-input'>
-                  <TextField
-                    label='Full Address'
-                    variant='outlined'
-                    fullWidth
-                    value={this.state.admin_details.address}
-                    disabled
-                    inputProps={{ className: "non_disable_text" }}
-                  />
-                </Grid>
-                <Grid item xs={6} md={2} className='create-input'>
-                  <TextField
-                    label='GST Number'
-                    variant='outlined'
-                    fullWidth
-                    value={this.state.admin_details.gst}
-                    disabled
-                    inputProps={{ className: "non_disable_text" }}
-                  />
-                </Grid>
-                <Grid item xs={6} md={2} className='create-input'>
-                  <TextField
-                    label='Invoice Number'
-                    variant='outlined'
-                    fullWidth
-                    value={formValues.invoice_number}
-                    onChange={(event) =>
-                      this.handleDefaultChange(event, "invoice_number")
-                    }
-                    className='non_disable_text'
-                    disabled={!this.state.isCreateFrom}
-                  />
-                </Grid>
-              </>
-            ) : null}
+                  </Grid>
+                ) : null}
+                
+                {formValues.user_id ? (
+                  <>
+                    <Grid item xs={12} md={8} className='create-input'>
+                      <TextField
+                        label='Full Address'
+                        variant='outlined'
+                        fullWidth
+                        value={this.state.admin_details.address}
+                        disabled
+                        inputProps={{ className: "non_disable_text" }}
+                      />
+                    </Grid>
+                    <Grid item xs={6} md={2} className='create-input'>
+                      <TextField
+                        label='GST Number'
+                        variant='outlined'
+                        fullWidth
+                        value={this.state.admin_details.gst}
+                        disabled
+                        inputProps={{ className: "non_disable_text" }}
+                      />
+                    </Grid>
+                    <Grid item xs={6} md={2} className='create-input'>
+                      <TextField
+                        label='Invoice Number'
+                        variant='outlined'
+                        fullWidth
+                        value={formValues.invoice_number}
+                        onChange={(event) =>
+                          this.handleDefaultChange(event, "invoice_number")
+                        }
+                        className='non_disable_text'
+                        disabled={!this.state.isCreateFrom}
+                      />
+                    </Grid>
+                  </>
+                ) : null}
+              </>}
           </Grid>
         </Grid>
         <Grid
@@ -2577,23 +2742,8 @@ class SaleForm extends React.Component {
                           <TableCell colSpan={6}>
                             {item.total_weight} {productWeightUnitName}
                           </TableCell>
-                          {this.state.isCreateFrom ? (
-                            <TableCell
-                              rowSpan={2}
-                              className='action_column'
-                              style={{ textAlign: "center" }}>
-                              {/*<IconButton className='del-icon' color="error" component="label"  onClick={() => this.handleProductDelete(index)}>
-                                                              <CloseIcon />
-                                                              </IconButton> */}
-                              <Button
-                                variant='contained'
-                                className='sale-cross-icon'
-                                onClick={() => this.handleProductDelete(index)}>
-                                {" "}
-                                X{" "}
-                              </Button>
-                            </TableCell>
-                          ) : null}
+                          <TableCell></TableCell>
+                          
                         </TableRow>
                         <TableRow className='material_details'>
                           <TableCell></TableCell>
@@ -2709,6 +2859,23 @@ class SaleForm extends React.Component {
                           <TableCell>{item.total_discount}</TableCell>
                           <TableCell>{item.total_tax}</TableCell>
                           <TableCell>{item.total}</TableCell>
+                          {this.state.isCreateFrom ? (
+                            <TableCell
+                              
+                              className='action_column'
+                              style={{ textAlign: "center" }}>
+                              {/*<IconButton className='del-icon' color="error" component="label"  onClick={() => this.handleProductDelete(index)}>
+                                                              <CloseIcon />
+                                                              </IconButton> */}
+                              <Button
+                                variant='contained'
+                                className='sale-cross-icon'
+                                onClick={() => this.handleProductDelete(index)}>
+                                {" "}
+                                X{" "}
+                              </Button>
+                            </TableCell>
+                          ) : null}
                         </TableRow>
                         {!this.state.isCreateFrom &&
                         item.materials.length == 1 &&
@@ -2885,16 +3052,29 @@ class SaleForm extends React.Component {
               </div>
             </div>
           </div>
+          <Grid
+            item
+            xs={12}
+            md={12}
+            className='materialContainerGrid create-input p-add-product border-radius-0'>
           {!this.state.isAssign ? (
             <>
+            <TableContainer component={Paper}>
+              <Table
+                sx={{ minWidth: 650 }}
+                aria-label='simple table'
+                className='materialContainer'>
               <TableRow
-                style={{
-                  width: "95%",
+                sx={{
+                  width: "100%",
                   display: "flex",
-                  justifyContent: "space-between",
-                }}>
-                <TableCell></TableCell>
-                <TableCell colSpan='4'>
+                  flexDirection: { xs: "column", sm: "row" },
+                  justifyContent: { xs: "flex-start", sm: "flex-start" },
+                  gap: { xs: 0, sm: 0 },
+                }}
+              >
+                <TableCell className=' mob-hide'></TableCell>
+                <TableCell className="materialDiscSec" colSpan='3'>
                   <div className='unique-wrapper d-flex align-items-center'>
                     {/*  */}
                     <div className=' d-flex align-items-center '>
@@ -2959,9 +3139,10 @@ class SaleForm extends React.Component {
                                                         />
                                                 */}
                 </TableCell>
-                <TableCell sx={{ verticalAlign: "top" }}>
+                <TableCell className="makingDiscSec" sx={{ verticalAlign: "top" }}>
                   {this.haveMakingComonDis() ? (
                     <>
+                    <div class="unique_materials ms-3" >
                       <p
                         className='mb-2'
                         style={{ fontSize: "smaller", color: "#000000" }}>
@@ -2992,46 +3173,51 @@ class SaleForm extends React.Component {
                           %
                         </span>
                       </span>
+                    </div>
                     </>
                   ) : null}
                 </TableCell>
-                <TableCell className='d-flex align-items-center'>
-                  <i
-                    class='bi bi-pencil-square fs-4 '
-                    data-bs-toggle='modal'
-                    data-bs-target='#noteModal'></i>
-                </TableCell>
-                <TableCell className='d-flex align-items-center'>
-                  <b className='mob-hide'>
-                    Price
+                
+                <TableCell className=' align-items-center mob-hide'>
+                  <b className='price-cal '> {/*  */}
+                    <span>Price</span>
                     <br />
                     {priceFormat(formValues.total_tag_price)}
                   </b>
                 </TableCell>
-                <TableCell className='d-flex align-items-center'>
-                  <b className='mob-hide'>
-                    Dist
+                <TableCell className=' align-items-center mob-hide'>
+                  <b className='price-cal '> {/*  */}
+                    <span>Dist</span>
                     <br />
                     {priceFormat(formValues.product_discount)}
                   </b>
                 </TableCell>
-                <TableCell className='d-flex align-items-center'>
-                  <b className='mob-hide'>
-                    Tax
+                <TableCell className=' align-items-center mob-hide'>
+                  <b className='price-cal '> {/*  */}
+                    <span>Tax</span>
                     <br />
                     {priceFormat(formValues.total_tax)}
                   </b>
                 </TableCell>
-                {/* <TableCell colSpan="2" className="d-flex align-items-center">
-                        <b className="mob-hide">
-                          Total Amount
-                          <br />
-                          {displayAmount(formValues.total_amount)}
-                        </b>
-                      </TableCell> */}
+                <TableCell className=" align-items-center mob-hide">
+                  <b className="price-cal">
+                    Total
+                    <br />
+                    {formValues.total_amount}
+                  </b>
+                </TableCell>
+                <TableCell className=' align-items-center mob-hide'>
+                  <div className="sticky-note"><i
+                    class='bi bi-pencil-square fs-4 '
+                    data-bs-toggle='modal'
+                    data-bs-target='#noteModal'></i></div>
+                </TableCell>
               </TableRow>
+              </Table>
+            </TableContainer>
             </>
           ) : null}
+          </Grid>
           <Grid item xs={12} md={8} style={{}}>
             <Grid
               container
@@ -3308,7 +3494,7 @@ class SaleForm extends React.Component {
                         <Grid item xs={4} md={6} className='text-right pt-0'>
                           <span className='tax-text'>Total Amount</span>
                         </Grid>
-                        <Grid item xs={8} md={6} className='pt-0'>
+                        <Grid item xs={5} md={6} className='pt-0'>
                           <TextField
                             className='ft-amount'
                             fullWidth
@@ -3401,7 +3587,7 @@ class SaleForm extends React.Component {
                         <Grid item xs={4} md={6} className='text-right pt-0'>
                           <span className='tax-text'>Total Payable</span>
                         </Grid>
-                        <Grid item xs={8} md={6} className='pt-0'>
+                        <Grid item xs={5} md={6} className='pt-0'>
                           <TextField
                             className='ft-amount'
                             fullWidth
@@ -3587,8 +3773,8 @@ class SaleForm extends React.Component {
                             }>
                             <MenuItem value='cash'>Cash</MenuItem>
                             <MenuItem value='cheque'>Cheque</MenuItem>
-                            <MenuItem value='imps_neft'>NEFT/IMPS/UPI</MenuItem>
-                            <MenuItem value='online'>Online</MenuItem>
+                            <MenuItem value='imps_neft'>BANKING/RTGS/NEFT</MenuItem>
+                            <MenuItem value='online'>UPI/PhonePe/Gpay</MenuItem>
                           </Select>
                         </FormControl>
                       </Grid>

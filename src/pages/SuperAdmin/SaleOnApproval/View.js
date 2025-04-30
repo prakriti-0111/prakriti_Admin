@@ -71,6 +71,7 @@ class SaleOnApproveViewPage extends React.Component {
       successMessage: this.props.successMessage,
       errorMessage: this.props.errorMessage,
       processing: false,
+      approve_declined_processing: false,
       items: this.props.items,
       total: this.props.total,
       queryParams: {
@@ -292,6 +293,7 @@ class SaleOnApproveViewPage extends React.Component {
         });
         this.setState({
           processing: false,
+          approve_declined_processing: false,
           openDialog: false,
           queryParams: {
             ...this.state.queryParams,
@@ -307,6 +309,7 @@ class SaleOnApproveViewPage extends React.Component {
         });
         this.setState({
           processing: false,
+          approve_declined_processing: false,
         });
       }
       this.props.dispatch({
@@ -332,6 +335,10 @@ class SaleOnApproveViewPage extends React.Component {
       decline_type: this.state.decline_type,
       return_payment_mode: this.state.return_payment_mode,
     };
+    this.setState({
+      approve_declined_processing: true,
+    });
+
     let status_response = await salesStatusChange(this.props.params.id, data);
     if (status_response.data.success == true) {
       this.props.enqueueSnackbar(status_response.data.message, {
@@ -339,6 +346,7 @@ class SaleOnApproveViewPage extends React.Component {
       });
       this.setState({
         confirmDialog: false,
+        approve_declined_processing: false,
       });
       if (this.state.status_changing == 4) {
         this.props.actions.cartList();
@@ -353,6 +361,9 @@ class SaleOnApproveViewPage extends React.Component {
     } else {
       this.props.enqueueSnackbar(status_response.data.message, {
         variant: "error",
+      });
+      this.setState({
+        approve_declined_processing: false,
       });
     }
   };
@@ -628,17 +639,23 @@ class SaleOnApproveViewPage extends React.Component {
           </DialogContent>
           <DialogActions>
             <Stack spacing={2} direction='row' justifyContent='flex-end'>
-              <Button
-                variant='outlined'
-                onClick={this.handleConfirmDialogClose}>
-                Cancel
-              </Button>
-              <Button
-                variant='contained'
-                type='button'
-                onClick={this.handleConfirmSubmit}>
-                Yes, Confirm
-              </Button>
+            {!this.state.approve_declined_processing ? (
+              <>
+                <Button
+                  variant='outlined'
+                  onClick={this.handleConfirmDialogClose}>
+                  Cancel
+                </Button>
+                <Button
+                  variant='contained'
+                  type='button'
+                  onClick={this.handleConfirmSubmit}>
+                  Yes, Confirm
+                </Button>
+              </>
+            ) : (
+              <CircularProgress size='30px' />
+            )}
             </Stack>
           </DialogActions>
         </Dialog>

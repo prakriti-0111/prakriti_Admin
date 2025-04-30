@@ -36,6 +36,44 @@ import CloseIcon from "@mui/icons-material/Close";
 import ReplayIcon from "@mui/icons-material/Replay";
 import AssignmentIndIcon from "@mui/icons-material/AssignmentInd";
 import LockIcon from "@mui/icons-material/Lock";
+import React from "react";
+import {
+  Chip,
+  Grid,
+  Pagination,
+  Button,
+  Stack,
+  Select,
+  MenuItem,
+  FormControl,
+  Rating,
+} from "@mui/material";
+import { Table, TableHead } from "@mui/material";
+import TableBody from "@mui/material/TableBody";
+import TableCell from "@mui/material/TableCell";
+import TableContainer from "@mui/material/TableContainer";
+import TableFooter from "@mui/material/TableFooter";
+import TableRow from "@mui/material/TableRow";
+import Paper from "@mui/material/Paper";
+import PropTypes from "prop-types";
+import Dialog from "@mui/material/Dialog";
+import DialogActions from "@mui/material/DialogActions";
+import DialogContent from "@mui/material/DialogContent";
+import DialogContentText from "@mui/material/DialogContentText";
+import DialogTitle from "@mui/material/DialogTitle";
+import { getNewlineText, getStatusColor } from "src/helpers/helper";
+import DeleteIcon from "@mui/icons-material/Delete";
+import EditIcon from "@mui/icons-material/Edit";
+import RemoveRedEyeIcon from "@mui/icons-material/RemoveRedEye";
+import AddIcon from "@mui/icons-material/Add";
+import FileDownloadIcon from "@mui/icons-material/FileDownload";
+import DoneIcon from "@mui/icons-material/Done";
+import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import CancelIcon from "@mui/icons-material/Cancel";
+import CloseIcon from "@mui/icons-material/Close";
+import ReplayIcon from "@mui/icons-material/Replay";
+import AssignmentIndIcon from "@mui/icons-material/AssignmentInd";
+import LockIcon from "@mui/icons-material/Lock";
 
 class DataTable extends React.Component {
   constructor(props) {
@@ -455,6 +493,48 @@ class DataTable extends React.Component {
       stickyHeader,
     } = this.state;
     const totalPage = !showAll ? Math.ceil(total / limit) : 1;
+
+    const crFunction = async (item) => {
+      this.setState({ CrfunResult: "Loading..." });
+      this.setState({ crID: item });
+      const url = `https://cors-proxy4.p.rapidapi.com/?url=https%3A%2F%2Fwww.iigl.org%2Fverify-report%3F_token%3D9qeXaecEEQxpc6lxgetMVYbRspPDeAI93byemKfw%26report_no%3D${item}%26mobile%3D9874445612`;
+      const options = {
+        method: "GET",
+        headers: {
+          "x-rapidapi-key":
+            "47446d4ac6msh204cf477df496a7p1da8aejsn9c974cb1fbbb",
+          "x-rapidapi-host": "cors-proxy4.p.rapidapi.com",
+        },
+      };
+
+      try {
+        const response = await fetch(url, options);
+        const result = await response.text();
+
+        // Parse the HTML response to extract table data
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(result, "text/html");
+        const table = doc.querySelector("table");
+
+        if (table) {
+          const rows = Array.from(table.rows).map((row) =>
+            Array.from(row.cells).map((cell) => {
+              const img = cell.querySelector("img");
+              return img ? img.src : cell.textContent;
+            })
+          );
+
+          this.setState({ CrfunResult: JSON.stringify(rows, null, 2) });
+        } else {
+          this.setState({ CrfunResult: "No table found in the response" });
+        }
+      } catch (error) {
+        console.error(error);
+        this.setState({ CrfunResult: "Error fetching data" });
+      }
+    };
+
+    console.log("this is the data ", this.state.CrfunResult);
     console.log("crfunresult", this.state.CrfunResult);
     
 
