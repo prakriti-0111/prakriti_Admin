@@ -36,44 +36,6 @@ import CloseIcon from "@mui/icons-material/Close";
 import ReplayIcon from "@mui/icons-material/Replay";
 import AssignmentIndIcon from "@mui/icons-material/AssignmentInd";
 import LockIcon from "@mui/icons-material/Lock";
-import React from "react";
-import {
-  Chip,
-  Grid,
-  Pagination,
-  Button,
-  Stack,
-  Select,
-  MenuItem,
-  FormControl,
-  Rating,
-} from "@mui/material";
-import { Table, TableHead } from "@mui/material";
-import TableBody from "@mui/material/TableBody";
-import TableCell from "@mui/material/TableCell";
-import TableContainer from "@mui/material/TableContainer";
-import TableFooter from "@mui/material/TableFooter";
-import TableRow from "@mui/material/TableRow";
-import Paper from "@mui/material/Paper";
-import PropTypes from "prop-types";
-import Dialog from "@mui/material/Dialog";
-import DialogActions from "@mui/material/DialogActions";
-import DialogContent from "@mui/material/DialogContent";
-import DialogContentText from "@mui/material/DialogContentText";
-import DialogTitle from "@mui/material/DialogTitle";
-import { getNewlineText, getStatusColor } from "src/helpers/helper";
-import DeleteIcon from "@mui/icons-material/Delete";
-import EditIcon from "@mui/icons-material/Edit";
-import RemoveRedEyeIcon from "@mui/icons-material/RemoveRedEye";
-import AddIcon from "@mui/icons-material/Add";
-import FileDownloadIcon from "@mui/icons-material/FileDownload";
-import DoneIcon from "@mui/icons-material/Done";
-import CheckCircleIcon from "@mui/icons-material/CheckCircle";
-import CancelIcon from "@mui/icons-material/Cancel";
-import CloseIcon from "@mui/icons-material/Close";
-import ReplayIcon from "@mui/icons-material/Replay";
-import AssignmentIndIcon from "@mui/icons-material/AssignmentInd";
-import LockIcon from "@mui/icons-material/Lock";
 
 class DataTable extends React.Component {
   constructor(props) {
