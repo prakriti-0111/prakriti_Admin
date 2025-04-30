@@ -406,7 +406,7 @@ class DataTable extends React.Component {
     }
     this.setState({ crID: item });
 
-    const url = `https://cors-proxy4.p.rapidapi.com/?url=https%3A%2F%2Fwww.iigl.org%2Fverify-report%3F_token%3D9qeXaecEEQxpc6lxgetMVYbRspPDeAI93byemKfw%26report_no%3D${item}%26mobile%3D9874445612`;
+    const url = `https://www.iigl.org/verify-report?_token=9qeXaecEEQxpc6lxgetMVYbRspPDeAI93byemKfw&report_no=${item}&mobile=9874445612`;
     const options = {
       method: "GET",
       headers: {
@@ -432,7 +432,8 @@ class DataTable extends React.Component {
           })
         );
 
-        this.setState({ CrfunResult: JSON.stringify(rows, null, 2) });
+        console.log("rows",rows);
+        this.setState({ CrfunResult: rows});
       } else {
         this.setState({ CrfunResult: "No table found in the response" });
       }
@@ -458,6 +459,8 @@ class DataTable extends React.Component {
       stickyHeader,
     } = this.state;
     const totalPage = !showAll ? Math.ceil(total / limit) : 1;
+    console.log("crfunresult", this.state.CrfunResult);
+    
 
     return (
       <>
@@ -496,7 +499,7 @@ class DataTable extends React.Component {
                 ) : (
                   <table className="table table-striped">
                     <tbody style={{ fontSize: "12px" }}>
-                      {JSON.parse(this.state.CrfunResult).map(
+                      {Array.isArray(this.state.CrfunResult)?this.state.CrfunResult.map(
                         ([key, value], index) => (
                           <tr key={index}>
                             <th scope="row">{key}</th>
@@ -516,7 +519,7 @@ class DataTable extends React.Component {
                             </td>
                           </tr>
                         )
-                      )}
+                      ): <h6>{this.state.CrfunResult}</h6>}
                     </tbody>
                   </table>
                 )}
