@@ -298,11 +298,11 @@ class SalaryPage extends Component {
         },
         {
           value: 'imps_neft',
-          label: 'NEFT/IMPS/UPI'
+          label: 'BANKING/RTGS/NEFT'
         },
         {
-          value: 'online',
-          label: 'Online'
+          value: 'UPI/PhonePe/Gpay',
+          label: 'UPI/PhonePe/Gpay'
         }
       ]
     } else {
@@ -313,11 +313,11 @@ class SalaryPage extends Component {
         },
         {
           value: 'imps_neft',
-          label: 'NEFT/IMPS/UPI'
+          label: 'BANKING/RTGS/NEFT'
         },
         {
-          value: 'online',
-          label: 'Online'
+          value: 'UPI/PhonePe/Gpay',
+          label: 'UPI/PhonePe/Gpay'
         }
       ]
     }
@@ -639,8 +639,8 @@ class SalaryPage extends Component {
                         >
                           <MenuItem value=""></MenuItem>
                           <MenuItem value="cash">Cash</MenuItem>
-                          <MenuItem value="imps_neft">NEFT/IMPS/UPI</MenuItem>
-                          <MenuItem value="online">Online</MenuItem>
+                          <MenuItem value="imps_neft">BANKING/RTGS/NEFT</MenuItem>
+                          <MenuItem value="UPI/PhonePe/Gpay">UPI/PhonePe/Gpay</MenuItem>
                         </Select>
                       </FormControl>
                     </Grid>
