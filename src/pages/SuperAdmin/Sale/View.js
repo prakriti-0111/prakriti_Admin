@@ -43,7 +43,7 @@ import Dialog from "@mui/material/Dialog";
 import DialogContent from "@mui/material/DialogContent";
 import DialogContentText from "@mui/material/DialogContentText";
 import DialogTitle from "@mui/material/DialogTitle";
-import { isEmpty } from "src/helpers/helper";
+import { isEmpty, isSuperAdmin, isAdmin } from "src/helpers/helper";
 import { paymentStore, paymentList } from "actions/superadmin/payment.actions";
 import { SUPERADMIN_RESET_PAYMENT } from "../../../actionTypes/superadmin/payment.types";
 import {
@@ -98,6 +98,10 @@ class SaleViewPage extends React.Component {
       {
         name: "txn_id",
         display_name: "Transaction #",
+      },
+      {
+        name: "weight",
+        display_name: "Weight",
       },
     ];
   }
@@ -195,6 +199,7 @@ class SaleViewPage extends React.Component {
         notes: "",
         cheque_no: "",
         txn_id: "",
+        weight: "",
         table_type: "sale",
         table_id: "",
       },
@@ -206,6 +211,7 @@ class SaleViewPage extends React.Component {
         notes: false,
         cheque_no: false,
         txn_id: false,
+        weight: false,
         due_date: false,
       },
     };
@@ -290,6 +296,7 @@ class SaleViewPage extends React.Component {
         });
         this.loadViewData();
         this.loadListData();
+        window.scrollTo(0, document.querySelector(".p_heading_list").offsetTop);
         this.props.actions.getNotifiactions();
       } else {
         this.props.enqueueSnackbar(this.state.errorMessage, {
@@ -314,10 +321,18 @@ class SaleViewPage extends React.Component {
     const { sale, formValues, formErros } = this.state;
     return (
       <MainCard
-        secondary={
+        secondary={<>
+          {sale && parseFloat(sale.due_amount) > 0 ? (
+            <Button
+              variant='contained'
+              className='add-button'
+              onClick={() => this.handlePayNow()}>
+              Pay Now
+            </Button>
+          ) : null}
           <Button variant='contained' onClick={() => this.props.navigate(-1)}>
             Back
-          </Button>
+          </Button></>
         }>
         {!sale ? (
           <Grid container justifyContent='center'>
@@ -396,6 +411,14 @@ class SaleViewPage extends React.Component {
                 {sale.notes ? <p>Notes: {sale.notes}</p> : null}
               </div>
               <div className=''>
+                {sale && parseFloat(sale.due_amount) > 0 ? (
+                  <Button
+                    variant='contained'
+                    className='add-button'
+                    onClick={() => this.handlePayNow()}>
+                    Pay Now
+                  </Button>
+                ) : null}
                 <Button
                   className='add-button'
                   variant='contained'
@@ -617,8 +640,9 @@ class SaleViewPage extends React.Component {
                       <MenuItem value=''></MenuItem>
                       <MenuItem value='cash'>Cash</MenuItem>
                       <MenuItem value='cheque'>Cheque</MenuItem>
-                      <MenuItem value='imps_neft'>NEFT/IMPS/UPI</MenuItem>
-                      <MenuItem value='online'>Online</MenuItem>
+                      <MenuItem value='imps_neft'>BANKING/RTGS/NEFT</MenuItem>
+                      <MenuItem value='UPI/PhonePe/Gpay'>UPI/PhonePe/Gpay</MenuItem>
+                      {isSuperAdmin && isAdmin && <MenuItem value='metal'>Metal</MenuItem>}
                     </Select>
                   </FormControl>
                 </Grid>
@@ -645,6 +669,20 @@ class SaleViewPage extends React.Component {
                       value={formValues.txn_id}
                       onChange={(event) =>
                         this.updateFormValue(event.target.value, "txn_id")
+                      }
+                    />
+                  </Grid>
+                ) : null}
+                {isSuperAdmin && isAdmin && formValues.payment_mode == "metal" ||
+                formValues.payment_mode == "upi" ? (
+                  <Grid item md={4} xs={12} className='create-input'>
+                    <TextField
+                      label='Weight(GM)'
+                      variant='outlined'
+                      fullWidth
+                      value={formValues.weight}
+                      onChange={(event) =>
+                        this.updateFormValue(event.target.value, "weight")
                       }
                     />
                   </Grid>
