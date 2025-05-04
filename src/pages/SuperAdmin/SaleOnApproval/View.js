@@ -627,8 +627,8 @@ class SaleOnApproveViewPage extends React.Component {
                         }>
                         <MenuItem value='cash'>Cash</MenuItem>
                         <MenuItem value='cheque'>Cheque</MenuItem>
-                        <MenuItem value='imps_neft'>NEFT/IMPS/UPI</MenuItem>
-                        <MenuItem value='online'>Online</MenuItem>
+                        <MenuItem value='imps_neft'>BANKING/RTGS/NEFT</MenuItem>
+                        <MenuItem value='UPI/PhonePe/Gpay'>UPI/PhonePe/Gpay</MenuItem>
                       </Select>
                     </FormControl>
                   ) : null}
