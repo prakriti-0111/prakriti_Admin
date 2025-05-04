@@ -691,6 +691,7 @@ class SaleViewPage extends React.Component {
                   <TextareaAutosize
                     className='description'
                     minRows={1}
+                    maxLength={20}
                     placeholder='Notes'
                     style={{ width: "100%", height: "51px" }}
                     value={formValues.notes}
@@ -698,6 +699,10 @@ class SaleViewPage extends React.Component {
                       this.updateFormValue(event.target.value, "notes")
                     }
                   />
+                  <Typography
+                    variant='h6'
+                    gutterBottom
+                    component='div'>{`*Max 20 characters are allowed.`}</Typography>
                 </Grid>
                 <Grid
                   item
