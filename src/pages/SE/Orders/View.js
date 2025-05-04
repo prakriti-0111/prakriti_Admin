@@ -248,40 +248,42 @@ class OrderViewPage extends React.Component {
     const { order } = this.state;
     return (
       <MainCard
-        title='Order Details'
+        title="Order Details"
         secondary={
-          <Stack spacing={1} direction='row' justifyContent='flex-end'>
+          <Stack spacing={1} direction="row" justifyContent="flex-end">
             {order &&
             order.status != "delivered" &&
             order.status != "cancelled" &&
             order.status != "declined" ? (
-              <Button variant='contained' onClick={this.handleSale}>
+              <Button variant="contained" onClick={this.handleSale}>
                 Sale
               </Button>
             ) : null}
             <Button
-              variant='contained'
+              variant="contained"
               onClick={() =>
                 this.props.navigate(
                   getUserDashboardRoute(getRoleName(this.state.auth)) +
                     "/orders"
                 )
-              }>
+              }
+            >
               Back
             </Button>
           </Stack>
-        }>
+        }
+      >
         {!order ? (
-          <Grid container justifyContent='center'>
-            <CircularProgress size='30px' />
+          <Grid container justifyContent="center">
+            <CircularProgress size="30px" />
           </Grid>
         ) : (
           <>
-            <Grid container spacing={2} className='loans_view p_view'>
-              <Grid item xs={12} md={2} className='create-input'>
+            <Grid container spacing={2} className="loans_view p_view">
+              <Grid item xs={12} md={2} className="create-input">
                 <TextField
-                  label='Order #'
-                  variant='outlined'
+                  label="Order #"
+                  variant="outlined"
                   fullWidth
                   value={order.order_no}
                   disabled
@@ -290,10 +292,10 @@ class OrderViewPage extends React.Component {
                   }}
                 />
               </Grid>
-              <Grid item xs={12} md={2} className='create-input'>
+              <Grid item xs={12} md={2} className="create-input">
                 <TextField
-                  label='Order Date'
-                  variant='outlined'
+                  label="Order Date"
+                  variant="outlined"
                   fullWidth
                   value={order.order_date}
                   disabled
@@ -302,10 +304,10 @@ class OrderViewPage extends React.Component {
                   }}
                 />
               </Grid>
-              <Grid item xs={12} md={2} className='create-input'>
+              <Grid item xs={12} md={2} className="create-input">
                 <TextField
-                  label='Order From'
-                  variant='outlined'
+                  label="Order From"
+                  variant="outlined"
                   fullWidth
                   value={order.order_from}
                   disabled
@@ -314,10 +316,10 @@ class OrderViewPage extends React.Component {
                   }}
                 />
               </Grid>
-              <Grid item xs={12} md={2} className='create-input'>
+              <Grid item xs={12} md={2} className="create-input">
                 <TextField
-                  label='Mobile'
-                  variant='outlined'
+                  label="Mobile"
+                  variant="outlined"
                   fullWidth
                   value={order.mobile}
                   disabled
@@ -326,10 +328,10 @@ class OrderViewPage extends React.Component {
                   }}
                 />
               </Grid>
-              <Grid item xs={12} md={2} className='create-input'>
+              <Grid item xs={12} md={2} className="create-input">
                 <TextField
-                  label='Total Amount'
-                  variant='outlined'
+                  label="Total Amount"
+                  variant="outlined"
                   fullWidth
                   value={order.total_amount}
                   disabled
@@ -338,10 +340,10 @@ class OrderViewPage extends React.Component {
                   }}
                 />
               </Grid>
-              <Grid item xs={12} md={2} className='create-input'>
+              <Grid item xs={12} md={2} className="create-input">
                 <TextField
-                  label='Paid Amount'
-                  variant='outlined'
+                  label="Paid Amount"
+                  variant="outlined"
                   fullWidth
                   value={order.paid_amount_display}
                   disabled
@@ -350,10 +352,10 @@ class OrderViewPage extends React.Component {
                   }}
                 />
               </Grid>
-              <Grid item xs={12} md={2} className='create-input'>
+              <Grid item xs={12} md={2} className="create-input">
                 <TextField
-                  label='Status'
-                  variant='outlined'
+                  label="Status"
+                  variant="outlined"
                   fullWidth
                   value={order.status_display}
                   readOnly
@@ -363,14 +365,14 @@ class OrderViewPage extends React.Component {
                   inputProps={{
                     className: "cursor-pointer",
                   }}
-                  role='button'
+                  role="button"
                   onClick={this.handleStatus}
                 />
               </Grid>
-              <Grid item xs={12} md={4} className='create-input'>
+              <Grid item xs={12} md={4} className="create-input">
                 <TextField
-                  label='Address'
-                  variant='outlined'
+                  label="Address"
+                  variant="outlined"
                   fullWidth
                   value={order.formated_address}
                   disabled
@@ -380,10 +382,10 @@ class OrderViewPage extends React.Component {
                 />
               </Grid>
               {order.status == "cancelled" && order.cancel_reason ? (
-                <Grid item xs={12} md={4} className='create-input'>
+                <Grid item xs={12} md={4} className="create-input">
                   <TextField
-                    label='Cancel Reason'
-                    variant='outlined'
+                    label="Cancel Reason"
+                    variant="outlined"
                     fullWidth
                     value={order.cancel_reason}
                     disabled
@@ -394,10 +396,10 @@ class OrderViewPage extends React.Component {
                 </Grid>
               ) : null}
               {!isEmpty(order.notes) ? (
-                <Grid item xs={12} md={4} className='create-input'>
+                <Grid item xs={12} md={4} className="create-input">
                   <TextField
-                    label='Notes'
-                    variant='outlined'
+                    label="Notes"
+                    variant="outlined"
                     fullWidth
                     value={order.notes}
                     disabled
@@ -408,15 +410,16 @@ class OrderViewPage extends React.Component {
                 </Grid>
               ) : null}
               {!isEmpty(order.image) ? (
-                <Grid item xs={6} md={1} className='create-input'>
+                <Grid item xs={6} md={1} className="create-input">
                   <ImageList>
                     <ImageListItem
                       onClick={() => this.handleImageClick(order.image)}
-                      className='cursor-pointer'>
+                      className="cursor-pointer"
+                    >
                       <img
                         src={order.image}
                         srcSet={order.image}
-                        loading='lazy'
+                        loading="lazy"
                       />
                     </ImageListItem>
                   </ImageList>
@@ -426,9 +429,10 @@ class OrderViewPage extends React.Component {
             <Grid
               container
               spacing={gridSpacing}
-              className='details-header ratn-pur-wrapper loans_view'>
-              <Grid item xs={12} className='p-add-product create-input'>
-                <h3 className='p_heading_list'>Product List</h3>
+              className="details-header ratn-pur-wrapper loans_view"
+            >
+              <Grid item xs={12} className="p-add-product create-input">
+                <h3 className="p_heading_list">Product List</h3>
                 <DataTable
                   columns={this.columns}
                   rows={order.products}
@@ -441,11 +445,12 @@ class OrderViewPage extends React.Component {
             </Grid>
 
             <Dialog
-              className='ratn-dialog-wrapper'
+              className="ratn-dialog-wrapper"
               open={this.state.saleDialog}
               onClose={this.handleSaleDialogClose}
               fullWidth
-              maxWidth='xs'>
+              maxWidth="xs"
+            >
               <DialogTitle>Sale Order</DialogTitle>
               <DialogContent>
                 Are you sure want to sale this order?
@@ -454,20 +459,21 @@ class OrderViewPage extends React.Component {
                     <FormControl>
                       <RadioGroup
                         row
-                        name='row-radio-buttons-group'
+                        name="row-radio-buttons-group"
                         value={this.state.from_order_price}
                         onChange={(e) =>
                           this.setState({ from_order_price: e.target.value })
-                        }>
+                        }
+                      >
                         <FormControlLabel
                           value={1}
                           control={<Radio />}
-                          label='Price will be same as order price.'
+                          label="Price will be same as order price."
                         />
                         <FormControlLabel
                           value={0}
                           control={<Radio />}
-                          label='Price will be same as current price.'
+                          label="Price will be same as current price."
                         />
                       </RadioGroup>
                     </FormControl>
@@ -476,29 +482,32 @@ class OrderViewPage extends React.Component {
                   <FormControl>
                     <RadioGroup
                       row
-                      name='row-radio-buttons-group'
-                      value={this.state.from_order_price}>
+                      name="row-radio-buttons-group"
+                      value={this.state.from_order_price}
+                    >
                       <FormControlLabel
                         value={0}
                         control={<Radio />}
-                        label='Price will be same as current price.'
+                        label="Price will be same as current price."
                       />
                     </RadioGroup>
                   </FormControl>
                 )}
               </DialogContent>
               <DialogActions>
-                <Stack spacing={2} direction='row' justifyContent='flex-end'>
+                <Stack spacing={2} direction="row" justifyContent="flex-end">
                   <Button
-                    variant='outlined'
-                    onClick={this.handleSaleDialogClose}>
+                    variant="outlined"
+                    onClick={this.handleSaleDialogClose}
+                  >
                     Cancel
                   </Button>
                   <Button
-                    variant='contained'
-                    type='button'
+                    variant="contained"
                     disabled={this.state.processing}
-                    onClick={this.handleSaleSubmit}>
+                    type="button"
+                    onClick={this.handleSaleSubmit}
+                  >
                     Yes, Confirm
                   </Button>
                 </Stack>
@@ -508,41 +517,43 @@ class OrderViewPage extends React.Component {
         )}
 
         <Dialog
-          className='ratn-dialog-wrapper'
+          className="ratn-dialog-wrapper"
           open={this.state.openDialog}
           onClose={this.handleDialogClose}
           fullWidth
-          maxWidth='xs'>
+          maxWidth="xs"
+        >
           <DialogTitle>Order Status</DialogTitle>
           <DialogContent>
             <DialogContentText></DialogContentText>
             <Box sx={{ flexGrow: 1, m: 0.5 }}>
               <Grid container spacing={2}>
-                <Grid item xs={12} className='create-input'>
+                <Grid item xs={12} className="create-input">
                   <FormControl fullWidth>
                     <InputLabel>Order Status</InputLabel>
                     <Select
-                      className='input-inner'
+                      className="input-inner"
                       value={this.state.order_status}
                       fullWidth
-                      label='Order Status'
+                      label="Order Status"
                       onChange={(e) =>
                         this.setState({ order_status: e.target.value })
-                      }>
-                      <MenuItem value='pending'>Pending</MenuItem>
-                      <MenuItem value='accepted'>Accepted</MenuItem>
-                      <MenuItem value='delivered'>Delivered</MenuItem>
-                      <MenuItem value='cancelled'>Cancelled</MenuItem>
-                      <MenuItem value='declined'>Declined</MenuItem>
+                      }
+                    >
+                      <MenuItem value="pending">Pending</MenuItem>
+                      <MenuItem value="accepted">Accepted</MenuItem>
+                      <MenuItem value="delivered">Delivered</MenuItem>
+                      <MenuItem value="cancelled">Cancelled</MenuItem>
+                      <MenuItem value="declined">Declined</MenuItem>
                     </Select>
                   </FormControl>
                 </Grid>
                 {this.state.order_status == "accepted" ? (
                   <>
-                    <Grid item xs={12} md={12} className='create-input'>
+                    <Grid item xs={12} md={12} className="create-input">
                       <TextField
-                        label='Advance Amount'
-                        variant='outlined'
+                        label="Advance Amount"
+                        variant="outlined"
                         fullWidth
                         value={this.state.advance_amount}
                         onChange={(e) =>
@@ -550,14 +561,14 @@ class OrderViewPage extends React.Component {
                         }
                       />
                     </Grid>
-                    <Grid item md={12} xs={12} className='create-input'>
+                    <Grid item md={12} xs={12} className="create-input">
                       <FormControl fullWidth>
                         <InputLabel>Payment Mode</InputLabel>
                         <Select
-                          className='input-inner'
+                          className="input-inner"
                           value={this.state.payment_mode}
                           fullWidth
-                          label='Payment Mode'
+                          label="Payment Mode"
                           onChange={(e) =>
                             this.setState({ payment_mode: e.target.value })
                           }>
@@ -569,10 +580,10 @@ class OrderViewPage extends React.Component {
                       </FormControl>
                     </Grid>
                     {this.state.payment_mode == "cheque" ? (
-                      <Grid item md={12} xs={12} className='create-input'>
+                      <Grid item md={12} xs={12} className="create-input">
                         <TextField
-                          label='Cheque No'
-                          variant='outlined'
+                          label="Cheque No"
+                          variant="outlined"
                           fullWidth
                           value={this.state.cheque_no}
                           onChange={(e) =>
@@ -581,11 +592,11 @@ class OrderViewPage extends React.Component {
                         />
                       </Grid>
                     ) : null}
-                    <Grid item xs={12} md={12} className='create-input'>
+                    <Grid item xs={12} md={12} className="create-input">
                       <TextareaAutosize
-                        className='description'
+                        className="description"
                         minRows={3}
-                        placeholder='Notes'
+                        placeholder="Notes"
                         style={{ width: "100%" }}
                         value={this.state.notes}
                         onChange={(e) =>
@@ -596,19 +607,20 @@ class OrderViewPage extends React.Component {
                   </>
                 ) : null}
                 <Grid item xs={12}>
-                  <Stack spacing={1} direction='row' justifyContent='flex-end'>
+                  <Stack spacing={1} direction="row" justifyContent="flex-end">
                     <Button
-                      variant='contained'
-                      type='button'
+                      variant="contained"
+                      type="button"
                       disabled={
                         this.state.processing ||
                         (this.state.order &&
                           this.state.order.status == this.state.order_status)
                       }
-                      onClick={this.handleSubmit}>
+                      onClick={this.handleSubmit}
+                    >
                       {this.state.processing ? "Processing" : "Submit"}
                     </Button>
-                    <Button variant='outlined' onClick={this.handleDialogClose}>
+                    <Button variant="outlined" onClick={this.handleDialogClose}>
                       Cancel
                     </Button>
                   </Stack>
@@ -620,7 +632,8 @@ class OrderViewPage extends React.Component {
 
         <Dialog
           onClose={this.handleImageDialogClose}
-          open={this.state.imageDialogOpen}>
+          open={this.state.imageDialogOpen}
+        >
           <DialogTitle>
             <CloseIcon
               sx={{
@@ -666,19 +679,21 @@ function Row(props) {
     <React.Fragment>
       <TableRow
         sx={{ "& > *": { borderBottom: "unset" } }}
-        className={odd_even_class}>
+        className={odd_even_class}
+      >
         <TableCell>
           <IconButton
-            aria-label='expand row'
-            size='small'
-            onClick={() => setOpen(!open)}>
+            aria-label="expand row"
+            size="small"
+            onClick={() => setOpen(!open)}
+          >
             {open ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
           </IconButton>
         </TableCell>
-        <TableCell component='th' scope='row'>
+        <TableCell component="th" scope="row">
           {sl_no <= 9 ? "0" + sl_no : sl_no}
         </TableCell>
-        <TableCell component='th' scope='row'>
+        <TableCell component="th" scope="row">
           {row.product_name}
         </TableCell>
         <TableCell>{row.category_name}</TableCell>
@@ -688,11 +703,11 @@ function Row(props) {
       </TableRow>
       <TableRow className={"table-inner-row sub_table " + odd_even_class}>
         <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={11}>
-          <Collapse in={open} timeout='auto' unmountOnExit>
+          <Collapse in={open} timeout="auto" unmountOnExit>
             <Box sx={{ margin: 1 }}>
-              <Table size='medium' aria-label='orders'>
+              <Table size="medium" aria-label="orders">
                 <TableHead>
-                  <TableRow className='pur-details-inner-table'>
+                  <TableRow className="pur-details-inner-table">
                     <TableCell>Material Name</TableCell>
                     <TableCell>Purity</TableCell>
                     <TableCell>Quantity</TableCell>
@@ -700,10 +715,10 @@ function Row(props) {
                     <TableCell>Unit</TableCell>
                   </TableRow>
                 </TableHead>
-                <TableBody className='pur-details-table-body'>
+                <TableBody className="pur-details-table-body">
                   {row.materials.map((item, i) => (
                     <TableRow key={i}>
-                      <TableCell scope='row'>{item.material_name}</TableCell>
+                      <TableCell scope="row">{item.material_name}</TableCell>
                       <TableCell>{item.purity_name}</TableCell>
                       <TableCell>{item.quantity}</TableCell>
                       <TableCell>{item.weight}</TableCell>
