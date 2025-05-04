@@ -697,7 +697,7 @@ class WalletPage extends Component {
                 gutterBottom
                 component="span"
               >
-                <h1>NEFT/IMPS/UPI</h1>
+                <h1>BANKING/RTGS/NEFT</h1>
                 <h2>{balance_by_mode.imps_neft}</h2>
               </Typography>
               <div className="card-icon">
@@ -707,7 +707,7 @@ class WalletPage extends Component {
             <CardContent
               className="dashboard_card_content bg-color-4"
               sx={{ display: "flex", justifyContent: "space-between" }}
-              onClick={() => this.handleCardClick("online")}
+              onClick={() => this.handleCardClick("UPI/PhonePe/Gpay")}
             >
               <Typography
                 sx={{ fontSize: 14, margin: 0 }}
@@ -715,8 +715,8 @@ class WalletPage extends Component {
                 gutterBottom
                 component="span"
               >
-                <h1>Online</h1>
-                <h2>{balance_by_mode.online}</h2>
+                <h1>UPI/PhonePe/Gpay</h1>
+                <h2>{balance_by_mode.UPI/PhonePe/Gpay}</h2>
               </Typography>
               <div className="card-icon">
                 <AccountBalanceWalletIcon />
@@ -765,8 +765,8 @@ class WalletPage extends Component {
                 <MenuItem value="">All</MenuItem>
                 <MenuItem value="cash">Cash</MenuItem>
                 <MenuItem value="cheque">Cheque</MenuItem>
-                <MenuItem value="imps_neft">NEFT/IMPS/UPI</MenuItem>
-                <MenuItem value="online">Online</MenuItem>
+                <MenuItem value="imps_neft">BANKING/RTGS/NEFT</MenuItem>
+                <MenuItem value="UPI/PhonePe/Gpay">UPI/PhonePe/Gpay</MenuItem>
               </Select>
             </FormControl>
           </Grid>
@@ -1117,8 +1117,8 @@ class WalletPage extends Component {
                       <MenuItem value=""></MenuItem>
                       <MenuItem value="cash">Cash</MenuItem>
                       <MenuItem value="cheque">Cheque</MenuItem>
-                      <MenuItem value="imps_neft">NEFT/IMPS/UPI</MenuItem>
-                      <MenuItem value="online">Online</MenuItem>
+                      <MenuItem value="imps_neft">BANKING/RTGS/NEFT</MenuItem>
+                      <MenuItem value="UPI/PhonePe/Gpay">UPI/PhonePe/Gpay</MenuItem>
                     </Select>
                   </FormControl>
                 </Grid>

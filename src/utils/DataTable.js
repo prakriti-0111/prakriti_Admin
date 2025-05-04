@@ -400,6 +400,45 @@ class DataTable extends React.Component {
     });
   };
 
+  crFunction = async (item) => {
+    if (this.state.CrfunResult !== "Loading...") {
+      this.setState({ CrfunResult: "Loading..." });
+    }
+    this.setState({ crID: item });
+
+    const url = `https://www.iigl.org/verify-report?_token=9qeXaecEEQxpc6lxgetMVYbRspPDeAI93byemKfw&report_no=${item}&mobile=9874445612`;
+    const options = {
+      method: "GET",
+    };
+
+    try {
+      const response = await fetch(url, options);
+      const result = await response.text();
+
+      // Parse the HTML response to extract table data
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(result, "text/html");
+      const table = doc.querySelector("table");
+
+      if (table) {
+        const rows = Array.from(table.rows).map((row) =>
+          Array.from(row.cells).map((cell) => {
+            const img = cell.querySelector("img");
+            return img ? img.src : cell.textContent;
+          })
+        );
+
+        console.log("rows",rows);
+        this.setState({ CrfunResult: rows});
+      } else {
+        this.setState({ CrfunResult: "No table found in the response" });
+      }
+    } catch (error) {
+      console.error(error);
+      this.setState({ CrfunResult: "Error fetching data" });
+    }
+  };
+
   render() {
     const {
       rows,
@@ -458,323 +497,288 @@ class DataTable extends React.Component {
     };
 
     console.log("this is the data ", this.state.CrfunResult);
+    console.log("crfunresult", this.state.CrfunResult);
+    
 
     return (
       <>
-      <div
-        className="modal fade"
-        id="exampleModal"
-        tabIndex="-1"
-        aria-labelledby="exampleModalLabel"
-        aria-hidden="true"
-      >
-        <div className="modal-dialog modal-dialog-centered modal-dialog-scrollable z-10">
-        <div className="modal-content">
-          <div className="modal-header">
-          <h1
-            className="modal-title fs-6"
-            id="exampleModalLabel"
-            style={{ fontSize: "14px" }}
-          >
-            Certificate Details : <span className="fw-bold">{this.state.crID}</span>
-          </h1>
-          <button
-            type="button"
-            className="btn-close"
-            data-bs-dismiss="modal"
-            aria-label="Close"
-          ></button>
-          </div>
-          <div className="modal-body">
-          {this.state.CrfunResult === "Loading..." ? (
-            <div className="loading-animation d-flex justify-content-center">
-            <div className="spinner-grow" role="status">
-              <span className="visually-hidden">Loading...</span>
-            </div>
-            </div>
-          ) : (
-            <table className="table table-striped">
-            <tbody style={{ fontSize: "12px" }}>
-              {JSON.parse(this.state.CrfunResult).map(
-              ([key, value], index) => (
-                <tr key={index}>
-                <th scope="row" >
-                  {key}
-                </th>
-                <td >
-                  {value.startsWith("http") ? (
-                  <img
-                    src={value}
-                    alt="Product"
-                    style={{
-                    maxWidth: "100px",
-                    maxHeight: "100px",
-                    }}
-                  />
-                  ) : (
-                  value
-                  )}
-                </td>
-                </tr>
-              )
-              )}
-            </tbody>
-            </table>
-          )}
-          </div>
-        </div>
-        </div>
-      </div>
-      <TableContainer
-        component={Paper}
-        className="ratn-table-wrapper"
-        sx={{ maxHeight: 500 }}
-      >
-        <Table sx={{ minWidth: 500 }} stickyHeader={stickyHeader}>
-        <TableHead className="ratn-table-header">
-          <TableRow>
-          {this.state.showSerialNo ? (
-            <TableCell align={columnAlign}>
-            #
-            </TableCell>
-          ) : null}
-          {columns.map((column, index) => (
-            <TableCell
-            align={columnAlign}
-            key={index}
-            sx={this.getColumnStyle(column)}
-            className={
-              "className" in column ? column.className : ""
-            }
-          
-            >
-            {column.display_name}
-            {"helper_text" in column ? (
-              <p
-              className="table-column-helper-text"
-            
-              >
-              {column.helper_text}
-              </p>
-            ) : null}
-            </TableCell>
-          ))}
-          {actions.length || this.state.actionValue !== "" ? (
-            <TableCell
-            align={columnAlign}
-            sx={{ width: 100 }}
-          
-            >
-            Actions
-            </TableCell>
-          ) : null}
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {rows.map((row, i) => (
-          <TableRow key={i}>
-            {this.state.showSerialNo ? (
-            <TableCell align={rowAlign} style={{ fontSize: "12px" }}>
-              {this.getSerialNo(i, page, limit)}
-            </TableCell>
-            ) : null}
-            {this.getData(row).map((item, index) => {
-            if (index === 2) {
-              return (
-              <TableCell
-                align={rowAlign}
-                key={i + index}
-                data-bs-toggle="modal"
-                data-bs-target="#exampleModal"
-              
-              >
-                <span
-                className="btn"
-                onClick={() => crFunction(item)}
-              
+        <div
+          className="modal fade"
+          id="exampleModal"
+          tabIndex="-1"
+          aria-labelledby="exampleModalLabel"
+          aria-hidden="true"
+        >
+          <div className="modal-dialog modal-dialog-centered modal-dialog-scrollable z-10">
+            <div className="modal-content">
+              <div className="modal-header">
+                <h1
+                  className="modal-title fs-6"
+                  id="exampleModalLabel"
+                  style={{ fontSize: "14px" }}
                 >
-                {item}
-                </span>
-              </TableCell>
-              );
-            } else {
-              return (
-              <TableCell
-                align={rowAlign}
-                key={i + index}
-              
-              >
-                {item}
-              </TableCell>
-              );
-            }
-            })}
-            {actions.length || this.state.actionValue !== "" ? (
-            <TableCell
-              align={rowAlign}
-              className="action_btn"
-            
-            >
-              {actions.length ? (
-              <Stack
-                spacing={1}
-                direction="row"
-                justifyContent={rowAlign}
-                alignItems={rowAlign}
-              >
-                {actions.map((a, index) => {
-                return (
-                  <React.Fragment key={index}>
-                  {(!("show" in a) || a.show) &&
-                  (("conditions" in a &&
-                    this.checkActionBtnCondtion(
-                    a.conditions,
-                    row
-                    )) ||
-                    !("conditions" in a)) ? (
-                    <Button
-                    key={"b" + index}
-                    variant="contained"
-                    color={a.color}
-                    onClick={() =>
-                      this.handleActionButtonClick(a, row)
-                    }
-                    disabled={a.disabled ? a.disabled : false}
-                    style={{ fontSize: "10px" }}
-                    >
-                    {this.getActionIcon(a)}
-                    </Button>
-                  ) : null}
-                  </React.Fragment>
-                );
-                })}
-              </Stack>
-              ) : null}
-              {this.state.actionValue !== "" ? (
-              <span
-                style={{
-                ...this.getActionValueStyle(
-                  row[this.state.actionValue]
-                ),
-                fontSize: "12px",
-                }}
-              >
-                {row[this.state.actionValue]}
-              </span>
-              ) : null}
-            </TableCell>
-            ) : null}
-          </TableRow>
-          ))}
-
-          {rows.length === 0 ? (
-          <TableRow>
-            <TableCell
-            align="center"
-            colSpan={
-              columns.length +
-              actions.length +
-              (this.state.showSerialNo ? 1 : 0)
-            }
-          
-            >
-            No data found.
-            </TableCell>
-          </TableRow>
-          ) : null}
-        </TableBody>
-        <TableFooter>
-          <TableRow></TableRow>
-        </TableFooter>
-        </Table>
-        {total > 0 && havePagination ? (
-        <Grid container alignItems="right" className="ratn-table-footer">
-          {haveAllOption ? (
-          <Grid item xs={2}>
-            <FormControl size="small">
-            <Select
-              className="input-inner"
-              value={this.state.manualLimit}
-              fullWidth
-              onChange={this.handleLimitChange}
-            
-            >
-              <MenuItem value={limit} style={{ fontSize: "12px" }}>
-              {limit}
-              </MenuItem>
-              <MenuItem value="all" style={{ fontSize: "12px" }}>
-              All
-              </MenuItem>
-            </Select>
-            </FormControl>
-          </Grid>
-          ) : null}
-          <Grid item xs={haveAllOption ? 10 : 12}>
-          <Pagination
-            count={totalPage}
-            page={page}
-            onChange={this.handleChangePage}
-          
-          />
-          </Grid>
-        </Grid>
-        ) : null}
-        <Dialog
-        className="ratn-dialog-footer delete_modal"
-        open={this.state.deleteDialogOpen}
-        onClose={this.handleClose}
-        fullWidth
-        maxWidth="md"
-        >
-        <DialogTitle style={{ fontSize: "14px" }}>Delete</DialogTitle>
-        <DialogContent>
-          <DialogContentText
-          id="alert-dialog-slide-description"
-        
-          >
-          Are you sure want to delete this record?
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <div className="ratn-footer-buttons">
-          <Button
-            onClick={this.handleClose}
-            className="close-button"
-          
-          >
-            Close
-          </Button>
-          <Button
-            onClick={this.handleDelete}
-            className="conf-button"
-          
-          >
-            Yes, Confirm
-          </Button>
+                  Certificate Details :{" "}
+                  <span className="fw-bold">{this.state.crID}</span>
+                </h1>
+                <button
+                  type="button"
+                  className="btn-close"
+                  data-bs-dismiss="modal"
+                  aria-label="Close"
+                ></button>
+              </div>
+              <div className="modal-body">
+                {this.state.CrfunResult === "Loading..." ? (
+                  <div className="loading-animation d-flex justify-content-center">
+                    <div className="spinner-grow" role="status">
+                      <span className="visually-hidden">Loading...</span>
+                    </div>
+                  </div>
+                ) : (
+                  <table className="table table-striped">
+                    <tbody style={{ fontSize: "12px" }}>
+                      {Array.isArray(this.state.CrfunResult)?this.state.CrfunResult.map(
+                        ([key, value], index) => (
+                          <tr key={index}>
+                            <th scope="row">{key}</th>
+                            <td>
+                              {value.startsWith("http") ? (
+                                <img
+                                  src={value}
+                                  alt="Product"
+                                  style={{
+                                    maxWidth: "100px",
+                                    maxHeight: "100px",
+                                  }}
+                                />
+                              ) : (
+                                value
+                              )}
+                            </td>
+                          </tr>
+                        )
+                      ): <h6>{this.state.CrfunResult}</h6>}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+            </div>
           </div>
-        </DialogActions>
-        </Dialog>
-
-        <Dialog
-        onClose={this.handleImageDialogClose}
-        open={this.state.imageDialogOpen}
+        </div>
+        <TableContainer
+          component={Paper}
+          className="ratn-table-wrapper"
+          sx={{ maxHeight: 500 }}
         >
-        <DialogTitle>
-          <CloseIcon
-          sx={{
-            cursor: "pointer",
-            float: "right",
-            marginTop: "5px",
-            width: "30px",
-          }}
-          onClick={this.handleImageDialogClose}
-          />
-        </DialogTitle>
-        <DialogContent>
-          <img src={this.state.imagePath} width={500} height={350} />
-        </DialogContent>
-        </Dialog>
-      </TableContainer>
+          <Table sx={{ minWidth: 500 }} stickyHeader={stickyHeader}>
+            <TableHead className="ratn-table-header">
+              <TableRow>
+                {this.state.showSerialNo ? (
+                  <TableCell align={columnAlign}>#</TableCell>
+                ) : null}
+                {columns.map((column, index) => (
+                  <TableCell
+                    align={columnAlign}
+                    key={index}
+                    sx={this.getColumnStyle(column)}
+                    className={"className" in column ? column.className : ""}
+                  >
+                    {column.display_name}
+                    {"helper_text" in column ? (
+                      <p className="table-column-helper-text">
+                        {column.helper_text}
+                      </p>
+                    ) : null}
+                  </TableCell>
+                ))}
+                {actions.length || this.state.actionValue !== "" ? (
+                  <TableCell align={columnAlign} sx={{ width: 100 }}>
+                    Actions
+                  </TableCell>
+                ) : null}
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {rows.map((row, i) => (
+                <TableRow key={i}>
+                  {this.state.showSerialNo ? (
+                    <TableCell align={rowAlign} style={{ fontSize: "12px" }}>
+                      {this.getSerialNo(i, page, limit)}
+                    </TableCell>
+                  ) : null}
+                  {this.getData(row).map((item, index) => {
+                    if (index === 2) {
+                      return (
+                        <TableCell
+                          align={rowAlign}
+                          key={i + index}
+                          data-bs-toggle="modal"
+                          data-bs-target="#exampleModal"
+                        >
+                          <span
+                            className="btn"
+                            onClick={() => this.crFunction(item)}
+                          >
+                            {item}
+                          </span>
+                        </TableCell>
+                      );
+                    } else {
+                      return (
+                        <TableCell align={rowAlign} key={i + index}>
+                          {item}
+                        </TableCell>
+                      );
+                    }
+                  })}
+                  {actions.length || this.state.actionValue !== "" ? (
+                    <TableCell align={rowAlign} className="action_btn">
+                      {actions.length ? (
+                        <Stack
+                          spacing={1}
+                          direction="row"
+                          justifyContent={rowAlign}
+                          alignItems={rowAlign}
+                        >
+                          {actions.map((a, index) => {
+                            return (
+                              <React.Fragment key={index}>
+                                {(!("show" in a) || a.show) &&
+                                (("conditions" in a &&
+                                  this.checkActionBtnCondtion(
+                                    a.conditions,
+                                    row
+                                  )) ||
+                                  !("conditions" in a)) ? (
+                                  <Button
+                                    key={"b" + index}
+                                    variant="contained"
+                                    color={a.color}
+                                    onClick={() =>
+                                      this.handleActionButtonClick(a, row)
+                                    }
+                                    disabled={a.disabled ? a.disabled : false}
+                                    style={{ fontSize: "10px" }}
+                                  >
+                                    {this.getActionIcon(a)}
+                                  </Button>
+                                ) : null}
+                              </React.Fragment>
+                            );
+                          })}
+                        </Stack>
+                      ) : null}
+                      {this.state.actionValue !== "" ? (
+                        <span
+                          style={{
+                            ...this.getActionValueStyle(
+                              row[this.state.actionValue]
+                            ),
+                            fontSize: "12px",
+                          }}
+                        >
+                          {row[this.state.actionValue]}
+                        </span>
+                      ) : null}
+                    </TableCell>
+                  ) : null}
+                </TableRow>
+              ))}
+
+              {rows.length === 0 ? (
+                <TableRow>
+                  <TableCell
+                    align="center"
+                    colSpan={
+                      columns.length +
+                      actions.length +
+                      (this.state.showSerialNo ? 1 : 0)
+                    }
+                  >
+                    No data found.
+                  </TableCell>
+                </TableRow>
+              ) : null}
+            </TableBody>
+            <TableFooter>
+              <TableRow></TableRow>
+            </TableFooter>
+          </Table>
+          {total > 0 && havePagination ? (
+            <Grid container alignItems="right" className="ratn-table-footer">
+              {haveAllOption ? (
+                <Grid item xs={2}>
+                  <FormControl size="small">
+                    <Select
+                      className="input-inner"
+                      value={this.state.manualLimit}
+                      fullWidth
+                      onChange={this.handleLimitChange}
+                    >
+                      <MenuItem value={limit} style={{ fontSize: "12px" }}>
+                        {limit}
+                      </MenuItem>
+                      <MenuItem value="all" style={{ fontSize: "12px" }}>
+                        All
+                      </MenuItem>
+                    </Select>
+                  </FormControl>
+                </Grid>
+              ) : null}
+              <Grid item xs={haveAllOption ? 10 : 12}>
+                <Pagination
+                  count={totalPage}
+                  page={page}
+                  onChange={this.handleChangePage}
+                />
+              </Grid>
+            </Grid>
+          ) : null}
+          <Dialog
+            className="ratn-dialog-footer delete_modal"
+            open={this.state.deleteDialogOpen}
+            onClose={this.handleClose}
+            fullWidth
+            maxWidth="md"
+          >
+            <DialogTitle style={{ fontSize: "14px" }}>Delete</DialogTitle>
+            <DialogContent>
+              <DialogContentText id="alert-dialog-slide-description">
+                Are you sure want to delete this record?
+              </DialogContentText>
+            </DialogContent>
+            <DialogActions>
+              <div className="ratn-footer-buttons">
+                <Button onClick={this.handleClose} className="close-button">
+                  Close
+                </Button>
+                <Button onClick={this.handleDelete} className="conf-button">
+                  Yes, Confirm
+                </Button>
+              </div>
+            </DialogActions>
+          </Dialog>
+
+          <Dialog
+            onClose={this.handleImageDialogClose}
+            open={this.state.imageDialogOpen}
+          >
+            <DialogTitle>
+              <CloseIcon
+                sx={{
+                  cursor: "pointer",
+                  float: "right",
+                  marginTop: "5px",
+                  width: "30px",
+                }}
+                onClick={this.handleImageDialogClose}
+              />
+            </DialogTitle>
+            <DialogContent>
+              <img src={this.state.imagePath} width={500} height={350} />
+            </DialogContent>
+          </Dialog>
+        </TableContainer>
       </>
     );
   }
