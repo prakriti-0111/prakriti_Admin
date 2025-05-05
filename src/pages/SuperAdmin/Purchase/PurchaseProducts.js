@@ -21,6 +21,8 @@ class PurchaseProductsPage extends Component {
       price_by_categories: [],
       categories: this.props.categories,
       queryParams: {
+        page: 1,
+        limit: 50,
         category_id: ''
       },
       auth: this.props.auth,
@@ -120,6 +122,18 @@ class PurchaseProductsPage extends Component {
       })
   }
 
+  handlePagination = (page) => {
+    this.setState({
+      queryParams: {
+        ...this.state.queryParams,
+        page: page
+      }
+    }, () => {
+      this.loadListData();
+    })
+    
+  }
+
   handleView = (row) => {
     this.props.navigate(getUserDashboardRoute(getRoleName(this.state.auth)) + '/purchases/view/' + row.purchase_id);
   }
@@ -211,7 +225,8 @@ class PurchaseProductsPage extends Component {
               page={this.state.queryParams.page}
               limit={this.state.queryParams.limit}
               total={this.state.items.length}
-              havePagination={false}
+              // havePagination={false}
+              handlePagination={this.handlePagination}
               actions={this.tableActions}
             />
           </Grid>

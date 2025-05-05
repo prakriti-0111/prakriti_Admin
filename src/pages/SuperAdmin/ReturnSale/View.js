@@ -62,6 +62,8 @@ class ReturnSaleViewPage extends React.Component {
       actionCalled: this.props.actionCalled,
       approve_declined_processing: false,
       returnSale: this.props.returnSale,
+      actionCalled: this.props.actionCalled,
+      approve_declined_processing: false,
       confirmDialog: false,
       status_changing: "",
       auth: this.props.auth,
@@ -79,6 +81,9 @@ class ReturnSaleViewPage extends React.Component {
 
   static getDerivedStateFromProps(props, state) {
     let update = {};
+    if(props.actionCalled !== state.actionCalled){
+      update.actionCalled = props.actionCalled;
+    }
     if (props.returnSale !== state.returnSale) {
       update.returnSale = props.returnSale;
     }
@@ -97,7 +102,7 @@ class ReturnSaleViewPage extends React.Component {
       this.loadViewData();
     }
 
-    if (this.state.actionCalled) {
+    if(this.state.actionCalled){
       this.setState({
         approve_declined_processing: false,
       });
@@ -118,19 +123,16 @@ class ReturnSaleViewPage extends React.Component {
   handleConfirmSubmit = async () => {
     let data = { status: this.state.status_changing };
     this.setState({
-      approve_declined_processing: true,
+      approve_declined_processing: true
     });
-    let status_response = await returnSaleUpdateStatus(
-      this.props.params.id,
-      data
-    );
+    let status_response = await returnSaleUpdateStatus(this.props.params.id, data);
     if (status_response.data.success == true) {
       this.props.enqueueSnackbar(status_response.data.message, {
         variant: "success",
       });
       this.setState({
         confirmDialog: false,
-        approve_declined_processing: false,
+        approve_declined_processing: false
       });
       this.loadViewData();
       if (this.state.status_changing == "complete") {
@@ -141,11 +143,9 @@ class ReturnSaleViewPage extends React.Component {
         );
       }
     } else {
-      this.props.enqueueSnackbar(status_response.data.message, {
-        variant: "error",
-      });
+      this.props.enqueueSnackbar(status_response.data.message, { variant: 'error' });
       this.setState({
-        approve_declined_processing: false,
+        approve_declined_processing: false
       });
     }
   };
@@ -477,24 +477,9 @@ class ReturnSaleViewPage extends React.Component {
             ) : null}
           </DialogContent>
           <DialogActions>
-            <Stack spacing={2} direction='row' justifyContent='flex-end'>
-            {!this.state.approve_declined_processing ? (
-              <>
-                <Button
-                  variant='outlined'
-                  onClick={this.handleConfirmDialogClose}>
-                  Cancel
-                </Button>
-                <Button
-                  variant='contained'
-                  type='button'
-                  onClick={this.handleConfirmSubmit}>
-                  Yes, Confirm
-                </Button>
-              </>
-            ) : (
-              <CircularProgress size='30px' />
-            )}
+            <Stack spacing={2} direction="row" justifyContent="flex-end">
+            {!this.state.approve_declined_processing?<><Button variant="outlined" onClick={this.handleConfirmDialogClose}>Cancel</Button>
+              <Button variant="contained" type="button" onClick={this.handleConfirmSubmit}>Yes, Confirm</Button></>:<CircularProgress />}
             </Stack>
           </DialogActions>
         </Dialog>
@@ -506,7 +491,7 @@ class ReturnSaleViewPage extends React.Component {
 const mapStateToProps = (state) => ({
   returnSale: state.superadmin.returnSale.returnSale,
   actionCalled: state.superadmin.returnSale.actionCalled,
-  auth: state.auth,
+  auth: state.auth
 });
 
 const mapDispatchToProps = (dispatch) => {
