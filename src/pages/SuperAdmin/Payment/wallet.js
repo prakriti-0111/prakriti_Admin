@@ -716,7 +716,7 @@ class WalletPage extends Component {
                 component="span"
               >
                 <h1>UPI/PhonePe/Gpay</h1>
-                <h2>{balance_by_mode.UPI/PhonePe/Gpay}</h2>
+                <h2>{balance_by_mode.online}</h2>
               </Typography>
               <div className="card-icon">
                 <AccountBalanceWalletIcon />
