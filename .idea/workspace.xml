@@ -71,6 +71,7 @@
     "settings.editor.selected.configurable": "advanced.settings",
     "ts.external.directory.path": "/snap/webstorm/459/plugins/javascript-plugin/jsLanguageServicesImpl/external",
     "vue.rearranger.settings.migration": "true"
+
   }
 }]]></component>
   <component name="ReactBuddySettings">

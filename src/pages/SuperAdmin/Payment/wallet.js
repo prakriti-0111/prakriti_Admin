@@ -707,7 +707,7 @@ class WalletPage extends Component {
             <CardContent
               className="dashboard_card_content bg-color-4"
               sx={{ display: "flex", justifyContent: "space-between" }}
-              onClick={() => this.handleCardClick("UPI/PhonePe/Gpay")}
+              onClick={() => this.handleCardClick("online")}
             >
               <Typography
                 sx={{ fontSize: 14, margin: 0 }}
@@ -766,7 +766,7 @@ class WalletPage extends Component {
                 <MenuItem value="cash">Cash</MenuItem>
                 <MenuItem value="cheque">Cheque</MenuItem>
                 <MenuItem value="imps_neft">BANKING/RTGS/NEFT</MenuItem>
-                <MenuItem value="UPI/PhonePe/Gpay">UPI/PhonePe/Gpay</MenuItem>
+                <MenuItem value="online">UPI/PhonePe/Gpay</MenuItem>
               </Select>
             </FormControl>
           </Grid>
@@ -1118,7 +1118,7 @@ class WalletPage extends Component {
                       <MenuItem value="cash">Cash</MenuItem>
                       <MenuItem value="cheque">Cheque</MenuItem>
                       <MenuItem value="imps_neft">BANKING/RTGS/NEFT</MenuItem>
-                      <MenuItem value="UPI/PhonePe/Gpay">UPI/PhonePe/Gpay</MenuItem>
+                      <MenuItem value="online">UPI/PhonePe/Gpay</MenuItem>
                     </Select>
                   </FormControl>
                 </Grid>
