@@ -2,7 +2,8 @@ import React from "react";
 import { connect } from "react-redux";
 import { Field, reduxForm } from "redux-form/immutable";
 import ImageUploading from "react-images-uploading";
-import { Html5Qrcode, Html5QrcodeSupportedFormats } from "html5-qrcode";
+// Import jsQR for QR code scanning
+import jsQR from "jsqr";
 
 import {
   Box,
@@ -223,131 +224,257 @@ class PurchaseForm extends React.Component {
   componentWillUnmount() {
     // Stop and clear QR scanner if it exists
     if (this.state.qrScanner) {
-      this.state.qrScanner.stop().catch((error) => {
-        console.error("Failed to stop QR scanner:", error);
-      });
+      const scannerState = this.state.qrScanner;
+
+      // Stop scanning loop
+      scannerState.active = false;
+
+      // Cancel animation frame if active
+      if (scannerState.animationFrameId) {
+        cancelAnimationFrame(scannerState.animationFrameId);
+      }
+
+      // Stop camera stream
+      if (scannerState.stream) {
+        scannerState.stream.getTracks().forEach(track => track.stop());
+      }
+
+      // Clear video source
+      if (scannerState.video && scannerState.video.srcObject) {
+        scannerState.video.srcObject = null;
+      }
     }
   }
 
   handleOpenQRScanner = () => {
     this.setState({ qrScannerOpen: true, qrScannerError: null }, () => {
-      // Add a small delay to ensure the DOM element is rendered
       setTimeout(() => {
-        // Check if the element exists before initializing
         const qrReaderElement = document.getElementById("qr-reader");
         if (qrReaderElement) {
-          // Initialize QR scanner after modal is opened and element is available
-          const html5QrCode = new Html5Qrcode("qr-reader");
-          this.setState({ qrScanner: html5QrCode });
+          // Create video element for camera stream
+          const video = document.createElement("video");
+          video.setAttribute("playsinline", "true"); // Required for iOS
+          video.style.width = "100%";
+          video.style.height = "auto";
 
-          html5QrCode
-            .start(
-              { facingMode: "environment" },
-              {
-                fps: 10,
-                qrbox: { width: 250, height: 250 },
-                formatsToSupport: [
-                  Html5QrcodeSupportedFormats.QR_CODE,
-                  Html5QrcodeSupportedFormats.AZTEC,
-                  Html5QrcodeSupportedFormats.DATA_MATRIX,
-                  Html5QrcodeSupportedFormats.MAXICODE,
-                  Html5QrcodeSupportedFormats.PDF_417,
-                ],
-                experimentalFeatures: {
-                  useBarCodeDetectorIfSupported: true,
-                },
-              },
-              async (decodedText) => {
-                // On successful scan
+          // Create canvas for frame analysis
+          const canvas = document.createElement("canvas");
+          const canvasContext = canvas.getContext("2d", { willReadFrequently: true });
 
-                const url = decodedText;
-                const options = {
-                  method: "GET",
-                };
-            
-                try {
-                    const response = await fetch(url, options);
-                    const result = await response.text();
+          // Create and add scanning boundary
+          const boundary = document.createElement("div");
+          boundary.className = "qr-scanner-boundary";
+          boundary.style.position = "absolute";
+          boundary.style.top = "50%";
+          boundary.style.left = "50%";
+          boundary.style.transform = "translate(-50%, -50%)";
+          boundary.style.width = "70%";
+          boundary.style.height = "70%";
+          boundary.style.border = "2px solid #2196f3";
+          boundary.style.borderRadius = "8px";
+          boundary.style.boxShadow = "0 0 0 5000px rgba(0, 0, 0, 0.3)";
+          boundary.style.zIndex = "1";
 
-                    // Parse the response to extract the required data
-                    const parser = new DOMParser();
-                    const doc = parser.parseFromString(result, "text/html");
+          // Clear previous content and append video
+          qrReaderElement.innerHTML = "";
+          qrReaderElement.style.position = "relative";
+          qrReaderElement.appendChild(video);
+          qrReaderElement.appendChild(boundary);
 
-                    // Extract the searched value
-                    const searchedValue = doc.querySelector(".entry-title h2 b")?.textContent;
+          // Store references for cleanup
+          const scannerState = {
+            video,
+            canvas,
+            canvasContext,
+            boundary,
+            animationFrameId: null,
+            stream: null,
+            active: true,
+            lastScanTime: 0,
+            scanInterval: 100, // Adjusted for better performance
+          };
 
-                    // Extract the product image URL
-                    const productImgElement = doc.querySelector("tr td img");
-                    const productImgSrc = productImgElement ? productImgElement.getAttribute("src") : null;
+          this.setState({ qrScanner: scannerState });
 
-                    // Create the JSON object
-                    const extractedData = {
-                    searchedValue: searchedValue || null,
-                    productImgSrc: productImgSrc || null,
-                    };
+          // Check if BarcodeDetector is available (AI-based detection)
+          const hasBarcodeDetector = 'BarcodeDetector' in window;
+          let barcodeDetector = null;
 
-                    this.handleQRCodeSuccess(searchedValue);
-                    console.log("Extracted Data:", extractedData);
-        
-                } catch (error) {
-                  console.error(error);
-                  this.setState({ CrfunResult: "Error fetching data" });
-                }
-
-              
-
-
-              },
-              (errorMessage) => {
-                // On error - do nothing, just keep scanning
-                console.log(errorMessage);
-                // If it's a NotFoundException, we can show a message to the user
-                if (errorMessage.includes("NotFoundException")) {
-                  this.setState({
-                    qrScannerError:
-                      "QR code not detected. Please try again with a clearer image or different QR code format.",
-                  });
-                }
-              }
-            )
-            .catch((err) => {
-              console.error("Failed to start QR scanner:", err);
-              this.setState({
-                qrScannerError:
-                  "Failed to start QR scanner. Please try again or use manual entry.",
+          try {
+            if (hasBarcodeDetector) {
+              barcodeDetector = new BarcodeDetector({
+                formats: ['qr_code', 'aztec', 'data_matrix', 'pdf417']
               });
+              console.log("Using AI-based BarcodeDetector API");
+            } else {
+              console.log("BarcodeDetector API not available, using jsQR fallback");
+            }
+          } catch (error) {
+            console.error("Error initializing BarcodeDetector:", error);
+            console.log("BarcodeDetector API not available, using jsQR fallback");
+          }
+
+          // Start camera stream
+          navigator.mediaDevices.getUserMedia({
+            video: { facingMode: "environment" },
+            audio: false
+          })
+          .then(stream => {
+            scannerState.stream = stream;
+            video.srcObject = stream;
+            video.play();
+
+            // Set canvas size after video metadata is loaded
+            video.onloadedmetadata = () => {
+              canvas.width = video.videoWidth;
+              canvas.height = video.videoHeight;
+
+              // Calculate boundary dimensions for scanning
+              const getBoundaryRect = () => {
+                const videoRect = video.getBoundingClientRect();
+                const boundaryRect = boundary.getBoundingClientRect();
+
+                // Calculate the boundary position relative to the video
+                const boundaryRatio = {
+                  x: boundaryRect.width / videoRect.width,
+                  y: boundaryRect.height / videoRect.height,
+                  left: (boundaryRect.left - videoRect.left) / videoRect.width,
+                  top: (boundaryRect.top - videoRect.top) / videoRect.height
+                };
+
+                // Calculate the boundary in canvas coordinates
+                return {
+                  x: Math.floor(canvas.width * boundaryRatio.left),
+                  y: Math.floor(canvas.height * boundaryRatio.top),
+                  width: Math.floor(canvas.width * boundaryRatio.x),
+                  height: Math.floor(canvas.height * boundaryRatio.y)
+                };
+              };
+
+              // Start scanning frames
+              const scanQRCode = () => {
+                if (!scannerState.active) return;
+
+                const now = Date.now();
+                if (now - scannerState.lastScanTime >= scannerState.scanInterval) {
+                  scannerState.lastScanTime = now;
+
+                  // Draw current video frame to canvas
+                  canvasContext.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+                  // Get boundary rectangle for focused scanning
+                  const boundaryRect = getBoundaryRect();
+
+                  // Get image data only from the boundary area for faster processing
+                  const imageData = canvasContext.getImageData(
+                    boundaryRect.x,
+                    boundaryRect.y,
+                    boundaryRect.width,
+                    boundaryRect.height
+                  );
+
+                  // Use BarcodeDetector if available and working (AI-based, faster)
+                  if (hasBarcodeDetector && barcodeDetector) {
+                    try {
+                      barcodeDetector.detect(imageData)
+                        .then(barcodes => {
+                          if (barcodes.length > 0) {
+                            const decodedText = barcodes[0].rawValue;
+                            console.log("AI Decoded QR Code:", decodedText);
+                            this.handleQRCodeSuccess(decodedText);
+                          }
+                        })
+                        .catch(err => {
+                          console.error("BarcodeDetector error:", err);
+                          // If BarcodeDetector fails, fall back to jsQR for this frame
+                          scanWithJsQR(imageData);
+                        });
+                    } catch (error) {
+                      console.error("BarcodeDetector runtime error:", error);
+                      // If BarcodeDetector throws an error, fall back to jsQR
+                      scanWithJsQR(imageData);
+                    }
+                  } else {
+                    // Fallback to jsQR
+                    scanWithJsQR(imageData);
+                  }
+                }
+
+                // Continue scanning
+                scannerState.animationFrameId = requestAnimationFrame(scanQRCode);
+              };
+
+              // Helper function to scan with jsQR
+              const scanWithJsQR = (imageData) => {
+                try {
+                  const code = jsQR(
+                    imageData.data,
+                    imageData.width,
+                    imageData.height,
+                    { inversionAttempts: "dontInvert" } // Faster processing
+                  );
+
+                  if (code) {
+                    console.log("jsQR Decoded QR Code:", code.data);
+                    this.handleQRCodeSuccess(code.data);
+                  }
+                } catch (error) {
+                  console.error("jsQR error:", error);
+                }
+              };
+
+              scanQRCode();
+            };
+          })
+          .catch(err => {
+            console.error("Failed to access camera:", err);
+            this.setState({
+              qrScannerError: "Failed to access camera. Please check permissions and try again."
             });
+          });
         } else {
           console.error("QR reader element not found in the DOM");
           this.setState({
             qrScannerOpen: false,
-            qrScannerError:
-              "QR scanner initialization failed. Please try again.",
+            qrScannerError: "QR scanner initialization failed. Please try again."
           });
         }
-      }, 300); // 300ms delay should be enough for the DOM to render
+      }, 300); // Delay to ensure DOM is rendered
     });
   };
 
   handleCloseQRScanner = () => {
     if (this.state.qrScanner) {
-      this.state.qrScanner
-        .stop()
-        .then(() => {
-          this.setState({
-            qrScannerOpen: false,
-            qrScanner: null,
-            qrScannerError: null,
-          });
-        })
-        .catch((error) => {
-          console.error("Failed to stop QR scanner:", error);
-          this.setState({
-            qrScannerOpen: false,
-            qrScanner: null,
-            qrScannerError: null,
-          });
-        });
+      const scannerState = this.state.qrScanner;
+
+      // Stop scanning loop
+      scannerState.active = false;
+
+      // Cancel animation frame if active
+      if (scannerState.animationFrameId) {
+        cancelAnimationFrame(scannerState.animationFrameId);
+      }
+
+      // Stop camera stream
+      if (scannerState.stream) {
+        scannerState.stream.getTracks().forEach(track => track.stop());
+      }
+
+      // Clear video source
+      if (scannerState.video && scannerState.video.srcObject) {
+        scannerState.video.srcObject = null;
+      }
+
+      // Clean up boundary element if it exists
+      if (scannerState.boundary && scannerState.boundary.parentNode) {
+        scannerState.boundary.parentNode.removeChild(scannerState.boundary);
+      }
+
+      this.setState({
+        qrScannerOpen: false,
+        qrScanner: null,
+        qrScannerError: null,
+      });
     } else {
       this.setState({ qrScannerOpen: false, qrScannerError: null });
     }
@@ -356,77 +483,39 @@ class PurchaseForm extends React.Component {
   handleRetryQRScanner = () => {
     // Stop current scanner if it exists
     if (this.state.qrScanner) {
-      this.state.qrScanner
-        .stop()
-        .then(() => {
-          // Reset error state
-          this.setState({ qrScannerError: null, qrScanner: null }, () => {
-            // Reinitialize scanner
-            setTimeout(() => {
-              const qrReaderElement = document.getElementById("qr-reader");
-              if (qrReaderElement) {
-                const html5QrCode = new Html5Qrcode("qr-reader");
-                this.setState({ qrScanner: html5QrCode });
+      const scannerState = this.state.qrScanner;
 
-                html5QrCode
-                  .start(
-                    { facingMode: "environment" },
-                    {
-                      fps: 10,
-                      qrbox: { width: 250, height: 250 },
-                      formatsToSupport: [
-                        Html5QrcodeSupportedFormats.QR_CODE,
-                        Html5QrcodeSupportedFormats.AZTEC,
-                        Html5QrcodeSupportedFormats.DATA_MATRIX,
-                        Html5QrcodeSupportedFormats.MAXICODE,
-                        Html5QrcodeSupportedFormats.PDF_417,
-                      ],
-                      experimentalFeatures: {
-                        useBarCodeDetectorIfSupported: true,
-                      },
-                    },
-                    (decodedText) => {
-                      // On successful scan
-                      console.log("decoded data2", decodedText);
+      // Stop scanning loop
+      scannerState.active = false;
 
-                      this.handleQRCodeSuccess(decodedText);
-                    },
-                    (errorMessage) => {
-                      // On error - do nothing, just keep scanning
-                      console.log(errorMessage);
-                      // If it's a NotFoundException, we can show a message to the user
-                      if (errorMessage.includes("NotFoundException")) {
-                        this.setState({
-                          qrScannerError:
-                            "QR code not detected. Please try again with a clearer image or different QR code format.",
-                        });
-                      }
-                    }
-                  )
-                  .catch((err) => {
-                    console.error("Failed to start QR scanner:", err);
-                    this.setState({
-                      qrScannerError:
-                        "Failed to start QR scanner. Please try again or use manual entry.",
-                    });
-                  });
-              } else {
-                console.error("QR reader element not found in the DOM");
-                this.setState({
-                  qrScannerError:
-                    "QR scanner initialization failed. Please try again.",
-                });
-              }
-            }, 300);
-          });
-        })
-        .catch((error) => {
-          console.error("Failed to stop QR scanner for retry:", error);
-          this.setState({
-            qrScannerError:
-              "Failed to reset scanner. Please close and try again.",
-          });
-        });
+      // Cancel animation frame if active
+      if (scannerState.animationFrameId) {
+        cancelAnimationFrame(scannerState.animationFrameId);
+      }
+
+      // Stop camera stream
+      if (scannerState.stream) {
+        scannerState.stream.getTracks().forEach(track => track.stop());
+      }
+
+      // Clear video source
+      if (scannerState.video && scannerState.video.srcObject) {
+        scannerState.video.srcObject = null;
+      }
+
+      // Clean up boundary element if it exists
+      if (scannerState.boundary && scannerState.boundary.parentNode) {
+        scannerState.boundary.parentNode.removeChild(scannerState.boundary);
+      }
+
+      // Reset error state and reinitialize scanner
+      this.setState({ qrScannerError: null, qrScanner: null }, () => {
+        // Reinitialize scanner - reuse the handleOpenQRScanner logic
+        this.handleOpenQRScanner();
+      });
+    } else {
+      // If no scanner exists, just initialize a new one
+      this.handleOpenQRScanner();
     }
   };
 
@@ -3670,7 +3759,7 @@ class PurchaseForm extends React.Component {
                             Cheque
                           </MenuItem>
                           <MenuItem value="imps_neft">BANKING/RTGS/NEFT</MenuItem>
-                          <MenuItem value="UPI/PhonePe/Gpay">UPI/PhonePe/Gpay</MenuItem>
+                          <MenuItem value="online">UPI/PhonePe/Gpay</MenuItem>
                         </Select>
                       </FormControl>
                     </Grid>
@@ -4303,7 +4392,7 @@ class PurchaseForm extends React.Component {
                       <MenuItem value="cash">Cash</MenuItem>
                       <MenuItem value="cheque">Cheque</MenuItem>
                       <MenuItem value="imps_neft">BANKING/RTGS/NEFT</MenuItem>
-                      <MenuItem value="UPI/PhonePe/Gpay">UPI/PhonePe/Gpay</MenuItem>
+                      <MenuItem value="online">UPI/PhonePe/Gpay</MenuItem>
                     </Select>
                   </FormControl>
                 ) : null}

@@ -58,6 +58,7 @@ import {
 } from "src/helpers/helper";
 import { getNotifiactions } from "actions/superadmin/notification.actions";
 import FileDownloadIcon from "@mui/icons-material/FileDownload";
+import './style.css';
 
 class SaleViewPage extends React.Component {
   constructor(props) {
@@ -106,6 +107,10 @@ class SaleViewPage extends React.Component {
       {
         name: "txn_id",
         display_name: "Transaction #",
+      },
+      {
+        name: "weight",
+        display_name: "Weight",
       },
     ];
   }
@@ -405,11 +410,36 @@ class SaleViewPage extends React.Component {
     console.log("sale : ", sale);
     return (
       <MainCard
-        title='Sale Details'
+        title={
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span>{'Sale Details'}</span>
+            {sale && (<div>
+              <Chip
+                label={sale.approve_status}
+                color={getApprovalColor(sale.is_approved)}
+              />
+            </div>)}
+          </div>
+        }
         secondary={
-          <Button variant='contained' onClick={() => this.props.navigate(-1)}>
-            Back
-          </Button>
+          <>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            {downloadingInfo ? (
+              <CircularProgress size='30px' />
+            ) : (
+              <Button
+                variant='contained'
+                onClick={() =>
+                  this.handleDownloadInfo(this.props.params.id)
+                }>
+                <FileDownloadIcon />
+              </Button>
+            )}
+            <Button variant='contained' onClick={() => this.props.navigate(-1)}>
+              Back
+            </Button>
+          </div>
+          </>
         }>
         {!sale ? (
           <Grid container justifyContent='center'>
@@ -417,7 +447,7 @@ class SaleViewPage extends React.Component {
           </Grid>
         ) : (
           <>
-            <Grid
+            {/* <Grid
               container
               spacing={{ xs: 2, md: 3 }}
               columns={{ xs: 4, sm: 8, md: 12 }}>
@@ -438,25 +468,18 @@ class SaleViewPage extends React.Component {
                   </Button>
                 )}
               </Grid>
-            </Grid>
+            </Grid> */}
 
             <Grid
               container
               spacing={{ xs: 2, md: 3 }}
-              columns={{ xs: 4, sm: 8, md: 12 }}
+              columns={{ xs: 6                                                                                                                                                  , sm: 8, md: 12 }}
               className='details-header'>
+              
               <Grid item xs={3}>
                 <div className='single-item'>
                   <p>
-                    <span>Seller: </span> <br />
-                    {sale.user_name}, {sale.user_mobile}
-                  </p>
-                </div>
-              </Grid>
-              <Grid item xs={3}>
-                <div className='single-item'>
-                  <p>
-                    <span>Company Name: </span> <br />{" "}
+                    <span className={'download-field-title'}>Company Name: </span> <br />{" "}
                     {sale?.user_details?.company_name}
                   </p>
                 </div>
@@ -464,30 +487,30 @@ class SaleViewPage extends React.Component {
               <Grid item xs={3}>
                 <div className='single-item'>
                   <p>
-                    <span>Invoice Number: </span> <br /> {sale.invoice_number}
-                  </p>
-                </div>
-              </Grid>
-              <Grid item xs={3}>
-                <div>
-                  <span>Status: </span> <br />
-                  <Chip
-                    label={sale.approve_status}
-                    color={getApprovalColor(sale.is_approved)}
-                  />
-                </div>
-              </Grid>
-              <Grid item xs={3}>
-                <div className='single-item'>
-                  <p>
-                    <span>Invoice Date: </span> <br /> {sale.invoice_date}
+                    <span className={'download-field-title'}>Contact Number: </span> <br />{" "}
+                    {sale?.user_details?.mobile}
                   </p>
                 </div>
               </Grid>
               <Grid item xs={3}>
                 <div className='single-item'>
                   <p>
-                    <span>Due Date: </span> <br />
+                    <span className={'download-field-title'}>Seller Name: </span> <br />
+                    {sale.user_name} {/*,  {sale.user_mobile} */}
+                  </p>
+                </div>
+              </Grid>
+              <Grid item xs={3}>
+                <div className='single-item'>
+                  <p>
+                    <span className={'download-field-title'}>Invoice Date: </span> <br /> {sale.invoice_date}
+                  </p>
+                </div>
+              </Grid>
+              <Grid item xs={3}>
+                <div className='single-item'>
+                  <p>
+                    <span className={'download-field-title'}>Due Date: </span> <br />
                     {sale.due_date}
                   </p>
                 </div>
@@ -495,50 +518,68 @@ class SaleViewPage extends React.Component {
               <Grid item xs={3}>
                 <div className='single-item'>
                   <p>
-                    <span>Settlement Date: </span> <br />
+                    <span className={'download-field-title'}>Settlement Date: </span> <br />
                     {sale.settlement_date}
                   </p>
                 </div>
               </Grid>
+              {/* <Grid item xs={3}>
+                <div className='single-item'>
+                  <p>
+                    <span>Invoice Number: </span> <br /> {sale.invoice_number}
+                  </p>
+                </div>
+              </Grid> */}
+              {/* <Grid item xs={3}>
+                <div>
+                  <span>Status: </span> <br />
+                  <Chip
+                    label={sale.approve_status}
+                    color={getApprovalColor(sale.is_approved)}
+                  />
+                </div>
+              </Grid> */}
+              
+              
               <Grid item xs={3}>
                 <div className='single-item'>
                   <p>
-                    <span>Taxable Amount: </span> <br /> {sale.taxable_amount}
+                    <span className={'download-field-title'}>Sub Total: </span> <br /> {sale.taxable_amount}
                   </p>
                 </div>
               </Grid>
-              <Grid item xs={3}>
+              {parseFloat(sale.cgst_tax) > 0 && <Grid item xs={3}>
                 <div className='single-item'>
                   <p>
-                    <span>Cgst Tax: </span> <br /> {sale.cgst_tax}
+                    <span className={'download-field-title'}>Cgst Tax: </span> <br /> {sale.cgst_tax}
                   </p>
                 </div>
-              </Grid>
-              <Grid item xs={3}>
+              </Grid>}
+              {parseFloat(sale.sgst_tax) > 0 && <Grid item xs={3}>
                 <div className='single-item'>
                   <p>
-                    <span>Sgst Tax: </span> <br /> {sale.sgst_tax}
+                    <span className={'download-field-title'}>Sgst Tax: </span> <br /> {sale.sgst_tax}
                   </p>
                 </div>
-              </Grid>
-              <Grid item xs={3}>
+              </Grid>}
+              {parseFloat(sale.igst_tax) > 0 && <Grid item xs={3}>
                 <div className='single-item'>
                   <p>
-                    <span>Igst Tax: </span> <br /> {sale.igst_tax}
+                    <span className={'download-field-title'}>Igst Tax: </span> <br /> {sale.igst_tax}
                   </p>
                 </div>
-              </Grid>
-              <Grid item xs={3}>
+              </Grid>}
+              {/* <Grid item xs={3}>
                 <div className='single-item'>
                   <p>
                     <span>Total Amount: </span> <br /> {sale.total_amount}
                   </p>
                 </div>
-              </Grid>
+              </Grid> */}
               <Grid item xs={3}>
                 <div className='single-item'>
                   <p>
-                    <span>Discount: </span> <br />
+                    <span className={'download-field-title'}>Discount: </span> <br />
                     {sale.discount}
                   </p>
                 </div>
@@ -546,7 +587,7 @@ class SaleViewPage extends React.Component {
               <Grid item xs={3}>
                 <div className='single-item'>
                   <p>
-                    <span>Total Payable: </span> <br />
+                    <span className={'download-field-title'}>Total Payable: </span> <br />
                     {sale.total_payable}
                   </p>
                 </div>
@@ -554,15 +595,15 @@ class SaleViewPage extends React.Component {
               <Grid item xs={3}>
                 <div className='single-item'>
                   <p>
-                    <span>Paid Amount: </span> <br />
-                    {sale.paid_amount}
+                    <span className={'download-field-title'}>Paid Amount: </span> <br />
+                    {sale.paid_amount_display}
                   </p>
                 </div>
               </Grid>
               <Grid item xs={3}>
                 <div className='single-item'>
                   <p>
-                    <span>Due Amount: </span> <br />
+                    <span className={'download-field-title'}>Due Amount: </span> <br />
                     {sale.due_amount_display}
                   </p>
                 </div>
@@ -803,7 +844,7 @@ class SaleViewPage extends React.Component {
                       <MenuItem value="cash">Cash</MenuItem>
                       <MenuItem value="cheque">Cheque</MenuItem>
                       <MenuItem value="imps_neft">BANKING/RTGS/NEFT</MenuItem>
-                      <MenuItem value="UPI/PhonePe/Gpay">UPI/PhonePe/Gpay</MenuItem>
+                      <MenuItem value="online">UPI/PhonePe/Gpay</MenuItem>
                     </Select>
                   </FormControl>
                 </Grid>

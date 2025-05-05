@@ -225,6 +225,12 @@
     width: 7%;
   }
 
+  .download-field-title {
+    color: #9b9b9b !important;
+    font-family: "Poppins", sans-serif;
+    font-weight: 200;
+  }
+
   /* Tablet view: 2 items per row */
   @media (max-width: 1366px) {
     .unique_materials {
@@ -396,6 +402,17 @@
     .see-more-details-sec .create-input {
       margin: 5px 0 5px 0;
       flex: 1 0 45%;
+    }
+  }
+
+  @media (max-width: 498px) {
+    .details-header p span.download-field-title {
+        font-weight: bold !important;
+        background-color: #9AA7DC;
+        padding: 1px 10px 1px 10px;
+        width: 185px;
+        color: #ffffff !important;
+        display: inline-block;
     }
   }
   
