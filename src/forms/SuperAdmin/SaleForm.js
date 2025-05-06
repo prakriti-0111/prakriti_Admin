@@ -118,6 +118,7 @@ import { employeeList } from "actions/superadmin/employee.actions";
 import { parseNonNullablePickerDate } from "@mui/x-date-pickers/internals";
 import { supplierList } from "actions/superadmin/supplier.actions";
 import { getNotifiactions } from "actions/superadmin/notification.actions";
+import { reportChargeFetchRaw } from 'actions/superadmin/reportCharge.actions';
 
 class SaleForm extends React.Component {
   constructor(props) {
@@ -146,6 +147,7 @@ class SaleForm extends React.Component {
       product_type: "",
       productDialog: false,
       user_gst_no: "",
+      report_charge: null,
       formValues: {
         user_id: "",
         invoice_number: "",
@@ -172,6 +174,10 @@ class SaleForm extends React.Component {
         image_file: "",
         advance_amount: 0,
         pay_from_advance: false,
+        diamond_qty: 0,
+        total_report_charge_amount: 0,
+        total_report_charge_tax_amount: 0,
+        total_report_charge_amount_after_tax: 0,
       },
       formErros: {
         user_id: false,
@@ -317,6 +323,7 @@ class SaleForm extends React.Component {
     if (this.state.order_id) {
       this.props.actions.orderView(this.state.order_id);
     }
+    this.loadReportCharge();
     if (this.state.formData) {
       this.initializeFormData();
     } else {
@@ -325,7 +332,7 @@ class SaleForm extends React.Component {
     }
 
     this.loadProfile();
-
+    
     window.addEventListener("resize", this.updateIsMobile);
   }
 
@@ -411,6 +418,19 @@ class SaleForm extends React.Component {
     }
   };
 
+  loadReportCharge = async () => {
+    let response = await reportChargeFetchRaw();
+    console.log("response : ", response);
+    if (response.data.success) {
+      let reportCharge = response.data.data.items;
+      console.log("reportCharge : ", reportCharge);
+      this.setState({
+        ...this.state,
+        report_charge: reportCharge[0]
+      });
+    }
+  }
+
   loadCart = async () => {
     let response = await cartListRaw({
       from_order_price: this.props.query.get("from_order_price"),
@@ -421,6 +441,7 @@ class SaleForm extends React.Component {
       let products = [];
       let unique_materials = [];
 
+      let diamond_qty = 0;
       let material_total_by_unit = [];
       for (let i = 0; i < cartList.length; i++) {
         let cart = cartList[i];
@@ -429,6 +450,7 @@ class SaleForm extends React.Component {
           //let m_unit_name = item.unit_name.toLowerCase();
           if (typeof material_total_by_unit[item.material_id] === "undefined") {
             material_total_by_unit[item.material_id] = 0.0;
+            
           }
 
           if (item.purity_id == 4 || item.purity_id == 18) {
@@ -437,6 +459,10 @@ class SaleForm extends React.Component {
             );
           } else {
             material_total_by_unit[item.material_id] += parseFloat(item.weight);
+          }
+
+          if(item.material_name.indexOf("Diamond") !== -1){
+            diamond_qty += parseInt(item.quantity);
           }
         }
       }
@@ -537,9 +563,26 @@ class SaleForm extends React.Component {
           order_product_id: cart.order_product_id,
         });
       }
+
+      /* report charge calculation */
+      let total_report_charge_amount = 0;
+      let total_report_charge_tax_amount = 0;
+      let total_report_charge_amount_after_tax = 0;
+      if(!this.state.isAssign){
+        total_report_charge_amount = diamond_qty * parseFloat(this.state.report_charge.amount);
+        total_report_charge_tax_amount = total_report_charge_amount * parseFloat(this.state.report_charge.tax)/100;
+        total_report_charge_amount_after_tax = total_report_charge_amount + total_report_charge_tax_amount;
+      } 
+
+
       let formValues = this.state.formValues;
       formValues.products = [...products];
       formValues.invoice_number = response.data.data.next_invoice;
+      formValues.diamond_qty = diamond_qty;
+      formValues.total_report_charge_amount = total_report_charge_amount;
+      formValues.total_report_charge_tax_amount = total_report_charge_tax_amount;
+      formValues.total_report_charge_amount_after_tax = total_report_charge_amount_after_tax;
+
       this.setState(
         {
           formValues: formValues,
@@ -1272,6 +1315,17 @@ class SaleForm extends React.Component {
       product_discount += parseFloat(formValues.products[i].total_discount);
       total_tag_price += parseFloat(formValues.products[i].sub_price);
     }
+
+    if(!this.state.isAssign){
+      /* add report charge to taxable_amount */
+      console.log("before taxable_amount : ", taxable_amount);
+      taxable_amount += parseFloat(formValues.total_report_charge_amount_after_tax);
+      total_amount += parseFloat(formValues.total_report_charge_amount_after_tax);
+      total_tag_price += parseFloat(formValues.total_report_charge_amount_after_tax);
+      console.log("formValues.total_report_charge_amount_after_tax : ", formValues.total_report_charge_amount_after_tax);
+      console.log("taxable_amount : ", taxable_amount);
+    }
+
     taxable_amount = priceFormat(taxable_amount, true);
     cgst_tax = priceFormat(cgst_tax, true);
     sgst_tax = priceFormat(sgst_tax, true);
@@ -1298,6 +1352,7 @@ class SaleForm extends React.Component {
           ? 0
           : priceFormat(due_amount - advance_amount, true);
     }
+    
     formValues.taxable_amount = taxable_amount;
     formValues.cgst_tax = cgst_tax;
     formValues.sgst_tax = sgst_tax;
@@ -2176,6 +2231,7 @@ class SaleForm extends React.Component {
 
   render() {
     const {
+      report_charge,
       formValues,
       formErros,
       productFormValues,
@@ -2190,6 +2246,7 @@ class SaleForm extends React.Component {
 
     console.log("this is the state of salefprm ", this.state);
     console.log("unique_materials : ", unique_materials);
+    console.log("formValues : ", formValues);
 
     const actionProduct = formValues.products.length
       ? formValues.products[actionProductIndex]
@@ -2924,7 +2981,7 @@ class SaleForm extends React.Component {
                       </React.Fragment>
                     );
                   })}
-                  {}
+                  
 
                   {/*{
                                         formValues.products.map((item, index) => (
@@ -3052,6 +3109,64 @@ class SaleForm extends React.Component {
               </div>
             </div>
           </div>
+          {report_charge && !this.state.isAssign && formValues.user_id && <Grid
+            item
+            xs={12}
+            md={12}
+            className='materialContainerGrid create-input p-add-product border-radius-0'>
+              <TableContainer component={Paper}>
+                <Table
+                  sx={{ minWidth: 650 }}
+                  aria-label='simple table'
+                  className='ratn-table-product-wrapper sale_form_table'>
+                  <TableHead className='product_details p_view'>
+                    <TableRow>
+                      {!this.state.isCreateFrom ? (
+                        <TableCell sx={{ width: "30px" }}></TableCell>
+                      ) : null}
+                      <TableCell sx={{ width: 15 }}></TableCell>
+                      <TableCell sx={{ width: 80 }}>Sub Total</TableCell>
+                      <TableCell sx={{ width: 130 }}>Report Charge</TableCell>
+                      <TableCell sx={{ width: 40 }}>Total Charge</TableCell>
+                      <TableCell sx={{ width: 90 }}>Tax(%)</TableCell>
+                      <TableCell sx={{ width: 40 }}>Total Tax</TableCell>
+                      <TableCell sx={{ width: 40 }}>Total Charge</TableCell>
+                      <TableCell sx={{ width: 40 }}>Total</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    <TableRow
+                      className=""
+                    >
+                      <TableCell className=' '></TableCell>
+                      <TableCell >
+                        {`${parseFloat(formValues.total_tag_price - formValues.total_report_charge_amount_after_tax).toFixed(2)}`}
+                      </TableCell>
+                      <TableCell >
+                        {`${formValues.diamond_qty} pics x ${priceFormat(report_charge.amount).toFixed(2)} = `}
+                      </TableCell>
+                      <TableCell className=' align-items-center'>
+                        {priceFormat(formValues.total_report_charge_amount).toFixed(2)}
+                      </TableCell>
+                      <TableCell className=' align-items-center'>
+                        
+                          {`${priceFormat(report_charge.tax).toFixed(2)}%`}
+                        
+                      </TableCell>
+                      <TableCell className=' align-items-center'>
+                        {priceFormat(formValues.total_report_charge_tax_amount).toFixed(2)}
+                      </TableCell>
+                      <TableCell className=" align-items-center">
+                        {priceFormat(formValues.total_report_charge_amount_after_tax).toFixed(2)}
+                      </TableCell>
+                      <TableCell className=" align-items-center">
+                        {priceFormat(formValues.total_tag_price).toFixed(2)}
+                      </TableCell>
+                    </TableRow>
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            </Grid>}
           <Grid
             item
             xs={12}
@@ -4776,6 +4891,7 @@ const mapStateToProps = (state) => ({
   auth: state.auth,
   employeeList: state.superadmin.employee.items,
   supplierList: state.superadmin.supplier.items,
+  reportCharge: state.superadmin.reportCharge.items,
 });
 
 const mapDispatchToProps = (dispatch) => ({
@@ -4798,7 +4914,7 @@ const mapDispatchToProps = (dispatch) => ({
       salesExecutiveList,
       employeeList,
       supplierList,
-      getNotifiactions,
+      getNotifiactions
     },
     dispatch
   ),

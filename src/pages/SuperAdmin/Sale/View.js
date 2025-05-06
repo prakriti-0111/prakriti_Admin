@@ -43,7 +43,7 @@ import Dialog from "@mui/material/Dialog";
 import DialogContent from "@mui/material/DialogContent";
 import DialogContentText from "@mui/material/DialogContentText";
 import DialogTitle from "@mui/material/DialogTitle";
-import { isEmpty, isSuperAdmin, isAdmin } from "src/helpers/helper";
+import { isEmpty, isSuperAdmin, isAdmin, priceFormat, displayAmount } from "src/helpers/helper";
 import { paymentStore, paymentList } from "actions/superadmin/payment.actions";
 import { SUPERADMIN_RESET_PAYMENT } from "../../../actionTypes/superadmin/payment.types";
 import {
@@ -319,6 +319,15 @@ class SaleViewPage extends React.Component {
 
   render() {
     const { sale, formValues, formErros } = this.state;
+    console.log("sale : ", sale);
+    let total_report_charge_amount = 0;
+    let total_report_charge_tax_amount = 0;
+    let total_report_charge_amount_after_tax = 0;
+    if(sale){
+      total_report_charge_amount = parseFloat(sale.report_qty)*parseFloat(sale.report_charge);
+      total_report_charge_tax_amount = (total_report_charge_amount*sale.report_tax_percentage)/100;
+      total_report_charge_amount_after_tax = total_report_charge_amount + total_report_charge_tax_amount;
+    }
     return (
       <MainCard
         secondary={<>
@@ -475,6 +484,69 @@ class SaleViewPage extends React.Component {
                 </TableContainer>
               </Grid>
             </Grid>
+            {sale.report_qty > 0 && <Grid
+              container
+              spacing={gridSpacing}
+              className='details-header ratn-pur-wrapper loans_view'>
+              <Grid item xs={12}>
+                <TableContainer component={Paper}>
+                  <div className='ratn-table-purchase-wrapper'>
+                    <Table
+                      aria-label='collapsible table'
+                      className='invoice_product_list'>
+                      <TableHead className='ratn-table-header'>
+                        <TableRow>
+                          <TableCell sx={{ width: 15 }}></TableCell>
+                          <TableCell sx={{ width: 80 }}>Sub Total</TableCell>
+                          <TableCell sx={{ width: 120 }}>Report Charge</TableCell>
+                          <TableCell sx={{ width: 40 }}>Total Charge</TableCell>
+                          <TableCell sx={{ width: 90 }}>Tax(%)</TableCell>
+                          <TableCell sx={{ width: 40 }}>Tax</TableCell>
+                          <TableCell sx={{ width: 40 }}>Total Charge</TableCell>
+                          <TableCell sx={{ width: 40 }}>Taxable</TableCell>
+                          <TableCell sx={{ width: 40 }}>Total Tax</TableCell>
+                          <TableCell sx={{ width: 40 }}>Total</TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody className='pur-details-table-body'>
+                        <TableRow>
+                          <TableCell></TableCell>
+                          <TableCell >
+                            {sale.total_sub_total}
+                          </TableCell>
+                          <TableCell >
+                            {`${sale.report_qty} pics x ${displayAmount(sale.report_charge)} = `}
+                          </TableCell>
+                          <TableCell className=' align-items-center'>
+                            {displayAmount(total_report_charge_amount)}
+                          </TableCell>
+                          <TableCell className=' align-items-center'>
+                            
+                              {`${priceFormat(sale.report_tax_percentage).toFixed(2)}%`}
+                            
+                          </TableCell>
+                          <TableCell className=' align-items-center'>
+                            {displayAmount(total_report_charge_tax_amount)}
+                          </TableCell>
+                          <TableCell className=" align-items-center">
+                            {displayAmount(total_report_charge_amount_after_tax)}
+                          </TableCell>
+                          <TableCell className=" align-items-center">
+                            {displayAmount(sale.taxable_amount_raw)}
+                          </TableCell>
+                          <TableCell className=" align-items-center">
+                            {displayAmount(sale.total_tax)}
+                          </TableCell>
+                          <TableCell className=" align-items-center">
+                            {sale.total_amount}
+                          </TableCell>
+                        </TableRow>
+                      </TableBody>
+                    </Table>
+                  </div>
+                </TableContainer>
+              </Grid>
+            </Grid>}
 
             {/*<div className='sale-view-button'>
                   
