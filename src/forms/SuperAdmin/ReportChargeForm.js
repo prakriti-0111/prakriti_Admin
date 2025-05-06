@@ -37,7 +37,6 @@ class ReportChargeForm extends React.Component {
     }else{
       this.props.initialize(this.getDefaultValues());
     }
-    console.log(this.state.formData);
   }
 
   getDefaultValues = () => {

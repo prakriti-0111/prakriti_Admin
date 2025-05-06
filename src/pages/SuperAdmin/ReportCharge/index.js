@@ -16,10 +16,9 @@ import ReportChargeForm from 'forms/SuperAdmin/ReportChargeForm';
 import { withSnackbar } from 'notistack';
 import {hasPermission} from 'src/helpers/helper';
 import {
-  ADD_PURITY,
-  UPDATE_PURITY,
-  DELETE_PURITY,
-} from '../../../actionTypes/superadmin/purity.types';
+  GET_REPORT_CHARGE,
+  UPDATE_REPORT_CHARGE
+} from '../../../actionTypes/superadmin/reportCharge.types';
 import ClearIcon from '@mui/icons-material/Clear';
 
 class ReportChargePage extends Component {
@@ -153,7 +152,7 @@ class ReportChargePage extends Component {
     if(this.state.editSuccess == true){
       this.props.enqueueSnackbar(this.state.successMessage, {variant: 'success'});
       this.props.dispatch({
-        type: UPDATE_PURITY,
+        type: UPDATE_REPORT_CHARGE,
         payload: false
       });
       this.setState({
@@ -161,7 +160,6 @@ class ReportChargePage extends Component {
           ...this.state.queryParams,
           page: 1
         },
-        editSuccess: false,
         openDialog: false,
         editRow: null
       }, () => {

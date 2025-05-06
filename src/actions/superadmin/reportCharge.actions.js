@@ -22,6 +22,11 @@ export const reportChargeFetch = (params) => {
     }
 }
 
+export const reportChargeFetchRaw = (params) => {
+    params = objectToQuery(params, true);
+    return axios.get(`/superadmin/report-charge${params}`);
+}
+
 export const reportChargeUpdate = (id, data) => {
     return (dispatch) => {
         axios.post(`/superadmin/report-charge/update/${id}`, data)
