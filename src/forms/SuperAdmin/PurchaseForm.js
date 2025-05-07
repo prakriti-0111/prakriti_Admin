@@ -4,7 +4,7 @@ import { Field, reduxForm } from "redux-form/immutable";
 import ImageUploading from "react-images-uploading";
 // Import jsQR for QR code scanning
 import jsQR from "jsqr";
-
+import { gridSpacing } from "store/constant";
 import {
   Box,
   TextField,
@@ -2144,6 +2144,15 @@ class PurchaseForm extends React.Component {
 
     console.log("QR code data------", this.state.qrScanner);
 
+    let total_report_charge_amount = 0;
+    let total_report_charge_tax_amount = 0;
+    let total_report_charge_amount_after_tax = 0;
+    if(formValues && formValues.sale){
+      total_report_charge_amount = parseFloat(formValues.sale.report_qty)*parseFloat(formValues.sale.report_charge);
+      total_report_charge_tax_amount = (total_report_charge_amount*formValues.sale.report_tax_percentage)/100;
+      total_report_charge_amount_after_tax = total_report_charge_amount + total_report_charge_tax_amount;
+    }
+
     return (
       <Box sx={{ flexGrow: 1, m: 0.5 }} className="ratn-dialog-inner">
         {return_sale_data ? (
@@ -3407,6 +3416,69 @@ class PurchaseForm extends React.Component {
               </Table>
             </TableContainer>
           </Grid>
+          {formValues.sale && formValues.sale.report_qty > 0 && <Grid
+            container
+            spacing={gridSpacing}
+            className='details-header ratn-pur-wrapper loans_view' 
+            style={{marginBottom:"20px"}}
+            >
+            <Grid item xs={12}>
+              <TableContainer component={Paper}>
+                <div className='ratn-table-purchase-wrapper'>
+                  <Table
+                    aria-label='collapsible table'
+                    className='invoice_product_list'>
+                    <TableHead className='sub-table-header ratn-table-header '>
+                      <TableRow>
+                        <TableCell sx={{ width: 15 }}></TableCell>
+                        
+                        <TableCell sx={{ width: 120 }}>Report Charge</TableCell>
+                        <TableCell sx={{ width: 40 }}>Total Charge</TableCell>
+                        <TableCell sx={{ width: 90 }}>Tax(%)</TableCell>
+                        <TableCell sx={{ width: 40 }}>Tax</TableCell>
+                        <TableCell sx={{ width: 40 }}>Total Charge</TableCell>
+                        <TableCell sx={{ width: 40 }}>Sub Total</TableCell>
+                        <TableCell sx={{ width: 40 }}>Total Tax</TableCell>
+                        <TableCell sx={{ width: 40 }}>Total</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody className='pur-details-table-body'>
+                      <TableRow>
+                        <TableCell></TableCell>
+                        
+                        <TableCell >
+                          {`${formValues.sale.report_qty} pics x ${displayAmount(formValues.sale.report_charge)} = `}
+                        </TableCell>
+                        <TableCell className=' align-items-center'>
+                          {displayAmount(total_report_charge_amount)}
+                        </TableCell>
+                        <TableCell className=' align-items-center'>
+                          
+                            {`${priceFormat(formValues.sale.report_tax_percentage).toFixed(2)}%`}
+                          
+                        </TableCell>
+                        <TableCell className=' align-items-center'>
+                          {displayAmount(total_report_charge_tax_amount)}
+                        </TableCell>
+                        <TableCell className=" align-items-center">
+                          {displayAmount(total_report_charge_amount_after_tax)}
+                        </TableCell>
+                        <TableCell className=" align-items-center">
+                          {displayAmount(formValues.sale.taxable_amount_raw)}
+                        </TableCell>
+                        <TableCell className=" align-items-center">
+                          {displayAmount(formValues.sale.total_tax)}
+                        </TableCell>
+                        <TableCell className=" align-items-center">
+                          {formValues.sale.total_amount}
+                        </TableCell>
+                      </TableRow>
+                    </TableBody>
+                  </Table>
+                </div>
+              </TableContainer>
+            </Grid>
+          </Grid>}
           <>
             <Grid item xs={12} md={8} className="create-input pt-0">
               <Grid

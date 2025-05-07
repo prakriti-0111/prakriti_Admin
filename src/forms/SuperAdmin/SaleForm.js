@@ -174,7 +174,7 @@ class SaleForm extends React.Component {
         image_file: "",
         advance_amount: 0,
         pay_from_advance: false,
-        diamond_qty: 0,
+        report_qty: 0,
         total_report_charge_amount: 0,
         total_report_charge_tax_amount: 0,
         total_report_charge_amount_after_tax: 0,
@@ -441,7 +441,7 @@ class SaleForm extends React.Component {
       let products = [];
       let unique_materials = [];
 
-      let diamond_qty = 0;
+      let report_qty = 0;
       let material_total_by_unit = [];
       for (let i = 0; i < cartList.length; i++) {
         let cart = cartList[i];
@@ -460,10 +460,6 @@ class SaleForm extends React.Component {
           } else {
             material_total_by_unit[item.material_id] += parseFloat(item.weight);
           }
-
-          if(item.material_name.indexOf("Diamond") !== -1){
-            diamond_qty += parseInt(item.quantity);
-          }
         }
       }
 
@@ -471,6 +467,10 @@ class SaleForm extends React.Component {
         let cart = cartList[i];
         let materials = [],
           quantity = 1;
+        /* for those product with certificate no */
+        if(!isEmpty(cart.certificate_no)){
+          report_qty += 1;
+        }
 
         for (let item of cart.materials) {
           materials.push({
@@ -569,7 +569,7 @@ class SaleForm extends React.Component {
       let total_report_charge_tax_amount = 0;
       let total_report_charge_amount_after_tax = 0;
       if(!this.state.isAssign){
-        total_report_charge_amount = diamond_qty * parseFloat(this.state.report_charge.amount);
+        total_report_charge_amount = report_qty * parseFloat(this.state.report_charge.amount);
         total_report_charge_tax_amount = total_report_charge_amount * parseFloat(this.state.report_charge.tax)/100;
         total_report_charge_amount_after_tax = total_report_charge_amount + total_report_charge_tax_amount;
       } 
@@ -578,7 +578,7 @@ class SaleForm extends React.Component {
       let formValues = this.state.formValues;
       formValues.products = [...products];
       formValues.invoice_number = response.data.data.next_invoice;
-      formValues.diamond_qty = diamond_qty;
+      formValues.report_qty = report_qty;
       formValues.total_report_charge_amount = total_report_charge_amount;
       formValues.total_report_charge_tax_amount = total_report_charge_tax_amount;
       formValues.total_report_charge_amount_after_tax = total_report_charge_amount_after_tax;
@@ -3143,7 +3143,7 @@ class SaleForm extends React.Component {
                         {`${parseFloat(formValues.total_tag_price - formValues.total_report_charge_amount_after_tax).toFixed(2)}`}
                       </TableCell>
                       <TableCell >
-                        {`${formValues.diamond_qty} pics x ${priceFormat(report_charge.amount).toFixed(2)} = `}
+                        {`${formValues.report_qty} pics x ${priceFormat(report_charge.amount).toFixed(2)} = `}
                       </TableCell>
                       <TableCell className=' align-items-center'>
                         {priceFormat(formValues.total_report_charge_amount).toFixed(2)}
