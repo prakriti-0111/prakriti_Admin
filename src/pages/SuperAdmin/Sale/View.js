@@ -52,6 +52,7 @@ import {
   getApprovalColor,
 } from "src/helpers/helper";
 import { getNotifiactions } from "actions/superadmin/notification.actions";
+import './style.css';
 
 class SaleViewPage extends React.Component {
   constructor(props) {
@@ -330,6 +331,7 @@ class SaleViewPage extends React.Component {
     }
     return (
       <MainCard
+        id="invoice_view_page"
         secondary={<>
           {sale && parseFloat(sale.due_amount) > 0 ? (
             <Button
@@ -494,16 +496,16 @@ class SaleViewPage extends React.Component {
                     <Table
                       aria-label='collapsible table'
                       className='invoice_product_list'>
-                      <TableHead className='ratn-table-header'>
+                      <TableHead className='sub-table-header ratn-table-header '>
                         <TableRow>
                           <TableCell sx={{ width: 15 }}></TableCell>
-                          <TableCell sx={{ width: 80 }}>Sub Total</TableCell>
+                          
                           <TableCell sx={{ width: 120 }}>Report Charge</TableCell>
                           <TableCell sx={{ width: 40 }}>Total Charge</TableCell>
                           <TableCell sx={{ width: 90 }}>Tax(%)</TableCell>
                           <TableCell sx={{ width: 40 }}>Tax</TableCell>
                           <TableCell sx={{ width: 40 }}>Total Charge</TableCell>
-                          <TableCell sx={{ width: 40 }}>Taxable</TableCell>
+                          <TableCell sx={{ width: 40 }}>Sub Total</TableCell>
                           <TableCell sx={{ width: 40 }}>Total Tax</TableCell>
                           <TableCell sx={{ width: 40 }}>Total</TableCell>
                         </TableRow>
@@ -511,9 +513,7 @@ class SaleViewPage extends React.Component {
                       <TableBody className='pur-details-table-body'>
                         <TableRow>
                           <TableCell></TableCell>
-                          <TableCell >
-                            {sale.total_sub_total}
-                          </TableCell>
+                          
                           <TableCell >
                             {`${sale.report_qty} pics x ${displayAmount(sale.report_charge)} = `}
                           </TableCell>
@@ -577,7 +577,7 @@ class SaleViewPage extends React.Component {
                     <Table
                       aria-label='collapsible table'
                       className='invoice_product_list'>
-                      <TableHead className='ratn-table-header'>
+                      <TableHead className='sub-table-header ratn-table-header'>
                         <TableRow>
                           <TableCell />
                           <TableCell>#</TableCell>
@@ -594,8 +594,9 @@ class SaleViewPage extends React.Component {
                         </TableRow>
                       </TableHead>
                       <TableBody>
-                        {sale.products.map((row, i) => (
+                        {sale.products.map((row, i) => (<>
                           <Row key={i} row={row} index={i} />
+                          <TableRow style={{height:"20px"}}></TableRow></>
                         ))}
                       </TableBody>
                     </Table>
