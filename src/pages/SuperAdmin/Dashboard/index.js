@@ -411,7 +411,7 @@ class DashboardPage extends Component {
           {(!this.isSuperAdmin ||
             (this.isSuperAdmin &&
               hasPermission(permissions, "stock", "list"))) &&
-          !this.isAdmin &&
+          (this.isAdmin && profile && profile.own == false) &&
           !this.isSalesExecutive &&
           !this.isDistributor ? (
             <CardContent
