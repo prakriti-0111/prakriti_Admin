@@ -17,3 +17,9 @@ export const stocksHistoryStoreByProduct = (data) => {
 export const stocksHistoryStatusUpdate = (id, data) => {
     return axios.post(`/superadmin/stock-material-history/status-update/${id}`, data)
 }
+
+export const stocksTransferHistoryStore = (data) => {
+    return axios.post(`/superadmin/stock-material-history/transfer`, data)
+}
+
+
