@@ -473,9 +473,9 @@ class SaleViewPage extends React.Component {
             <Grid
               container
               spacing={{ xs: 2, md: 3 }}
-              columns={{ xs: 6                                                                                                                                                  , sm: 8, md: 12 }}
-              className='details-header'>
-              
+              columns={{ xs: 6, sm: 9, md: 12 }}                                                                                                                                      
+              className="details-header" 
+            >
               <Grid item xs={3}>
                 <div className='single-item'>
                   <p>

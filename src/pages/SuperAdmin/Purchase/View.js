@@ -61,9 +61,11 @@ import {
   getRoleName,
   getUserDashboardRoute,
   displayAmount,
+  priceFormat,
   getApprovalColor,
 } from "src/helpers/helper";
 import { getNotifiactions } from "actions/superadmin/notification.actions";
+import './style.css';
 
 class PurchaseViewPage extends React.Component {
   constructor(props) {
@@ -400,8 +402,18 @@ class PurchaseViewPage extends React.Component {
 
   render() {
     const { purchase, formValues, formErros } = this.state;
+
+    let total_report_charge_amount = 0;
+    let total_report_charge_tax_amount = 0;
+    let total_report_charge_amount_after_tax = 0;
+    if(purchase && purchase.sale){
+      total_report_charge_amount = parseFloat(purchase.sale.report_qty)*parseFloat(purchase.sale.report_charge);
+      total_report_charge_tax_amount = (total_report_charge_amount*purchase.sale.report_tax_percentage)/100;
+      total_report_charge_amount_after_tax = total_report_charge_amount + total_report_charge_tax_amount;
+    }
+
     return (
-      <MainCard title='Purchase Details'>
+      <MainCard id="invoice_view_page" title='Purchase Details'>
         {!purchase ? (
           <Grid container justifyContent='center'>
             <CircularProgress size='30px' />
@@ -485,6 +497,14 @@ class PurchaseViewPage extends React.Component {
                 {purchase.notes ? <p>Notes: {purchase.notes}</p> : null}
               </div>
               <div className=''>
+              {purchase && parseFloat(purchase.due_amount) > 0 ? (
+                <Button
+                  variant='contained'
+                  className='add-button'
+                  onClick={() => this.handlePayNow()}>
+                  Pay Now
+                </Button>
+              ) : null}
                 <Button
                   className='add-button'
                   variant='contained'
@@ -559,6 +579,67 @@ class PurchaseViewPage extends React.Component {
                 </Button>
               </div>
             ) : null}
+            {purchase.sale && purchase.sale.report_qty > 0 && <Grid
+              container
+              spacing={gridSpacing}
+              className='details-header ratn-pur-wrapper loans_view'>
+              <Grid item xs={12}>
+                <TableContainer component={Paper}>
+                  <div className='ratn-table-purchase-wrapper'>
+                    <Table
+                      aria-label='collapsible table'
+                      className='invoice_product_list'>
+                      <TableHead className='sub-table-header ratn-table-header '>
+                        <TableRow>
+                          <TableCell sx={{ width: 15 }}></TableCell>
+                          
+                          <TableCell sx={{ width: 120 }}>Report Charge</TableCell>
+                          <TableCell sx={{ width: 40 }}>Total Charge</TableCell>
+                          <TableCell sx={{ width: 90 }}>Tax(%)</TableCell>
+                          <TableCell sx={{ width: 40 }}>Tax</TableCell>
+                          <TableCell sx={{ width: 40 }}>Total Charge</TableCell>
+                          <TableCell sx={{ width: 40 }}>Sub Total</TableCell>
+                          <TableCell sx={{ width: 40 }}>Total Tax</TableCell>
+                          <TableCell sx={{ width: 40 }}>Total</TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody className='pur-details-table-body'>
+                        <TableRow>
+                          <TableCell></TableCell>
+                          
+                          <TableCell >
+                            {`${purchase.sale.report_qty} pics x ${displayAmount(purchase.sale.report_charge)} = `}
+                          </TableCell>
+                          <TableCell className=' align-items-center'>
+                            {displayAmount(total_report_charge_amount)}
+                          </TableCell>
+                          <TableCell className=' align-items-center'>
+                            
+                              {`${priceFormat(purchase.sale.report_tax_percentage).toFixed(2)}%`}
+                            
+                          </TableCell>
+                          <TableCell className=' align-items-center'>
+                            {displayAmount(total_report_charge_tax_amount)}
+                          </TableCell>
+                          <TableCell className=" align-items-center">
+                            {displayAmount(total_report_charge_amount_after_tax)}
+                          </TableCell>
+                          <TableCell className=" align-items-center">
+                            {displayAmount(purchase.sale.taxable_amount_raw)}
+                          </TableCell>
+                          <TableCell className=" align-items-center">
+                            {displayAmount(purchase.sale.total_tax)}
+                          </TableCell>
+                          <TableCell className=" align-items-center">
+                            {purchase.sale.total_amount}
+                          </TableCell>
+                        </TableRow>
+                      </TableBody>
+                    </Table>
+                  </div>
+                </TableContainer>
+              </Grid>
+            </Grid>}
             <Grid
               container
               spacing={gridSpacing}
@@ -570,7 +651,7 @@ class PurchaseViewPage extends React.Component {
                     <Table
                       aria-label='collapsible table'
                       className='invoice_product_list'>
-                      <TableHead className='ratn-table-header'>
+                      <TableHead className='sub-table-header ratn-table-header'>
                         <TableRow>
                           <TableCell />
                           <TableCell>#</TableCell>
@@ -588,8 +669,9 @@ class PurchaseViewPage extends React.Component {
                         </TableRow>
                       </TableHead>
                       <TableBody>
-                        {purchase.products.map((row, i) => (
+                        {purchase.products.map((row, i) => (<>
                           <Row key={i} row={row} index={i} />
+                          <TableRow style={{height:"20px"}}></TableRow></>
                         ))}
                       </TableBody>
                     </Table>
