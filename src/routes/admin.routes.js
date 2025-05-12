@@ -312,6 +312,10 @@ const AdminRoutes = (isLoggedIn) => [
         element: <MaterialStocksViewPage />
       },
       {
+        path: 'material-stock-history',
+        element: <MaterialStocksHistoryPage />
+      },
+      {
         path: 'loans/View/:id',
         element: <LoanViewPage />
       },
