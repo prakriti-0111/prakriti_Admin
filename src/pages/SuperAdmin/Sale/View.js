@@ -182,6 +182,7 @@ class SaleViewPage extends React.Component {
       by_specific: "",
       manager: "",
       user_id: this.state.sale.user_id,
+      material_id: this.state.formValues.material_id, // Gold
     });
     this.setState({
       openDialog: true,
@@ -585,7 +586,7 @@ class SaleViewPage extends React.Component {
                           <TableCell sx={{ width: 40 }}>Total Charge</TableCell>
                           <TableCell sx={{ width: 40 }}>Sub Total</TableCell>
                           <TableCell sx={{ width: 40 }}>Total Tax</TableCell>
-                          <TableCell sx={{ width: 40 }}>Total</TableCell>
+                          
                         </TableRow>
                       </TableHead>
                       <TableBody className='pur-details-table-body'>
@@ -615,9 +616,7 @@ class SaleViewPage extends React.Component {
                           <TableCell className=" align-items-center">
                             {displayAmount(sale.total_tax)}
                           </TableCell>
-                          <TableCell className=" align-items-center">
-                            {sale.total_amount}
-                          </TableCell>
+                          
                         </TableRow>
                       </TableBody>
                     </Table>
@@ -672,9 +671,9 @@ class SaleViewPage extends React.Component {
                         </TableRow>
                       </TableHead>
                       <TableBody>
-                        {sale.products.map((row, i) => (<>
+                        <TableRow style={{height:"20px"}}></TableRow>
+                        {sale.products.map((row, i) => (
                           <Row key={i} row={row} index={i} />
-                          <TableRow style={{height:"20px"}}></TableRow></>
                         ))}
                       </TableBody>
                     </Table>
