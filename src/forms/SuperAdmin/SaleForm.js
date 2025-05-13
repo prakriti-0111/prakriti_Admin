@@ -175,6 +175,7 @@ class SaleForm extends React.Component {
         advance_amount: 0,
         pay_from_advance: false,
         report_qty: 0,
+        report_charge_amount: 0,
         total_report_charge_amount: 0,
         total_report_charge_tax_amount: 0,
         total_report_charge_amount_after_tax: 0,
@@ -573,12 +574,13 @@ class SaleForm extends React.Component {
         total_report_charge_tax_amount = total_report_charge_amount * parseFloat(this.state.report_charge.tax)/100;
         total_report_charge_amount_after_tax = total_report_charge_amount + total_report_charge_tax_amount;
       } 
-
+      
 
       let formValues = this.state.formValues;
       formValues.products = [...products];
       formValues.invoice_number = response.data.data.next_invoice;
       formValues.report_qty = report_qty;
+      formValues.report_charge_amount = parseFloat(this.state.report_charge.amount);
       formValues.total_report_charge_amount = total_report_charge_amount;
       formValues.total_report_charge_tax_amount = total_report_charge_tax_amount;
       formValues.total_report_charge_amount_after_tax = total_report_charge_amount_after_tax;
@@ -876,6 +878,7 @@ class SaleForm extends React.Component {
   updateFormValues = (val, key) => {
     let formValues = this.state.formValues;
     formValues[key] = val;
+    console.log("updateFormValues => formValues", formValues);
     this.setState(
       {
         formValues: formValues,
@@ -1046,6 +1049,7 @@ class SaleForm extends React.Component {
     let formValues = this.state.formValues;
     let products = formValues.products;
     let isAssign = this.state.isAssign;
+    let report_qty = 0;
     for (let x = 0; x < products.length; x++) {
       let total_price = 0,
         total_price_with_discount = 0,
@@ -1092,6 +1096,10 @@ class SaleForm extends React.Component {
         ); //parseFloat(products[x].materials[i].rate * discount_percent / 100);
       }
 
+      /* for those product with certificate no */
+      if(!isEmpty(products[x].certificate_no)){
+        report_qty += 1;
+      }
       let isMaterial = products[x].product_type == "material" ? true : false;
       if (products[x].sub_cat_making_charge_type == "per_piece") {
         making_charge = priceFormat(
@@ -1143,7 +1151,27 @@ class SaleForm extends React.Component {
       products[x].sgst_tax = priceFormat(sgst_tax);
       products[x].igst_tax = priceFormat(igst_tax);
     }
+
+    /* report charge calculation */
+    let total_report_charge_amount = 0;
+    let total_report_charge_tax_amount = 0;
+    let total_report_charge_amount_after_tax = 0;
+    if(!this.state.isAssign){
+      total_report_charge_amount = report_qty * parseFloat(formValues.report_charge_amount);
+      total_report_charge_tax_amount = total_report_charge_amount * parseFloat(this.state.report_charge.tax)/100;
+      total_report_charge_amount_after_tax = total_report_charge_amount + total_report_charge_tax_amount;
+    } 
+    console.log("report_qty : ", report_qty);
+    console.log("report_charge_amount : ", formValues.report_charge_amount);
+    console.log("total_report_charge_amount : ", total_report_charge_amount);
+    console.log("total_report_charge_tax_amount : ", total_report_charge_tax_amount);   
+    console.log("total_report_charge_amount_after_tax : ", total_report_charge_amount_after_tax);
     formValues.products = products;
+    formValues.report_qty = report_qty;
+    formValues.total_report_charge_amount = total_report_charge_amount;
+    formValues.total_report_charge_tax_amount = total_report_charge_tax_amount;
+    formValues.total_report_charge_amount_after_tax = total_report_charge_amount_after_tax;
+
     this.setState(
       {
         formValues: formValues,
@@ -1319,11 +1347,18 @@ class SaleForm extends React.Component {
     if(!this.state.isAssign){
       /* add report charge to taxable_amount */
       console.log("before taxable_amount : ", taxable_amount);
-      taxable_amount += parseFloat(formValues.total_report_charge_amount_after_tax);
+      taxable_amount += parseFloat(formValues.total_report_charge_amount);
       total_amount += parseFloat(formValues.total_report_charge_amount_after_tax);
-      total_tag_price += parseFloat(formValues.total_report_charge_amount_after_tax);
-      console.log("formValues.total_report_charge_amount_after_tax : ", formValues.total_report_charge_amount_after_tax);
+      total_tag_price += parseFloat(formValues.total_report_charge_amount);
+      console.log("formValues.total_report_charge_amount : ", formValues.total_report_charge_amount);
       console.log("taxable_amount : ", taxable_amount);
+
+      if(cgst_tax > 0 && sgst_tax > 0){
+        cgst_tax += parseFloat(formValues.total_report_charge_tax_amount) / 2;
+        sgst_tax += parseFloat(formValues.total_report_charge_tax_amount) / 2;
+      } else {
+        igst_tax += parseFloat(formValues.total_report_charge_tax_amount);
+      }
     }
 
     taxable_amount = priceFormat(taxable_amount, true);
@@ -3125,13 +3160,13 @@ class SaleForm extends React.Component {
                         <TableCell sx={{ width: "30px" }}></TableCell>
                       ) : null}
                       <TableCell sx={{ width: 15 }}></TableCell>
-                      <TableCell sx={{ width: 80 }}>Sub Total</TableCell>
+                      {/* <TableCell sx={{ width: 80 }}>Sub Total</TableCell> */}
                       <TableCell sx={{ width: 130 }}>Report Charge</TableCell>
                       <TableCell sx={{ width: 40 }}>Total Charge</TableCell>
                       <TableCell sx={{ width: 90 }}>Tax(%)</TableCell>
                       <TableCell sx={{ width: 40 }}>Total Tax</TableCell>
                       <TableCell sx={{ width: 40 }}>Total Charge</TableCell>
-                      <TableCell sx={{ width: 40 }}>Total</TableCell>
+                      {/* <TableCell sx={{ width: 40 }}>Total</TableCell> */}
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -3139,11 +3174,26 @@ class SaleForm extends React.Component {
                       className=""
                     >
                       <TableCell className=' '></TableCell>
-                      <TableCell >
+                      {/* <TableCell >
                         {`${parseFloat(formValues.total_tag_price - formValues.total_report_charge_amount_after_tax).toFixed(2)}`}
-                      </TableCell>
-                      <TableCell >
-                        {`${formValues.report_qty} pics x ${priceFormat(report_charge.amount).toFixed(2)} = `}
+                      </TableCell> */}
+                      <TableCell style={{display: "flex", gap:"5px", alignItems: "center"}}>
+                        <span>{`${formValues.report_qty} pics x `}</span>
+                        <div className='sale-discount'> {/* ${priceFormat(report_charge.amount).toFixed(2)} =  */}
+                            <input
+                              type='text'
+                              value={formValues.report_charge_amount}
+                              onChange={(event) =>
+                                this.handleDefaultChange(event, "report_charge_amount")
+                              }
+                              className='custom_input'
+                            />
+                            {/* <div className='sale-discount-inner'>
+                              {" "}
+                              %
+                            </div> */}
+                        </div>
+                        <span>{` = `}</span>
                       </TableCell>
                       <TableCell className=' align-items-center'>
                         {priceFormat(formValues.total_report_charge_amount).toFixed(2)}
@@ -3159,9 +3209,9 @@ class SaleForm extends React.Component {
                       <TableCell className=" align-items-center">
                         {priceFormat(formValues.total_report_charge_amount_after_tax).toFixed(2)}
                       </TableCell>
-                      <TableCell className=" align-items-center">
+                      {/* <TableCell className=" align-items-center">
                         {priceFormat(formValues.total_tag_price).toFixed(2)}
-                      </TableCell>
+                      </TableCell> */}
                     </TableRow>
                   </TableBody>
                 </Table>

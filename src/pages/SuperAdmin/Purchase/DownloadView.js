@@ -404,6 +404,7 @@ class PurchaseViewPage extends React.Component {
     console.log("purchase : ", purchase);
     return (
       <MainCard
+        id="downloadViewPurchase"
         title={
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginRight: "10px" }}>
             <span>{'Purchase Details'}</span>

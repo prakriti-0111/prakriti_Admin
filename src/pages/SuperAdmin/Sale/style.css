@@ -45,6 +45,15 @@
   margin: 5px;
 }
 
+#downloadViewSale .action_btn button {
+  width: 90px !important;
+  height: 40px !important;
+}
+
+#downloadViewSale .action_btn button svg{
+  font-size: 25px !important;
+}
+
 /* Tablet view: 2 items per row */
 @media (max-width: 1366px) {
   .unique_materials {
@@ -251,6 +260,22 @@
     font-weight: 200;
   }
 
+  .details-header p span.download-field-title {
+    font-weight: bold !important;
+    background-color: #0A8AB8;
+    padding: 1px 10px 1px 10px;
+    width: 220px;
+    color: #ffffff !important;
+    display: inline-block;
+  }
+
+  .details-header p {
+    font-family: "Poppins",sans-serif;
+    color: #1E2746;
+    margin: 0;
+    font-weight: 600;
+  }
+
   /* Tablet view: 2 items per row */
   @media (max-width: 1366px) {
     .unique_materials {
@@ -428,7 +453,7 @@
   @media (max-width: 498px) {
     .details-header p span.download-field-title {
         font-weight: bold !important;
-        background-color: #9AA7DC;
+        background-color: #0A8AB8;
         padding: 1px 10px 1px 10px;
         width: 185px;
         color: #ffffff !important;

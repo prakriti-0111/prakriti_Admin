@@ -48,16 +48,18 @@ import Dialog from "@mui/material/Dialog";
 import DialogContent from "@mui/material/DialogContent";
 import DialogContentText from "@mui/material/DialogContentText";
 import DialogTitle from "@mui/material/DialogTitle";
-import { isEmpty } from "src/helpers/helper";
+import { isEmpty, isSuperAdmin, isAdmin } from "src/helpers/helper";
 import { paymentStore, paymentList } from "actions/superadmin/payment.actions";
 import { SUPERADMIN_RESET_PAYMENT } from "../../../actionTypes/superadmin/payment.types";
 import {
   getRoleName,
   getUserDashboardRoute,
-  getApprovalColor,
+  getApprovalColor
 } from "src/helpers/helper";
 import { getNotifiactions } from "actions/superadmin/notification.actions";
 import FileDownloadIcon from "@mui/icons-material/FileDownload";
+import { stocksList } from 'actions/superadmin/stocks.actions';
+import { stocksTransferHistoryStore } from 'actions/superadmin/stockHistory.actions';
 import './style.css';
 
 class SaleViewPage extends React.Component {
@@ -66,6 +68,7 @@ class SaleViewPage extends React.Component {
 
     this.state = {
       sale: this.props.sale,
+      materialStocks: this.props.materialStocks,
       openDialog: false,
       ...this.defaultFormValues(),
       actionCalled: this.props.actionCalled,
@@ -225,6 +228,9 @@ class SaleViewPage extends React.Component {
     if (props.sale !== state.sale) {
       update.sale = props.sale;
     }
+    if (props.materialStocks !== state.materialStocks) {
+      update.materialStocks = props.materialStocks;
+    }
     if (props.actionCalled !== state.actionCalled) {
       update.actionCalled = props.actionCalled;
     }
@@ -252,6 +258,19 @@ class SaleViewPage extends React.Component {
   }
 
   handlePayNow = () => {
+    this.props.actions.stocksList({
+      page: 1,
+      limit: 50,
+      category_id: '',
+      sub_category_id: '',
+      search: '',
+      type: 'material',
+      all: 0,
+      by_specific: "",
+      manager: "",
+      user_id: this.state.sale.user_id,
+      material_id: this.state.formValues.material_id, // Gold
+    });
     this.setState({
       openDialog: true,
     });
@@ -283,29 +302,36 @@ class SaleViewPage extends React.Component {
       formValues: {
         user_id: "",
         payment_mode: "",
+        material_id: "1", // Gold
+        purity_id: "",
+        unit_id: "",
         payment_date: moment().format("MM/DD/YYYY"),
         due_date: "",
         amount: "",
         notes: "",
         cheque_no: "",
         txn_id: "",
+        weight: "",
+        effective_weight: "",
         table_type: "sale",
         table_id: "",
       },
       formErros: {
         user_id: false,
+        purity_id: false,
         payment_mode: false,
         payment_date: false,
         amount: false,
         notes: false,
         cheque_no: false,
         txn_id: false,
+        weight: false,
         due_date: false,
       },
     };
   };
 
-  handleSubmit = () => {
+  handleSubmit = async () => {
     if (!this.formValidate()) {
       this.setState({
         processing: true,
@@ -316,6 +342,19 @@ class SaleViewPage extends React.Component {
         table_id: this.state.sale.id,
       };
       this.props.actions.paymentStore(data);
+      await stocksTransferHistoryStore({
+        from_user_id: this.state.sale.user_id,
+        to_user_id: this.state.sale.sale_by_id,
+        material_id: this.state.formValues.material_id,
+        quantity: 0,
+        //material_stocks: this.state.materialStocks,
+        payment_mode: this.state.formValues.payment_mode,
+        amount: this.state.formValues.amount,
+        purity_id: this.state.formValues.purity_id,
+        unit_id: this.state.formValues.unit_id,
+        weight: this.state.formValues.weight,
+        effective_weight: this.state.formValues.effective_weight
+      });
     }
   };
 
@@ -343,6 +382,27 @@ class SaleViewPage extends React.Component {
       hasErr = true;
     } else {
       formErros.payment_mode = false;
+    }
+    if(this.state.materialStocks.length > 0 && isSuperAdmin && isAdmin && formValues.payment_mode == "metal"){
+      if (isEmpty(formValues.purity_id)) {
+        formErros.purity_id = true;
+        hasErr = true;
+      } else {
+        formErros.purity_id = false;
+      }
+      if (isEmpty(formValues.weight)) {
+        formErros.weight = true;
+        hasErr = true;
+      } else if(formValues.weight <= 0){
+        formErros.weight = true;
+        hasErr = true;
+        this.props.enqueueSnackbar(
+          "Weight must be greater than 0.",
+          { variant: "error" }
+        );
+      } else {
+        formErros.weight = false;
+      }
     }
     if (isEmpty(formValues.payment_date)) {
       formErros.payment_date = true;
@@ -407,9 +467,28 @@ class SaleViewPage extends React.Component {
   render() {
     const { sale, formValues, formErros, downloadingInfo, downloadingItem } =
       this.state;
-    console.log("sale : ", sale);
+    let metalPurityList = [];
+        if(this.state.materialStocks.length > 0 && isSuperAdmin && isAdmin && formValues.payment_mode == "metal"){
+          this.state.materialStocks.map((item) => {
+            if(item.stock_materials.length > 0){
+              item.stock_materials.map((subItem) => {
+                subItem.purities.map((priority) => {
+                  metalPurityList.push({
+                    id: priority.id,
+                    unit_id: subItem.unit_id,
+                    value: priority.value,
+                    name: priority.name+`${priority.value?"("+priority.value+"%)":""}`,
+                  });
+                });
+              });
+            }
+          });
+        }
+        console.log("sale : ", sale);
+
     return (
       <MainCard
+        id="downloadViewSale"
         title={
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <span>{'Sale Details'}</span>
@@ -653,11 +732,26 @@ class SaleViewPage extends React.Component {
 
             <Grid
               container
-              spacing={{ xs: 2, md: 3 }}
-              columns={{ xs: 4, sm: 8, md: 12 }}>
-              <Grid item xs={11}>
-                <h3 className='p_heading_list text-center'>Payment Details</h3>
-              </Grid>
+              spacing={{ xs: 2, md: 2 }}
+              style={{paddingBottom: "1%"}}
+              >
+              
+                {/* <h3 className='p_heading_list text-center'>Payment Details</h3> */}
+                <Grid item xs={8} md={10} sm={9}>
+                  {/* <h3 className='p_heading_list text-center'>Payment Details</h3> */}
+                </Grid>
+                <Grid item xs={4} md={2} sm={3} className='action_btn'>
+                  {sale && parseFloat(sale.due_amount) > 0 ? 
+                    <Button
+                      variant='contained'
+                      
+                      className='' 
+                      onClick={() => this.handlePayNow()}
+                      >
+                      Pay Now
+                    </Button>
+                    : null}
+                </Grid>
             </Grid>
 
             {!sale.is_assigned ? (
@@ -665,9 +759,9 @@ class SaleViewPage extends React.Component {
                 item
                 xs={12}
                 className='p-add-product create-input button-right'>
-                <h3 className='p_heading_list sales_heading_list'>
+                {/* <h3 className='p_heading_list sales_heading_list'>
                   Payment List
-                </h3>
+                </h3> */}
                 <DataTable
                   columns={this.columns}
                   rows={this.state.items}
@@ -704,21 +798,21 @@ class SaleViewPage extends React.Component {
             <Grid
               container
               spacing={{ xs: 2, md: 3 }}
-              columns={{ xs: 4, sm: 8, md: 12 }}>
-              <Grid item xs={11}>
+              >
+              <Grid item xs={8} md={10} sm={9}>
                 <h3 className='p_heading_list text-center'>Product List</h3>
               </Grid>
-              <Grid item xs={1} className='action_btn'>
+              <Grid item xs={4} md={2} sm={3} className='action_btn'>
                 {downloadingItem ? (
                   <CircularProgress size='30px' />
                 ) : (
                   <Button
                     variant='contained'
-                    style={{ paddingLeft: "8%" }}
+                   
                     onClick={() =>
                       this.handleDownloadItems(this.props.params.id)
                     }>
-                    <FileDownloadIcon />
+                    <FileDownloadIcon size='20px'/>
                   </Button>
                 )}
               </Grid>
@@ -751,6 +845,7 @@ class SaleViewPage extends React.Component {
                         </TableRow>
                       </TableHead>
                       <TableBody>
+                        <TableRow><TableCell /></TableRow>
                         {sale.products.map((row, i) => (
                           <Row key={i} row={row} index={i} />
                         ))}
@@ -790,7 +885,7 @@ class SaleViewPage extends React.Component {
           </>
         )}
 
-        {/*<Dialog
+        <Dialog
           className="ratn-dialog-wrapper"
           open={this.state.openDialog}
           onClose={this.handleDialogClose}
@@ -845,6 +940,7 @@ class SaleViewPage extends React.Component {
                       <MenuItem value="cheque">Cheque</MenuItem>
                       <MenuItem value="imps_neft">BANKING/RTGS/NEFT</MenuItem>
                       <MenuItem value="online">UPI/PhonePe/Gpay</MenuItem>
+                      {isSuperAdmin && isAdmin && <MenuItem value='metal'>Metal</MenuItem>}
                     </Select>
                   </FormControl>
                 </Grid>
@@ -874,6 +970,113 @@ class SaleViewPage extends React.Component {
                     </Grid>
                     : null
                 }
+                {isSuperAdmin && isAdmin && formValues.payment_mode == "metal" ? (
+                  <>
+                    <Grid item md={4} xs={12} className='create-input'>
+                      <FormControl fullWidth error={formErros.payment_mode}>
+                        <InputLabel>Purity</InputLabel>
+                        <Select
+                          className='input-inner'
+                          value={formValues.purity_id}
+                          fullWidth
+                          label='Purity'
+                          error={formErros.purity_id}
+                          onChange={(event) => {
+                            let effective_weight = 0;
+                            let selected_purity = metalPurityList.find(
+                              (item) => item.id == event.target.value
+                            );
+                            if (selected_purity && parseFloat(formValues.weight) > 0) {
+                              effective_weight = selected_purity.value
+                              ?
+                                (parseFloat(formValues.weight) *
+                                parseFloat(selected_purity.value)) /
+                                100
+                              : parseFloat(formValues.weight);
+                            }
+                              
+                            console.log(" selected_purity : ", selected_purity);
+                            
+                            this.setState({
+                              formValues: {
+                                ...this.state.formValues,
+                                "effective_weight": effective_weight,
+                                "unit_id" : selected_purity.unit_id,
+                                "purity_id": selected_purity.id,
+                              }
+                            });
+                          }
+                          }>
+                          {metalPurityList.map((item, i) => (
+                            <MenuItem key={i} value={item.id}>
+                              {item.name}
+                            </MenuItem>
+                          ))}
+                        </Select>
+                      </FormControl>
+                    </Grid>
+                    {/* <Grid item md={4} xs={12} className='create-input'>
+                      <FormControl fullWidth error={formErros.payment_mode}>
+                        <InputLabel>Material</InputLabel>
+                        <Select
+                          className='input-inner'
+                          value={formValues.material_id}
+                          fullWidth
+                          label='Material'
+                          error={formErros.material_id}
+                          onChange={(event) => {
+                            
+                          }
+                          }>
+                          {metalPurityList.map((item, i) => (
+                            <MenuItem key={i} value={item.id}>
+                              {item.name}
+                            </MenuItem>
+                          ))}
+                        </Select>
+                      </FormControl>
+                    </Grid> */}
+                    <Grid item md={4} xs={12} className='create-input'>
+                      <TextField
+                        label='Weight(GM)'
+                        variant='outlined'
+                        fullWidth
+                        error={formErros.weight}
+                        value={formValues.weight}
+                        onChange={(event) => {
+                          let effective_weight = 0;
+                          let selected_purity = metalPurityList.find(
+                            (item) => item.id == formValues.purity_id
+                          );
+                          if (selected_purity && parseFloat(event.target.value) > 0) {
+                            effective_weight = selected_purity.value
+                            ?
+                              (parseFloat(event.target.value) *
+                              parseFloat(selected_purity.value)) /
+                              100
+                            : parseFloat(event.target.value);
+                          }
+                            
+                          console.log(" selected_purity : ", selected_purity);
+                          
+                          this.setState({
+                            formValues: {
+                              ...this.state.formValues,
+                              "weight": event.target.value,
+                              "unit_id" : selected_purity.unit_id,
+                              "effective_weight": effective_weight
+                            },
+                          });
+                        }
+                        }
+                      />
+                      {formValues.effective_weight > 0 ? <Typography
+                        variant='h6'
+                        gutterBottom
+                        component='div'>{`Effective weight : ${formValues.effective_weight} GM`}</Typography>:<></>}
+                    </Grid>
+                  </>
+                ) : null}
                 <Grid item md={4} xs={12} className='create-input'>
                   <TextareaAutosize
                     className='description'
@@ -908,7 +1111,7 @@ class SaleViewPage extends React.Component {
               </Grid>
             </Box>
           </DialogContent>
-        </Dialog>*/}
+        </Dialog>
       </MainCard>
     );
   }
@@ -916,6 +1119,7 @@ class SaleViewPage extends React.Component {
 
 const mapStateToProps = (state) => ({
   sale: state.superadmin.sales.sale,
+  materialStocks: state.superadmin.stocks.items,
   actionCalled: state.superadmin.payment.actionCalled,
   createSuccess: state.superadmin.payment.createSuccess,
   successMessage: state.superadmin.payment.successMessage,
@@ -934,6 +1138,7 @@ const mapDispatchToProps = (dispatch) => {
         paymentStore,
         paymentList,
         getNotifiactions,
+        stocksList
       },
       dispatch
     ),
