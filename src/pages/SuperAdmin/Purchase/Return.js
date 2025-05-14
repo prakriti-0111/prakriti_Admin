@@ -21,6 +21,7 @@ import withRouter from "src/helpers/withRouter";
 import { withSnackbar } from "notistack";
 import { RESET_PURCHASE } from "../../../actionTypes/superadmin/purchase.types";
 import { purchaseEdit } from "actions/superadmin/purchase.actions";
+import './style.css';
 
 class PurchaseReturnPage extends Component {
   constructor(props) {
@@ -48,7 +49,7 @@ class PurchaseReturnPage extends Component {
 
   render() {
     return (
-      <MainCard title='Return Purchase'>
+      <MainCard id="invoice_view_page" title='Return Purchase'>
         <div>
           {this.state.purchase ? (
             <PurchaseForm formData={this.state.purchase} isReturnForm={true} />

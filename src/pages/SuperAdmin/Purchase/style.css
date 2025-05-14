@@ -45,12 +45,12 @@
   margin: 5px;
 }
 
-#downloadViewSale .action_btn button {
+#downloadViewPurchase .action_btn button {
   width: 90px !important;
   height: 40px !important;
 }
 
-#downloadViewSale .action_btn button svg{
+#downloadViewPurchase .action_btn button svg{
   font-size: 25px !important;
 }
 

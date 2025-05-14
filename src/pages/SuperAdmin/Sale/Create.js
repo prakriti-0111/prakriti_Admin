@@ -10,8 +10,6 @@ import withRouter from 'src/helpers/withRouter';
 import { withSnackbar } from 'notistack';
 import './style.css';
 
-import './style.css';
-
 class SaleCreatePage extends Component {
 
   constructor(props) {

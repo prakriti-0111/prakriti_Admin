@@ -408,10 +408,11 @@ class DashboardPage extends Component {
             </CardContent>
           ) : null}
 
-          {(!this.isSuperAdmin ||
+          {/* (!this.isSuperAdmin ||
             (this.isSuperAdmin &&
-              hasPermission(permissions, "stock", "list"))) &&
-          !this.isAdmin &&
+              hasPermission(permissions, "stock", "list"))) && */
+          (this.isSuperAdmin || (
+          (this.isAdmin && profile && profile.own == false))) &&
           !this.isSalesExecutive &&
           !this.isDistributor ? (
             <CardContent

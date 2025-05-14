@@ -51,6 +51,7 @@ import returnOrdersReducer from './returnOrders.reducer';
 import holidayReducer from './holiday.reducer';
 import homepageSettingReducer from './homepageSetting.reducer';
 import stockProductReducer from './stockProduct.reducer';
+import reportChargeReducer from './reportCharge.reducer';
 
 export const SUPERADMIN_REDUCERS = {
     //auth: authReducer,
@@ -104,4 +105,5 @@ export const SUPERADMIN_REDUCERS = {
     holiday: holidayReducer,
     homepagesetting: homepageSettingReducer,
     stockProduct: stockProductReducer,
+    reportCharge: reportChargeReducer
 }
