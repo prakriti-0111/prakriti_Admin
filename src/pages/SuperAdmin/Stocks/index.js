@@ -50,6 +50,7 @@ class StockPage extends Component {
         category_id: '',
         sub_category_id: '',
         search: '',
+        certificate_no: '',
         qty:'',
         unit: '',
         pcode: '',
@@ -81,7 +82,9 @@ class StockPage extends Component {
       sub_categories: this.props.sub_categories,
       price_by_categories: [],
       unitList: [],
-      sizeList: []
+      sizeList: [],
+      scannedCertificates: [], // Array to store scanned certificate numbers
+      scanDialogOpen: false, // State to control the scan modal
       //addToCartProcess: false
     }
 
@@ -456,6 +459,90 @@ class StockPage extends Component {
     })
   }
 
+  handleCertificateNoChange = (event) => {
+    // Get the current value from the input field
+    let value = event.target.value;
+
+    // If the last character is not a comma and the input is not empty,
+    // and the user has just typed a space, replace it with a comma
+    if (value && value.length > 0 && value[value.length - 1] === ' ') {
+      value = value.slice(0, -1) + ',';
+    }
+
+    this.setState({
+      queryParams: {
+        ...this.state.queryParams,
+        certificate_no: value,
+        page: 1,
+        limit: 50
+      }
+    })
+  }
+
+  handleScanCertificateNo = () => {
+    // This function will be called when the scan button is clicked
+    // It should trigger the barcode/QR code scanner
+    // For now, we'll just show an alert
+    const scannedValue = prompt("Please scan or enter the certificate number:");
+    if (scannedValue) {
+      // Get the current certificate_no value
+      let currentValue = this.state.queryParams.certificate_no;
+
+      // Append the scanned value with a comma if there's already a value
+      let newValue = currentValue ?
+        (currentValue.endsWith(',') ? currentValue + scannedValue : currentValue + ',' + scannedValue) :
+        scannedValue;
+
+      this.setState({
+        queryParams: {
+          ...this.state.queryParams,
+          certificate_no: newValue,
+          page: 1,
+          limit: 50
+        }
+      }, () => {
+        // After setting the state, trigger the search
+        this.handleSearch();
+
+        // Process all certificate numbers and add items to cart
+        this.processMultipleCertificateNumbers();
+      });
+    }
+  }
+
+  processMultipleCertificateNumbers = () => {
+    // Get the certificate numbers as an array
+    const certificateNumbers = this.state.queryParams.certificate_no
+      .split(',')
+      .map(cert => cert.trim())
+      .filter(cert => cert); // Remove empty strings
+
+    // Track found and not found certificate numbers
+    let foundCount = 0;
+    let notFoundCount = 0;
+
+    // Process each certificate number
+    certificateNumbers.forEach(certNo => {
+      // Find the item with the certificate number
+      const item = this.state.items.find(item => item.certificate_no === certNo);
+      if (item) {
+        // Add the item to cart
+        this.handleAddToCart(item);
+        foundCount++;
+      } else {
+        notFoundCount++;
+      }
+    });
+
+    // Show a summary message
+    if (foundCount > 0) {
+      this.props.enqueueSnackbar(`${foundCount} item(s) found and added to cart.`, { variant: 'success' });
+    }
+    if (notFoundCount > 0) {
+      this.props.enqueueSnackbar(`${notFoundCount} certificate number(s) not found.`, { variant: 'warning' });
+    }
+  }
+
   handleQtyChange = (event) => {
     this.setState({
       queryParams: {
@@ -517,6 +604,39 @@ class StockPage extends Component {
     })
   }
 
+  handleOpenScanDialog = () => {
+    this.setState({ scanDialogOpen: true });
+  };
+
+  handleCloseScanDialog = () => {
+    this.setState({ scanDialogOpen: false, scannedCertificates: [] });
+  };
+
+  handleAddScannedCertificate = () => {
+    const scannedValue = prompt("Please scan or enter the certificate number:");
+    if (scannedValue) {
+      this.setState((prevState) => ({
+        scannedCertificates: [...prevState.scannedCertificates, scannedValue],
+      }));
+    }
+  };
+
+  handleProcessScannedCertificates = () => {
+    const { scannedCertificates } = this.state;
+
+    // Process each scanned certificate
+    scannedCertificates.forEach((certNo) => {
+      const item = this.state.items.find((item) => item.certificate_no === certNo);
+      if (item) {
+        this.handleAddToCart(item);
+      } else {
+        this.props.enqueueSnackbar(`Certificate ${certNo} not found.`, { variant: "warning" });
+      }
+    });
+
+    // Close the scan dialog after processing
+    this.handleCloseScanDialog();
+  };
 
   render() {
 
@@ -600,6 +720,38 @@ class StockPage extends Component {
                     value={this.state.search}
                     onChange={this.handleSearchChange}
                   />
+                </FormControl>
+              </Grid>
+              <Grid item xs={6} md={3} className='create-input'>
+                <FormControl fullWidth>
+                  <div style={{ display: 'flex', alignItems: 'center', flexDirection: 'column' }}>
+                    <div style={{ display: 'flex', width: '100%', marginBottom: '8px' }}>
+                      <TextField
+                        label="Certificate No(s) - comma separated"
+                        variant="outlined"
+                        value={this.state.queryParams.certificate_no}
+                        onChange={this.handleCertificateNoChange}
+                        style={{ flexGrow: 1 }}
+                        placeholder="Enter multiple certificate numbers separated by commas"
+                      />
+                      <Button
+                        variant="contained"
+                        color="primary"
+                        onClick={this.handleOpenScanDialog}
+                        style={{ marginLeft: '8px', height: '56px' }}
+                      >
+                        Scan
+                      </Button>
+                    </div>
+                    {/* <Button
+                      variant="outlined"
+                      color="secondary"
+                      onClick={this.processMultipleCertificateNumbers}
+                      style={{ alignSelf: 'flex-end' }}
+                    >
+                      Process All
+                    </Button> */}
+                  </div>
                 </FormControl>
               </Grid>
               {/*<Grid item xs={6} md={3} className='create-input'>
@@ -814,6 +966,45 @@ class StockPage extends Component {
 
 
           </div>
+        </Dialog>
+
+        {/* Scan Dialog */}
+        <Dialog
+          open={this.state.scanDialogOpen}
+          onClose={this.handleCloseScanDialog}
+          fullWidth
+          maxWidth="sm"
+        >
+          <DialogTitle>Scan Certificate Numbers</DialogTitle>
+          <DialogContent>
+            <Stack spacing={2}>
+              <Typography>Scanned Certificates:</Typography>
+              <ul>
+                {this.state.scannedCertificates.map((cert, index) => (
+                  <li key={index}>{cert}</li>
+                ))}
+              </ul>
+              <Button
+                variant="contained"
+                color="primary"
+                onClick={this.handleAddScannedCertificate}
+              >
+                Add Certificate
+              </Button>
+            </Stack>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={this.handleCloseScanDialog} color="secondary">
+              Cancel
+            </Button>
+            <Button
+              onClick={this.handleProcessScannedCertificates}
+              color="primary"
+              variant="contained"
+            >
+              Add All to Cart
+            </Button>
+          </DialogActions>
         </Dialog>
       </>
     );
