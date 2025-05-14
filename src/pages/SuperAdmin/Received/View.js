@@ -123,13 +123,13 @@ class ReceivedViewPage extends React.Component {
           variant: "success",
         });
         this.setState({
-          processing: false,
-          approve_declined_processing: false,
-          openDialog: false,
-          queryParams: {
-            ...this.state.queryParams,
-            page: 1,
-          },
+            processing: false,
+            approve_declined_processing: false,
+            openDialog: false,
+            queryParams: {
+              ...this.state.queryParams,
+              page: 1
+            }
         });
         this.loadViewData();
       } else {
@@ -137,8 +137,8 @@ class ReceivedViewPage extends React.Component {
           variant: "error",
         });
         this.setState({
-          processing: false,
-          approve_declined_processing: false,
+            processing: false,
+            approve_declined_processing: false,
         });
       }
       this.props.dispatch({
@@ -158,35 +158,24 @@ class ReceivedViewPage extends React.Component {
     });
   };
 
-  handleConfirmSubmit = async () => {
-    let data = {
-      approve_status: this.state.status_changing,
-      decline_type: this.state.decline_type,
-    };
+  handleConfirmSubmit = async() => {
+    let data = {approve_status: this.state.status_changing, decline_type: this.state.decline_type};
     this.setState({
-      approve_declined_processing: true,
+      approve_declined_processing: true
     });
-
-    let status_response = await purchaseStatusChange(
-      this.props.params.id,
-      data
-    );
-    if (status_response.data.success == true) {
-      this.props.enqueueSnackbar(status_response.data.message, {
-        variant: "success",
-      });
-      this.setState({
-        confirmDialog: false,
-        approve_declined_processing: false,
-      });
-      this.loadViewData();
-    } else {
-      this.props.enqueueSnackbar(status_response.data.message, {
-        variant: "error",
-      });
-      this.setState({
-        approve_declined_processing: false,
-      });
+    let status_response = await purchaseStatusChange(this.props.params.id, data);
+    if(status_response.data.success == true){
+        this.props.enqueueSnackbar(status_response.data.message, {variant: 'success'});
+        this.setState({
+          confirmDialog: false,
+          approve_declined_processing: false
+        });
+        this.loadViewData();
+    }else{
+        this.props.enqueueSnackbar(status_response.data.message, {variant: 'error'});
+        this.setState({
+          approve_declined_processing: false
+        });
     }
   };
 
@@ -314,44 +303,36 @@ class ReceivedViewPage extends React.Component {
           </>
         )}
 
-        <Dialog
-          open={this.state.confirmDialog}
-          onClose={this.handleConfirmDialogClose}
-          fullWidth
-          maxWidth='xs'
-          className='ratn-dialog-wrapper'>
-          <DialogTitle>
-            {this.state.status_changing == 1 ? "Accept" : "Decline"}
-          </DialogTitle>
-          <DialogContent>
-            <DialogContentText id='alert-dialog-slide-description'>
-              {this.state.status_changing == 1
-                ? "Are you sure want to accept this?"
-                : "Are you sure want to decline this?"}
-            </DialogContentText>
-          </DialogContent>
-          <DialogActions>
-            <Stack spacing={2} direction='row' justifyContent='flex-end'>
-            {!this.state.approve_declined_processing ? (
-              <>
-                <Button
-                  variant='outlined'
-                  onClick={this.handleConfirmDialogClose}>
-                  Cancel
-                </Button>
-                <Button
-                  variant='contained'
-                  type='button'
-                  onClick={this.handleConfirmSubmit}>
-                  Yes, Confirm
-                </Button>
-              </>
-            ) : (
-              <CircularProgress size='30px' />
-            )}
-            </Stack>
-          </DialogActions>
-        </Dialog>
+            <Dialog
+                open={this.state.confirmDialog}
+                onClose={this.handleConfirmDialogClose}
+                fullWidth
+                maxWidth="xs"
+                className="ratn-dialog-wrapper"
+            >
+                <DialogTitle>
+                  {
+                    this.state.status_changing == 1 ? "Accept" : "Decline"
+                  }
+                </DialogTitle>
+                <DialogContent>
+                    <DialogContentText id="alert-dialog-slide-description">
+                      {
+                        this.state.status_changing == 1 ?
+                        "Are you sure want to accept this?"
+                        :
+                        "Are you sure want to decline this?"
+                      }
+                    </DialogContentText>
+                </DialogContent>
+                <DialogActions>
+                    <Stack spacing={2} direction="row" justifyContent="flex-end">
+                    {!this.state.approve_declined_processing?<><Button variant="outlined" onClick={this.handleConfirmDialogClose}>Cancel</Button>
+                        <Button variant="contained" type="button" onClick={this.handleConfirmSubmit}>Yes, Confirm</Button></>:<CircularProgress />}
+                    </Stack>
+                </DialogActions>
+            </Dialog>
+        
       </MainCard>
     );
   }

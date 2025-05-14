@@ -379,6 +379,13 @@ const superadminMenus = [
             breadcrumbs: false
           },
           {
+            id: 'report_charge',
+            title: 'Report Charge',
+            type: 'item',
+            url: urlPrefix + '/report-charge',
+            breadcrumbs: false
+          },
+          {
             id: 'tax',
             title: 'Tax',
             type: 'item',

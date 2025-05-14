@@ -195,7 +195,7 @@ class LoanForm extends React.Component {
         <MenuItem value="cash">Cash</MenuItem>
         <MenuItem value="cheque">Cheque</MenuItem>
         <MenuItem value="imps_neft">BANKING/RTGS/NEFT</MenuItem>
-        <MenuItem value="UPI/PhonePe/Gpay">UPI/PhonePe/Gpay</MenuItem>
+        <MenuItem value="online">UPI/PhonePe/Gpay</MenuItem>
       </Select>
       {
         touched && error ?

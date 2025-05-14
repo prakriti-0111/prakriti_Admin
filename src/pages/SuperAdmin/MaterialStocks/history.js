@@ -73,6 +73,10 @@ class MaterialStockHistoryPage extends Component {
         display_name: 'Weight'
       },
       {
+        name: 'pakka_weight',
+        display_name: 'Pakka Weight'
+      },
+      {
         name: 'unit_name',
         display_name: 'Unit'
       },

@@ -1,15 +1,12 @@
 import {
-    LIST_RETURN_SALE,
-    GET_RETURN_SALE,
-} from '../../actionTypes/superadmin/returnSale.types';
+    GET_REPORT_CHARGE,
+    UPDATE_REPORT_CHARGE
+} from '../../actionTypes/superadmin/reportCharge.types';
 
 const initialState = {
     items: [],
     total: 0,
-    returnSale: null,
     actionCalled: false,
-    createSuccess: false,
-    deleteSuccess: false,
     editSuccess: false,
     successMessage: null,
     errorMessage: null,
@@ -18,18 +15,18 @@ const initialState = {
 export default function (state = initialState, action) {
     const { type, payload } = action;
     switch (type) {
-        case LIST_RETURN_SALE:
+        case GET_REPORT_CHARGE:
             return {
-                actionCalled: true,
                 ...state,
                 ...payload
             }
-        case GET_RETURN_SALE:
+        case UPDATE_REPORT_CHARGE:
             return {
-                actionCalled: true,
                 ...state,
                 actionCalled: true,
-                returnSale: payload
+                editSuccess: payload.success,
+                successMessage: payload.success ? payload.message : null,
+                errorMessage: !payload.success ? payload.message : null,
             }
         default:
             return state;

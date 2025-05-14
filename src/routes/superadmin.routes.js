@@ -74,6 +74,9 @@ const UnitPage = Loadable(lazy(() => import('../pages/SuperAdmin/Unit')));
 // Purity 
 const PurityPage = Loadable(lazy(() => import('../pages/SuperAdmin/Purity')));
 
+// Report Charge 
+const ReportChargePage = Loadable(lazy(() => import('../pages/SuperAdmin/ReportCharge')));
+
 // Size 
 const SizePage = Loadable(lazy(() => import('../pages/SuperAdmin/Size')));
 
@@ -266,6 +269,10 @@ const SuperAdminRoutes = (isLoggedIn) => [
       {
         path: 'purities',
         element: <PurityPage />
+      },
+      {
+        path: 'report-charge',
+        element: <ReportChargePage />
       },
       {
         path: 'sizes',
