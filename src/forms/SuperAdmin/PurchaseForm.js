@@ -1,4 +1,4 @@
-import React from "react";
+import React, { Suspense } from "react";
 import { connect } from "react-redux";
 import { Field, reduxForm } from "redux-form/immutable";
 import ImageUploading from "react-images-uploading";
@@ -205,6 +205,7 @@ class PurchaseForm extends React.Component {
       qrScannerError: null,
     };
     this.isSuperAdmin = isSuperAdmin();
+    this.debouncedFetchData = _.debounce(this.fetchData, 500); // Debounce API calls with a 500ms delay
   }
 
   componentDidMount() {
@@ -236,7 +237,7 @@ class PurchaseForm extends React.Component {
 
       // Stop camera stream
       if (scannerState.stream) {
-        scannerState.stream.getTracks().forEach(track => track.stop());
+        scannerState.stream.getTracks().forEach((track) => track.stop());
       }
 
       // Clear video source
@@ -259,7 +260,9 @@ class PurchaseForm extends React.Component {
 
           // Create canvas for frame analysis
           const canvas = document.createElement("canvas");
-          const canvasContext = canvas.getContext("2d", { willReadFrequently: true });
+          const canvasContext = canvas.getContext("2d", {
+            willReadFrequently: true,
+          });
 
           // Create and add scanning boundary
           const boundary = document.createElement("div");
@@ -297,146 +300,165 @@ class PurchaseForm extends React.Component {
           this.setState({ qrScanner: scannerState });
 
           // Check if BarcodeDetector is available (AI-based detection)
-          const hasBarcodeDetector = 'BarcodeDetector' in window;
+          const hasBarcodeDetector = "BarcodeDetector" in window;
           let barcodeDetector = null;
 
           try {
             if (hasBarcodeDetector) {
               barcodeDetector = new BarcodeDetector({
-                formats: ['qr_code', 'aztec', 'data_matrix', 'pdf417']
+                formats: ["qr_code", "aztec", "data_matrix", "pdf417"],
               });
               console.log("Using AI-based BarcodeDetector API");
             } else {
-              console.log("BarcodeDetector API not available, using jsQR fallback");
+              console.log(
+                "BarcodeDetector API not available, using jsQR fallback"
+              );
             }
           } catch (error) {
             console.error("Error initializing BarcodeDetector:", error);
-            console.log("BarcodeDetector API not available, using jsQR fallback");
+            console.log(
+              "BarcodeDetector API not available, using jsQR fallback"
+            );
           }
 
           // Start camera stream
-          navigator.mediaDevices.getUserMedia({
-            video: { facingMode: "environment" },
-            audio: false
-          })
-          .then(stream => {
-            scannerState.stream = stream;
-            video.srcObject = stream;
-            video.play();
+          navigator.mediaDevices
+            .getUserMedia({
+              video: { facingMode: "environment" },
+              audio: false,
+            })
+            .then((stream) => {
+              scannerState.stream = stream;
+              video.srcObject = stream;
+              video.play();
 
-            // Set canvas size after video metadata is loaded
-            video.onloadedmetadata = () => {
-              canvas.width = video.videoWidth;
-              canvas.height = video.videoHeight;
+              // Set canvas size after video metadata is loaded
+              video.onloadedmetadata = () => {
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
 
-              // Calculate boundary dimensions for scanning
-              const getBoundaryRect = () => {
-                const videoRect = video.getBoundingClientRect();
-                const boundaryRect = boundary.getBoundingClientRect();
+                // Calculate boundary dimensions for scanning
+                const getBoundaryRect = () => {
+                  const videoRect = video.getBoundingClientRect();
+                  const boundaryRect = boundary.getBoundingClientRect();
 
-                // Calculate the boundary position relative to the video
-                const boundaryRatio = {
-                  x: boundaryRect.width / videoRect.width,
-                  y: boundaryRect.height / videoRect.height,
-                  left: (boundaryRect.left - videoRect.left) / videoRect.width,
-                  top: (boundaryRect.top - videoRect.top) / videoRect.height
+                  // Calculate the boundary position relative to the video
+                  const boundaryRatio = {
+                    x: boundaryRect.width / videoRect.width,
+                    y: boundaryRect.height / videoRect.height,
+                    left:
+                      (boundaryRect.left - videoRect.left) / videoRect.width,
+                    top: (boundaryRect.top - videoRect.top) / videoRect.height,
+                  };
+
+                  // Calculate the boundary in canvas coordinates
+                  return {
+                    x: Math.floor(canvas.width * boundaryRatio.left),
+                    y: Math.floor(canvas.height * boundaryRatio.top),
+                    width: Math.floor(canvas.width * boundaryRatio.x),
+                    height: Math.floor(canvas.height * boundaryRatio.y),
+                  };
                 };
 
-                // Calculate the boundary in canvas coordinates
-                return {
-                  x: Math.floor(canvas.width * boundaryRatio.left),
-                  y: Math.floor(canvas.height * boundaryRatio.top),
-                  width: Math.floor(canvas.width * boundaryRatio.x),
-                  height: Math.floor(canvas.height * boundaryRatio.y)
-                };
-              };
+                // Start scanning frames
+                const scanQRCode = () => {
+                  if (!scannerState.active) return;
 
-              // Start scanning frames
-              const scanQRCode = () => {
-                if (!scannerState.active) return;
+                  const now = Date.now();
+                  if (
+                    now - scannerState.lastScanTime >=
+                    scannerState.scanInterval
+                  ) {
+                    scannerState.lastScanTime = now;
 
-                const now = Date.now();
-                if (now - scannerState.lastScanTime >= scannerState.scanInterval) {
-                  scannerState.lastScanTime = now;
+                    // Draw current video frame to canvas
+                    canvasContext.drawImage(
+                      video,
+                      0,
+                      0,
+                      canvas.width,
+                      canvas.height
+                    );
 
-                  // Draw current video frame to canvas
-                  canvasContext.drawImage(video, 0, 0, canvas.width, canvas.height);
+                    // Get boundary rectangle for focused scanning
+                    const boundaryRect = getBoundaryRect();
 
-                  // Get boundary rectangle for focused scanning
-                  const boundaryRect = getBoundaryRect();
+                    // Get image data only from the boundary area for faster processing
+                    const imageData = canvasContext.getImageData(
+                      boundaryRect.x,
+                      boundaryRect.y,
+                      boundaryRect.width,
+                      boundaryRect.height
+                    );
 
-                  // Get image data only from the boundary area for faster processing
-                  const imageData = canvasContext.getImageData(
-                    boundaryRect.x,
-                    boundaryRect.y,
-                    boundaryRect.width,
-                    boundaryRect.height
-                  );
-
-                  // Use BarcodeDetector if available and working (AI-based, faster)
-                  if (hasBarcodeDetector && barcodeDetector) {
-                    try {
-                      barcodeDetector.detect(imageData)
-                        .then(barcodes => {
-                          if (barcodes.length > 0) {
-                            const decodedText = barcodes[0].rawValue;
-                            console.log("AI Decoded QR Code:", decodedText);
-                            this.handleQRCodeSuccess(decodedText);
-                          }
-                        })
-                        .catch(err => {
-                          console.error("BarcodeDetector error:", err);
-                          // If BarcodeDetector fails, fall back to jsQR for this frame
-                          scanWithJsQR(imageData);
-                        });
-                    } catch (error) {
-                      console.error("BarcodeDetector runtime error:", error);
-                      // If BarcodeDetector throws an error, fall back to jsQR
+                    // Use BarcodeDetector if available and working (AI-based, faster)
+                    if (hasBarcodeDetector && barcodeDetector) {
+                      try {
+                        barcodeDetector
+                          .detect(imageData)
+                          .then((barcodes) => {
+                            if (barcodes.length > 0) {
+                              const decodedText = barcodes[0].rawValue;
+                              console.log("AI Decoded QR Code:", decodedText);
+                              this.handleQRCodeSuccess(decodedText);
+                            }
+                          })
+                          .catch((err) => {
+                            console.error("BarcodeDetector error:", err);
+                            // If BarcodeDetector fails, fall back to jsQR for this frame
+                            scanWithJsQR(imageData);
+                          });
+                      } catch (error) {
+                        console.error("BarcodeDetector runtime error:", error);
+                        // If BarcodeDetector throws an error, fall back to jsQR
+                        scanWithJsQR(imageData);
+                      }
+                    } else {
+                      // Fallback to jsQR
                       scanWithJsQR(imageData);
                     }
-                  } else {
-                    // Fallback to jsQR
-                    scanWithJsQR(imageData);
                   }
-                }
 
-                // Continue scanning
-                scannerState.animationFrameId = requestAnimationFrame(scanQRCode);
-              };
+                  // Continue scanning
+                  scannerState.animationFrameId =
+                    requestAnimationFrame(scanQRCode);
+                };
 
-              // Helper function to scan with jsQR
-              const scanWithJsQR = (imageData) => {
-                try {
-                  const code = jsQR(
-                    imageData.data,
-                    imageData.width,
-                    imageData.height,
-                    { inversionAttempts: "dontInvert" } // Faster processing
-                  );
+                // Helper function to scan with jsQR
+                const scanWithJsQR = (imageData) => {
+                  try {
+                    const code = jsQR(
+                      imageData.data,
+                      imageData.width,
+                      imageData.height,
+                      { inversionAttempts: "dontInvert" } // Faster processing
+                    );
 
-                  if (code) {
-                    console.log("jsQR Decoded QR Code:", code.data);
-                    this.handleQRCodeSuccess(code.data);
+                    if (code) {
+                      console.log("jsQR Decoded QR Code:", code.data);
+                      this.handleQRCodeSuccess(code.data);
+                    }
+                  } catch (error) {
+                    console.error("jsQR error:", error);
                   }
-                } catch (error) {
-                  console.error("jsQR error:", error);
-                }
-              };
+                };
 
-              scanQRCode();
-            };
-          })
-          .catch(err => {
-            console.error("Failed to access camera:", err);
-            this.setState({
-              qrScannerError: "Failed to access camera. Please check permissions and try again."
+                scanQRCode();
+              };
+            })
+            .catch((err) => {
+              console.error("Failed to access camera:", err);
+              this.setState({
+                qrScannerError:
+                  "Failed to access camera. Please check permissions and try again.",
+              });
             });
-          });
         } else {
           console.error("QR reader element not found in the DOM");
           this.setState({
             qrScannerOpen: false,
-            qrScannerError: "QR scanner initialization failed. Please try again."
+            qrScannerError:
+              "QR scanner initialization failed. Please try again.",
           });
         }
       }, 300); // Delay to ensure DOM is rendered
@@ -457,7 +479,7 @@ class PurchaseForm extends React.Component {
 
       // Stop camera stream
       if (scannerState.stream) {
-        scannerState.stream.getTracks().forEach(track => track.stop());
+        scannerState.stream.getTracks().forEach((track) => track.stop());
       }
 
       // Clear video source
@@ -495,7 +517,7 @@ class PurchaseForm extends React.Component {
 
       // Stop camera stream
       if (scannerState.stream) {
-        scannerState.stream.getTracks().forEach(track => track.stop());
+        scannerState.stream.getTracks().forEach((track) => track.stop());
       }
 
       // Clear video source
@@ -821,6 +843,86 @@ class PurchaseForm extends React.Component {
     this.updateProductFormValues(event.target.value, "worker_id");
   };
 
+  fetchImageAndConvertToBase64 = async (imageUrl) => {
+    console.log(imageUrl);
+
+    try {
+      const response = await fetch(imageUrl, {
+        mode: "no-cors",
+        headers: {
+          "Content-Type": "application/octet-stream",
+          "Allow-access-Control-Origin": "*",
+        },
+      });
+      // if (!response.ok) {
+      //   throw new Error(`HTTP error! Status: ${response.status}`);
+      // }
+      console.log("response", response);
+
+      const blob = await response.blob();
+
+      // return await new Promise((resolve, reject) => {
+      //   const reader = new FileReader();
+
+      //   reader.onloadend = () => {
+      //     resolve({
+      //       base64: reader.result,
+      //       blob: blob,
+      //     });
+      //   };
+
+      //   reader.onerror = reject;
+      //   reader.readAsDataURL(blob);
+      // });
+    } catch (error) {
+      console.error("Failed to fetch and convert image:", error);
+      throw error;
+    }
+  };
+
+  fetchData = async (url) => {
+    const requestOptions = {
+      method: "GET",
+      redirect: "follow",
+    };
+
+    try {
+      const response = await fetch(url, requestOptions);
+      const result = await response.text();
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(result, "text/html");
+
+      // Extract the "YOU HAVE SEARCHED FOR" text
+      const searchedForElement = doc.querySelector("b");
+      const searchedForText = searchedForElement
+        ? searchedForElement.textContent
+        : "No certificate found";
+
+      // Extract the product image
+      const productImgElement = doc.querySelectorAll("img");
+      console.log("productImgElement", productImgElement);
+
+      const productImgSrc = productImgElement[2]
+        ? productImgElement[2].src
+        : "No product image found";
+
+      if (productImgSrc !== "No product image found") {
+        const imageData = await this.fetchImageAndConvertToBase64(
+          productImgSrc
+        );
+        console.log(imageData);
+      }
+
+      console.log("YOU HAVE SEARCHED FOR:", searchedForText);
+      console.log("Product Image URL:", productImgSrc);
+
+      // Set the certificate_no with the searched text
+      this.updateProductFormValues(searchedForText, "certificate_no");
+    } catch (error) {
+      console.error("Error fetching data:", error);
+    }
+  };
+
   updateProductFormValues = (val, key, data) => {
     let productFormValues = this.state.productFormValues;
     let sizeList = this.state.sizeList;
@@ -828,6 +930,15 @@ class PurchaseForm extends React.Component {
     productFormValues[key] = val;
     let change_default_material = this.state.change_default_material;
     // console.log(val, key, data);
+
+    if (key == "certificate_no") {
+      console.log("this is the key is the certificate ", key);
+      if (typeof val === "string" && val.startsWith("http")) {
+        this.debouncedFetchData(val); // Use debounced function for API call
+      } else {
+        console.log("The value is not a valid URL.");
+      }
+    }
 
     if (key == "product_id") {
       let m = _.filter(this.state.productList, { id: val });
@@ -1340,8 +1451,6 @@ class PurchaseForm extends React.Component {
       if (result) gst_type = result.type;
     }
 
-    console.log("productFormValues : ", productFormValues);
-    console.log("this.state.current_image : ", this.state.current_image);
     //productFormValues.current_image[0]=this.state.current_image;
     productFormValues.current_image = this.state.current_image[0]?.data_url;
 
@@ -2143,6 +2252,7 @@ class PurchaseForm extends React.Component {
       : null;
 
     console.log("QR code data------", this.state.qrScanner);
+    console.log("current image is ", this.state.current_image);
 
     return (
       <Box sx={{ flexGrow: 1, m: 0.5 }} className="ratn-dialog-inner">
@@ -3758,8 +3868,12 @@ class PurchaseForm extends React.Component {
                           >
                             Cheque
                           </MenuItem>
-                          <MenuItem value="imps_neft">BANKING/RTGS/NEFT</MenuItem>
-                          <MenuItem value="UPI/PhonePe/Gpay">UPI/PhonePe/Gpay</MenuItem>
+                          <MenuItem value="imps_neft">
+                            BANKING/RTGS/NEFT
+                          </MenuItem>
+                          <MenuItem value="UPI/PhonePe/Gpay">
+                            UPI/PhonePe/Gpay
+                          </MenuItem>
                         </Select>
                       </FormControl>
                     </Grid>
@@ -4392,7 +4506,9 @@ class PurchaseForm extends React.Component {
                       <MenuItem value="cash">Cash</MenuItem>
                       <MenuItem value="cheque">Cheque</MenuItem>
                       <MenuItem value="imps_neft">BANKING/RTGS/NEFT</MenuItem>
-                      <MenuItem value="UPI/PhonePe/Gpay">UPI/PhonePe/Gpay</MenuItem>
+                      <MenuItem value="UPI/PhonePe/Gpay">
+                        UPI/PhonePe/Gpay
+                      </MenuItem>
                     </Select>
                   </FormControl>
                 ) : null}
