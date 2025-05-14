@@ -175,6 +175,12 @@ const adminMenus = [
             type: 'item',
             url: urlPrefix + '/return-stocks',
           },
+          {
+            id: 'stockmaterialhistory',
+            title: 'Material Stocks History',
+            type: 'item',
+            url: urlPrefix + '/material-stock-history',
+          },
         ]
       },
     ]

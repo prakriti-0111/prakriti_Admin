@@ -58,7 +58,7 @@ import {
 } from "src/helpers/helper";
 import { getNotifiactions } from "actions/superadmin/notification.actions";
 import FileDownloadIcon from "@mui/icons-material/FileDownload";
-
+import './style.css';
 class PurchaseViewPage extends React.Component {
   constructor(props) {
     super(props);
@@ -404,11 +404,35 @@ class PurchaseViewPage extends React.Component {
     console.log("purchase : ", purchase);
     return (
       <MainCard
-        title='Purchase Details'
+        id="downloadViewPurchase"
+        title={
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginRight: "10px" }}>
+            <span>{'Purchase Details'}</span>
+            {purchase && (<div>
+              <Chip
+                label={purchase.approve_status}
+                color={getApprovalColor(purchase.is_approved)}
+              />
+            </div>)}
+          </div>
+        }
         secondary={
-          <Button variant='contained' onClick={() => this.props.navigate(-1)}>
-            Back
-          </Button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', paddingTop: "7px" }}>
+            {downloadingInfo ? (
+              <CircularProgress size='30px' />
+            ) : (
+              <Button
+                variant='contained'
+                onClick={() =>
+                  this.handleDownloadInfo(this.props.params.id)
+                }>
+                <FileDownloadIcon />
+              </Button>
+            )}
+            <Button variant='contained' onClick={() => this.props.navigate(-1)}>
+              Back
+            </Button>
+          </div>
         }>
         {!purchase ? (
           <Grid container justifyContent='center'>
@@ -416,7 +440,7 @@ class PurchaseViewPage extends React.Component {
           </Grid>
         ) : (
           <>
-            <Grid
+            {/* <Grid
               container
               spacing={{ xs: 2, md: 3 }}
               columns={{ xs: 4, sm: 8, md: 12 }}>
@@ -437,22 +461,30 @@ class PurchaseViewPage extends React.Component {
                   </Button>
                 )}
               </Grid>
-            </Grid>
+            </Grid> */}
 
             <Grid
               container
               spacing={{ xs: 2, md: 3 }}
-              columns={{ xs: 4, sm: 8, md: 12 }}
+              columns={{ xs: 6, sm: 9, md: 12 }}
               className='details-header'>
               <Grid item xs={3}>
                 <div className='single-item'>
                   <p>
-                    <span>Supplier: </span> <br />
-                    {purchase.supplier_name}, {purchase.supplier_mobile}
+                    <span className={'download-field-title'}>Supplier Name: </span> <br />{" "}
+                    {purchase.supplier_name}
                   </p>
                 </div>
               </Grid>
               <Grid item xs={3}>
+                <div className='single-item'>
+                  <p>
+                    <span className={'download-field-title'}>Contact Number: </span> <br />{" "}
+                    {purchase.supplier_mobile}
+                  </p>
+                </div>
+              </Grid>
+              {/* <Grid item xs={3}>
                 <div className='single-item'>
                   <p>
                     <span>Invoice Number: </span> <br />{" "}
@@ -468,18 +500,18 @@ class PurchaseViewPage extends React.Component {
                     color={getApprovalColor(purchase.is_approved)}
                   />
                 </div>
-              </Grid>
+              </Grid> */}
               <Grid item xs={3}>
                 <div className='single-item'>
                   <p>
-                    <span>Invoice Date: </span> <br /> {purchase.invoice_date}
+                    <span className={'download-field-title'}>Invoice Date: </span> <br /> {purchase.invoice_date}
                   </p>
                 </div>
               </Grid>
               <Grid item xs={3}>
                 <div className='single-item'>
                   <p>
-                    <span>Due Date: </span> <br />
+                    <span className={'download-field-title'}>Due Date: </span> <br />
                     {purchase.due_date}
                   </p>
                 </div>
@@ -487,7 +519,7 @@ class PurchaseViewPage extends React.Component {
               <Grid item xs={3}>
                 <div className='single-item'>
                   <p>
-                    <span>Taxable Amount: </span> <br />{" "}
+                    <span className={'download-field-title'}>Taxable Amount: </span> <br />{" "}
                     {purchase.taxable_amount}
                   </p>
                 </div>
@@ -495,21 +527,21 @@ class PurchaseViewPage extends React.Component {
               <Grid item xs={3}>
                 <div className='single-item'>
                   <p>
-                    <span>Tax: </span> <br /> {purchase.tax}
+                    <span className={'download-field-title'}>Tax: </span> <br /> {purchase.tax}
                   </p>
                 </div>
               </Grid>
               <Grid item xs={3}>
                 <div className='single-item'>
                   <p>
-                    <span>Total Amount: </span> <br /> {purchase.total_amount}
+                    <span className={'download-field-title'}>Total Amount: </span> <br /> {purchase.total_amount}
                   </p>
                 </div>
               </Grid>
               <Grid item xs={3}>
                 <div className='single-item'>
                   <p>
-                    <span>Discount: </span> <br />
+                    <span className={'download-field-title'}>Discount: </span> <br />
                     {purchase.discount}
                   </p>
                 </div>
@@ -518,14 +550,14 @@ class PurchaseViewPage extends React.Component {
               <Grid item xs={3}>
                 <div className='single-item'>
                   <p>
-                    <span>Bill Amount: </span> <br /> {purchase.bill_amount}
+                    <span className={'download-field-title'}>Bill Amount: </span> <br /> {purchase.bill_amount}
                   </p>
                 </div>
               </Grid>
               <Grid item xs={3}>
                 <div className='single-item'>
                   <p>
-                    <span>Total Return: </span> <br /> {purchase.return_amount}
+                    <span className={'download-field-title'}>Total Return: </span> <br /> {purchase.return_amount}
                   </p>
                 </div>
               </Grid>
@@ -533,7 +565,7 @@ class PurchaseViewPage extends React.Component {
               <Grid item xs={3}>
                 <div className='single-item'>
                   <p>
-                    <span>Total Payable: </span> <br />
+                    <span className={'download-field-title'}>Total Payable: </span> <br />
                     {purchase.total_payable}
                   </p>
                 </div>
@@ -541,7 +573,7 @@ class PurchaseViewPage extends React.Component {
               <Grid item xs={3}>
                 <div className='single-item'>
                   <p>
-                    <span>Paid Amount: </span> <br />
+                    <span className={'download-field-title'}>Paid Amount: </span> <br />
                     {purchase.paid_amount_display}
                   </p>
                 </div>
@@ -549,7 +581,7 @@ class PurchaseViewPage extends React.Component {
               <Grid item xs={3}>
                 <div className='single-item'>
                   <p>
-                    <span>Due Amount: </span> <br />
+                    <span className={'download-field-title'}>Due Amount: </span> <br />
                     {purchase.due_amount_display}
                   </p>
                 </div>
@@ -693,7 +725,7 @@ class PurchaseViewPage extends React.Component {
                           <TableCell>Sub Total</TableCell>
                           <TableCell>Dist</TableCell>
                           <TableCell>Tax</TableCell>
-                          <TableCell>Total</TableCell>
+                          <TableCell colSpan="2">Total</TableCell>
                         </TableRow>
                       </TableHead>
                       <TableBody>
