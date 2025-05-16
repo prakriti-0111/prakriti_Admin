@@ -63,7 +63,8 @@ class RetailerForm extends React.Component {
                 status: true,
                 landmark: '',
                 user_name: '',
-                password: ''
+                password: '',
+                partner: 0
             },
             formErros: {
                 name: false,
@@ -91,6 +92,7 @@ class RetailerForm extends React.Component {
                 bank_ifsc: false,
                 landmark: false,
                 password: false,
+                partner: false
             },
             actionCalled: this.props.actionCalled,
             createSuccess: this.props.createSuccess,
@@ -459,6 +461,11 @@ class RetailerForm extends React.Component {
                 stateList: response.data.data.items
             });
         }
+    }
+
+    handleStatusChange = async(e) => {
+        this.handleDefaultChange(e, 'partner');
+        //this.updateFormValues('', 'partner');
     }
 
     handlePermanentCountryChange = async(e) => {
@@ -847,6 +854,26 @@ class RetailerForm extends React.Component {
                             onChange={(event) => this.handleDefaultChange(event, 'bank_ifsc')}
                             error={formErros.bank_ifsc}
                         />
+                    </Grid>
+                    <Grid item xs={6} md={3} className='create-input'>
+                        <FormControl fullWidth error={formErros.partner}>
+                            <InputLabel>Partner</InputLabel>
+                            <Select
+                                className='input-inner'
+                                value={formValues.partner}
+                                fullWidth
+                                label="Partner"
+                                onChange={this.handleStatusChange}
+                            >
+                                <MenuItem value="1">Yes</MenuItem>
+                                <MenuItem value="0">No</MenuItem>
+                            </Select>
+                            {
+                                formErros.partner ?
+                                <FormHelperText>{formErros.partner}</FormHelperText>
+                                : null
+                            }
+                        </FormControl>
                     </Grid>
                 </Grid>
                 
