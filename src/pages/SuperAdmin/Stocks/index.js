@@ -1,7 +1,7 @@
 import { React, Component } from 'react';
 import { matchRoutes, useLocation } from "react-router-dom"
 import { connect } from 'react-redux';
-import { Select, Stack, InputLabel, Box, Typography, FormControl, Card, CardContent, TextField, Grid, Button, MenuItem } from '@mui/material';
+import { Select, Stack, InputLabel, Box, Typography, FormControl, Card, CardContent, TextField, Grid, Button, MenuItem, IconButton, List, ListItem, ListItemText } from '@mui/material';
 import { bindActionCreators } from 'redux';
 import { gridSpacing } from 'store/constant';
 import MainCard from 'ui-component/cards/MainCard';
@@ -19,6 +19,8 @@ import DataTable from 'src/utils/DataTable';
 import { withSnackbar } from 'notistack';
 import DiamondIcon from '@mui/icons-material/Diamond';
 import GroupIcon from '@mui/icons-material/Group';
+import QrCodeScannerIcon from '@mui/icons-material/QrCodeScanner';
+import DeleteIcon from '@mui/icons-material/Delete';
 import { SUPERADMIN_CART_RESET } from '../../../actionTypes/superadmin/cart.types';
 import Dialog from '@mui/material/Dialog';
 import DialogActions from '@mui/material/DialogActions';
@@ -33,6 +35,8 @@ import { unitList } from 'actions/superadmin/unit.actions';
 import { sizeList } from 'actions/superadmin/size.actions';
 import { convertUnitToGram, weightFormat } from 'src/helpers/helper';
 import _ from 'lodash';
+import jsQR from 'jsqr';
+import extractPdfData from 'src/helpers/scanPdf';
 
 class StockPage extends Component {
 
@@ -85,7 +89,12 @@ class StockPage extends Component {
       sizeList: [],
       scannedCertificates: [], // Array to store scanned certificate numbers
       scanDialogOpen: false, // State to control the scan modal
-      //addToCartProcess: false
+      qrScannerOpen: false,
+      qrScanner: null,
+      qrScannerError: null,
+      certificateList: [], // Array to store certificate numbers
+      manualCertificate: '',
+      processingCertificate: false,
     }
 
     this.columns = [
@@ -387,38 +396,57 @@ class StockPage extends Component {
 
   }
 
-  handleMaterialAddToCart = () => {
+  handleMaterialAddToCart = async () => {
     let row = this.state.cart_stock;
     if (!this.formValidate()) {
       return false;
     } else if (parseInt(this.state.quantity) > parseInt(row.quantity)) {
-      this.props.enqueueSnackbar("Quantity must be less then from stock quantity.", { variant: 'error' });
+      this.props.enqueueSnackbar("Quantity must be less than stock quantity", { 
+        variant: 'error',
+        autoHideDuration: 3000
+      });
     } else {
-      let materials = [];
-      for (let i = 0; i < row.stock_materials.length; i++) {
-        let singleQty = parseInt(row.stock_materials[i].quantity) / parseInt(row.quantity);
-        materials.push({
-          material_id: row.stock_materials[i].material_id,
-          purity_id: row.stock_materials[i].purity_id,
-          weight: this.state.weight,
-          unit_id: this.state.unit_id,
+      try {
+        let materials = [];
+        for (let i = 0; i < row.stock_materials.length; i++) {
+          materials.push({
+            material_id: row.stock_materials[i].material_id,
+            purity_id: row.stock_materials[i].purity_id,
+            weight: this.state.weight,
+            unit_id: this.state.unit_id,
+            quantity: this.state.quantity,
+          });
+        }
+        
+        let unit = _.filter(this.state.unitList, { id: this.state.unit_id });
+        let data = {
+          stock_id: row.id,
+          product_id: row.product_id,
+          size_id: '',
+          materials: materials,
           quantity: this.state.quantity,
-        })
+          total_weight: convertUnitToGram(unit[0].name, this.state.weight),
+          unit_id: this.state.unit_id
+        };
+        
+        await this.props.actions.cartStore(data);
+        
+        // Close the dialog and reset state
+        this.setState({
+          cartDialog: false,
+          quantity: '',
+          unit_id: '',
+          weight: ''
+        });
+      } catch (error) {
+        console.error('Error adding to cart:', error);
+        this.props.enqueueSnackbar("Error adding item to cart", { 
+          variant: 'error',
+          autoHideDuration: 3000
+        });
       }
-      let unit = _.filter(this.state.unitList, { id: this.state.unit_id });
-      let data = {
-        stock_id: row.id,
-        product_id: row.product_id,
-        size_id: '',
-        materials: materials,
-        quantity: this.state.quantity,
-        total_weight: convertUnitToGram(unit[0].name, this.state.weight),
-        unit_id: this.state.unit_id
-      }
-      this.props.actions.cartStore(data);
     }
-  }
-
+  };
 
   handleDialogClose = () => {
     this.setState({
@@ -460,182 +488,381 @@ class StockPage extends Component {
   }
 
   handleCertificateNoChange = (event) => {
-    // Get the current value from the input field
-    let value = event.target.value;
-
-    // If the last character is not a comma and the input is not empty,
-    // and the user has just typed a space, replace it with a comma
-    if (value && value.length > 0 && value[value.length - 1] === ' ') {
-      value = value.slice(0, -1) + ',';
-    }
-
-    this.setState({
+    const value = event.target.value;
+    this.setState(prevState => ({
       queryParams: {
-        ...this.state.queryParams,
-        certificate_no: value,
-        page: 1,
-        limit: 50
+        ...prevState.queryParams,
+        certificate_no: value
       }
-    })
-  }
+    }));
+  };
 
-  handleScanCertificateNo = () => {
-    // This function will be called when the scan button is clicked
-    // It should trigger the barcode/QR code scanner
-    // For now, we'll just show an alert
-    const scannedValue = prompt("Please scan or enter the certificate number:");
-    if (scannedValue) {
-      // Get the current certificate_no value
-      let currentValue = this.state.queryParams.certificate_no;
+  handleOpenQRScanner = () => {
+    this.setState({ qrScannerOpen: true, qrScannerError: null }, () => {
+      setTimeout(() => {
+        const qrReaderElement = document.getElementById("qr-reader");
+        if (qrReaderElement) {
+          // Create video element for camera stream
+          const video = document.createElement("video");
+          video.setAttribute("playsinline", "true"); // Required for iOS
+          video.style.width = "100%";
+          video.style.height = "auto";
 
-      // Append the scanned value with a comma if there's already a value
-      let newValue = currentValue ?
-        (currentValue.endsWith(',') ? currentValue + scannedValue : currentValue + ',' + scannedValue) :
-        scannedValue;
+          // Create canvas for frame analysis
+          const canvas = document.createElement("canvas");
+          const canvasContext = canvas.getContext("2d", {
+            willReadFrequently: true,
+          });
 
-      this.setState({
-        queryParams: {
-          ...this.state.queryParams,
-          certificate_no: newValue,
-          page: 1,
-          limit: 50
+          // Create and add scanning boundary
+          const boundary = document.createElement("div");
+          boundary.className = "qr-scanner-boundary";
+          boundary.style.position = "absolute";
+          boundary.style.top = "50%";
+          boundary.style.left = "50%";
+          boundary.style.transform = "translate(-50%, -50%)";
+          boundary.style.width = "70%";
+          boundary.style.height = "70%";
+          boundary.style.border = "2px solid #2196f3";
+          boundary.style.borderRadius = "8px";
+          boundary.style.boxShadow = "0 0 0 5000px rgba(0, 0, 0, 0.3)";
+          boundary.style.zIndex = "1";
+
+          // Clear previous content and append video
+          qrReaderElement.innerHTML = "";
+          qrReaderElement.style.position = "relative";
+          qrReaderElement.appendChild(video);
+          qrReaderElement.appendChild(boundary);
+
+          // Store references for cleanup
+          const scannerState = {
+            video,
+            canvas,
+            canvasContext,
+            boundary,
+            animationFrameId: null,
+            stream: null,
+            active: true,
+            lastScanTime: 0,
+            scanInterval: 100,
+          };
+
+          this.setState({ qrScanner: scannerState });
+
+          // Start camera stream
+          navigator.mediaDevices
+            .getUserMedia({
+              video: { facingMode: "environment" },
+              audio: false,
+            })
+            .then((stream) => {
+              scannerState.stream = stream;
+              video.srcObject = stream;
+              video.play();
+
+              // Set canvas size after video metadata is loaded
+              video.onloadedmetadata = () => {
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+
+                // Calculate boundary dimensions for scanning
+                const getBoundaryRect = () => {
+                  const videoRect = video.getBoundingClientRect();
+                  const boundaryRect = boundary.getBoundingClientRect();
+
+                  return {
+                    x: Math.floor(canvas.width * (boundaryRect.left - videoRect.left) / videoRect.width),
+                    y: Math.floor(canvas.height * (boundaryRect.top - videoRect.top) / videoRect.height),
+                    width: Math.floor(canvas.width * boundaryRect.width / videoRect.width),
+                    height: Math.floor(canvas.height * boundaryRect.height / videoRect.height),
+                  };
+                };
+
+                // Start scanning frames
+                const scanQRCode = () => {
+                  if (!scannerState.active) return;
+
+                  const now = Date.now();
+                  if (now - scannerState.lastScanTime >= scannerState.scanInterval) {
+                    scannerState.lastScanTime = now;
+
+                    // Draw current video frame to canvas
+                    canvasContext.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+                    // Get boundary rectangle for focused scanning
+                    const boundaryRect = getBoundaryRect();
+
+                    // Get image data only from the boundary area
+                    const imageData = canvasContext.getImageData(
+                      boundaryRect.x,
+                      boundaryRect.y,
+                      boundaryRect.width,
+                      boundaryRect.height
+                    );
+
+                    // Scan with jsQR
+                    try {
+                      const code = jsQR(imageData.data, imageData.width, imageData.height, {
+                        inversionAttempts: "dontInvert"
+                      });
+
+                      if (code) {
+                        console.log("Decoded QR Code:", code.data);
+                        this.handleQRCodeSuccess(code.data);
+                      }
+                    } catch (error) {
+                      console.error("jsQR error:", error);
+                    }
+                  }
+
+                  // Continue scanning
+                  scannerState.animationFrameId = requestAnimationFrame(scanQRCode);
+                };
+
+                scanQRCode();
+              };
+            })
+            .catch((err) => {
+              console.error("Error accessing camera:", err);
+              this.setState({ qrScannerError: "Failed to access camera" });
+            });
         }
-      }, () => {
-        // After setting the state, trigger the search
-        this.handleSearch();
-
-        // Process all certificate numbers and add items to cart
-        this.processMultipleCertificateNumbers();
-      });
-    }
-  }
-
-  processMultipleCertificateNumbers = () => {
-    // Get the certificate numbers as an array
-    const certificateNumbers = this.state.queryParams.certificate_no
-      .split(',')
-      .map(cert => cert.trim())
-      .filter(cert => cert); // Remove empty strings
-
-    // Track found and not found certificate numbers
-    let foundCount = 0;
-    let notFoundCount = 0;
-
-    // Process each certificate number
-    certificateNumbers.forEach(certNo => {
-      // Find the item with the certificate number
-      const item = this.state.items.find(item => item.certificate_no === certNo);
-      if (item) {
-        // Add the item to cart
-        this.handleAddToCart(item);
-        foundCount++;
-      } else {
-        notFoundCount++;
-      }
+      }, 100);
     });
-
-    // Show a summary message
-    if (foundCount > 0) {
-      this.props.enqueueSnackbar(`${foundCount} item(s) found and added to cart.`, { variant: 'success' });
-    }
-    if (notFoundCount > 0) {
-      this.props.enqueueSnackbar(`${notFoundCount} certificate number(s) not found.`, { variant: 'warning' });
-    }
-  }
-
-  handleQtyChange = (event) => {
-    this.setState({
-      queryParams: {
-        ...this.state.queryParams,
-        qty: event.target.value
-      }
-    })
-  }
-
-  handleUnitChange = (event) => {
-    this.setState({
-      queryParams: {
-        ...this.state.queryParams,
-        unit: event.target.value
-      }
-    })
-  }
-
-  handlePCodeChange = (event) => {
-    this.setState({
-      queryParams: {
-        ...this.state.queryParams,
-        pcode: event.target.value
-      }
-    })
-  }
-
-  handleSizeChange = (event) => {
-    this.setState({
-      queryParams: {
-        ...this.state.queryParams,
-        size: event.target.value
-      }
-    })
-  }
-
-  handlePriceChange = (event) => {
-    this.setState({
-      queryParams: {
-        ...this.state.queryParams,
-        price: event.target.value
-      }
-    })
-  }
-
-  handleSearch = () => {
-    this.loadListData();
-  }
-
-  handleCardClick = (category_id) => {
-    this.props.actions.subCategoryList({ all: 1, category_id: category_id });
-    this.setState({
-      queryParams: {
-        ...this.state.queryParams,
-        category_id: category_id
-      }
-    }, () => {
-      this.handleSearch()
-    })
-  }
-
-  handleOpenScanDialog = () => {
-    this.setState({ scanDialogOpen: true });
   };
 
-  handleCloseScanDialog = () => {
-    this.setState({ scanDialogOpen: false, scannedCertificates: [] });
+  handleCloseQRScanner = () => {
+    if (this.state.qrScanner) {
+      const scannerState = this.state.qrScanner;
+
+      // Stop scanning loop
+      scannerState.active = false;
+
+      // Cancel animation frame if active
+      if (scannerState.animationFrameId) {
+        cancelAnimationFrame(scannerState.animationFrameId);
+      }
+
+      // Stop camera stream
+      if (scannerState.stream) {
+        scannerState.stream.getTracks().forEach((track) => track.stop());
+      }
+
+      // Clear video source
+      if (scannerState.video && scannerState.video.srcObject) {
+        scannerState.video.srcObject = null;
+      }
+    }
+
+    this.setState({ qrScannerOpen: false, qrScanner: null });
   };
 
-  handleAddScannedCertificate = () => {
-    const scannedValue = prompt("Please scan or enter the certificate number:");
-    if (scannedValue) {
-      this.setState((prevState) => ({
-        scannedCertificates: [...prevState.scannedCertificates, scannedValue],
+  handleQRCodeSuccess = (decodedText) => {
+    // Check if scanned QR code is a URL
+    if (decodedText.startsWith('http://') || decodedText.startsWith('https://')) {
+      this.fetchData(decodedText);
+    } else {
+      // Handle as direct certificate number
+      this.handleAddCertificateToList(decodedText);
+    }
+
+    // Close the scanner
+    this.handleCloseQRScanner();
+  };
+
+  handleAddCertificate = () => {
+    const { queryParams } = this.state;
+    if (queryParams.certificate_no) {
+      this.setState(prevState => ({
+        certificateList: [...prevState.certificateList, queryParams.certificate_no],
+        queryParams: {
+          ...prevState.queryParams,
+          certificate_no: ''
+        }
       }));
     }
   };
 
-  handleProcessScannedCertificates = () => {
-    const { scannedCertificates } = this.state;
+  handleRemoveCertificate = (index) => {
+    this.setState(prevState => ({
+      certificateList: prevState.certificateList.filter((_, i) => i !== index)
+    }));
+  };
 
-    // Process each scanned certificate
-    scannedCertificates.forEach((certNo) => {
-      const item = this.state.items.find((item) => item.certificate_no === certNo);
+  handleProcessCertificates = async () => {
+    const { certificateList } = this.state;
+    // Remove duplicates from the list before processing
+    const uniqueCertificates = [...new Set(certificateList)];
+    
+    let foundCount = 0;
+    let notFoundCount = 0;
+    let processingCount = 0;
+    let alreadyInCartCount = 0;
+
+    // Process certificates sequentially to avoid overwhelming the system
+    for (const certNo of uniqueCertificates) {
+      processingCount++;
+      const item = this.state.items.find(item => item.certificate_no === certNo);
+      
       if (item) {
-        this.handleAddToCart(item);
+        try {
+          // Check if item is already in cart
+          const check_cart = await getCartItemById({ stock_id: item.id, product_id: item.product_id });
+          
+          if (check_cart.data.success) {
+            if (item.type === "material") {
+              // For material type, open the cart dialog
+              this.setState({
+                cart_stock: item,
+                cartDialog: true,
+                unit_id: item.stock_materials.length ? item.stock_materials[0].unit_id : ''
+              });
+            } else {
+              // For non-material type, add directly to cart
+              let materials = [];
+              for (let i = 0; i < item.stock_materials.length; i++) {
+                materials.push({
+                  material_id: item.stock_materials[i].material_id,
+                  purity_id: item.stock_materials[i].purity_id,
+                  weight: item.stock_materials[i].weight,
+                  unit_id: item.stock_materials[i].unit_id,
+                  quantity: item.stock_materials[i].quantity,
+                });
+              }
+              
+              const data = {
+                stock_id: item.id,
+                product_id: item.product_id,
+                size_id: item.size_id,
+                materials: materials,
+                quantity: 1
+              };
+              
+              await this.props.actions.cartStore(data);
+              foundCount++;
+            }
+          } else {
+            alreadyInCartCount++;
+          }
+        } catch (error) {
+          console.error('Error processing certificate:', certNo, error);
+          notFoundCount++;
+        }
       } else {
-        this.props.enqueueSnackbar(`Certificate ${certNo} not found.`, { variant: "warning" });
+        notFoundCount++;
       }
-    });
 
-    // Close the scan dialog after processing
-    this.handleCloseScanDialog();
+      // Show consolidated notification at the end
+      if (processingCount === uniqueCertificates.length) {
+        let message = [];
+        if (foundCount > 0) {
+          message.push(`${foundCount} item(s) added to cart`);
+        }
+        if (alreadyInCartCount > 0) {
+          message.push(`${alreadyInCartCount} item(s) already in cart`);
+        }
+        if (notFoundCount > 0) {
+          message.push(`${notFoundCount} item(s) not found`);
+        }
+
+        this.props.enqueueSnackbar(message.join(', '), { 
+          variant: foundCount > 0 ? 'success' : 'warning',
+          autoHideDuration: 3000
+        });
+        
+        // Clear the certificate list after processing
+        this.setState({ certificateList: [] });
+      }
+    }
+  };
+
+  handleAddManualCertificate = () => {
+    const { manualCertificate } = this.state;
+    if (!manualCertificate) return;
+
+    // Check if input is a URL
+    if (manualCertificate.startsWith('http://') || manualCertificate.startsWith('https://')) {
+      this.fetchData(manualCertificate);
+    } else {
+      // Handle as direct certificate number
+      this.handleAddCertificateToList(manualCertificate);
+    }
+  };
+
+  fetchData = async (url) => {
+    this.setState({ processingCertificate: true });
+    try {
+      // Check if URL contains igi.org
+      if (url.includes("igi.org")) {
+        try {
+          const result = await extractPdfData(url);
+          if (result.error) {
+            this.props.enqueueSnackbar(result.error, { variant: 'error' });
+            return;
+          }
+          
+          // Add the certificate number to the list
+          if (result.text.summary_number) {
+            this.handleAddCertificateToList(result.text.summary_number);
+            this.props.enqueueSnackbar("Certificate data extracted successfully", { variant: 'success' });
+          } else {
+            this.props.enqueueSnackbar("No certificate number found in PDF", { variant: 'warning' });
+          }
+          return;
+        } catch (error) {
+          console.error("Error extracting PDF data:", error);
+          this.props.enqueueSnackbar("Error extracting certificate data", { variant: 'error' });
+          return;
+        }
+      }
+
+      // Original code for non-IGI URLs
+      const requestOptions = {
+        method: "GET",
+        redirect: "follow",
+      };
+
+      const response = await fetch(url, requestOptions);
+      const result = await response.text();
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(result, "text/html");
+
+      // Extract the "YOU HAVE SEARCHED FOR" text
+      const searchedForElement = doc.querySelector("b");
+      const searchedForText = searchedForElement
+        ? searchedForElement.textContent
+        : null;
+
+      if (searchedForText) {
+        this.handleAddCertificateToList(searchedForText);
+      } else {
+        this.props.enqueueSnackbar("No certificate found in URL", { variant: 'warning' });
+      }
+    } catch (error) {
+      console.error("Error fetching data:", error);
+      this.props.enqueueSnackbar("Error processing certificate URL", { variant: 'error' });
+    } finally {
+      this.setState({ processingCertificate: false });
+    }
+  };
+
+  handleAddCertificateToList = (certificateNo) => {
+    // Remove any non-numeric characters except for the certificate number format
+    const cleanedCertNo = certificateNo.replace(/[^0-9A-Za-z-]/g, '');
+    
+    // Check if certificate already exists in the list
+    if (this.state.certificateList.includes(cleanedCertNo)) {
+      this.props.enqueueSnackbar("Certificate already added to list", { 
+        variant: 'warning',
+        autoHideDuration: 2000
+      });
+      return;
+    }
+    
+    this.setState(prevState => ({
+      certificateList: [...prevState.certificateList, cleanedCertNo],
+      manualCertificate: '' // Clear the input
+    }));
   };
 
   render() {
@@ -724,33 +951,94 @@ class StockPage extends Component {
               </Grid>
               <Grid item xs={6} md={3} className='create-input'>
                 <FormControl fullWidth>
-                  <div style={{ display: 'flex', alignItems: 'center', flexDirection: 'column' }}>
-                    <div style={{ display: 'flex', width: '100%', marginBottom: '8px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <div style={{ display: 'flex', gap: '8px' }}>
                       <TextField
-                        label="Certificate No(s) - comma separated"
+                        label="Certificate Number"
                         variant="outlined"
                         value={this.state.queryParams.certificate_no}
                         onChange={this.handleCertificateNoChange}
-                        style={{ flexGrow: 1 }}
-                        placeholder="Enter multiple certificate numbers separated by commas"
+                        onKeyPress={(event) => {
+                          if (event.key === 'Enter') {
+                            this.handleAddCertificate();
+                          }
+                        }}
+                        fullWidth
                       />
                       <Button
                         variant="contained"
                         color="primary"
-                        onClick={this.handleOpenScanDialog}
-                        style={{ marginLeft: '8px', height: '56px' }}
+                        onClick={this.handleOpenQRScanner}
+                        sx={{ minWidth: '40px', height: '56px' }}
                       >
-                        Scan
+                        <QrCodeScannerIcon />
                       </Button>
                     </div>
-                    {/* <Button
+                    
+                    {/* Manual Input Box */}
+                    <TextField
+                      label="Manual Certificate Entry"
                       variant="outlined"
-                      color="secondary"
-                      onClick={this.processMultipleCertificateNumbers}
-                      style={{ alignSelf: 'flex-end' }}
-                    >
-                      Process All
-                    </Button> */}
+                      placeholder="Enter certificate number or URL"
+                      value={this.state.manualCertificate}
+                      onChange={(event) => this.setState({ manualCertificate: event.target.value })}
+                      onKeyPress={(event) => {
+                        if (event.key === 'Enter' && this.state.manualCertificate) {
+                          this.handleAddManualCertificate();
+                        }
+                      }}
+                      fullWidth
+                      InputProps={{
+                        endAdornment: (
+                          <Button
+                            variant="contained"
+                            color="primary"
+                            onClick={this.handleAddManualCertificate}
+                            disabled={!this.state.manualCertificate || this.state.processingCertificate}
+                            sx={{ 
+                              minWidth: '100px', 
+                              height: '40px',
+                              marginRight: '-14px'
+                            }}
+                          >
+                            {this.state.processingCertificate ? 'Processing...' : 'Add'}
+                          </Button>
+                        ),
+                      }}
+                    />
+                    
+                    {/* Display list of added certificates */}
+                    {this.state.certificateList.length > 0 && (
+                      <Box sx={{ mt: 1 }}>
+                        <Typography variant="subtitle2">Added Certificates:</Typography>
+                        <List dense>
+                          {this.state.certificateList.map((cert, index) => (
+                            <ListItem
+                              key={index}
+                              secondaryAction={
+                                <IconButton
+                                  edge="end"
+                                  onClick={() => this.handleRemoveCertificate(index)}
+                                >
+                                  <DeleteIcon />
+                                </IconButton>
+                              }
+                            >
+                              <ListItemText primary={cert} />
+                            </ListItem>
+                          ))}
+                        </List>
+                        <Button
+                          variant="contained"
+                          color="primary"
+                          onClick={this.handleProcessCertificates}
+                          fullWidth
+                          sx={{ mt: 1 }}
+                        >
+                          Add All to Cart
+                        </Button>
+                      </Box>
+                    )}
                   </div>
                 </FormControl>
               </Grid>
@@ -968,42 +1256,24 @@ class StockPage extends Component {
           </div>
         </Dialog>
 
-        {/* Scan Dialog */}
+        {/* QR Scanner Dialog */}
         <Dialog
-          open={this.state.scanDialogOpen}
-          onClose={this.handleCloseScanDialog}
+          open={this.state.qrScannerOpen}
+          onClose={this.handleCloseQRScanner}
           fullWidth
           maxWidth="sm"
         >
-          <DialogTitle>Scan Certificate Numbers</DialogTitle>
+          <DialogTitle>Scan QR Code</DialogTitle>
           <DialogContent>
-            <Stack spacing={2}>
-              <Typography>Scanned Certificates:</Typography>
-              <ul>
-                {this.state.scannedCertificates.map((cert, index) => (
-                  <li key={index}>{cert}</li>
-                ))}
-              </ul>
-              <Button
-                variant="contained"
-                color="primary"
-                onClick={this.handleAddScannedCertificate}
-              >
-                Add Certificate
-              </Button>
-            </Stack>
+            <div id="qr-reader" style={{ width: '100%', height: '300px' }}></div>
+            {this.state.qrScannerError && (
+              <Typography color="error" sx={{ mt: 2 }}>
+                {this.state.qrScannerError}
+              </Typography>
+            )}
           </DialogContent>
           <DialogActions>
-            <Button onClick={this.handleCloseScanDialog} color="secondary">
-              Cancel
-            </Button>
-            <Button
-              onClick={this.handleProcessScannedCertificates}
-              color="primary"
-              variant="contained"
-            >
-              Add All to Cart
-            </Button>
+            <Button onClick={this.handleCloseQRScanner}>Cancel</Button>
           </DialogActions>
         </Dialog>
       </>

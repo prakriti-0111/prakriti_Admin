@@ -2,9 +2,11 @@ import React, { Suspense } from "react";
 import { connect } from "react-redux";
 import { Field, reduxForm } from "redux-form/immutable";
 import ImageUploading from "react-images-uploading";
+// import {extractPdfData} from "../../helpers/scanPdf";
 // Import jsQR for QR code scanning
 import jsQR from "jsqr";
 import { gridSpacing } from "store/constant";
+import extractPdfData from "../../helpers/scanPdf";
 import {
   Box,
   TextField,
@@ -103,6 +105,19 @@ import { cartList } from "actions/superadmin/cart.actions";
 import { formValues } from "redux-form";
 
 var GroseData = 0;
+
+// Add this debounce utility function at the top of the file
+const debounce = (func, wait) => {
+  let timeout;
+  return function executedFunction(...args) {
+    const later = () => {
+      clearTimeout(timeout);
+      func(...args);
+    };
+    clearTimeout(timeout);
+    timeout = setTimeout(later, wait);
+  };
+};
 
 class PurchaseForm extends React.Component {
   constructor(props) {
@@ -847,6 +862,8 @@ class PurchaseForm extends React.Component {
     console.log(imageUrl);
 
     try {
+      console.log(imageUrl, "------- this is the image url");
+
       const response = await fetch(imageUrl, {
         mode: "no-cors",
         headers: {
@@ -881,6 +898,26 @@ class PurchaseForm extends React.Component {
   };
 
   fetchData = async (url) => {
+    // Check if URL contains igi.org
+    if (url.includes("igi.org")) {
+      try {
+        const pdfData = await extractPdfData(url);
+        console.log("pdfData", pdfData);
+        // Extract SUMMARY NO from the PDF data
+
+        // Set the certificate_no with the extracted value
+        this.updateProductFormValues(
+          pdfData.text.summary_number,
+          "certificate_no"
+        );
+        return;
+      } catch (error) {
+        console.error("Error extracting PDF data:", error);
+        return;
+      }
+    }
+
+    // Original code for non-IGI URLs
     const requestOptions = {
       method: "GET",
       redirect: "follow",
@@ -2236,6 +2273,11 @@ class PurchaseForm extends React.Component {
     }
   };
 
+  // Inside your component class, add this method
+  handleCertificateChange = debounce((event) => {
+    this.handleProductFormDefaultChange(event, "certificate_no");
+  }, 1000);
+
   render() {
     const {
       formValues,
@@ -2256,10 +2298,15 @@ class PurchaseForm extends React.Component {
     let total_report_charge_amount = 0;
     let total_report_charge_tax_amount = 0;
     let total_report_charge_amount_after_tax = 0;
-    if(formValues && formValues.sale){
-      total_report_charge_amount = parseFloat(formValues.sale.report_qty)*parseFloat(formValues.sale.report_charge);
-      total_report_charge_tax_amount = (total_report_charge_amount*formValues.sale.report_tax_percentage)/100;
-      total_report_charge_amount_after_tax = total_report_charge_amount + total_report_charge_tax_amount;
+    if (formValues && formValues.sale) {
+      total_report_charge_amount =
+        parseFloat(formValues.sale.report_qty) *
+        parseFloat(formValues.sale.report_charge);
+      total_report_charge_tax_amount =
+        (total_report_charge_amount * formValues.sale.report_tax_percentage) /
+        100;
+      total_report_charge_amount_after_tax =
+        total_report_charge_amount + total_report_charge_tax_amount;
     }
 
     return (
@@ -2795,12 +2842,17 @@ class PurchaseForm extends React.Component {
                             variant="outlined"
                             fullWidth
                             value={productFormValues.certificate_no}
-                            onChange={(event) =>
-                              this.handleProductFormDefaultChange(
-                                event,
-                                "certificate_no"
-                              )
-                            }
+                            onChange={(event) => {
+                              // Update the input value immediately for UI responsiveness
+                              this.setState(prevState => ({
+                                productFormValues: {
+                                  ...prevState.productFormValues,
+                                  certificate_no: event.target.value
+                                }
+                              }));
+                              // Call the debounced function for API/processing
+                              this.handleCertificateChange(event);
+                            }}
                             error={productFormErros.certificate_no}
                           />
                         </Grid>
@@ -3525,69 +3577,80 @@ class PurchaseForm extends React.Component {
               </Table>
             </TableContainer>
           </Grid>
-          {formValues.sale && formValues.sale.report_qty > 0 && <Grid
-            container
-            spacing={gridSpacing}
-            className='details-header ratn-pur-wrapper loans_view' 
-            style={{marginBottom:"20px"}}
+          {formValues.sale && formValues.sale.report_qty > 0 && (
+            <Grid
+              container
+              spacing={gridSpacing}
+              className="details-header ratn-pur-wrapper loans_view"
+              style={{ marginBottom: "20px" }}
             >
-            <Grid item xs={12}>
-              <TableContainer component={Paper}>
-                <div className='ratn-table-purchase-wrapper'>
-                  <Table
-                    aria-label='collapsible table'
-                    className='invoice_product_list'>
-                    <TableHead className='sub-table-header ratn-table-header '>
-                      <TableRow>
-                        <TableCell sx={{ width: 15 }}></TableCell>
-                        
-                        <TableCell sx={{ width: 120 }}>Report Charge</TableCell>
-                        <TableCell sx={{ width: 40 }}>Total Charge</TableCell>
-                        <TableCell sx={{ width: 90 }}>Tax(%)</TableCell>
-                        <TableCell sx={{ width: 40 }}>Tax</TableCell>
-                        <TableCell sx={{ width: 40 }}>Total Charge</TableCell>
-                        <TableCell sx={{ width: 40 }}>Sub Total</TableCell>
-                        <TableCell sx={{ width: 40 }}>Total Tax</TableCell>
-                        <TableCell sx={{ width: 40 }}>Total</TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody className='pur-details-table-body'>
-                      <TableRow>
-                        <TableCell></TableCell>
-                        
-                        <TableCell >
-                          {`${formValues.sale.report_qty} pics x ${displayAmount(formValues.sale.report_charge)} = `}
-                        </TableCell>
-                        <TableCell className=' align-items-center'>
-                          {displayAmount(total_report_charge_amount)}
-                        </TableCell>
-                        <TableCell className=' align-items-center'>
-                          
-                            {`${priceFormat(formValues.sale.report_tax_percentage).toFixed(2)}%`}
-                          
-                        </TableCell>
-                        <TableCell className=' align-items-center'>
-                          {displayAmount(total_report_charge_tax_amount)}
-                        </TableCell>
-                        <TableCell className=" align-items-center">
-                          {displayAmount(total_report_charge_amount_after_tax)}
-                        </TableCell>
-                        <TableCell className=" align-items-center">
-                          {displayAmount(formValues.sale.taxable_amount_raw)}
-                        </TableCell>
-                        <TableCell className=" align-items-center">
-                          {displayAmount(formValues.sale.total_tax)}
-                        </TableCell>
-                        <TableCell className=" align-items-center">
-                          {formValues.sale.total_amount}
-                        </TableCell>
-                      </TableRow>
-                    </TableBody>
-                  </Table>
-                </div>
-              </TableContainer>
+              <Grid item xs={12}>
+                <TableContainer component={Paper}>
+                  <div className="ratn-table-purchase-wrapper">
+                    <Table
+                      aria-label="collapsible table"
+                      className="invoice_product_list"
+                    >
+                      <TableHead className="sub-table-header ratn-table-header ">
+                        <TableRow>
+                          <TableCell sx={{ width: 15 }}></TableCell>
+
+                          <TableCell sx={{ width: 120 }}>
+                            Report Charge
+                          </TableCell>
+                          <TableCell sx={{ width: 40 }}>Total Charge</TableCell>
+                          <TableCell sx={{ width: 90 }}>Tax(%)</TableCell>
+                          <TableCell sx={{ width: 40 }}>Tax</TableCell>
+                          <TableCell sx={{ width: 40 }}>Total Charge</TableCell>
+                          <TableCell sx={{ width: 40 }}>Sub Total</TableCell>
+                          <TableCell sx={{ width: 40 }}>Total Tax</TableCell>
+                          <TableCell sx={{ width: 40 }}>Total</TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody className="pur-details-table-body">
+                        <TableRow>
+                          <TableCell></TableCell>
+
+                          <TableCell>
+                            {`${
+                              formValues.sale.report_qty
+                            } pics x ${displayAmount(
+                              formValues.sale.report_charge
+                            )} = `}
+                          </TableCell>
+                          <TableCell className=" align-items-center">
+                            {displayAmount(total_report_charge_amount)}
+                          </TableCell>
+                          <TableCell className=" align-items-center">
+                            {`${priceFormat(
+                              formValues.sale.report_tax_percentage
+                            ).toFixed(2)}%`}
+                          </TableCell>
+                          <TableCell className=" align-items-center">
+                            {displayAmount(total_report_charge_tax_amount)}
+                          </TableCell>
+                          <TableCell className=" align-items-center">
+                            {displayAmount(
+                              total_report_charge_amount_after_tax
+                            )}
+                          </TableCell>
+                          <TableCell className=" align-items-center">
+                            {displayAmount(formValues.sale.taxable_amount_raw)}
+                          </TableCell>
+                          <TableCell className=" align-items-center">
+                            {displayAmount(formValues.sale.total_tax)}
+                          </TableCell>
+                          <TableCell className=" align-items-center">
+                            {formValues.sale.total_amount}
+                          </TableCell>
+                        </TableRow>
+                      </TableBody>
+                    </Table>
+                  </div>
+                </TableContainer>
+              </Grid>
             </Grid>
-          </Grid>}
+          )}
           <>
             <Grid item xs={12} md={8} className="create-input pt-0">
               <Grid
@@ -3939,7 +4002,9 @@ class PurchaseForm extends React.Component {
                           >
                             Cheque
                           </MenuItem>
-                          <MenuItem value="imps_neft">BANKING/RTGS/NEFT</MenuItem>
+                          <MenuItem value="imps_neft">
+                            BANKING/RTGS/NEFT
+                          </MenuItem>
                           <MenuItem value="online">UPI/PhonePe/Gpay</MenuItem>
                         </Select>
                       </FormControl>
