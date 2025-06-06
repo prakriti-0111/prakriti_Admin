@@ -738,119 +738,82 @@ class StockPage extends Component {
     this.handleCloseQRScanner();
   };
 
-  handleAddCertificate = () => {
-    const { queryParams } = this.state;
-    if (queryParams.certificate_no) {
-      this.setState((prevState) => ({
-        certificateList: [
-          ...prevState.certificateList,
-          queryParams.certificate_no,
-        ],
-        queryParams: {
-          ...prevState.queryParams,
-          certificate_no: "",
-        },
-      }));
-    }
-  };
+  handleAddCertificateToList = async (certificateNo) => {
+    // Remove any non-numeric characters except for the certificate number format
+    const cleanedCertNo = certificateNo.replace(/[^0-9A-Za-z-]/g, "");
 
-  handleRemoveCertificate = (index) => {
-    this.setState((prevState) => ({
-      certificateList: prevState.certificateList.filter((_, i) => i !== index),
-    }));
-  };
+    // Find the item with this certificate number
+    const item = this.state.items.find(
+      (item) => item.certificate_no === cleanedCertNo
+    );
 
-  handleProcessCertificates = async () => {
-    const { certificateList } = this.state;
-    // Remove duplicates from the list before processing
-    const uniqueCertificates = [...new Set(certificateList)];
-
-    let foundCount = 0;
-    let notFoundCount = 0;
-    let processingCount = 0;
-    let alreadyInCartCount = 0;
-
-    // Process certificates sequentially to avoid overwhelming the system
-    for (const certNo of uniqueCertificates) {
-      processingCount++;
-      const item = this.state.items.find(
-        (item) => item.certificate_no === certNo
-      );
-
-      if (item) {
-        try {
-          // Check if item is already in cart
-          const check_cart = await getCartItemById({
-            stock_id: item.id,
-            product_id: item.product_id,
-          });
-
-          if (check_cart.data.success) {
-            if (item.type === "material") {
-              // For material type, open the cart dialog
-              this.setState({
-                cart_stock: item,
-                cartDialog: true,
-                unit_id: item.stock_materials.length
-                  ? item.stock_materials[0].unit_id
-                  : "",
-              });
-            } else {
-              // For non-material type, add directly to cart
-              let materials = [];
-              for (let i = 0; i < item.stock_materials.length; i++) {
-                materials.push({
-                  material_id: item.stock_materials[i].material_id,
-                  purity_id: item.stock_materials[i].purity_id,
-                  weight: item.stock_materials[i].weight,
-                  unit_id: item.stock_materials[i].unit_id,
-                  quantity: item.stock_materials[i].quantity,
-                });
-              }
-
-              const data = {
-                stock_id: item.id,
-                product_id: item.product_id,
-                size_id: item.size_id,
-                materials: materials,
-                quantity: 1,
-              };
-
-              await this.props.actions.cartStore(data);
-              foundCount++;
-            }
-          } else {
-            alreadyInCartCount++;
-          }
-        } catch (error) {
-          console.error("Error processing certificate:", certNo, error);
-          notFoundCount++;
-        }
-      } else {
-        notFoundCount++;
-      }
-
-      // Show consolidated notification at the end
-      if (processingCount === uniqueCertificates.length) {
-        let message = [];
-        if (foundCount > 0) {
-          message.push(`${foundCount} item(s) added to cart`);
-        }
-        if (alreadyInCartCount > 0) {
-          message.push(`${alreadyInCartCount} item(s) already in cart`);
-        }
-        if (notFoundCount > 0) {
-          message.push(`${notFoundCount} item(s) not found`);
-        }
-
-        this.props.enqueueSnackbar(message.join(", "), {
-          variant: foundCount > 0 ? "success" : "warning",
-          autoHideDuration: 3000,
+    if (item) {
+      try {
+        // Check if item is already in cart
+        const check_cart = await getCartItemById({
+          stock_id: item.id,
+          product_id: item.product_id,
         });
 
-        // Clear the certificate list after processing
-        this.setState({ certificateList: [] });
+        if (check_cart.data.success) {
+          if (item.type === "material") {
+            // For material type, open the cart dialog
+            this.setState({
+              cart_stock: item,
+              cartDialog: true,
+              unit_id: item.stock_materials.length
+                ? item.stock_materials[0].unit_id
+                : "",
+            });
+            this.props.enqueueSnackbar(`Certificate ${cleanedCertNo} opened for material selection`, {
+              variant: "info",
+              autoHideDuration: 2000,
+            });
+          } else {
+            // For non-material type, add directly to cart
+            let materials = [];
+            for (let i = 0; i < item.stock_materials.length; i++) {
+              materials.push({
+                material_id: item.stock_materials[i].material_id,
+                purity_id: item.stock_materials[i].purity_id,
+                weight: item.stock_materials[i].weight,
+                unit_id: item.stock_materials[i].unit_id,
+                quantity: item.stock_materials[i].quantity,
+              });
+            }
+
+            const data = {
+              stock_id: item.id,
+              product_id: item.product_id,
+              size_id: item.size_id,
+              materials: materials,
+              quantity: 1,
+            };
+
+            await this.props.actions.cartStore(data);
+            this.props.enqueueSnackbar(`Certificate ${cleanedCertNo} added to cart successfully`, {
+              variant: "success",
+              autoHideDuration: 2000,
+            });
+          }
+        } else {
+          this.props.enqueueSnackbar(`Certificate ${cleanedCertNo} is already in cart`, {
+            variant: "warning",
+            autoHideDuration: 2000,
+          });
+        }
+      } catch (error) {
+        console.error("Error processing certificate:", error);
+        this.props.enqueueSnackbar(`Error processing certificate ${cleanedCertNo}`, {
+          variant: "error",
+          autoHideDuration: 2000,
+        });
       }
+    } else {
+      this.props.enqueueSnackbar(`Certificate ${cleanedCertNo} not found`, {
+        variant: "error",
+        autoHideDuration: 2000,
+      });
     }
   };
 
@@ -868,6 +831,8 @@ class StockPage extends Component {
       // Handle as direct certificate number
       this.handleAddCertificateToList(manualCertificate);
     }
+    // Clear the input after processing
+    this.setState({ manualCertificate: "" });
   };
 
   fetchData = async (url) => {
@@ -882,11 +847,11 @@ class StockPage extends Component {
             return;
           }
 
-          // Add the certificate number to the list
+          // Process the certificate number directly
           if (result.text.summary_number) {
-            this.handleAddCertificateToList(result.text.summary_number);
+            await this.handleAddCertificateToList(result.text.summary_number);
             this.props.enqueueSnackbar(
-              "Certificate data extracted successfully",
+              `Certificate ${result.text.summary_number} processed successfully`,
               { variant: "success" }
             );
           } else {
@@ -922,7 +887,7 @@ class StockPage extends Component {
         : null;
 
       if (searchedForText) {
-        this.handleAddCertificateToList(searchedForText);
+        await this.handleAddCertificateToList(searchedForText);
       } else {
         this.props.enqueueSnackbar("No certificate found in URL", {
           variant: "warning",
@@ -936,25 +901,6 @@ class StockPage extends Component {
     } finally {
       this.setState({ processingCertificate: false });
     }
-  };
-
-  handleAddCertificateToList = (certificateNo) => {
-    // Remove any non-numeric characters except for the certificate number format
-    const cleanedCertNo = certificateNo.replace(/[^0-9A-Za-z-]/g, "");
-
-    // Check if certificate already exists in the list
-    if (this.state.certificateList.includes(cleanedCertNo)) {
-      this.props.enqueueSnackbar("Certificate already added to list", {
-        variant: "warning",
-        autoHideDuration: 2000,
-      });
-      return;
-    }
-
-    this.setState((prevState) => ({
-      certificateList: [...prevState.certificateList, cleanedCertNo],
-      manualCertificate: "", // Clear the input
-    }));
   };
 
   render() {
@@ -1117,19 +1063,6 @@ class StockPage extends Component {
                       fullWidth
                       InputProps={{
                         endAdornment: (
-                          // <Button
-                          //   variant="contained"
-                          //   color="primary"
-                          //   onClick={this.handleAddManualCertificate}
-                          //   disabled={!this.state.manualCertificate || this.state.processingCertificate}
-                          //   sx={{
-                          //     minWidth: '100px',
-                          //     height: '40px',
-                          //     marginRight: '-14px'
-                          //   }}
-                          // >
-                          //   {this.state.processingCertificate ? 'Processing...' : 'Add'}
-                          // </Button>
                           <Button
                             variant=""
                             color="primary"
@@ -1152,42 +1085,6 @@ class StockPage extends Component {
                         ),
                       }}
                     />
-
-                    {this.state.certificateList.length > 0 && (
-                      <Box sx={{ mt: 1 }}>
-                        <Typography variant="subtitle2">
-                          Added Certificates:
-                        </Typography>
-                        <List dense>
-                          {this.state.certificateList.map((cert, index) => (
-                            <ListItem
-                              key={index}
-                              secondaryAction={
-                                <IconButton
-                                  edge="end"
-                                  onClick={() =>
-                                    this.handleRemoveCertificate(index)
-                                  }
-                                >
-                                  <DeleteIcon />
-                                </IconButton>
-                              }
-                            >
-                              <ListItemText primary={cert} />
-                            </ListItem>
-                          ))}
-                        </List>
-                        <Button
-                          variant="contained"
-                          color="primary"
-                          onClick={this.handleProcessCertificates}
-                          fullWidth
-                          sx={{ mt: 1 }}
-                        >
-                          Add All to Cart
-                        </Button>
-                      </Box>
-                    )}
                   </div>
                 </FormControl>
               </Grid>
