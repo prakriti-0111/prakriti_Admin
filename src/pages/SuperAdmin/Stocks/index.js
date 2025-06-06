@@ -1,45 +1,66 @@
-import { React, Component } from 'react';
-import { matchRoutes, useLocation } from "react-router-dom"
-import { connect } from 'react-redux';
-import { Select, Stack, InputLabel, Box, Typography, FormControl, Card, CardContent, TextField, Grid, Button, MenuItem, IconButton, List, ListItem, ListItemText } from '@mui/material';
-import { bindActionCreators } from 'redux';
-import { gridSpacing } from 'store/constant';
-import MainCard from 'ui-component/cards/MainCard';
-import withRouter from 'src/helpers/withRouter';
-import { stocksList, getPriceByCategory, getCartItemById } from 'actions/superadmin/stocks.actions';
-import { subCategoryList } from 'actions/superadmin/subCategory.actions';
-import { cartStore, cartList } from 'actions/superadmin/cart.actions';
-import { Table, TableHead } from '@mui/material';
-import TableBody from '@mui/material/TableBody';
-import TableCell from '@mui/material/TableCell';
-import TableContainer from '@mui/material/TableContainer';
-import TableRow from '@mui/material/TableRow';
-import Paper from '@mui/material/Paper';
-import DataTable from 'src/utils/DataTable';
-import { withSnackbar } from 'notistack';
-import DiamondIcon from '@mui/icons-material/Diamond';
-import GroupIcon from '@mui/icons-material/Group';
-import QrCodeScannerIcon from '@mui/icons-material/QrCodeScanner';
-import DeleteIcon from '@mui/icons-material/Delete';
-import { SUPERADMIN_CART_RESET } from '../../../actionTypes/superadmin/cart.types';
-import Dialog from '@mui/material/Dialog';
-import DialogActions from '@mui/material/DialogActions';
-import DialogContent from '@mui/material/DialogContent';
-import DialogContentText from '@mui/material/DialogContentText';
-import DialogTitle from '@mui/material/DialogTitle';
-import { categoryList } from 'actions/superadmin/category.actions';
-import { materialList } from 'actions/superadmin/material.actions';
-import { displayAmount } from 'src/helpers/helper';
-import { FreeBreakfastOutlined } from '@mui/icons-material';
-import { unitList } from 'actions/superadmin/unit.actions';
-import { sizeList } from 'actions/superadmin/size.actions';
-import { convertUnitToGram, weightFormat } from 'src/helpers/helper';
-import _ from 'lodash';
-import jsQR from 'jsqr';
-import extractPdfData from 'src/helpers/scanPdf';
+import { React, Component } from "react";
+import { matchRoutes, useLocation } from "react-router-dom";
+import { connect } from "react-redux";
+import {
+  Select,
+  Stack,
+  InputLabel,
+  Box,
+  Typography,
+  FormControl,
+  Card,
+  CardContent,
+  TextField,
+  Grid,
+  Button,
+  MenuItem,
+  IconButton,
+  List,
+  ListItem,
+  ListItemText,
+} from "@mui/material";
+import { bindActionCreators } from "redux";
+import { gridSpacing } from "store/constant";
+import MainCard from "ui-component/cards/MainCard";
+import withRouter from "src/helpers/withRouter";
+import {
+  stocksList,
+  getPriceByCategory,
+  getCartItemById,
+} from "actions/superadmin/stocks.actions";
+import { subCategoryList } from "actions/superadmin/subCategory.actions";
+import { cartStore, cartList } from "actions/superadmin/cart.actions";
+import { Table, TableHead } from "@mui/material";
+import TableBody from "@mui/material/TableBody";
+import TableCell from "@mui/material/TableCell";
+import TableContainer from "@mui/material/TableContainer";
+import TableRow from "@mui/material/TableRow";
+import Paper from "@mui/material/Paper";
+import DataTable from "src/utils/DataTable";
+import { withSnackbar } from "notistack";
+import DiamondIcon from "@mui/icons-material/Diamond";
+import GroupIcon from "@mui/icons-material/Group";
+import QrCodeScannerIcon from "@mui/icons-material/QrCodeScanner";
+import DeleteIcon from "@mui/icons-material/Delete";
+import { SUPERADMIN_CART_RESET } from "../../../actionTypes/superadmin/cart.types";
+import Dialog from "@mui/material/Dialog";
+import DialogActions from "@mui/material/DialogActions";
+import DialogContent from "@mui/material/DialogContent";
+import DialogContentText from "@mui/material/DialogContentText";
+import DialogTitle from "@mui/material/DialogTitle";
+import { categoryList } from "actions/superadmin/category.actions";
+import { materialList } from "actions/superadmin/material.actions";
+import { displayAmount } from "src/helpers/helper";
+import { FreeBreakfastOutlined } from "@mui/icons-material";
+import { unitList } from "actions/superadmin/unit.actions";
+import { sizeList } from "actions/superadmin/size.actions";
+import { convertUnitToGram, weightFormat } from "src/helpers/helper";
+import _ from "lodash";
+import jsQR from "jsqr";
+import extractPdfData from "src/helpers/scanPdf";
+import SearchIcon from "@mui/icons-material/Search";
 
 class StockPage extends Component {
-
   constructor(props) {
     super(props);
     this.state = {
@@ -51,22 +72,22 @@ class StockPage extends Component {
       queryParams: {
         page: 1,
         limit: 50,
-        category_id: '',
-        sub_category_id: '',
-        search: '',
-        certificate_no: '',
-        qty:'',
-        unit: '',
-        pcode: '',
-        size: '',
-        price: '',
+        category_id: "",
+        sub_category_id: "",
+        search: "",
+        certificate_no: "",
+        qty: "",
+        unit: "",
+        pcode: "",
+        size: "",
+        price: "",
         all: 0,
-        by_specific: this.props.query.get('by_specific') ?? "",
-        own_distributor: this.props.query.get('own_distributor') ?? "",
-        own_admin: this.props.query.get('own_admin') ?? "",
-        own_se: this.props.query.get('own_se') ?? "",
-        total_avl_stock: this.props.query.get('total_avl_stock') ?? "",
-        manager: this.props.query.get('manager') ?? "",
+        by_specific: this.props.query.get("by_specific") ?? "",
+        own_distributor: this.props.query.get("own_distributor") ?? "",
+        own_admin: this.props.query.get("own_admin") ?? "",
+        own_se: this.props.query.get("own_se") ?? "",
+        total_avl_stock: this.props.query.get("total_avl_stock") ?? "",
+        manager: this.props.query.get("manager") ?? "",
       },
       cart_actionCalled: this.props.cart_actionCalled,
       cart_createSuccess: this.props.cart_createSuccess,
@@ -74,9 +95,9 @@ class StockPage extends Component {
       cart_successMessage: this.props.cart_successMessage,
       cart_errorMessage: this.props.cart_errorMessage,
       cartDialog: false,
-      quantity: '',
-      unit_id: '',
-      weight: '',
+      quantity: "",
+      unit_id: "",
+      weight: "",
       quantity_error: false,
       weight_error: false,
       unit_error: false,
@@ -93,112 +114,115 @@ class StockPage extends Component {
       qrScanner: null,
       qrScannerError: null,
       certificateList: [], // Array to store certificate numbers
-      manualCertificate: '',
+      manualCertificate: "",
       processingCertificate: false,
-    }
+    };
 
     this.columns = [
       {
-        name: 'image',
-        display_name: 'Image',
-        isImage: true
+        name: "image",
+        display_name: "Image",
+        isImage: true,
       },
       {
-        name: 'name',
-        display_name: 'Product Name'
+        name: "name",
+        display_name: "Product Name",
       },
       {
-        name: 'certificate_no',
-        display_name: 'Certificate No',
-        width: '120px'
+        name: "certificate_no",
+        display_name: "Certificate No",
+        width: "120px",
       },
       {
-        name: 'total_weight_display',
-        display_name: 'Total Wt.',
-        width: '90px'
+        name: "total_weight_display",
+        display_name: "Total Wt.",
+        width: "90px",
       },
       {
-        name: 'stock_material_display',
-        display_name: 'Materials Name',
-        width: '165px'
+        name: "stock_material_display",
+        display_name: "Materials Name",
+        width: "165px",
       },
       {
-        name: 'purity_display',
-        display_name: 'Purity Name',
-        width: '165px'
+        name: "purity_display",
+        display_name: "Purity Name",
+        width: "165px",
       },
       /*{
         name: 'quantity',
         display_name: 'Qty'
       },*/
       {
-        name: 'weight_display',
-        display_name: 'Qty'
+        name: "weight_display",
+        display_name: "Qty",
       },
       {
-        name: 'unit_display',
-        display_name: 'Unit'
+        name: "unit_display",
+        display_name: "Unit",
       },
       {
-        name: 'product_code',
-        display_name: 'P Code'
+        name: "product_code",
+        display_name: "P Code",
       },
       {
-        name: 'size_name',
-        display_name: 'Size'
+        name: "size_name",
+        display_name: "Size",
       },
       {
-        name: 'mrp_display',
-        display_name: 'Price'
+        name: "mrp_display",
+        display_name: "Price",
       },
       {
-        name:'tax_prize',
-        display_name: 'Tax Price'
+        name: "tax_prize",
+        display_name: "Tax Price",
       },
       {
-        name: 'stock_user_name',
-        display_name: 'Avl By'
-      }
+        name: "stock_user_name",
+        display_name: "Avl By",
+      },
     ];
 
     this.tableActions = [
       {
-        label: 'View',
+        label: "View",
         onClick: this.handleView,
-        color: 'primary'
+        color: "primary",
       },
       {
-        label: '+',
+        label: "+",
         onClick: this.handleAddToCart,
-        color: 'primary',
-        show: this.props.query.get('by_specific') ? false : true,
+        color: "primary",
+        show: this.props.query.get("by_specific") ? false : true,
         conditions: [
           {
             key: "can_add_cart",
-            value: true
-          }
-        ]
+            value: true,
+          },
+        ],
       },
       {
-        label: 'green_tick',
+        label: "green_tick",
         onClick: this.handleCartAdded,
-        color: 'primary',
-        show: this.props.query.get('by_specific') ? false : true,
+        color: "primary",
+        show: this.props.query.get("by_specific") ? false : true,
         conditions: [
           {
             key: "can_add_cart",
-            value: false
-          }
-        ]
-      }
+            value: false,
+          },
+        ],
+      },
     ];
 
     this.addToCartProcess = false;
   }
 
   handleCartAdded = (row) => {
-    this.props.enqueueSnackbar("Item already in cart! You can not add this item.", { variant: 'error' });
-  }
+    this.props.enqueueSnackbar(
+      "Item already in cart! You can not add this item.",
+      { variant: "error" }
+    );
+  };
 
   componentDidMount() {
     this.loadListData();
@@ -218,10 +242,10 @@ class StockPage extends Component {
     });
     if (res.data.success) {
       this.setState({
-        price_by_categories: res.data.data
-      })
+        price_by_categories: res.data.data,
+      });
     }
-  }
+  };
 
   static getDerivedStateFromProps(props, state) {
     let update = {};
@@ -281,16 +305,20 @@ class StockPage extends Component {
   componentDidUpdate() {
     if (this.state.cart_actionCalled) {
       if (this.state.cart_createSuccess) {
-        this.props.enqueueSnackbar(this.state.cart_successMessage, { variant: 'success' });
+        this.props.enqueueSnackbar(this.state.cart_successMessage, {
+          variant: "success",
+        });
         this.setState({
-          quantity: '',
-          unit_id: '',
-          weight: ''
-        })
+          quantity: "",
+          unit_id: "",
+          weight: "",
+        });
         this.props.actions.cartList();
         this.loadListData();
       } else if (this.state.cart_errorMessage) {
-        this.props.enqueueSnackbar(this.state.cart_errorMessage, { variant: 'error' });
+        this.props.enqueueSnackbar(this.state.cart_errorMessage, {
+          variant: "error",
+        });
       }
       this.setState({
         cartDialog: false,
@@ -298,7 +326,7 @@ class StockPage extends Component {
       });
       this.addToCartProcess = false;
       this.props.dispatch({
-        type: SUPERADMIN_CART_RESET
+        type: SUPERADMIN_CART_RESET,
       });
     }
   }
@@ -306,39 +334,51 @@ class StockPage extends Component {
   loadListData = () => {
     console.log("loadListData", this.state.queryParams);
     this.props.actions.stocksList(this.state.queryParams);
-  }
+  };
 
   handleView = (row) => {
-    if(this.state.queryParams.total_avl_stock == 1){
-      window.open(`${process.env.FRONT_BASE_URL}products/${row.slug}`, '_blank').focus();
-    }else{
-      this.props.navigate('view/' + row.id);
+    if (this.state.queryParams.total_avl_stock == 1) {
+      window
+        .open(`${process.env.FRONT_BASE_URL}products/${row.slug}`, "_blank")
+        .focus();
+    } else {
+      this.props.navigate("view/" + row.id);
     }
-  }
+  };
 
   handlePagination = (page, all) => {
-    this.setState({
-      queryParams: {
-        ...this.state.queryParams,
-        page: page,
-        all: all ? 1 : 0
+    this.setState(
+      {
+        queryParams: {
+          ...this.state.queryParams,
+          page: page,
+          all: all ? 1 : 0,
+        },
+      },
+      () => {
+        this.loadListData();
       }
-    }, () => {
-      this.loadListData();
-    })
-
-  }
+    );
+  };
 
   handleAddToCart = async (row) => {
-    if(this.addToCartProcess){
-      this.props.enqueueSnackbar("Processing please wait.", { variant: 'error' });
+    if (this.addToCartProcess) {
+      this.props.enqueueSnackbar("Processing please wait.", {
+        variant: "error",
+      });
       return;
     }
     //this.setState({addToCartProcess: true})
     this.addToCartProcess = true;
-    let check_cart = await getCartItemById({ stock_id: row.id, product_id: row.product_id });
+    let check_cart = await getCartItemById({
+      stock_id: row.id,
+      product_id: row.product_id,
+    });
     if (!check_cart.data.success) {
-      this.props.enqueueSnackbar("Item already in cart! You can not add this item.", { variant: 'error' });
+      this.props.enqueueSnackbar(
+        "Item already in cart! You can not add this item.",
+        { variant: "error" }
+      );
       //this.setState({addToCartProcess: false})
       this.addToCartProcess = false;
     } else {
@@ -351,59 +391,59 @@ class StockPage extends Component {
             weight: row.stock_materials[i].weight,
             unit_id: row.stock_materials[i].unit_id,
             quantity: row.stock_materials[i].quantity,
-
-          })
+          });
         }
         let data = {
           stock_id: row.id,
           product_id: row.product_id,
           size_id: row.size_id,
           materials: materials,
-          quantity: 1
-        }
+          quantity: 1,
+        };
         this.props.actions.cartStore(data);
       } else {
         this.setState({
           cart_stock: row,
           cartDialog: true,
-          unit_id: row.stock_materials.length ? row.stock_materials[0].unit_id : ''
-        })
+          unit_id: row.stock_materials.length
+            ? row.stock_materials[0].unit_id
+            : "",
+        });
       }
     }
-  }
+  };
 
   formValidate = () => {
     let err = false;
     if (!this.state.quantity) {
       this.setState({
-        quantity_error: true
-      })
+        quantity_error: true,
+      });
       err = true;
     }
     if (!this.state.weight) {
       this.setState({
-        weight_error: true
-      })
+        weight_error: true,
+      });
       err = true;
     }
     if (!this.state.unit_id) {
       this.setState({
-        unit_error: true
-      })
+        unit_error: true,
+      });
       err = true;
     }
     return !err;
-
-  }
+  };
 
   handleMaterialAddToCart = async () => {
     let row = this.state.cart_stock;
     if (!this.formValidate()) {
       return false;
     } else if (parseInt(this.state.quantity) > parseInt(row.quantity)) {
-      this.props.enqueueSnackbar("Quantity must be less than stock quantity", { 
-        variant: 'error',
-        autoHideDuration: 3000
+      this.props.enqueueSnackbar("Quantity must be less than stock quantity", {
+        variant: "error",
+        autoHideDuration: 3000,
       });
     } else {
       try {
@@ -417,32 +457,32 @@ class StockPage extends Component {
             quantity: this.state.quantity,
           });
         }
-        
+
         let unit = _.filter(this.state.unitList, { id: this.state.unit_id });
         let data = {
           stock_id: row.id,
           product_id: row.product_id,
-          size_id: '',
+          size_id: "",
           materials: materials,
           quantity: this.state.quantity,
           total_weight: convertUnitToGram(unit[0].name, this.state.weight),
-          unit_id: this.state.unit_id
+          unit_id: this.state.unit_id,
         };
-        
+
         await this.props.actions.cartStore(data);
-        
+
         // Close the dialog and reset state
         this.setState({
           cartDialog: false,
-          quantity: '',
-          unit_id: '',
-          weight: ''
+          quantity: "",
+          unit_id: "",
+          weight: "",
         });
       } catch (error) {
-        console.error('Error adding to cart:', error);
-        this.props.enqueueSnackbar("Error adding item to cart", { 
-          variant: 'error',
-          autoHideDuration: 3000
+        console.error("Error adding to cart:", error);
+        this.props.enqueueSnackbar("Error adding item to cart", {
+          variant: "error",
+          autoHideDuration: 3000,
         });
       }
     }
@@ -452,9 +492,9 @@ class StockPage extends Component {
     this.setState({
       cartDialog: false,
       //addToCartProcess: false
-    })
+    });
     this.addToCartProcess = false;
-  }
+  };
 
   handleCategoryChange = (event) => {
     let val = event.target.value;
@@ -462,19 +502,19 @@ class StockPage extends Component {
     this.setState({
       queryParams: {
         ...this.state.queryParams,
-        category_id: val
-      }
-    })
-  }
+        category_id: val,
+      },
+    });
+  };
 
   handleSubCategoryChange = (event) => {
     this.setState({
       queryParams: {
         ...this.state.queryParams,
-        sub_category_id: event.target.value
-      }
-    })
-  }
+        sub_category_id: event.target.value,
+      },
+    });
+  };
 
   handleSearchChange = (event) => {
     this.setState({
@@ -482,18 +522,18 @@ class StockPage extends Component {
         ...this.state.queryParams,
         search: event.target.value,
         page: 1,
-        limit: 50
-      }
-    })
-  }
+        limit: 50,
+      },
+    });
+  };
 
   handleCertificateNoChange = (event) => {
     const value = event.target.value;
-    this.setState(prevState => ({
+    this.setState((prevState) => ({
       queryParams: {
         ...prevState.queryParams,
-        certificate_no: value
-      }
+        certificate_no: value,
+      },
     }));
   };
 
@@ -571,10 +611,20 @@ class StockPage extends Component {
                   const boundaryRect = boundary.getBoundingClientRect();
 
                   return {
-                    x: Math.floor(canvas.width * (boundaryRect.left - videoRect.left) / videoRect.width),
-                    y: Math.floor(canvas.height * (boundaryRect.top - videoRect.top) / videoRect.height),
-                    width: Math.floor(canvas.width * boundaryRect.width / videoRect.width),
-                    height: Math.floor(canvas.height * boundaryRect.height / videoRect.height),
+                    x: Math.floor(
+                      (canvas.width * (boundaryRect.left - videoRect.left)) /
+                        videoRect.width
+                    ),
+                    y: Math.floor(
+                      (canvas.height * (boundaryRect.top - videoRect.top)) /
+                        videoRect.height
+                    ),
+                    width: Math.floor(
+                      (canvas.width * boundaryRect.width) / videoRect.width
+                    ),
+                    height: Math.floor(
+                      (canvas.height * boundaryRect.height) / videoRect.height
+                    ),
                   };
                 };
 
@@ -583,11 +633,20 @@ class StockPage extends Component {
                   if (!scannerState.active) return;
 
                   const now = Date.now();
-                  if (now - scannerState.lastScanTime >= scannerState.scanInterval) {
+                  if (
+                    now - scannerState.lastScanTime >=
+                    scannerState.scanInterval
+                  ) {
                     scannerState.lastScanTime = now;
 
                     // Draw current video frame to canvas
-                    canvasContext.drawImage(video, 0, 0, canvas.width, canvas.height);
+                    canvasContext.drawImage(
+                      video,
+                      0,
+                      0,
+                      canvas.width,
+                      canvas.height
+                    );
 
                     // Get boundary rectangle for focused scanning
                     const boundaryRect = getBoundaryRect();
@@ -602,9 +661,14 @@ class StockPage extends Component {
 
                     // Scan with jsQR
                     try {
-                      const code = jsQR(imageData.data, imageData.width, imageData.height, {
-                        inversionAttempts: "dontInvert"
-                      });
+                      const code = jsQR(
+                        imageData.data,
+                        imageData.width,
+                        imageData.height,
+                        {
+                          inversionAttempts: "dontInvert",
+                        }
+                      );
 
                       if (code) {
                         console.log("Decoded QR Code:", code.data);
@@ -616,7 +680,8 @@ class StockPage extends Component {
                   }
 
                   // Continue scanning
-                  scannerState.animationFrameId = requestAnimationFrame(scanQRCode);
+                  scannerState.animationFrameId =
+                    requestAnimationFrame(scanQRCode);
                 };
 
                 scanQRCode();
@@ -659,7 +724,10 @@ class StockPage extends Component {
 
   handleQRCodeSuccess = (decodedText) => {
     // Check if scanned QR code is a URL
-    if (decodedText.startsWith('http://') || decodedText.startsWith('https://')) {
+    if (
+      decodedText.startsWith("http://") ||
+      decodedText.startsWith("https://")
+    ) {
       this.fetchData(decodedText);
     } else {
       // Handle as direct certificate number
@@ -673,19 +741,22 @@ class StockPage extends Component {
   handleAddCertificate = () => {
     const { queryParams } = this.state;
     if (queryParams.certificate_no) {
-      this.setState(prevState => ({
-        certificateList: [...prevState.certificateList, queryParams.certificate_no],
+      this.setState((prevState) => ({
+        certificateList: [
+          ...prevState.certificateList,
+          queryParams.certificate_no,
+        ],
         queryParams: {
           ...prevState.queryParams,
-          certificate_no: ''
-        }
+          certificate_no: "",
+        },
       }));
     }
   };
 
   handleRemoveCertificate = (index) => {
-    this.setState(prevState => ({
-      certificateList: prevState.certificateList.filter((_, i) => i !== index)
+    this.setState((prevState) => ({
+      certificateList: prevState.certificateList.filter((_, i) => i !== index),
     }));
   };
 
@@ -693,7 +764,7 @@ class StockPage extends Component {
     const { certificateList } = this.state;
     // Remove duplicates from the list before processing
     const uniqueCertificates = [...new Set(certificateList)];
-    
+
     let foundCount = 0;
     let notFoundCount = 0;
     let processingCount = 0;
@@ -702,20 +773,27 @@ class StockPage extends Component {
     // Process certificates sequentially to avoid overwhelming the system
     for (const certNo of uniqueCertificates) {
       processingCount++;
-      const item = this.state.items.find(item => item.certificate_no === certNo);
-      
+      const item = this.state.items.find(
+        (item) => item.certificate_no === certNo
+      );
+
       if (item) {
         try {
           // Check if item is already in cart
-          const check_cart = await getCartItemById({ stock_id: item.id, product_id: item.product_id });
-          
+          const check_cart = await getCartItemById({
+            stock_id: item.id,
+            product_id: item.product_id,
+          });
+
           if (check_cart.data.success) {
             if (item.type === "material") {
               // For material type, open the cart dialog
               this.setState({
                 cart_stock: item,
                 cartDialog: true,
-                unit_id: item.stock_materials.length ? item.stock_materials[0].unit_id : ''
+                unit_id: item.stock_materials.length
+                  ? item.stock_materials[0].unit_id
+                  : "",
               });
             } else {
               // For non-material type, add directly to cart
@@ -729,15 +807,15 @@ class StockPage extends Component {
                   quantity: item.stock_materials[i].quantity,
                 });
               }
-              
+
               const data = {
                 stock_id: item.id,
                 product_id: item.product_id,
                 size_id: item.size_id,
                 materials: materials,
-                quantity: 1
+                quantity: 1,
               };
-              
+
               await this.props.actions.cartStore(data);
               foundCount++;
             }
@@ -745,7 +823,7 @@ class StockPage extends Component {
             alreadyInCartCount++;
           }
         } catch (error) {
-          console.error('Error processing certificate:', certNo, error);
+          console.error("Error processing certificate:", certNo, error);
           notFoundCount++;
         }
       } else {
@@ -765,11 +843,11 @@ class StockPage extends Component {
           message.push(`${notFoundCount} item(s) not found`);
         }
 
-        this.props.enqueueSnackbar(message.join(', '), { 
-          variant: foundCount > 0 ? 'success' : 'warning',
-          autoHideDuration: 3000
+        this.props.enqueueSnackbar(message.join(", "), {
+          variant: foundCount > 0 ? "success" : "warning",
+          autoHideDuration: 3000,
         });
-        
+
         // Clear the certificate list after processing
         this.setState({ certificateList: [] });
       }
@@ -781,7 +859,10 @@ class StockPage extends Component {
     if (!manualCertificate) return;
 
     // Check if input is a URL
-    if (manualCertificate.startsWith('http://') || manualCertificate.startsWith('https://')) {
+    if (
+      manualCertificate.startsWith("http://") ||
+      manualCertificate.startsWith("https://")
+    ) {
       this.fetchData(manualCertificate);
     } else {
       // Handle as direct certificate number
@@ -797,21 +878,28 @@ class StockPage extends Component {
         try {
           const result = await extractPdfData(url);
           if (result.error) {
-            this.props.enqueueSnackbar(result.error, { variant: 'error' });
+            this.props.enqueueSnackbar(result.error, { variant: "error" });
             return;
           }
-          
+
           // Add the certificate number to the list
           if (result.text.summary_number) {
             this.handleAddCertificateToList(result.text.summary_number);
-            this.props.enqueueSnackbar("Certificate data extracted successfully", { variant: 'success' });
+            this.props.enqueueSnackbar(
+              "Certificate data extracted successfully",
+              { variant: "success" }
+            );
           } else {
-            this.props.enqueueSnackbar("No certificate number found in PDF", { variant: 'warning' });
+            this.props.enqueueSnackbar("No certificate number found in PDF", {
+              variant: "warning",
+            });
           }
           return;
         } catch (error) {
           console.error("Error extracting PDF data:", error);
-          this.props.enqueueSnackbar("Error extracting certificate data", { variant: 'error' });
+          this.props.enqueueSnackbar("Error extracting certificate data", {
+            variant: "error",
+          });
           return;
         }
       }
@@ -836,11 +924,15 @@ class StockPage extends Component {
       if (searchedForText) {
         this.handleAddCertificateToList(searchedForText);
       } else {
-        this.props.enqueueSnackbar("No certificate found in URL", { variant: 'warning' });
+        this.props.enqueueSnackbar("No certificate found in URL", {
+          variant: "warning",
+        });
       }
     } catch (error) {
       console.error("Error fetching data:", error);
-      this.props.enqueueSnackbar("Error processing certificate URL", { variant: 'error' });
+      this.props.enqueueSnackbar("Error processing certificate URL", {
+        variant: "error",
+      });
     } finally {
       this.setState({ processingCertificate: false });
     }
@@ -848,169 +940,224 @@ class StockPage extends Component {
 
   handleAddCertificateToList = (certificateNo) => {
     // Remove any non-numeric characters except for the certificate number format
-    const cleanedCertNo = certificateNo.replace(/[^0-9A-Za-z-]/g, '');
-    
+    const cleanedCertNo = certificateNo.replace(/[^0-9A-Za-z-]/g, "");
+
     // Check if certificate already exists in the list
     if (this.state.certificateList.includes(cleanedCertNo)) {
-      this.props.enqueueSnackbar("Certificate already added to list", { 
-        variant: 'warning',
-        autoHideDuration: 2000
+      this.props.enqueueSnackbar("Certificate already added to list", {
+        variant: "warning",
+        autoHideDuration: 2000,
       });
       return;
     }
-    
-    this.setState(prevState => ({
+
+    this.setState((prevState) => ({
       certificateList: [...prevState.certificateList, cleanedCertNo],
-      manualCertificate: '' // Clear the input
+      manualCertificate: "", // Clear the input
     }));
   };
 
   render() {
-
     return (
       <>
-        <div className='sale-heading'>
-          {
-            this.state.queryParams.total_avl_stock == 1 ?
+        <div className="sale-heading">
+          {this.state.queryParams.total_avl_stock == 1 ? (
             <h1>Total Available Stock List</h1>
-            :
+          ) : (
             <h1>List For Sale</h1>
-          }
-
+          )}
         </div>
-        {
-          this.state.price_by_categories.length ?
-            <Card className='dashboard_card' style={{ marginBottom: '4px' }}>
-              {
-                this.state.price_by_categories.map((item, key) => (
-                  <CardContent className={`dashboard_card_content bg-color-1`} sx={{ display: "flex", justifyContent: "space-between" }} key={key} onClick={() => this.handleCardClick(item.category_id)}>
-                    <Typography sx={{ fontSize: 14, margin: 0 }} color="text.secondary" gutterBottom component="span">
-                      <h1>{item.category_name}</h1>
-                      <h2>{displayAmount(item.total_amount)}</h2>
-                      <h3>{item.quantity} Piece(s)</h3>
-                    </Typography>
-                    <div className="card-icon">
-                      {/* <DiamondIcon /> */}
-                    </div>
-                  </CardContent>
-                ))
-              }
-            </Card>
-            : null
-        }
+        {this.state.price_by_categories.length ? (
+          <Card className="dashboard_card" style={{ marginBottom: "4px" }}>
+            {this.state.price_by_categories.map((item, key) => (
+              <CardContent
+                className={`dashboard_card_content bg-color-1`}
+                sx={{ display: "flex", justifyContent: "space-between" }}
+                key={key}
+                onClick={() => this.handleCardClick(item.category_id)}
+              >
+                <Typography
+                  sx={{ fontSize: 14, margin: 0 }}
+                  color="text.secondary"
+                  gutterBottom
+                  component="span"
+                >
+                  <h1>{item.category_name}</h1>
+                  <h2>{displayAmount(item.total_amount)}</h2>
+                  <h3>{item.quantity} Piece(s)</h3>
+                </Typography>
+                <div className="card-icon">{/* <DiamondIcon /> */}</div>
+              </CardContent>
+            ))}
+          </Card>
+        ) : null}
         <MainCard>
-          <Box sx={{ flexGrow: 1, m: 0.5 }} className='ratn-dialog-inner'>
-            <Grid container spacing={2} className='tax-input loans_view p_view' columnSpacing={{ xs: 1, sm: 2, md: 2 }}>
-              <Grid item xs={6} md={3} className='create-input'>
+          <Box sx={{ flexGrow: 1, m: 0.5 }} className="ratn-dialog-inner">
+            <Grid
+              container
+              spacing={2}
+              className="tax-input loans_view p_view"
+              columnSpacing={{ xs: 1, sm: 2, md: 2 }}
+            >
+              <Grid item xs={6} md={3} className="create-input">
                 <FormControl fullWidth>
                   <InputLabel>Category</InputLabel>
                   <Select
                     value={this.state.queryParams.category_id}
                     label="Category"
                     onChange={this.handleCategoryChange}
-                    className='input-inner'
+                    className="input-inner"
                     defaultValue=""
                   >
                     <MenuItem value="">All</MenuItem>
-                    {
-                      this.state.categories.map((item, index) => (
-                        <MenuItem value={item.id} key={index}>{item.name}</MenuItem>
-                      ))
-                    }
+                    {this.state.categories.map((item, index) => (
+                      <MenuItem value={item.id} key={index}>
+                        {item.name}
+                      </MenuItem>
+                    ))}
                   </Select>
                 </FormControl>
               </Grid>
-              <Grid item xs={6} md={3} className='create-input'>
+              <Grid item xs={6} md={3} className="create-input">
                 <FormControl fullWidth>
                   <InputLabel>Sub Category</InputLabel>
                   <Select
                     value={this.state.queryParams.sub_category_id}
                     label="Sub Category"
                     onChange={this.handleSubCategoryChange}
-                    className='input-inner'
+                    className="input-inner"
                     defaultValue=""
                   >
                     <MenuItem value="">All</MenuItem>
-                    {
-                      this.state.sub_categories.map((item, index) => (
-                        <MenuItem value={item.id} key={index}>{item.name}</MenuItem>
-                      ))
-                    }
+                    {this.state.sub_categories.map((item, index) => (
+                      <MenuItem value={item.id} key={index}>
+                        {item.name}
+                      </MenuItem>
+                    ))}
                   </Select>
                 </FormControl>
               </Grid>
-              <Grid item xs={6} md={3} className='create-input'>
+              <Grid item xs={6} md={3} className="create-input">
                 <FormControl fullWidth>
                   <TextField
                     label="Search"
                     variant="outlined"
                     value={this.state.search}
                     onChange={this.handleSearchChange}
+                    InputProps={{
+                      endAdornment: (
+                        <Button
+                          variant=""
+                          color="primary"
+                          onClick={this.handleSearch}
+                          sx={{
+                            minWidth: '40px',
+                            width: '40px',
+                            height: '40px',
+                            borderRadius: '50%',
+                            marginRight: '-14px',
+                            transition: 'all 0.3s ease',
+                            '&:hover': {
+                              backgroundColor: 'rgba(25, 118, 210, 0.08)',
+                              transform: 'scale(1.1)',
+                              '& .MuiSvgIcon-root': {
+                                color: 'primary.main'
+                              }
+                            }
+                          }}
+                        >
+                          <SearchIcon />
+                        </Button>
+                      ),
+                    }}
                   />
                 </FormControl>
               </Grid>
-              <Grid item xs={6} md={3} className='create-input'>
+              <Grid item xs={6} md={3} className="create-input">
                 <FormControl fullWidth>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    <div style={{ display: 'flex', gap: '8px' }}>
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "8px",
+                    }}
+                  >
+                    {/* <div style={{ display: "flex", gap: "8px" }}>
                       <TextField
                         label="Certificate Number"
                         variant="outlined"
                         value={this.state.queryParams.certificate_no}
                         onChange={this.handleCertificateNoChange}
                         onKeyPress={(event) => {
-                          if (event.key === 'Enter') {
+                          if (event.key === "Enter") {
                             this.handleAddCertificate();
                           }
                         }}
                         fullWidth
                       />
-                      <Button
-                        variant="contained"
-                        color="primary"
-                        onClick={this.handleOpenQRScanner}
-                        sx={{ minWidth: '40px', height: '56px' }}
-                      >
-                        <QrCodeScannerIcon />
-                      </Button>
-                    </div>
-                    
+                    </div> */}
+
                     {/* Manual Input Box */}
                     <TextField
-                      label="Manual Certificate Entry"
+                      label="Certificate Entry"
                       variant="outlined"
                       placeholder="Enter certificate number or URL"
                       value={this.state.manualCertificate}
-                      onChange={(event) => this.setState({ manualCertificate: event.target.value })}
+                      onChange={(event) =>
+                        this.setState({ manualCertificate: event.target.value })
+                      }
                       onKeyPress={(event) => {
-                        if (event.key === 'Enter' && this.state.manualCertificate) {
+                        if (
+                          event.key === "Enter" &&
+                          this.state.manualCertificate
+                        ) {
                           this.handleAddManualCertificate();
                         }
                       }}
                       fullWidth
                       InputProps={{
                         endAdornment: (
+                          // <Button
+                          //   variant="contained"
+                          //   color="primary"
+                          //   onClick={this.handleAddManualCertificate}
+                          //   disabled={!this.state.manualCertificate || this.state.processingCertificate}
+                          //   sx={{
+                          //     minWidth: '100px',
+                          //     height: '40px',
+                          //     marginRight: '-14px'
+                          //   }}
+                          // >
+                          //   {this.state.processingCertificate ? 'Processing...' : 'Add'}
+                          // </Button>
                           <Button
-                            variant="contained"
+                            variant=""
                             color="primary"
-                            onClick={this.handleAddManualCertificate}
-                            disabled={!this.state.manualCertificate || this.state.processingCertificate}
+                            onClick={this.handleOpenQRScanner}
                             sx={{ 
-                              minWidth: '100px', 
-                              height: '40px',
-                              marginRight: '-14px'
+                              minWidth: "10px", 
+                              height: "40px",
+                              transition: 'all 0.3s ease',
+                              '&:hover': {
+                                backgroundColor: 'rgba(25, 118, 210, 0.08)',
+                                transform: 'scale(1.1)',
+                                '& .MuiSvgIcon-root': {
+                                  color: 'primary.main'
+                                }
+                              }
                             }}
                           >
-                            {this.state.processingCertificate ? 'Processing...' : 'Add'}
+                            <QrCodeScannerIcon />
                           </Button>
                         ),
                       }}
                     />
-                    
-                    {/* Display list of added certificates */}
+
                     {this.state.certificateList.length > 0 && (
                       <Box sx={{ mt: 1 }}>
-                        <Typography variant="subtitle2">Added Certificates:</Typography>
+                        <Typography variant="subtitle2">
+                          Added Certificates:
+                        </Typography>
                         <List dense>
                           {this.state.certificateList.map((cert, index) => (
                             <ListItem
@@ -1018,7 +1165,9 @@ class StockPage extends Component {
                               secondaryAction={
                                 <IconButton
                                   edge="end"
-                                  onClick={() => this.handleRemoveCertificate(index)}
+                                  onClick={() =>
+                                    this.handleRemoveCertificate(index)
+                                  }
                                 >
                                   <DeleteIcon />
                                 </IconButton>
@@ -1119,12 +1268,23 @@ class StockPage extends Component {
                   />
                 </FormControl>
               </Grid>*/}
-              <Grid item xs={6} md={3} className='create-input order-input button-right'>
-                <Button variant="contained" className='search-btn' onClick={this.handleSearch}>Search</Button>
-              </Grid>
+              {/* <Grid
+                item
+                xs={6}
+                md={3}
+                className="create-input order-input button-right"
+              >
+                <Button
+                  variant="contained"
+                  className="search-btn"
+                  onClick={this.handleSearch}
+                >
+                  Search
+                </Button>
+              </Grid> */}
             </Grid>
           </Box>
-          <Grid container spacing={gridSpacing} className='orders-sale-button'>
+          <Grid container spacing={gridSpacing} className="orders-sale-button">
             {console.log(this.props)}
             <DataTable
               columns={this.columns}
@@ -1147,112 +1307,140 @@ class StockPage extends Component {
           className="ratn-dialog-wrapper"
         >
           <DialogTitle>
-            {
-              this.state.cart_stock ?
-                <div className='cart-item-wrapper'>
-                  <span className='cart-item-header'>{this.state.cart_stock.name}</span>
-                  <div className='cart-item-header-right'>
-                    <p>Rate: &nbsp; &nbsp;
-                      <strong> {this.state.cart_stock.mrp_display} </strong>
-                    </p>
-                    &nbsp; &nbsp;
-                    <p>
-                      <strong> {this.state.cart_stock.total_weight_display} </strong>
-                    </p>
-                  </div>
+            {this.state.cart_stock ? (
+              <div className="cart-item-wrapper">
+                <span className="cart-item-header">
+                  {this.state.cart_stock.name}
+                </span>
+                <div className="cart-item-header-right">
+                  <p>
+                    Rate: &nbsp; &nbsp;
+                    <strong> {this.state.cart_stock.mrp_display} </strong>
+                  </p>
+                  &nbsp; &nbsp;
+                  <p>
+                    <strong>
+                      {" "}
+                      {this.state.cart_stock.total_weight_display}{" "}
+                    </strong>
+                  </p>
                 </div>
-                : null
-            }
+              </div>
+            ) : null}
           </DialogTitle>
           <div>
             <DialogContentText></DialogContentText>
-              {
-                this.state.cart_stock ?
-
-                  <TableContainer component={Paper}>
-                    <div className='ratn-table-purchase-wrapper'>
-                      <Table aria-label="collapsible table" className='invoice_product_list'>
-                        <TableHead className='ratn-table-header sale-modal-header'>
-                          <TableRow>
-                            <TableCell>Purity</TableCell>
-                            <TableCell>Available Qty</TableCell>
-                            <TableCell>Avl. Weight</TableCell>
-                            <TableCell>Sale Unit</TableCell>
-                          </TableRow>
-                        </TableHead>
-                        <TableBody>
-                          <TableRow>
-                            <TableCell>{this.state.cart_stock.stock_materials[0].purity_name}</TableCell>
-                            <TableCell>{this.state.cart_stock.quantity}</TableCell>
-                            <TableCell>{this.state.cart_stock.total_weight_display}</TableCell>
-                            <TableCell>{this.state.cart_stock.unit_display[0]}</TableCell>
-                          </TableRow>
-                          {/* {this.state.suppliers.map((row, i) => (
+            {this.state.cart_stock ? (
+              <TableContainer component={Paper}>
+                <div className="ratn-table-purchase-wrapper">
+                  <Table
+                    aria-label="collapsible table"
+                    className="invoice_product_list"
+                  >
+                    <TableHead className="ratn-table-header sale-modal-header">
+                      <TableRow>
+                        <TableCell>Purity</TableCell>
+                        <TableCell>Available Qty</TableCell>
+                        <TableCell>Avl. Weight</TableCell>
+                        <TableCell>Sale Unit</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      <TableRow>
+                        <TableCell>
+                          {this.state.cart_stock.stock_materials[0].purity_name}
+                        </TableCell>
+                        <TableCell>{this.state.cart_stock.quantity}</TableCell>
+                        <TableCell>
+                          {this.state.cart_stock.total_weight_display}
+                        </TableCell>
+                        <TableCell>
+                          {this.state.cart_stock.unit_display[0]}
+                        </TableCell>
+                      </TableRow>
+                      {/* {this.state.suppliers.map((row, i) => (
                                 <Row key={i} row={row} index={i} />
                               ))} */}
-                        </TableBody>
-                      </Table>
-                    </div>
-                  </TableContainer>
-
-                  : null
-              }
-            <div className='sale_modal_wrapper'>
-            <Box sx={{ flexGrow: 1, m: 0.5 }}>
-              <Grid container spacing={2}>
-              <Grid item xs={3}>
-              &nbsp;
-              </Grid>
-                <Grid item xs={3}>
-                  <TextField
-                    label="Quantity"
-                    variant="outlined"
-                    fullWidth
-                    value={this.state.quantity}
-                    onChange={(event) => this.setState({ quantity: event.target.value })}
-                    error={this.state.quantity_error}
-                  />
-                </Grid>
-                <Grid item xs={3}>
-                  <TextField
-                    label="Weight"
-                    variant="outlined"
-                    fullWidth
-                    value={this.state.weight}
-                    onChange={(event) => this.setState({ weight: event.target.value })}
-                    error={this.state.weight_error}
-                  />
-                </Grid>
-                <Grid item xs={3}>
-                  <FormControl fullWidth error={this.state.unit_error}>
-                    <InputLabel>Unit</InputLabel>
-                    <Select
-                      value={this.state.unit_id}
-                      label="Unit"
-                      onChange={(event) => this.setState({ unit_id: event.target.value })}
-                      className='input-inner'
-                      defaultValue=""
-                    >
-                      <MenuItem value=""></MenuItem>
-                      {
-                        this.state.unitList.map((item, index) => (
-                          <MenuItem value={item.id} key={index}>{item.name}</MenuItem>
-                        ))
+                    </TableBody>
+                  </Table>
+                </div>
+              </TableContainer>
+            ) : null}
+            <div className="sale_modal_wrapper">
+              <Box sx={{ flexGrow: 1, m: 0.5 }}>
+                <Grid container spacing={2}>
+                  <Grid item xs={3}>
+                    &nbsp;
+                  </Grid>
+                  <Grid item xs={3}>
+                    <TextField
+                      label="Quantity"
+                      variant="outlined"
+                      fullWidth
+                      value={this.state.quantity}
+                      onChange={(event) =>
+                        this.setState({ quantity: event.target.value })
                       }
-                    </Select>
-                  </FormControl>
+                      error={this.state.quantity_error}
+                    />
+                  </Grid>
+                  <Grid item xs={3}>
+                    <TextField
+                      label="Weight"
+                      variant="outlined"
+                      fullWidth
+                      value={this.state.weight}
+                      onChange={(event) =>
+                        this.setState({ weight: event.target.value })
+                      }
+                      error={this.state.weight_error}
+                    />
+                  </Grid>
+                  <Grid item xs={3}>
+                    <FormControl fullWidth error={this.state.unit_error}>
+                      <InputLabel>Unit</InputLabel>
+                      <Select
+                        value={this.state.unit_id}
+                        label="Unit"
+                        onChange={(event) =>
+                          this.setState({ unit_id: event.target.value })
+                        }
+                        className="input-inner"
+                        defaultValue=""
+                      >
+                        <MenuItem value=""></MenuItem>
+                        {this.state.unitList.map((item, index) => (
+                          <MenuItem value={item.id} key={index}>
+                            {item.name}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                  </Grid>
+                  <Grid item xs={12} style={{ paddingTop: "12px" }}>
+                    <Stack
+                      spacing={1}
+                      direction="row"
+                      justifyContent="flex-end"
+                    >
+                      <Button
+                        variant="outlined"
+                        onClick={this.handleDialogClose}
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        variant="contained"
+                        type="button"
+                        onClick={this.handleMaterialAddToCart}
+                      >
+                        Add to Cart
+                      </Button>
+                    </Stack>
+                  </Grid>
                 </Grid>
-                <Grid item xs={12} style={{paddingTop : '12px', }}>
-                  <Stack spacing={1} direction="row" justifyContent="flex-end">
-                    <Button variant="outlined" onClick={this.handleDialogClose}>Cancel</Button>
-                    <Button variant="contained" type="button" onClick={this.handleMaterialAddToCart}>Add to Cart</Button>
-                  </Stack>
-                </Grid>
-              </Grid>
-            </Box>
+              </Box>
             </div>
-
-
           </div>
         </Dialog>
 
@@ -1265,7 +1453,10 @@ class StockPage extends Component {
         >
           <DialogTitle>Scan QR Code</DialogTitle>
           <DialogContent>
-            <div id="qr-reader" style={{ width: '100%', height: '300px' }}></div>
+            <div
+              id="qr-reader"
+              style={{ width: "100%", height: "300px" }}
+            ></div>
             {this.state.qrScannerError && (
               <Typography color="error" sx={{ mt: 2 }}>
                 {this.state.qrScannerError}
@@ -1299,21 +1490,25 @@ const mapStateToProps = (state) => ({
   sizeList: state.superadmin.size.items,
 });
 
-const mapDispatchToProps = dispatch => {
+const mapDispatchToProps = (dispatch) => {
   return {
     dispatch,
-    actions: bindActionCreators({
-      stocksList,
-      subCategoryList,
-      cartStore,
-      cartList,
-      categoryList,
-      materialList,
-      unitList,
-      sizeList
-    }, dispatch)
-  }
+    actions: bindActionCreators(
+      {
+        stocksList,
+        subCategoryList,
+        cartStore,
+        cartList,
+        categoryList,
+        materialList,
+        unitList,
+        sizeList,
+      },
+      dispatch
+    ),
+  };
 };
 
-
-export default withSnackbar(withRouter(connect(mapStateToProps, mapDispatchToProps)(StockPage)));
+export default withSnackbar(
+  withRouter(connect(mapStateToProps, mapDispatchToProps)(StockPage))
+);
