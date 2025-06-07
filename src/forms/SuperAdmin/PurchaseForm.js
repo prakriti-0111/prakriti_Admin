@@ -2,9 +2,11 @@ import React, { Suspense } from "react";
 import { connect } from "react-redux";
 import { Field, reduxForm } from "redux-form/immutable";
 import ImageUploading from "react-images-uploading";
+// import {extractPdfData} from "../../helpers/scanPdf";
 // Import jsQR for QR code scanning
 import jsQR from "jsqr";
 import { gridSpacing } from "store/constant";
+import extractPdfData from "../../helpers/scanPdf";
 import {
   Box,
   TextField,
@@ -40,6 +42,7 @@ import {
   ContactPageSharp,
   Grid3x3,
   ThirtyFpsSelect,
+  QrCodeScanner,
 } from "@mui/icons-material";
 import {
   calculateProductPrice,
@@ -103,6 +106,19 @@ import { cartList } from "actions/superadmin/cart.actions";
 import { formValues } from "redux-form";
 
 var GroseData = 0;
+
+// Add this debounce utility function at the top of the file
+const debounce = (func, wait) => {
+  let timeout;
+  return function executedFunction(...args) {
+    const later = () => {
+      clearTimeout(timeout);
+      func(...args);
+    };
+    clearTimeout(timeout);
+    timeout = setTimeout(later, wait);
+  };
+};
 
 class PurchaseForm extends React.Component {
   constructor(props) {
@@ -847,6 +863,8 @@ class PurchaseForm extends React.Component {
     console.log(imageUrl);
 
     try {
+      console.log(imageUrl, "------- this is the image url");
+
       const response = await fetch(imageUrl, {
         mode: "no-cors",
         headers: {
@@ -881,6 +899,26 @@ class PurchaseForm extends React.Component {
   };
 
   fetchData = async (url) => {
+    // Check if URL contains igi.org
+    if (url.includes("igi.org")) {
+      try {
+        const pdfData = await extractPdfData(url);
+        console.log("pdfData", pdfData);
+        // Extract SUMMARY NO from the PDF data
+
+        // Set the certificate_no with the extracted value
+        this.updateProductFormValues(
+          pdfData.text.summary_number,
+          "certificate_no"
+        );
+        return;
+      } catch (error) {
+        console.error("Error extracting PDF data:", error);
+        return;
+      }
+    }
+
+    // Original code for non-IGI URLs
     const requestOptions = {
       method: "GET",
       redirect: "follow",
@@ -2236,6 +2274,11 @@ class PurchaseForm extends React.Component {
     }
   };
 
+  // Inside your component class, add this method
+  handleCertificateChange = debounce((event) => {
+    this.handleProductFormDefaultChange(event, "certificate_no");
+  }, 1000);
+
   render() {
     const {
       formValues,
@@ -2256,10 +2299,15 @@ class PurchaseForm extends React.Component {
     let total_report_charge_amount = 0;
     let total_report_charge_tax_amount = 0;
     let total_report_charge_amount_after_tax = 0;
-    if(formValues && formValues.sale){
-      total_report_charge_amount = parseFloat(formValues.sale.report_qty)*parseFloat(formValues.sale.report_charge);
-      total_report_charge_tax_amount = (total_report_charge_amount*formValues.sale.report_tax_percentage)/100;
-      total_report_charge_amount_after_tax = total_report_charge_amount + total_report_charge_tax_amount;
+    if (formValues && formValues.sale) {
+      total_report_charge_amount =
+        parseFloat(formValues.sale.report_qty) *
+        parseFloat(formValues.sale.report_charge);
+      total_report_charge_tax_amount =
+        (total_report_charge_amount * formValues.sale.report_tax_percentage) /
+        100;
+      total_report_charge_amount_after_tax =
+        total_report_charge_amount + total_report_charge_tax_amount;
     }
 
     return (
@@ -2286,7 +2334,7 @@ class PurchaseForm extends React.Component {
             <Grid
               item
               xs={!formValues.supplier_id ? 12 : 12}
-              md={!formValues.supplier_id ? 6 : 2}
+              md={!formValues.supplier_id ? 4 : 2}
               className="create-input"
             >
               <TextField
@@ -2304,8 +2352,8 @@ class PurchaseForm extends React.Component {
           ) : (
             <Grid
               item
-              xs={!formValues.supplier_id ? 12 : 12}
-              md={!formValues.supplier_id ? 6 : 4}
+              xs={!formValues.supplier_id ? 6 : 6}
+              md={!formValues.supplier_id ? 4 : 4}
               className="create-input"
             >
               <FormControl fullWidth error={formErros.supplier_id}>
@@ -2357,7 +2405,7 @@ class PurchaseForm extends React.Component {
 
           {formValues.supplier_id ? (
             <>
-              <Grid item xs={12} md={2} className="create-input">
+              <Grid item xs={6} md={2} className="create-input">
                 <TextField
                   label="Owner Name"
                   variant="outlined"
@@ -2370,7 +2418,7 @@ class PurchaseForm extends React.Component {
                   InputLabelProps={{ shrink: true }}
                 />
               </Grid>
-              <Grid item xs={12} md={2} className="create-input">
+              <Grid item xs={6} md={2} className="create-input">
                 <TextField
                   label="GST Number"
                   variant="outlined"
@@ -2383,7 +2431,7 @@ class PurchaseForm extends React.Component {
                   InputLabelProps={{ shrink: true }}
                 />
               </Grid>
-              <Grid item xs={12} md={2} className="create-input">
+              <Grid item xs={6} md={2} className="create-input">
                 <TextField
                   label="Mobile Number"
                   variant="outlined"
@@ -2398,8 +2446,45 @@ class PurchaseForm extends React.Component {
               </Grid>
             </>
           ) : null}
+          {!this.state.isReturnForm ? (
+                <Grid item xs={6} md={2} >
+                  <FormControl>
+                    <InputLabel>Purchase Type</InputLabel>
+                    <Select
+                      className="input-inner non_disable_text"
+                      value={formValues.type}
+                      fullWidth
+                      label="Purchase Type"
+                      onChange={this.handlePurchasTypeChange}
+                      disabled={!this.state.isCreateFrom}
+                      endAdornment={
+                        <InputAdornment position="end">
+                          <Button
+                            size="small"
+                            variant="contained"
+                            color="warning"
+                            onClick={this.handleAddNewProduct}
+                            disabled={!this.state.isCreateFrom}
+                            sx={{
+                              minWidth: "auto",
+                              px: 1,
+                              height: "28px",
+                              fontSize: "0.75rem",
+                            }}
+                          >
+                            Add
+                          </Button>
+                        </InputAdornment>
+                      }
+                    >
+                      <MenuItem value="product">Product</MenuItem>
+                      <MenuItem value="material">Material</MenuItem>
+                    </Select>
+                  </FormControl>
+                </Grid>
+              ) : null}
           {!formValues.supplier_id ? (
-            <Grid item xs={12} md={3} className="create-input">
+            <Grid item xs={6} md={2} className="create-input">
               <Box sx={{ display: "flex", alignItems: "center" }}>
                 <TextField
                   label="Invoice Number"
@@ -2416,10 +2501,11 @@ class PurchaseForm extends React.Component {
               </Box>
             </Grid>
           ) : null}
+
           <Grid
             item
-            xs={!formValues.supplier_id ? 12 : 12}
-            md={!formValues.supplier_id ? 3 : 2}
+            xs={!formValues.supplier_id ? 6 : 6}
+            md={!formValues.supplier_id ? 2 : 2}
             className="p-invoice-date create-input"
           >
             <LocalizationProvider dateAdapter={AdapterDayjs}>
@@ -2443,48 +2529,10 @@ class PurchaseForm extends React.Component {
               />
             </LocalizationProvider>
           </Grid>
+          
           {formValues.supplier_id ? (
             <>
-              <Grid item xs={8} md={4} className="create-input">
-                <TextField
-                  label="Full Address"
-                  variant="outlined"
-                  fullWidth
-                  value={this.state.supplier_details.address}
-                  disabled
-                  InputProps={{
-                    className: "non_disable_text",
-                  }}
-                  InputLabelProps={{ shrink: true }}
-                />
-              </Grid>
-              <Grid item xs={12} md={2} className="create-input">
-                <TextField
-                  label="City"
-                  variant="outlined"
-                  fullWidth
-                  value={this.state.supplier_details.city}
-                  disabled
-                  InputProps={{
-                    className: "non_disable_text",
-                  }}
-                  InputLabelProps={{ shrink: true }}
-                />
-              </Grid>
-              <Grid item xs={12} md={2} className="create-input">
-                <TextField
-                  label="PinCode"
-                  variant="outlined"
-                  fullWidth
-                  value={this.state.supplier_details.pincode}
-                  disabled
-                  InputProps={{
-                    className: "non_disable_text",
-                  }}
-                  InputLabelProps={{ shrink: true }}
-                />
-              </Grid>
-              <Grid item xs={12} md={3} className="create-input">
+              <Grid item xs={6} md={2} className="create-input">
                 <Box sx={{ display: "flex", alignItems: "center" }}>
                   <TextField
                     label="Invoice Number"
@@ -2503,6 +2551,45 @@ class PurchaseForm extends React.Component {
                   />
                 </Box>
               </Grid>
+              <Grid item xs={12} md={4} className="create-input">
+                <TextField
+                  label="Full Address"
+                  variant="outlined"
+                  fullWidth
+                  value={this.state.supplier_details.address}
+                  disabled
+                  InputProps={{
+                    className: "non_disable_text",
+                  }}
+                  InputLabelProps={{ shrink: true }}
+                />
+              </Grid>
+              <Grid item xs={6} md={2} className="create-input">
+                <TextField
+                  label="City"
+                  variant="outlined"
+                  fullWidth
+                  value={this.state.supplier_details.city}
+                  disabled
+                  InputProps={{
+                    className: "non_disable_text",
+                  }}
+                  InputLabelProps={{ shrink: true }}
+                />
+              </Grid>
+              <Grid item xs={6} md={2} className="create-input">
+                <TextField
+                  label="PinCode"
+                  variant="outlined"
+                  fullWidth
+                  value={this.state.supplier_details.pincode}
+                  disabled
+                  InputProps={{
+                    className: "non_disable_text",
+                  }}
+                  InputLabelProps={{ shrink: true }}
+                />
+              </Grid>
             </>
           ) : null}
         </Grid>
@@ -2512,33 +2599,8 @@ class PurchaseForm extends React.Component {
               className="p_heading_list mb-0 mt-0"
               style={{ position: "relative" }}
             >
-              {!this.state.isReturnForm ? (
-                <>
-                  <FormControl>
-                    <InputLabel>Purchase Type</InputLabel>
-                    <Select
-                      className="input-inner non_disable_text"
-                      value={formValues.type}
-                      fullWidth
-                      label="Purchase Type"
-                      onChange={this.handlePurchasTypeChange}
-                      disabled={!this.state.isCreateFrom}
-                    >
-                      <MenuItem value="product">Product</MenuItem>
-                      <MenuItem value="material">Material</MenuItem>
-                    </Select>
-                  </FormControl>
-                  <Button
-                    variant="contained"
-                    className="add-button purchase_add_p"
-                    onClick={() => this.handleAddNewProduct()}
-                    style={{ width: "140px" }}
-                  >
-                    Add Product
-                  </Button>
-                </>
-              ) : null}
-              <span className="purchase_p_title">
+              
+              <span className="purchase_p_title ">
                 Purchase{" "}
                 {formValues.type == "product" ? "Products" : "Materials"}
               </span>
@@ -2552,7 +2614,7 @@ class PurchaseForm extends React.Component {
                   spacing={2}
                   className="loans_view tax-input p_view"
                 >
-                  <Grid item xs={8} md={2}>
+                  <Grid item xs={6} md={2}>
                     <FormControl fullWidth error={productFormErros.category_id}>
                       <InputLabel>Category</InputLabel>
                       <Select
@@ -2570,7 +2632,7 @@ class PurchaseForm extends React.Component {
                       </Select>
                     </FormControl>
                   </Grid>
-                  <Grid item xs={8} md={2}>
+                  <Grid item xs={6} md={2}>
                     <FormControl
                       fullWidth
                       error={productFormErros.sub_category_id}
@@ -2712,99 +2774,77 @@ class PurchaseForm extends React.Component {
                       : null}
                   </Grid>
                   {this.state.productFormValues.product_id != "" ? (
-                    <Grid item>
-                      <ImageUploading
-                        multiple
-                        value={this.state.current_image}
-                        onChange={this.onChangeCurrent_image}
-                        maxNumber={1}
-                        dataURLKey="data_url"
-                        acceptType={["jpg", "jpeg", "png"]}
-                      >
-                        {({
-                          imageList,
-                          onImageUpload,
-                          onImageUpdate,
-                          onImageRemove,
-                          isDragging,
-                          dragProps,
-                        }) => (
-                          // write your building UI
-                          <div className="upload__image-wrapper">
-                            {imageList.map((image, index) => (
-                              <div
-                                key={index}
-                                className="image-item position-relative"
-                              >
-                                <img
-                                  src={image.data_url}
-                                  alt="this is uploade image "
-                                  width="100"
-                                  className="rounded object-fit-cover"
-                                  onClick={() => onImageUpdate(index)}
-                                />
-                                <i
-                                  class="bi bi-x-circle-fill fs-3 text-danger position-absolute"
-                                  style={{ left: "4px" }}
-                                  onClick={() => onImageRemove(index)}
-                                ></i>
-                              </div>
-                            ))}
-                            {imageList.length == 0 ? (
-                              <button
-                                style={
-                                  isDragging
-                                    ? {
-                                        color: "red",
-                                        width: "150px",
-                                        height: "120px",
-                                      }
-                                    : null
-                                }
-                                className="border-1 shadow border-seconadry rounded"
-                                onClick={onImageUpload}
-                                {...dragProps}
-                              >
-                                <svg
-                                  xmlns="http://www.w3.org/2000/svg"
-                                  width="60"
-                                  height="60"
-                                  fill="currentColor"
-                                  class="bi bi-card-image"
-                                  viewBox="0 0 16 16"
-                                >
-                                  <path d="M6.002 5.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0" />
-                                  <path d="M1.5 2A1.5 1.5 0 0 0 0 3.5v9A1.5 1.5 0 0 0 1.5 14h13a1.5 1.5 0 0 0 1.5-1.5v-9A1.5 1.5 0 0 0 14.5 2zm13 1a.5.5 0 0 1 .5.5v6l-3.775-1.947a.5.5 0 0 0-.577.093l-3.71 3.71-2.66-1.772a.5.5 0 0 0-.63.062L1.002 12v.54L1 12.5v-9a.5.5 0 0 1 .5-.5z" />
-                                </svg>
-                              </button>
-                            ) : null}
-                          </div>
-                        )}
-                      </ImageUploading>
-                    </Grid>
-                  ) : null}
-                  {productFormValues.product_type !=
-                  "material" /* || formValues.type == "material"*/ ? (
                     <>
-                      {productFormValues.product_type != "material" &&
-                      formValues.type != "material" &&
-                      productFormValues.has_certificate ? (
-                        <Grid item xs={12} md={2}>
-                          <TextField
-                            label="Certificate Number"
-                            variant="outlined"
-                            fullWidth
-                            value={productFormValues.certificate_no}
-                            onChange={(event) =>
-                              this.handleProductFormDefaultChange(
-                                event,
-                                "certificate_no"
-                              )
-                            }
-                            error={productFormErros.certificate_no}
-                          />
-                        </Grid>
-                      ) : null}
+                      <Grid item>
+                        <ImageUploading
+                          multiple
+                          value={this.state.current_image}
+                          onChange={this.onChangeCurrent_image}
+                          maxNumber={1}
+                          dataURLKey="data_url"
+                          acceptType={["jpg", "jpeg", "png"]}
+                        >
+                          {({
+                            imageList,
+                            onImageUpload,
+                            onImageUpdate,
+                            onImageRemove,
+                            isDragging,
+                            dragProps,
+                          }) => (
+                            // write your building UI
+                            <div className="upload__image-wrapper">
+                              {imageList.map((image, index) => (
+                                <div
+                                  key={index}
+                                  className="image-item position-relative"
+                                >
+                                  <img
+                                    src={image.data_url}
+                                    alt="this is uploade image "
+                                    width="100"
+                                    className="rounded object-fit-cover"
+                                    onClick={() => onImageUpdate(index)}
+                                  />
+                                  <i
+                                    class="bi bi-x-circle-fill fs-3 text-danger position-absolute"
+                                    style={{ left: "4px" }}
+                                    onClick={() => onImageRemove(index)}
+                                  ></i>
+                                </div>
+                              ))}
+                              {imageList.length == 0 ? (
+                                <button
+                                  style={
+                                    isDragging
+                                      ? {
+                                          color: "red",
+                                          width: "150px",
+                                          height: "120px",
+                                        }
+                                      : null
+                                  }
+                                  className="border-1 shadow border-seconadry rounded"
+                                  onClick={onImageUpload}
+                                  {...dragProps}
+                                >
+                                  <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    width="60"
+                                    height="60"
+                                    fill="currentColor"
+                                    class="bi bi-card-image"
+                                    viewBox="0 0 16 16"
+                                  >
+                                    <path d="M6.002 5.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0" />
+                                    <path d="M1.5 2A1.5 1.5 0 0 0 0 3.5v9A1.5 1.5 0 0 0 1.5 14h13a1.5 1.5 0 0 0 1.5-1.5v-9A1.5 1.5 0 0 0 14.5 2zm13 1a.5.5 0 0 1 .5.5v6l-3.775-1.947a.5.5 0 0 0-.577.093l-3.71 3.71-2.66-1.772a.5.5 0 0 0-.63.062L1.002 12v.54L1 12.5v-9a.5.5 0 0 1 .5-.5z" />
+                                  </svg>
+                                </button>
+                              ) : null}
+                            </div>
+                          )}
+                        </ImageUploading>
+                      </Grid>
                       <Grid
                         item
                         xs={
@@ -2830,19 +2870,50 @@ class PurchaseForm extends React.Component {
                           </Select>
                         </FormControl>
                       </Grid>
-                      {this.state.isCreateFrom && (
-                        <Grid item xs={2}>
-                          <Button
-                            variant="contained"
-                            className="add-button purchase_add_p"
-                            color="primary"
-                            onClick={this.handleOpenQRScanner}
-                            style={{ width: "40px", height: "40px" }}
-                          >
-                            Scan
-                          </Button>
+                    </>
+                  ) : null}
+                  {productFormValues.product_type !=
+                  "material" /* || formValues.type == "material"*/ ? (
+                    <>
+                      {productFormValues.product_type != "material" &&
+                      formValues.type != "material" &&
+                      productFormValues.has_certificate ? (
+                        <Grid item xs={12} md={2.5}>
+                          <TextField
+                            label="Certificate Number"
+                            variant="outlined"
+                            fullWidth
+                            value={productFormValues.certificate_no}
+                            onChange={(event) => {
+                              // Update the input value immediately for UI responsiveness
+                              this.setState((prevState) => ({
+                                productFormValues: {
+                                  ...prevState.productFormValues,
+                                  certificate_no: event.target.value,
+                                },
+                              }));
+                              // Call the debounced function for API/processing
+                              this.handleCertificateChange(event);
+                            }}
+                            error={productFormErros.certificate_no}
+                            InputProps={{
+                              endAdornment: (
+                                <InputAdornment position="end">
+                                  <Button
+                                    variant=""
+                                    className="add-button purchase_add_p"
+                                    color="primary"
+                                    onClick={this.handleOpenQRScanner}
+                                    style={{ width: "40px", height: "40px" }}
+                                  >
+                                    <QrCodeScanner sx={{ color: '#1976d2' }} />
+                                  </Button>
+                                </InputAdornment>
+                              ),
+                            }}
+                          />
                         </Grid>
-                      )}
+                      ) : null}
                     </>
                   ) : null}
                   {/*{
@@ -3525,69 +3596,80 @@ class PurchaseForm extends React.Component {
               </Table>
             </TableContainer>
           </Grid>
-          {formValues.sale && formValues.sale.report_qty > 0 && <Grid
-            container
-            spacing={gridSpacing}
-            className='details-header ratn-pur-wrapper loans_view' 
-            style={{marginBottom:"20px"}}
+          {formValues.sale && formValues.sale.report_qty > 0 && (
+            <Grid
+              container
+              spacing={gridSpacing}
+              className="details-header ratn-pur-wrapper loans_view"
+              style={{ marginBottom: "20px" }}
             >
-            <Grid item xs={12}>
-              <TableContainer component={Paper}>
-                <div className='ratn-table-purchase-wrapper'>
-                  <Table
-                    aria-label='collapsible table'
-                    className='invoice_product_list'>
-                    <TableHead className='sub-table-header ratn-table-header '>
-                      <TableRow>
-                        <TableCell sx={{ width: 15 }}></TableCell>
-                        
-                        <TableCell sx={{ width: 120 }}>Report Charge</TableCell>
-                        <TableCell sx={{ width: 40 }}>Total Charge</TableCell>
-                        <TableCell sx={{ width: 90 }}>Tax(%)</TableCell>
-                        <TableCell sx={{ width: 40 }}>Tax</TableCell>
-                        <TableCell sx={{ width: 40 }}>Total Charge</TableCell>
-                        <TableCell sx={{ width: 40 }}>Sub Total</TableCell>
-                        <TableCell sx={{ width: 40 }}>Total Tax</TableCell>
-                        <TableCell sx={{ width: 40 }}>Total</TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody className='pur-details-table-body'>
-                      <TableRow>
-                        <TableCell></TableCell>
-                        
-                        <TableCell >
-                          {`${formValues.sale.report_qty} pics x ${displayAmount(formValues.sale.report_charge)} = `}
-                        </TableCell>
-                        <TableCell className=' align-items-center'>
-                          {displayAmount(total_report_charge_amount)}
-                        </TableCell>
-                        <TableCell className=' align-items-center'>
-                          
-                            {`${priceFormat(formValues.sale.report_tax_percentage).toFixed(2)}%`}
-                          
-                        </TableCell>
-                        <TableCell className=' align-items-center'>
-                          {displayAmount(total_report_charge_tax_amount)}
-                        </TableCell>
-                        <TableCell className=" align-items-center">
-                          {displayAmount(total_report_charge_amount_after_tax)}
-                        </TableCell>
-                        <TableCell className=" align-items-center">
-                          {displayAmount(formValues.sale.taxable_amount_raw)}
-                        </TableCell>
-                        <TableCell className=" align-items-center">
-                          {displayAmount(formValues.sale.total_tax)}
-                        </TableCell>
-                        <TableCell className=" align-items-center">
-                          {formValues.sale.total_amount}
-                        </TableCell>
-                      </TableRow>
-                    </TableBody>
-                  </Table>
-                </div>
-              </TableContainer>
+              <Grid item xs={12}>
+                <TableContainer component={Paper}>
+                  <div className="ratn-table-purchase-wrapper">
+                    <Table
+                      aria-label="collapsible table"
+                      className="invoice_product_list"
+                    >
+                      <TableHead className="sub-table-header ratn-table-header ">
+                        <TableRow>
+                          <TableCell sx={{ width: 15 }}></TableCell>
+
+                          <TableCell sx={{ width: 120 }}>
+                            Report Charge
+                          </TableCell>
+                          <TableCell sx={{ width: 40 }}>Total Charge</TableCell>
+                          <TableCell sx={{ width: 90 }}>Tax(%)</TableCell>
+                          <TableCell sx={{ width: 40 }}>Tax</TableCell>
+                          <TableCell sx={{ width: 40 }}>Total Charge</TableCell>
+                          <TableCell sx={{ width: 40 }}>Sub Total</TableCell>
+                          <TableCell sx={{ width: 40 }}>Total Tax</TableCell>
+                          <TableCell sx={{ width: 40 }}>Total</TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody className="pur-details-table-body">
+                        <TableRow>
+                          <TableCell></TableCell>
+
+                          <TableCell>
+                            {`${
+                              formValues.sale.report_qty
+                            } pics x ${displayAmount(
+                              formValues.sale.report_charge
+                            )} = `}
+                          </TableCell>
+                          <TableCell className=" align-items-center">
+                            {displayAmount(total_report_charge_amount)}
+                          </TableCell>
+                          <TableCell className=" align-items-center">
+                            {`${priceFormat(
+                              formValues.sale.report_tax_percentage
+                            ).toFixed(2)}%`}
+                          </TableCell>
+                          <TableCell className=" align-items-center">
+                            {displayAmount(total_report_charge_tax_amount)}
+                          </TableCell>
+                          <TableCell className=" align-items-center">
+                            {displayAmount(
+                              total_report_charge_amount_after_tax
+                            )}
+                          </TableCell>
+                          <TableCell className=" align-items-center">
+                            {displayAmount(formValues.sale.taxable_amount_raw)}
+                          </TableCell>
+                          <TableCell className=" align-items-center">
+                            {displayAmount(formValues.sale.total_tax)}
+                          </TableCell>
+                          <TableCell className=" align-items-center">
+                            {formValues.sale.total_amount}
+                          </TableCell>
+                        </TableRow>
+                      </TableBody>
+                    </Table>
+                  </div>
+                </TableContainer>
+              </Grid>
             </Grid>
-          </Grid>}
+          )}
           <>
             <Grid item xs={12} md={8} className="create-input pt-0">
               <Grid
@@ -3939,7 +4021,9 @@ class PurchaseForm extends React.Component {
                           >
                             Cheque
                           </MenuItem>
-                          <MenuItem value="imps_neft">BANKING/RTGS/NEFT</MenuItem>
+                          <MenuItem value="imps_neft">
+                            BANKING/RTGS/NEFT
+                          </MenuItem>
                           <MenuItem value="online">UPI/PhonePe/Gpay</MenuItem>
                         </Select>
                       </FormControl>
