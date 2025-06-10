@@ -81,7 +81,7 @@ class StockPage extends Component {
         pcode: "",
         size: "",
         price: "",
-        all: 0,
+        all: 1,
         by_specific: this.props.query.get("by_specific") ?? "",
         own_distributor: this.props.query.get("own_distributor") ?? "",
         own_admin: this.props.query.get("own_admin") ?? "",
@@ -540,158 +540,74 @@ class StockPage extends Component {
   handleOpenQRScanner = () => {
     this.setState({ qrScannerOpen: true, qrScannerError: null }, () => {
       setTimeout(() => {
-        const qrReaderElement = document.getElementById("qr-reader");
-        if (qrReaderElement) {
-          // Create video element for camera stream
-          const video = document.createElement("video");
-          video.setAttribute("playsinline", "true"); // Required for iOS
-          video.style.width = "100%";
-          video.style.height = "auto";
+        const video = document.createElement('video');
+        const canvas = document.createElement('canvas');
+        const boundary = document.createElement('div');
+        boundary.style.position = 'absolute';
+        boundary.style.border = '2px solid #00ff00';
+        boundary.style.width = '200px';
+        boundary.style.height = '200px';
+        boundary.style.top = '50%';
+        boundary.style.left = '50%';
+        boundary.style.transform = 'translate(-50%, -50%)';
+        boundary.style.zIndex = '1000';
 
-          // Create canvas for frame analysis
-          const canvas = document.createElement("canvas");
-          const canvasContext = canvas.getContext("2d", {
-            willReadFrequently: true,
-          });
+        const scannerState = {
+          video,
+          canvas,
+          boundary,
+          active: true,
+          stream: null,
+          animationFrameId: null
+        };
 
-          // Create and add scanning boundary
-          const boundary = document.createElement("div");
-          boundary.className = "qr-scanner-boundary";
-          boundary.style.position = "absolute";
-          boundary.style.top = "50%";
-          boundary.style.left = "50%";
-          boundary.style.transform = "translate(-50%, -50%)";
-          boundary.style.width = "70%";
-          boundary.style.height = "70%";
-          boundary.style.border = "2px solid #2196f3";
-          boundary.style.borderRadius = "8px";
-          boundary.style.boxShadow = "0 0 0 5000px rgba(0, 0, 0, 0.3)";
-          boundary.style.zIndex = "1";
-
-          // Clear previous content and append video
-          qrReaderElement.innerHTML = "";
-          qrReaderElement.style.position = "relative";
-          qrReaderElement.appendChild(video);
-          qrReaderElement.appendChild(boundary);
-
-          // Store references for cleanup
-          const scannerState = {
-            video,
-            canvas,
-            canvasContext,
-            boundary,
-            animationFrameId: null,
-            stream: null,
-            active: true,
-            lastScanTime: 0,
-            scanInterval: 100,
-          };
-
-          this.setState({ qrScanner: scannerState });
-
-          // Start camera stream
-          navigator.mediaDevices
-            .getUserMedia({
-              video: { facingMode: "environment" },
-              audio: false,
-            })
-            .then((stream) => {
-              scannerState.stream = stream;
-              video.srcObject = stream;
-              video.play();
-
-              // Set canvas size after video metadata is loaded
-              video.onloadedmetadata = () => {
+        this.setState({ qrScanner: scannerState }, async () => {
+          try {
+            const stream = await navigator.mediaDevices.getUserMedia({
+              video: { facingMode: 'environment' }
+            });
+            
+            scannerState.stream = stream;
+            video.srcObject = stream;
+            video.setAttribute('playsinline', true);
+            video.style.width = '100%';
+            video.style.height = '100%';
+            video.style.objectFit = 'cover';
+            
+            const container = document.getElementById('qr-scanner-container');
+            container.appendChild(video);
+            container.appendChild(boundary);
+            
+            const scanQRCode = () => {
+              if (!scannerState.active) return;
+              
+              if (video.readyState === video.HAVE_ENOUGH_DATA) {
                 canvas.width = video.videoWidth;
                 canvas.height = video.videoHeight;
-
-                // Calculate boundary dimensions for scanning
-                const getBoundaryRect = () => {
-                  const videoRect = video.getBoundingClientRect();
-                  const boundaryRect = boundary.getBoundingClientRect();
-
-                  return {
-                    x: Math.floor(
-                      (canvas.width * (boundaryRect.left - videoRect.left)) /
-                        videoRect.width
-                    ),
-                    y: Math.floor(
-                      (canvas.height * (boundaryRect.top - videoRect.top)) /
-                        videoRect.height
-                    ),
-                    width: Math.floor(
-                      (canvas.width * boundaryRect.width) / videoRect.width
-                    ),
-                    height: Math.floor(
-                      (canvas.height * boundaryRect.height) / videoRect.height
-                    ),
-                  };
-                };
-
-                // Start scanning frames
-                const scanQRCode = () => {
-                  if (!scannerState.active) return;
-
-                  const now = Date.now();
-                  if (
-                    now - scannerState.lastScanTime >=
-                    scannerState.scanInterval
-                  ) {
-                    scannerState.lastScanTime = now;
-
-                    // Draw current video frame to canvas
-                    canvasContext.drawImage(
-                      video,
-                      0,
-                      0,
-                      canvas.width,
-                      canvas.height
-                    );
-
-                    // Get boundary rectangle for focused scanning
-                    const boundaryRect = getBoundaryRect();
-
-                    // Get image data only from the boundary area
-                    const imageData = canvasContext.getImageData(
-                      boundaryRect.x,
-                      boundaryRect.y,
-                      boundaryRect.width,
-                      boundaryRect.height
-                    );
-
-                    // Scan with jsQR
-                    try {
-                      const code = jsQR(
-                        imageData.data,
-                        imageData.width,
-                        imageData.height,
-                        {
-                          inversionAttempts: "dontInvert",
-                        }
-                      );
-
-                      if (code) {
-                        console.log("Decoded QR Code:", code.data);
-                        this.handleQRCodeSuccess(code.data);
-                      }
-                    } catch (error) {
-                      console.error("jsQR error:", error);
-                    }
-                  }
-
-                  // Continue scanning
-                  scannerState.animationFrameId =
-                    requestAnimationFrame(scanQRCode);
-                };
-
-                scanQRCode();
-              };
-            })
-            .catch((err) => {
-              console.error("Error accessing camera:", err);
-              this.setState({ qrScannerError: "Failed to access camera" });
-            });
-        }
+                const context = canvas.getContext('2d');
+                context.drawImage(video, 0, 0, canvas.width, canvas.height);
+                
+                const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+                const code = jsQR(imageData.data, imageData.width, imageData.height);
+                
+                if (code) {
+                  // Extract only the certificate number from the QR code
+                  const certificateNo = code.data.replace(/[^0-9A-Za-z-]/g, '');
+                  this.handleQRCodeSuccess(certificateNo);
+                  return;
+                }
+              }
+              
+              scannerState.animationFrameId = requestAnimationFrame(scanQRCode);
+            };
+            
+            video.play();
+            scanQRCode();
+          } catch (err) {
+            console.error("Error accessing camera:", err);
+            this.setState({ qrScannerError: "Failed to access camera" });
+          }
+        });
       }, 100);
     });
   };
@@ -723,25 +639,26 @@ class StockPage extends Component {
   };
 
   handleQRCodeSuccess = (decodedText) => {
-    // Check if scanned QR code is a URL
-    if (
-      decodedText.startsWith("http://") ||
-      decodedText.startsWith("https://")
-    ) {
-      this.fetchData(decodedText);
-    } else {
-      // Handle as direct certificate number
+    // Only process if it's a valid certificate number format
+    if (/^[0-9A-Za-z-]+$/.test(decodedText)) {
       this.handleAddCertificateToList(decodedText);
+      this.props.enqueueSnackbar("Certificate scanned successfully!", {
+        variant: "success",
+        autoHideDuration: 2000
+      });
+    } else {
+      this.props.enqueueSnackbar("Invalid certificate format", {
+        variant: "error",
+        autoHideDuration: 2000
+      });
     }
-
-    // Close the scanner
     this.handleCloseQRScanner();
   };
 
   handleAddCertificateToList = async (certificateNo) => {
     // Remove any non-numeric characters except for the certificate number format
-    const cleanedCertNo = certificateNo.replace(/[^0-9A-Za-z-]/g, "");
-
+    const cleanedCertNo = certificateNo.replace(/[^0-9A-Za-z-]/g, '');
+    
     // Find the item with this certificate number
     const item = this.state.items.find(
       (item) => item.certificate_no === cleanedCertNo
@@ -757,7 +674,6 @@ class StockPage extends Component {
 
         if (check_cart.data.success) {
           if (item.type === "material") {
-            // For material type, open the cart dialog
             this.setState({
               cart_stock: item,
               cartDialog: true,
@@ -769,49 +685,18 @@ class StockPage extends Component {
               variant: "info",
               autoHideDuration: 2000,
             });
-          } else {
-            // For non-material type, add directly to cart
-            let materials = [];
-            for (let i = 0; i < item.stock_materials.length; i++) {
-              materials.push({
-                material_id: item.stock_materials[i].material_id,
-                purity_id: item.stock_materials[i].purity_id,
-                weight: item.stock_materials[i].weight,
-                unit_id: item.stock_materials[i].unit_id,
-                quantity: item.stock_materials[i].quantity,
-              });
-            }
-
-            const data = {
-              stock_id: item.id,
-              product_id: item.product_id,
-              size_id: item.size_id,
-              materials: materials,
-              quantity: 1,
-            };
-
-            await this.props.actions.cartStore(data);
-            this.props.enqueueSnackbar(`Certificate ${cleanedCertNo} added to cart successfully`, {
-              variant: "success",
-              autoHideDuration: 2000,
-            });
           }
-        } else {
-          this.props.enqueueSnackbar(`Certificate ${cleanedCertNo} is already in cart`, {
-            variant: "warning",
-            autoHideDuration: 2000,
-          });
         }
       } catch (error) {
         console.error("Error processing certificate:", error);
-        this.props.enqueueSnackbar(`Error processing certificate ${cleanedCertNo}`, {
+        this.props.enqueueSnackbar("Error processing certificate", {
           variant: "error",
           autoHideDuration: 2000,
         });
       }
     } else {
-      this.props.enqueueSnackbar(`Certificate ${cleanedCertNo} not found`, {
-        variant: "error",
+      this.props.enqueueSnackbar("Certificate not found", {
+        variant: "warning",
         autoHideDuration: 2000,
       });
     }
@@ -1351,7 +1236,7 @@ class StockPage extends Component {
           <DialogTitle>Scan QR Code</DialogTitle>
           <DialogContent>
             <div
-              id="qr-reader"
+              id="qr-scanner-container"
               style={{ width: "100%", height: "300px" }}
             ></div>
             {this.state.qrScannerError && (

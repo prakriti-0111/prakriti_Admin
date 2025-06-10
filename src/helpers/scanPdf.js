@@ -9,28 +9,6 @@ pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
  * @param {string} verifyUrl - The verification URL (e.g., http://www.igi.org/verify.php?r=56J5627423)
  * @returns {Promise<{text: string} | {error: string}>} - Returns an object containing either the extracted text or an error message
  */
-function parseIgiReport(text) {
-  return {
-    summary_number: text.match(/SUMMARY NO\s*:\s*(\w+)/)?.[1] || "",
-    description:
-      text.match(/DESCRIPTION\s*:\s*(.*?)\s+SHAPE\/CUT/)?.[1]?.trim() || "",
-    shape_cut:
-      text.match(/SHAPE\/CUT\s*:\s*(.*?)\s+TOTAL EST\. WT\./)?.[1]?.trim() ||
-      "",
-    total_estimated_weight_carat:
-      parseFloat(text.match(/TOTAL EST\. WT\.\s*:\s*([\d.]+)/)?.[1]) || null,
-    color_grade: text.match(/COLOR\s*:\s*(.*?)\s+CLARITY/)?.[1]?.trim() || "",
-    clarity_grade:
-      text.match(/CLARITY\s*:\s*(.*?)\s+COMMENTS/)?.[1]?.trim() || "",
-    comments:
-      text
-        .match(/COMMENTS\s*:\s*(.*?)(Style|Important notice)/s)?.[1]
-        ?.trim() || "",
-    style_number: text.match(/Style\s*#\s*(\S+)/)?.[1] || "",
-    disclaimer: text.match(/Important notice:\s*(.*)/s)?.[1]?.trim() || "",
-  };
-}
-
 async function extractPdfData(verifyUrl) {
   try {
     // Extract the r parameter value from the URL
@@ -43,6 +21,7 @@ async function extractPdfData(verifyUrl) {
 
     // Construct the PDF URL
     const pdfUrl = `https://pdf.igi.org/${rValue}.pdf`;
+    console.log("Fetching PDF from:", pdfUrl);
 
     // Fetch the PDF as an ArrayBuffer
     const response = await fetch(pdfUrl);
@@ -53,19 +32,52 @@ async function extractPdfData(verifyUrl) {
 
     // Load the PDF
     const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    console.log("PDF loaded, number of pages:", pdf.numPages);
 
     let textContent = "";
-    for (let i = 1; i <= pdf.numPages; i++) {
-      const page = await pdf.getPage(i);
+    
+    // If PDF has 2 pages, only process the second page
+    if (pdf.numPages === 2) {
+      console.log("Processing second page of 2-page PDF");
+      const page = await pdf.getPage(2); // Get only the second page
       const content = await page.getTextContent();
       const strings = content.items.map((item) => item.str);
-      textContent += strings.join(" ") + "\n";
+      textContent = strings.join(" ") + "\n";
+    } else {
+      // If PDF has only 1 page, process it normally
+      console.log("Processing single page PDF");
+      for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+        const page = await pdf.getPage(pageNum);
+        const content = await page.getTextContent();
+        const strings = content.items.map((item) => item.str);
+        textContent += strings.join(" ") + "\n";
+      }
     }
 
-    return { text: parseIgiReport(textContent) };
+    console.log("Extracted text content:", textContent);
+    const parsedData = parseIgiReport(textContent);
+    console.log("Parsed data:", parsedData);
+
+    return { text: parsedData };
   } catch (error) {
+    console.error("Error in extractPdfData:", error);
     return { error: error.message };
   }
+}
+
+function parseIgiReport(text) {
+  return {
+    // Try to extract summary number if present (case-insensitive, with or without period)
+    summary_number: text.match(/Summary No\.?\s*:\s*([A-Za-z0-9]+)/i)?.[1] || "",
+    // Extract report number (case-insensitive, with or without period)
+    report_number: text.match(/Report No\.?\s*:\s*([A-Za-z0-9]+)/i)?.[1] || "",
+    description: text.match(/Description\s*:\s*(.*?)\s*Shape and Cut/i)?.[1]?.trim() || "",
+    shape_cut: text.match(/Shape and Cut\s*:\s*(.*?)\s*Tot\. Est\. Weight/i)?.[1]?.trim() || "",
+    total_estimated_weight_carat: parseFloat(text.match(/Tot\. Est\. Weight\s*:\s*([\d.]+)/i)?.[1]) || null,
+    color: text.match(/Color\s*:\s*([A-Za-z0-9 \-]+)/i)?.[1]?.trim() || "",
+    clarity: text.match(/Clarity\s*:\s*([A-Za-z0-9]+)/i)?.[1]?.trim() || "",
+    comments: text.match(/Comments\s*:\s*(.*?)(?:Important notice|$)/is)?.[1]?.trim() || "",
+  };
 }
 
 export default extractPdfData;
