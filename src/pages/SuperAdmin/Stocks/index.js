@@ -1,41 +1,66 @@
-import { React, Component } from 'react';
-import { matchRoutes, useLocation } from "react-router-dom"
-import { connect } from 'react-redux';
-import { Select, Stack, InputLabel, Box, Typography, FormControl, Card, CardContent, TextField, Grid, Button, MenuItem } from '@mui/material';
-import { bindActionCreators } from 'redux';
-import { gridSpacing } from 'store/constant';
-import MainCard from 'ui-component/cards/MainCard';
-import withRouter from 'src/helpers/withRouter';
-import { stocksList, getPriceByCategory, getCartItemById } from 'actions/superadmin/stocks.actions';
-import { subCategoryList } from 'actions/superadmin/subCategory.actions';
-import { cartStore, cartList } from 'actions/superadmin/cart.actions';
-import { Table, TableHead } from '@mui/material';
-import TableBody from '@mui/material/TableBody';
-import TableCell from '@mui/material/TableCell';
-import TableContainer from '@mui/material/TableContainer';
-import TableRow from '@mui/material/TableRow';
-import Paper from '@mui/material/Paper';
-import DataTable from 'src/utils/DataTable';
-import { withSnackbar } from 'notistack';
-import DiamondIcon from '@mui/icons-material/Diamond';
-import GroupIcon from '@mui/icons-material/Group';
-import { SUPERADMIN_CART_RESET } from '../../../actionTypes/superadmin/cart.types';
-import Dialog from '@mui/material/Dialog';
-import DialogActions from '@mui/material/DialogActions';
-import DialogContent from '@mui/material/DialogContent';
-import DialogContentText from '@mui/material/DialogContentText';
-import DialogTitle from '@mui/material/DialogTitle';
-import { categoryList } from 'actions/superadmin/category.actions';
-import { materialList } from 'actions/superadmin/material.actions';
-import { displayAmount } from 'src/helpers/helper';
-import { FreeBreakfastOutlined } from '@mui/icons-material';
-import { unitList } from 'actions/superadmin/unit.actions';
-import { sizeList } from 'actions/superadmin/size.actions';
-import { convertUnitToGram, weightFormat } from 'src/helpers/helper';
-import _ from 'lodash';
+import { React, Component } from "react";
+import { matchRoutes, useLocation } from "react-router-dom";
+import { connect } from "react-redux";
+import {
+  Select,
+  Stack,
+  InputLabel,
+  Box,
+  Typography,
+  FormControl,
+  Card,
+  CardContent,
+  TextField,
+  Grid,
+  Button,
+  MenuItem,
+  IconButton,
+  List,
+  ListItem,
+  ListItemText,
+} from "@mui/material";
+import { bindActionCreators } from "redux";
+import { gridSpacing } from "store/constant";
+import MainCard from "ui-component/cards/MainCard";
+import withRouter from "src/helpers/withRouter";
+import {
+  stocksList,
+  getPriceByCategory,
+  getCartItemById,
+} from "actions/superadmin/stocks.actions";
+import { subCategoryList } from "actions/superadmin/subCategory.actions";
+import { cartStore, cartList } from "actions/superadmin/cart.actions";
+import { Table, TableHead } from "@mui/material";
+import TableBody from "@mui/material/TableBody";
+import TableCell from "@mui/material/TableCell";
+import TableContainer from "@mui/material/TableContainer";
+import TableRow from "@mui/material/TableRow";
+import Paper from "@mui/material/Paper";
+import DataTable from "src/utils/DataTable";
+import { withSnackbar } from "notistack";
+import DiamondIcon from "@mui/icons-material/Diamond";
+import GroupIcon from "@mui/icons-material/Group";
+import QrCodeScannerIcon from "@mui/icons-material/QrCodeScanner";
+import DeleteIcon from "@mui/icons-material/Delete";
+import { SUPERADMIN_CART_RESET } from "../../../actionTypes/superadmin/cart.types";
+import Dialog from "@mui/material/Dialog";
+import DialogActions from "@mui/material/DialogActions";
+import DialogContent from "@mui/material/DialogContent";
+import DialogContentText from "@mui/material/DialogContentText";
+import DialogTitle from "@mui/material/DialogTitle";
+import { categoryList } from "actions/superadmin/category.actions";
+import { materialList } from "actions/superadmin/material.actions";
+import { displayAmount } from "src/helpers/helper";
+import { FreeBreakfastOutlined } from "@mui/icons-material";
+import { unitList } from "actions/superadmin/unit.actions";
+import { sizeList } from "actions/superadmin/size.actions";
+import { convertUnitToGram, weightFormat } from "src/helpers/helper";
+import _ from "lodash";
+import jsQR from "jsqr";
+import extractPdfData from "src/helpers/scanPdf";
+import SearchIcon from "@mui/icons-material/Search";
 
 class StockPage extends Component {
-
   constructor(props) {
     super(props);
     this.state = {
@@ -47,22 +72,22 @@ class StockPage extends Component {
       queryParams: {
         page: 1,
         limit: 50,
-        category_id: '',
-        sub_category_id: '',
-        search: '',
-        certificate_no: '',
-        qty:'',
-        unit: '',
-        pcode: '',
-        size: '',
-        price: '',
+        category_id: "",
+        sub_category_id: "",
+        search: "",
+        certificate_no: "",
+        qty: "",
+        unit: "",
+        pcode: "",
+        size: "",
+        price: "",
         all: 0,
-        by_specific: this.props.query.get('by_specific') ?? "",
-        own_distributor: this.props.query.get('own_distributor') ?? "",
-        own_admin: this.props.query.get('own_admin') ?? "",
-        own_se: this.props.query.get('own_se') ?? "",
-        total_avl_stock: this.props.query.get('total_avl_stock') ?? "",
-        manager: this.props.query.get('manager') ?? "",
+        by_specific: this.props.query.get("by_specific") ?? "",
+        own_distributor: this.props.query.get("own_distributor") ?? "",
+        own_admin: this.props.query.get("own_admin") ?? "",
+        own_se: this.props.query.get("own_se") ?? "",
+        total_avl_stock: this.props.query.get("total_avl_stock") ?? "",
+        manager: this.props.query.get("manager") ?? "",
       },
       cart_actionCalled: this.props.cart_actionCalled,
       cart_createSuccess: this.props.cart_createSuccess,
@@ -70,9 +95,9 @@ class StockPage extends Component {
       cart_successMessage: this.props.cart_successMessage,
       cart_errorMessage: this.props.cart_errorMessage,
       cartDialog: false,
-      quantity: '',
-      unit_id: '',
-      weight: '',
+      quantity: "",
+      unit_id: "",
+      weight: "",
       quantity_error: false,
       weight_error: false,
       unit_error: false,
@@ -85,111 +110,122 @@ class StockPage extends Component {
       sizeList: [],
       scannedCertificates: [], // Array to store scanned certificate numbers
       scanDialogOpen: false, // State to control the scan modal
-      //addToCartProcess: false
-    }
+      qrScannerOpen: false,
+      qrScanner: null,
+      qrScannerError: null,
+      certificateList: [], // Array to store certificate numbers
+      manualCertificate: "",
+      processingCertificate: false,
+      pendingCertificateNo: null, // Track certificate to process after search
+      searchingCertificate: false, // Track if a certificate search is in progress
+    };
 
     this.columns = [
       {
-        name: 'image',
-        display_name: 'Image',
-        isImage: true
+        name: "image",
+        display_name: "Image",
+        isImage: true,
       },
       {
-        name: 'name',
-        display_name: 'Product Name'
+        name: "name",
+        display_name: "Product Name",
       },
       {
-        name: 'certificate_no',
-        display_name: 'Certificate No',
-        width: '120px'
+        name: "certificate_no",
+        display_name: "Certificate No",
+        width: "120px",
       },
       {
-        name: 'total_weight_display',
-        display_name: 'Total Wt.',
-        width: '90px'
+        name: "total_weight_display",
+        display_name: "Total Wt.",
+        width: "90px",
       },
       {
-        name: 'stock_material_display',
-        display_name: 'Materials Name',
-        width: '165px'
+        name: "stock_material_display",
+        display_name: "Materials Name",
+        width: "165px",
       },
       {
-        name: 'purity_display',
-        display_name: 'Purity Name',
-        width: '165px'
+        name: "purity_display",
+        display_name: "Purity Name",
+        width: "165px",
       },
       /*{
         name: 'quantity',
         display_name: 'Qty'
       },*/
       {
-        name: 'weight_display',
-        display_name: 'Qty'
+        name: "weight_display",
+        display_name: "Qty",
       },
       {
-        name: 'unit_display',
-        display_name: 'Unit'
+        name: "unit_display",
+        display_name: "Unit",
       },
       {
-        name: 'product_code',
-        display_name: 'P Code'
+        name: "product_code",
+        display_name: "P Code",
       },
       {
-        name: 'size_name',
-        display_name: 'Size'
+        name: "size_name",
+        display_name: "Size",
       },
       {
-        name: 'mrp_display',
-        display_name: 'Price'
+        name: "mrp_display",
+        display_name: "Price",
       },
       {
-        name:'tax_prize',
-        display_name: 'Tax Price'
+        name: "tax_prize",
+        display_name: "Tax Price",
       },
       {
-        name: 'stock_user_name',
-        display_name: 'Avl By'
-      }
+        name: "stock_user_name",
+        display_name: "Avl By",
+      },
     ];
 
     this.tableActions = [
       {
-        label: 'View',
+        label: "View",
         onClick: this.handleView,
-        color: 'primary'
+        color: "primary",
       },
       {
-        label: '+',
+        label: "+",
         onClick: this.handleAddToCart,
-        color: 'primary',
-        show: this.props.query.get('by_specific') ? false : true,
+        color: "primary",
+        show: this.props.query.get("by_specific") ? false : true,
         conditions: [
           {
             key: "can_add_cart",
-            value: true
-          }
-        ]
+            value: true,
+          },
+        ],
       },
       {
-        label: 'green_tick',
+        label: "green_tick",
         onClick: this.handleCartAdded,
-        color: 'primary',
-        show: this.props.query.get('by_specific') ? false : true,
+        color: "primary",
+        show: this.props.query.get("by_specific") ? false : true,
         conditions: [
           {
             key: "can_add_cart",
-            value: false
-          }
-        ]
-      }
+            value: false,
+          },
+        ],
+      },
     ];
 
     this.addToCartProcess = false;
   }
 
   handleCartAdded = (row) => {
-    this.props.enqueueSnackbar("Item already in cart! You can not add this item.", { variant: 'error' });
-  }
+    console.log("Item already in cart! You can not add this item.");
+    this.props.enqueueSnackbar(
+        "Item already in cart! You can not add this item.",
+        { variant: "error" }
+    );
+  };
 
   componentDidMount() {
     this.loadListData();
@@ -209,10 +245,10 @@ class StockPage extends Component {
     });
     if (res.data.success) {
       this.setState({
-        price_by_categories: res.data.data
-      })
+        price_by_categories: res.data.data,
+      });
     }
-  }
+  };
 
   static getDerivedStateFromProps(props, state) {
     let update = {};
@@ -269,164 +305,358 @@ class StockPage extends Component {
     return update;
   }
 
-  componentDidUpdate() {
+  componentDidUpdate(prevProps, prevState) {
     if (this.state.cart_actionCalled) {
       if (this.state.cart_createSuccess) {
-        this.props.enqueueSnackbar(this.state.cart_successMessage, { variant: 'success' });
+        console.log(this.state.cart_successMessage);
+        this.props.enqueueSnackbar(this.state.cart_successMessage, {
+          variant: "success",
+        });
         this.setState({
-          quantity: '',
-          unit_id: '',
-          weight: ''
-        })
+          quantity: "",
+          unit_id: "",
+          weight: "",
+        });
         this.props.actions.cartList();
         this.loadListData();
       } else if (this.state.cart_errorMessage) {
-        this.props.enqueueSnackbar(this.state.cart_errorMessage, { variant: 'error' });
+        console.log(this.state.cart_errorMessage);
+        this.props.enqueueSnackbar(this.state.cart_errorMessage, {
+          variant: "error",
+        });
       }
       this.setState({
         cartDialog: false,
-        //addToCartProcess: false
       });
       this.addToCartProcess = false;
       this.props.dispatch({
-        type: SUPERADMIN_CART_RESET
+        type: SUPERADMIN_CART_RESET,
       });
+    }
+
+    // Check for certificate match after items are updated
+    if (prevProps.items !== this.props.items && this.state.queryParams.search) {
+      const searchCert = this.state.queryParams.search;
+      console.log("Search results updated, checking for certificate:", searchCert);
+      
+      if (this.props.items && this.props.items.length > 0) {
+        // Find exact certificate match
+        const exactMatch = this.props.items.find(item => {
+          const normalizedItemCert = String(item.certificate_no).trim().toUpperCase();
+          const normalizedSearchCert = String(searchCert).trim().toUpperCase();
+          console.log(`Comparing certificates: ${normalizedItemCert} vs ${normalizedSearchCert}`);
+          return normalizedItemCert === normalizedSearchCert;
+        });
+
+        if (exactMatch) {
+          console.log("Found exact match:", exactMatch);
+          // Only show notification if item can be added to cart
+          if (exactMatch.can_add_cart) {
+            this.handleAddToCart(exactMatch);
+          } else {
+            this.props.enqueueSnackbar(`Certificate ${searchCert} found but cannot be added to cart`, {
+              variant: "warning"
+            });
+          }
+        } else {
+          console.log(`[WARNING] Certificate ${searchCert} not found in search results`);
+          this.props.enqueueSnackbar(`Certificate ${searchCert} not found in search results`, {
+            variant: "warning"
+          });
+        }
+      } else {
+        this.props.enqueueSnackbar(`No items found for certificate ${searchCert}`, {
+          variant: "warning"
+        });
+      }
     }
   }
 
   loadListData = () => {
     console.log("loadListData", this.state.queryParams);
     this.props.actions.stocksList(this.state.queryParams);
-  }
+  };
 
   handleView = (row) => {
-    if(this.state.queryParams.total_avl_stock == 1){
-      window.open(`${process.env.FRONT_BASE_URL}products/${row.slug}`, '_blank').focus();
-    }else{
-      this.props.navigate('view/' + row.id);
+    if (this.state.queryParams.total_avl_stock == 1) {
+      window
+          .open(`${process.env.FRONT_BASE_URL}products/${row.slug}`, "_blank")
+          .focus();
+    } else {
+      this.props.navigate("view/" + row.id);
     }
-  }
+  };
 
   handlePagination = (page, all) => {
-    this.setState({
-      queryParams: {
-        ...this.state.queryParams,
-        page: page,
-        all: all ? 1 : 0
-      }
-    }, () => {
-      this.loadListData();
-    })
+    this.setState(
+        {
+          queryParams: {
+            ...this.state.queryParams,
+            page: page,
+            all: all ? 1 : 0,
+          },
+        },
+        () => {
+          this.loadListData();
+        }
+    );
+  };
 
+  handleSearch = () => {
+    // Load the search results and show them in the list
+    this.loadListData();
   }
 
+  handleCertificateNoChange = (event) => {
+    const value = event.target.value;
+    this.setState((prevState) => ({
+      queryParams: {
+        ...prevState.queryParams,
+        certificate_no: value,
+      },
+    }));
+  };
+
+  handleQRCodeSuccess = async (decodedText) => {
+    try {
+      const cleanedText = decodedText.trim();
+      if (!cleanedText) {
+        console.log('[ERROR] Invalid QR code scan');
+        this.props.enqueueSnackbar("Invalid QR code scan", { variant: "error" });
+        this.handleCloseQRScanner(); // Close scanner on invalid scan
+        return;
+      }
+      this.setState({ processingCertificate: true });
+      if (cleanedText.startsWith("http://") || cleanedText.startsWith("https://")) {
+        await this.fetchData(cleanedText);
+        this.handleCloseQRScanner(); // Close scanner after URL processing
+      } else {
+        // Set pendingCertificateNo and trigger search
+        this.setState({
+          queryParams: {
+            ...this.state.queryParams,
+            search: cleanedText,
+            page: 1,
+            limit: 50,
+          },
+          pendingCertificateNo: cleanedText,
+          searchingCertificate: true
+        }, async () => {
+          await this.loadListData();
+          this.setState({ 
+            searchingCertificate: false,
+            qrScannerOpen: false // Close scanner after successful scan
+          });
+          this.handleCloseQRScanner(); // Ensure proper cleanup
+        });
+      }
+    } catch (error) {
+      console.error("Error processing QR code:", error);
+      this.props.enqueueSnackbar("Error processing QR code", { variant: "error" });
+      this.setState({ processingCertificate: false });
+      this.handleCloseQRScanner(); // Close scanner on error
+    }
+  };
+
+  handleAddManualCertificate = () => {
+    const { manualCertificate } = this.state;
+    if (!manualCertificate) return;
+    this.setState({ processingCertificate: true });
+    if (
+        manualCertificate.startsWith("http://") ||
+        manualCertificate.startsWith("https://")
+    ) {
+      this.fetchData(manualCertificate);
+    } else {
+      // Set pendingCertificateNo and trigger search
+      this.setState({
+        queryParams: {
+          ...this.state.queryParams,
+          search: manualCertificate,
+          page: 1,
+          limit: 50,
+        },
+        pendingCertificateNo: manualCertificate,
+        searchingCertificate: true
+      }, async () => {
+        await this.loadListData();
+        this.setState({ searchingCertificate: false });
+      });
+    }
+    this.setState({ manualCertificate: "" });
+  };
+
   handleAddToCart = async (row) => {
-    if(this.addToCartProcess){
-      this.props.enqueueSnackbar("Processing please wait.", { variant: 'error' });
+    if (this.addToCartProcess) {
+      this.props.enqueueSnackbar("Processing please wait.", { variant: "error" });
       return;
     }
-    //this.setState({addToCartProcess: true})
-    this.addToCartProcess = true;
-    let check_cart = await getCartItemById({ stock_id: row.id, product_id: row.product_id });
-    if (!check_cart.data.success) {
-      this.props.enqueueSnackbar("Item already in cart! You can not add this item.", { variant: 'error' });
-      //this.setState({addToCartProcess: false})
-      this.addToCartProcess = false;
-    } else {
-      if (row.type != "material") {
-        let materials = [];
-        for (let i = 0; i < row.stock_materials.length; i++) {
-          materials.push({
-            material_id: row.stock_materials[i].material_id,
-            purity_id: row.stock_materials[i].purity_id,
-            weight: row.stock_materials[i].weight,
-            unit_id: row.stock_materials[i].unit_id,
-            quantity: row.stock_materials[i].quantity,
+    
+    try {
+      this.addToCartProcess = true;
+      
+      // Check if item can be added to cart first (faster check)
+      if (!row.can_add_cart) {
+        this.props.enqueueSnackbar(`Item ${row.certificate_no} cannot be added to cart`, {
+          variant: "warning"
+        });
+        return;
+      }
 
-          })
-        }
-        let data = {
+      // Check if item is already in cart
+      let check_cart = await getCartItemById({
+        stock_id: row.id,
+        product_id: row.product_id,
+      });
+      
+      if (!check_cart.data.success) {
+        this.props.enqueueSnackbar("Item already in cart! You can not add this item.", { 
+          variant: "error" 
+        });
+        return;
+      }
+
+      // Process based on item type
+      if (row.type !== "material") {
+        // Handle non-material items - optimized data preparation
+        const materials = row.stock_materials.map(material => ({
+          material_id: material.material_id,
+          purity_id: material.purity_id,
+          weight: material.weight,
+          unit_id: material.unit_id,
+          quantity: material.quantity,
+        }));
+        
+        const data = {
           stock_id: row.id,
           product_id: row.product_id,
           size_id: row.size_id,
-          materials: materials,
-          quantity: 1
-        }
-        this.props.actions.cartStore(data);
+          materials,
+          quantity: 1,
+        };
+        
+        await this.props.actions.cartStore(data);
+        this.props.enqueueSnackbar(`Certificate ${row.certificate_no} added to cart successfully`, {
+          variant: "success"
+        });
+
+        // Refresh the list after successful add to cart
+        this.setState({
+          queryParams: {
+            ...this.state.queryParams,
+            page: 1,
+            limit: 50,
+            search: "", // Clear search to show all items
+          }
+        }, () => {
+          this.loadListData();
+        });
       } else {
+        // Handle material items - open cart dialog
         this.setState({
           cart_stock: row,
           cartDialog: true,
-          unit_id: row.stock_materials.length ? row.stock_materials[0].unit_id : ''
-        })
+          unit_id: row.stock_materials[0]?.unit_id || "",
+        });
       }
+    } catch (error) {
+      console.error("Error adding to cart:", error);
+      this.props.enqueueSnackbar("Error adding item to cart", { variant: "error" });
+    } finally {
+      this.addToCartProcess = false;
     }
-  }
+  };
 
   formValidate = () => {
     let err = false;
     if (!this.state.quantity) {
       this.setState({
-        quantity_error: true
-      })
+        quantity_error: true,
+      });
       err = true;
     }
     if (!this.state.weight) {
       this.setState({
-        weight_error: true
-      })
+        weight_error: true,
+      });
       err = true;
     }
     if (!this.state.unit_id) {
       this.setState({
-        unit_error: true
-      })
+        unit_error: true,
+      });
       err = true;
     }
     return !err;
+  };
 
-  }
-
-  handleMaterialAddToCart = () => {
+  handleMaterialAddToCart = async () => {
     let row = this.state.cart_stock;
     if (!this.formValidate()) {
       return false;
     } else if (parseInt(this.state.quantity) > parseInt(row.quantity)) {
-      this.props.enqueueSnackbar("Quantity must be less then from stock quantity.", { variant: 'error' });
+      this.props.enqueueSnackbar("Quantity must be less than stock quantity", {
+        variant: "error",
+        autoHideDuration: 3000,
+      });
     } else {
-      let materials = [];
-      for (let i = 0; i < row.stock_materials.length; i++) {
-        let singleQty = parseInt(row.stock_materials[i].quantity) / parseInt(row.quantity);
-        materials.push({
-          material_id: row.stock_materials[i].material_id,
-          purity_id: row.stock_materials[i].purity_id,
-          weight: this.state.weight,
-          unit_id: this.state.unit_id,
-          quantity: this.state.quantity,
-        })
-      }
-      let unit = _.filter(this.state.unitList, { id: this.state.unit_id });
-      let data = {
-        stock_id: row.id,
-        product_id: row.product_id,
-        size_id: '',
-        materials: materials,
-        quantity: this.state.quantity,
-        total_weight: convertUnitToGram(unit[0].name, this.state.weight),
-        unit_id: this.state.unit_id
-      }
-      this.props.actions.cartStore(data);
-    }
-  }
+      try {
+        let materials = [];
+        for (let i = 0; i < row.stock_materials.length; i++) {
+          materials.push({
+            material_id: row.stock_materials[i].material_id,
+            purity_id: row.stock_materials[i].purity_id,
+            weight: this.state.weight,
+            unit_id: this.state.unit_id,
+            quantity: this.state.quantity,
+          });
+        }
 
+        let unit = _.filter(this.state.unitList, { id: this.state.unit_id });
+        let data = {
+          stock_id: row.id,
+          product_id: row.product_id,
+          size_id: "",
+          materials: materials,
+          quantity: this.state.quantity,
+          total_weight: convertUnitToGram(unit[0].name, this.state.weight),
+          unit_id: this.state.unit_id,
+        };
+
+        await this.props.actions.cartStore(data);
+
+        // Close the dialog and reset state
+        this.setState({
+          cartDialog: false,
+          quantity: "",
+          unit_id: "",
+          weight: "",
+          queryParams: {
+            ...this.state.queryParams,
+            page: 1,
+            limit: 50,
+            search: "", // Clear search to show all items
+          }
+        }, () => {
+          // Refresh the list after successful add to cart
+          this.loadListData();
+        });
+      } catch (error) {
+        console.error("Error adding to cart:", error);
+        this.props.enqueueSnackbar("Error adding item to cart", {
+          variant: "error",
+          autoHideDuration: 3000,
+        });
+      }
+    }
+  };
 
   handleDialogClose = () => {
     this.setState({
       cartDialog: false,
-      //addToCartProcess: false
-    })
+    });
     this.addToCartProcess = false;
-  }
+  };
 
   handleCategoryChange = (event) => {
     let val = event.target.value;
@@ -434,163 +664,10 @@ class StockPage extends Component {
     this.setState({
       queryParams: {
         ...this.state.queryParams,
-        category_id: val
-      }
-    })
-  }
-
-  handleSubCategoryChange = (event) => {
-    this.setState({
-      queryParams: {
-        ...this.state.queryParams,
-        sub_category_id: event.target.value
-      }
-    })
-  }
-
-  handleSearchChange = (event) => {
-    this.setState({
-      queryParams: {
-        ...this.state.queryParams,
-        search: event.target.value,
-        page: 1,
-        limit: 50
-      }
-    })
-  }
-
-  handleCertificateNoChange = (event) => {
-    // Get the current value from the input field
-    let value = event.target.value;
-
-    // If the last character is not a comma and the input is not empty,
-    // and the user has just typed a space, replace it with a comma
-    if (value && value.length > 0 && value[value.length - 1] === ' ') {
-      value = value.slice(0, -1) + ',';
-    }
-
-    this.setState({
-      queryParams: {
-        ...this.state.queryParams,
-        certificate_no: value,
-        page: 1,
-        limit: 50
-      }
-    })
-  }
-
-  handleScanCertificateNo = () => {
-    // This function will be called when the scan button is clicked
-    // It should trigger the barcode/QR code scanner
-    // For now, we'll just show an alert
-    const scannedValue = prompt("Please scan or enter the certificate number:");
-    if (scannedValue) {
-      // Get the current certificate_no value
-      let currentValue = this.state.queryParams.certificate_no;
-
-      // Append the scanned value with a comma if there's already a value
-      let newValue = currentValue ?
-        (currentValue.endsWith(',') ? currentValue + scannedValue : currentValue + ',' + scannedValue) :
-        scannedValue;
-
-      this.setState({
-        queryParams: {
-          ...this.state.queryParams,
-          certificate_no: newValue,
-          page: 1,
-          limit: 50
-        }
-      }, () => {
-        // After setting the state, trigger the search
-        this.handleSearch();
-
-        // Process all certificate numbers and add items to cart
-        this.processMultipleCertificateNumbers();
-      });
-    }
-  }
-
-  processMultipleCertificateNumbers = () => {
-    // Get the certificate numbers as an array
-    const certificateNumbers = this.state.queryParams.certificate_no
-      .split(',')
-      .map(cert => cert.trim())
-      .filter(cert => cert); // Remove empty strings
-
-    // Track found and not found certificate numbers
-    let foundCount = 0;
-    let notFoundCount = 0;
-
-    // Process each certificate number
-    certificateNumbers.forEach(certNo => {
-      // Find the item with the certificate number
-      const item = this.state.items.find(item => item.certificate_no === certNo);
-      if (item) {
-        // Add the item to cart
-        this.handleAddToCart(item);
-        foundCount++;
-      } else {
-        notFoundCount++;
-      }
+        category_id: val,
+      },
     });
-
-    // Show a summary message
-    if (foundCount > 0) {
-      this.props.enqueueSnackbar(`${foundCount} item(s) found and added to cart.`, { variant: 'success' });
-    }
-    if (notFoundCount > 0) {
-      this.props.enqueueSnackbar(`${notFoundCount} certificate number(s) not found.`, { variant: 'warning' });
-    }
-  }
-
-  handleQtyChange = (event) => {
-    this.setState({
-      queryParams: {
-        ...this.state.queryParams,
-        qty: event.target.value
-      }
-    })
-  }
-
-  handleUnitChange = (event) => {
-    this.setState({
-      queryParams: {
-        ...this.state.queryParams,
-        unit: event.target.value
-      }
-    })
-  }
-
-  handlePCodeChange = (event) => {
-    this.setState({
-      queryParams: {
-        ...this.state.queryParams,
-        pcode: event.target.value
-      }
-    })
-  }
-
-  handleSizeChange = (event) => {
-    this.setState({
-      queryParams: {
-        ...this.state.queryParams,
-        size: event.target.value
-      }
-    })
-  }
-
-  handlePriceChange = (event) => {
-    this.setState({
-      queryParams: {
-        ...this.state.queryParams,
-        price: event.target.value
-      }
-    })
-  }
-
-  handleSearch = () => {
-    this.loadListData();
-  }
+  };
 
   handleCardClick = (category_id) => {
     this.props.actions.subCategoryList({ all: 1, category_id: category_id });
@@ -604,157 +681,568 @@ class StockPage extends Component {
     })
   }
 
-  handleOpenScanDialog = () => {
-    this.setState({ scanDialogOpen: true });
+  handleSubCategoryChange = (event) => {
+    this.setState({
+      queryParams: {
+        ...this.state.queryParams,
+        sub_category_id: event.target.value,
+      },
+    });
   };
 
-  handleCloseScanDialog = () => {
-    this.setState({ scanDialogOpen: false, scannedCertificates: [] });
+  handleSearchChange = (event) => {
+    this.setState({
+      queryParams: {
+        ...this.state.queryParams,
+        search: event.target.value,
+        page: 1,
+        limit: 50,
+      },
+    });
   };
 
-  handleAddScannedCertificate = () => {
-    const scannedValue = prompt("Please scan or enter the certificate number:");
-    if (scannedValue) {
-      this.setState((prevState) => ({
-        scannedCertificates: [...prevState.scannedCertificates, scannedValue],
-      }));
+  handleOpenQRScanner = () => {
+    this.setState({ qrScannerOpen: true, qrScannerError: null }, () => {
+      setTimeout(() => {
+        const qrReaderElement = document.getElementById("qr-reader");
+        if (qrReaderElement) {
+          // Create video element for camera stream
+          const video = document.createElement("video");
+          video.setAttribute("playsinline", "true");
+          video.style.width = "100%";
+          video.style.height = "auto";
+          video.style.borderRadius = "8px";
+
+          // Create canvas for frame analysis
+          const canvas = document.createElement("canvas");
+          const canvasContext = canvas.getContext("2d", {
+            willReadFrequently: true,
+          });
+
+          // Create and add scanning boundary with improved styling
+          const boundary = document.createElement("div");
+          boundary.className = "qr-scanner-boundary";
+          boundary.style.position = "absolute";
+          boundary.style.top = "50%";
+          boundary.style.left = "50%";
+          boundary.style.transform = "translate(-50%, -50%)";
+          boundary.style.width = "70%";
+          boundary.style.height = "70%";
+          boundary.style.border = "3px solid #2196f3";
+          boundary.style.borderRadius = "12px";
+          boundary.style.boxShadow = "0 0 0 5000px rgba(0, 0, 0, 0.5)";
+          boundary.style.zIndex = "1";
+          boundary.style.animation = "scanning 2s linear infinite";
+
+          // Add scanning animation
+          const style = document.createElement("style");
+          style.textContent = `
+            @keyframes scanning {
+              0% { border-color: #2196f3; }
+              50% { border-color: #64b5f6; }
+              100% { border-color: #2196f3; }
+            }
+            .qr-scanner-boundary::before {
+              content: '';
+              position: absolute;
+              top: 0;
+              left: 0;
+              right: 0;
+              height: 2px;
+              background: #2196f3;
+              animation: scan 2s linear infinite;
+            }
+            @keyframes scan {
+              0% { top: 0; }
+              100% { top: 100%; }
+            }
+          `;
+          document.head.appendChild(style);
+
+          // Clear previous content and append video
+          qrReaderElement.innerHTML = "";
+          qrReaderElement.style.position = "relative";
+          qrReaderElement.style.overflow = "hidden";
+          qrReaderElement.style.borderRadius = "8px";
+          qrReaderElement.appendChild(video);
+          qrReaderElement.appendChild(boundary);
+
+          // Store references for cleanup
+          const scannerState = {
+            video,
+            canvas,
+            canvasContext,
+            boundary,
+            animationFrameId: null,
+            stream: null,
+            active: true,
+            lastScanTime: 0,
+            scanInterval: 100, // Reduced interval for faster scanning
+            processingFrame: false,
+          };
+
+          this.setState({ qrScanner: scannerState });
+
+          // Start camera stream with optimized settings
+          navigator.mediaDevices
+            .getUserMedia({
+              video: { 
+                facingMode: "environment",
+                width: { ideal: 1280 },
+                height: { ideal: 720 },
+                frameRate: { ideal: 30 }
+              },
+              audio: false,
+            })
+            .then((stream) => {
+              scannerState.stream = stream;
+              video.srcObject = stream;
+              video.play();
+
+              // Set canvas size after video metadata is loaded
+              video.onloadedmetadata = () => {
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+
+                // Calculate boundary dimensions for scanning
+                const getBoundaryRect = () => {
+                  const videoRect = video.getBoundingClientRect();
+                  const boundaryRect = boundary.getBoundingClientRect();
+
+                  return {
+                    x: Math.floor((canvas.width * (boundaryRect.left - videoRect.left)) / videoRect.width),
+                    y: Math.floor((canvas.height * (boundaryRect.top - videoRect.top)) / videoRect.height),
+                    width: Math.floor((canvas.width * boundaryRect.width) / videoRect.width),
+                    height: Math.floor((canvas.height * boundaryRect.height) / videoRect.height),
+                  };
+                };
+
+                // Optimized scanning function
+                const scanQRCode = () => {
+                  if (!scannerState.active || scannerState.processingFrame) return;
+
+                  const now = Date.now();
+                  if (now - scannerState.lastScanTime >= scannerState.scanInterval) {
+                    scannerState.lastScanTime = now;
+                    scannerState.processingFrame = true;
+
+                    try {
+                      // Draw current video frame to canvas
+                      canvasContext.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+                      // Get boundary rectangle for focused scanning
+                      const boundaryRect = getBoundaryRect();
+
+                      // Get image data only from the boundary area
+                      const imageData = canvasContext.getImageData(
+                        boundaryRect.x,
+                        boundaryRect.y,
+                        boundaryRect.width,
+                        boundaryRect.height
+                      );
+
+                      // Scan with jsQR
+                      const code = jsQR(imageData.data, imageData.width, imageData.height, {
+                        inversionAttempts: "dontInvert",
+                      });
+
+                      if (code) {
+                        console.log("Decoded QR Code:", code.data);
+                        scannerState.active = false;
+                        this.handleQRCodeSuccess(code.data);
+                      }
+                    } catch (error) {
+                      console.error("jsQR error:", error);
+                    } finally {
+                      scannerState.processingFrame = false;
+                    }
+                  }
+
+                  // Continue scanning
+                  scannerState.animationFrameId = requestAnimationFrame(scanQRCode);
+                };
+
+                scanQRCode();
+              };
+            })
+            .catch((err) => {
+              console.error("Error accessing camera:", err);
+              this.setState({ qrScannerError: "Failed to access camera" });
+            });
+        }
+      }, 100);
+    });
+  };
+
+  handleCloseQRScanner = () => {
+    if (this.state.qrScanner) {
+      const scannerState = this.state.qrScanner;
+
+      // Stop scanning loop
+      scannerState.active = false;
+
+      // Cancel animation frame if active
+      if (scannerState.animationFrameId) {
+        cancelAnimationFrame(scannerState.animationFrameId);
+      }
+
+      // Stop camera stream
+      if (scannerState.stream) {
+        scannerState.stream.getTracks().forEach((track) => track.stop());
+      }
+
+      // Clear video source
+      if (scannerState.video && scannerState.video.srcObject) {
+        scannerState.video.srcObject = null;
+      }
+
+      // Clear scanner element
+      const qrReaderElement = document.getElementById("qr-reader");
+      if (qrReaderElement) {
+        qrReaderElement.innerHTML = "";
+      }
+    }
+
+    this.setState({ 
+      qrScannerOpen: false, 
+      qrScanner: null,
+      processingCertificate: false // Reset processing state
+    });
+  };
+
+  fetchData = async (url) => {
+    this.setState({ processingCertificate: true });
+    try {
+      // Check if URL contains igi.org
+      if (url.includes("igi.org")) {
+        try {
+          const result = await extractPdfData(url);
+          if (result.error) {
+            console.log(result.error);
+            this.props.enqueueSnackbar(result.error, { variant: "error" });
+            this.handleCloseQRScanner(); // Close scanner on error
+            return;
+          }
+
+          // Process the certificate number directly
+          let certificateNumber = "";
+          if (result.text.report_number && result.text.report_number.trim() !== "") {
+            certificateNumber = result.text.report_number;
+          } else if (result.text.summary_number && result.text.summary_number.trim() !== "") {
+            certificateNumber = result.text.summary_number;
+          }
+
+          if (certificateNumber) {
+            console.log("Certificate number from PDF:", certificateNumber);
+            // Search for the certificate
+            this.setState({
+              queryParams: {
+                ...this.state.queryParams,
+                search: certificateNumber,
+                page: 1,
+                limit: 50,
+              }
+            }, () => {
+              // Perform search - handleAddToCart will be called in loadListData
+              this.loadListData();
+              this.handleCloseQRScanner(); // Close scanner after processing
+            });
+          } else {
+            console.log('[WARNING4] No certificate number found in PDF');
+            this.props.enqueueSnackbar("No certificate number found in PDF", {
+              variant: "warning",
+            });
+            this.handleCloseQRScanner(); // Close scanner when no certificate found
+          }
+          return;
+        } catch (error) {
+          console.error("Error extracting PDF data:", error);
+          this.props.enqueueSnackbar("Error extracting certificate data", {
+            variant: "error",
+          });
+          this.handleCloseQRScanner(); // Close scanner on error
+          return;
+        }
+      }
+
+      // Handle non-IGI URLs
+      const requestOptions = {
+        method: "GET",
+        redirect: "follow",
+      };
+
+      const response = await fetch(url, requestOptions);
+      const result = await response.text();
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(result, "text/html");
+
+      const searchedForElement = doc.querySelector("b");
+      const searchedForText = searchedForElement
+          ? searchedForElement.textContent
+          : null;
+
+      if (searchedForText) {
+        console.log("Certificate number from URL:", searchedForText);
+        // Search for the certificate
+        this.setState({
+          queryParams: {
+            ...this.state.queryParams,
+            search: searchedForText,
+            page: 1,
+            limit: 50,
+          }
+        }, () => {
+          // Perform search - handleAddToCart will be called in loadListData
+          this.loadListData();
+          this.handleCloseQRScanner(); // Close scanner after processing
+        });
+      } else {
+        console.log('[WARNING7] No certificate found in URL');
+        this.props.enqueueSnackbar("No certificate found in URL", {
+          variant: "warning",
+        });
+        this.handleCloseQRScanner(); // Close scanner when no certificate found
+      }
+    } catch (error) {
+      console.error("Error fetching data:", error);
+      this.props.enqueueSnackbar("Error processing certificate URL", {
+        variant: "error",
+      });
+      this.handleCloseQRScanner(); // Close scanner on error
+    } finally {
+      this.setState({ processingCertificate: false });
     }
   };
 
-  handleProcessScannedCertificates = () => {
-    const { scannedCertificates } = this.state;
-
-    // Process each scanned certificate
-    scannedCertificates.forEach((certNo) => {
-      const item = this.state.items.find((item) => item.certificate_no === certNo);
-      if (item) {
-        this.handleAddToCart(item);
-      } else {
-        this.props.enqueueSnackbar(`Certificate ${certNo} not found.`, { variant: "warning" });
-      }
-    });
-
-    // Close the scan dialog after processing
-    this.handleCloseScanDialog();
-  };
-
   render() {
-
     return (
-      <>
-        <div className='sale-heading'>
-          {
-            this.state.queryParams.total_avl_stock == 1 ?
-            <h1>Total Available Stock List</h1>
-            :
-            <h1>List For Sale</h1>
-          }
-
-        </div>
-        {
-          this.state.price_by_categories.length ?
-            <Card className='dashboard_card' style={{ marginBottom: '4px' }}>
-              {
-                this.state.price_by_categories.map((item, key) => (
-                  <CardContent className={`dashboard_card_content bg-color-1`} sx={{ display: "flex", justifyContent: "space-between" }} key={key} onClick={() => this.handleCardClick(item.category_id)}>
-                    <Typography sx={{ fontSize: 14, margin: 0 }} color="text.secondary" gutterBottom component="span">
-                      <h1>{item.category_name}</h1>
-                      <h2>{displayAmount(item.total_amount)}</h2>
-                      <h3>{item.quantity} Piece(s)</h3>
-                    </Typography>
-                    <div className="card-icon">
-                      {/* <DiamondIcon /> */}
-                    </div>
-                  </CardContent>
-                ))
-              }
-            </Card>
-            : null
-        }
-        <MainCard>
-          <Box sx={{ flexGrow: 1, m: 0.5 }} className='ratn-dialog-inner'>
-            <Grid container spacing={2} className='tax-input loans_view p_view' columnSpacing={{ xs: 1, sm: 2, md: 2 }}>
-              <Grid item xs={6} md={3} className='create-input'>
-                <FormControl fullWidth>
-                  <InputLabel>Category</InputLabel>
-                  <Select
-                    value={this.state.queryParams.category_id}
-                    label="Category"
-                    onChange={this.handleCategoryChange}
-                    className='input-inner'
-                    defaultValue=""
-                  >
-                    <MenuItem value="">All</MenuItem>
-                    {
-                      this.state.categories.map((item, index) => (
-                        <MenuItem value={item.id} key={index}>{item.name}</MenuItem>
-                      ))
-                    }
-                  </Select>
-                </FormControl>
-              </Grid>
-              <Grid item xs={6} md={3} className='create-input'>
-                <FormControl fullWidth>
-                  <InputLabel>Sub Category</InputLabel>
-                  <Select
-                    value={this.state.queryParams.sub_category_id}
-                    label="Sub Category"
-                    onChange={this.handleSubCategoryChange}
-                    className='input-inner'
-                    defaultValue=""
-                  >
-                    <MenuItem value="">All</MenuItem>
-                    {
-                      this.state.sub_categories.map((item, index) => (
-                        <MenuItem value={item.id} key={index}>{item.name}</MenuItem>
-                      ))
-                    }
-                  </Select>
-                </FormControl>
-              </Grid>
-              <Grid item xs={6} md={3} className='create-input'>
-                <FormControl fullWidth>
-                  <TextField
-                    label="Search"
-                    variant="outlined"
-                    value={this.state.search}
-                    onChange={this.handleSearchChange}
-                  />
-                </FormControl>
-              </Grid>
-              <Grid item xs={6} md={3} className='create-input'>
-                <FormControl fullWidth>
-                  <div style={{ display: 'flex', alignItems: 'center', flexDirection: 'column' }}>
-                    <div style={{ display: 'flex', width: '100%', marginBottom: '8px' }}>
+        <>
+          <div className="sale-heading">
+            {this.state.queryParams.total_avl_stock == 1 ? (
+                <h1>Total Available Stock List</h1>
+            ) : (
+                <h1>List For Sale</h1>
+            )}
+          </div>
+          {this.state.price_by_categories.length ? (
+              <Card className="dashboard_card" style={{ marginBottom: "4px" }}>
+                {this.state.price_by_categories.map((item, key) => (
+                    <CardContent
+                        className={`dashboard_card_content bg-color-1`}
+                        sx={{ display: "flex", justifyContent: "space-between" }}
+                        key={key}
+                        onClick={() => this.handleCardClick(item.category_id)}
+                    >
+                      <Typography
+                          sx={{ fontSize: 14, margin: 0 }}
+                          color="text.secondary"
+                          gutterBottom
+                          component="span"
+                      >
+                        <h1>{item.category_name}</h1>
+                        <h2>{displayAmount(item.total_amount)}</h2>
+                        <h3>{item.quantity} Piece(s)</h3>
+                      </Typography>
+                      <div className="card-icon">{/* <DiamondIcon /> */}</div>
+                    </CardContent>
+                ))}
+              </Card>
+          ) : null}
+          <MainCard>
+            <Box sx={{ flexGrow: 1, m: 0.5 }} className="ratn-dialog-inner">
+              <Grid
+                  container
+                  spacing={2}
+                  className="tax-input loans_view p_view"
+                  columnSpacing={{ xs: 1, sm: 2, md: 2 }}
+              >
+                <Grid item xs={6} md={3} className="create-input">
+                  <FormControl fullWidth>
+                    <InputLabel>Category</InputLabel>
+                    <Select
+                        value={this.state.queryParams.category_id}
+                        label="Category"
+                        onChange={this.handleCategoryChange}
+                        className="input-inner"
+                        defaultValue=""
+                    >
+                      <MenuItem value="">All</MenuItem>
+                      {this.state.categories.map((item, index) => (
+                          <MenuItem value={item.id} key={index}>
+                            {item.name}
+                          </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </Grid>
+                <Grid item xs={6} md={3} className="create-input">
+                  <FormControl fullWidth>
+                    <InputLabel>Sub Category</InputLabel>
+                    <Select
+                        value={this.state.queryParams.sub_category_id}
+                        label="Sub Category"
+                        onChange={this.handleSubCategoryChange}
+                        className="input-inner"
+                        defaultValue=""
+                    >
+                      <MenuItem value="">All</MenuItem>
+                      {this.state.sub_categories.map((item, index) => (
+                          <MenuItem value={item.id} key={index}>
+                            {item.name}
+                          </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </Grid>
+                <Grid item xs={6} md={3} className="create-input">
+                  <FormControl fullWidth>
+                    <TextField
+                        label="Search"
+                        variant="outlined"
+                        value={this.state.search}
+                        onChange={this.handleSearchChange}
+                        InputProps={{
+                          endAdornment: (
+                              <Button
+                                  variant=""
+                                  color="primary"
+                                  onClick={this.handleSearch}
+                                  sx={{
+                                    minWidth: '40px',
+                                    width: '40px',
+                                    height: '40px',
+                                    borderRadius: '50%',
+                                    marginRight: '-14px',
+                                    transition: 'all 0.3s ease',
+                                    '&:hover': {
+                                      backgroundColor: 'rgba(25, 118, 210, 0.08)',
+                                      transform: 'scale(1.1)',
+                                      '& .MuiSvgIcon-root': {
+                                        color: 'primary.main'
+                                      }
+                                    }
+                                  }}
+                              >
+                                <SearchIcon />
+                              </Button>
+                          ),
+                        }}
+                    />
+                  </FormControl>
+                </Grid>
+                <Grid item xs={6} md={3} className="create-input">
+                  <FormControl fullWidth>
+                    <div
+                        style={{
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: "8px",
+                        }}
+                    >
+                      {/* <div style={{ display: "flex", gap: "8px" }}>
                       <TextField
-                        label="Certificate No(s) - comma separated"
+                        label="Certificate Number"
                         variant="outlined"
                         value={this.state.queryParams.certificate_no}
                         onChange={this.handleCertificateNoChange}
-                        style={{ flexGrow: 1 }}
-                        placeholder="Enter multiple certificate numbers separated by commas"
+                        onKeyPress={(event) => {
+                          if (event.key === "Enter") {
+                            this.handleAddCertificate();
+                          }
+                        }}
+                        fullWidth
                       />
-                      <Button
-                        variant="contained"
-                        color="primary"
-                        onClick={this.handleOpenScanDialog}
-                        style={{ marginLeft: '8px', height: '56px' }}
-                      >
-                        Scan
-                      </Button>
+                    </div> */}
+
+                      {/* Manual Input Box */}
+                      <TextField
+                          label="Certificate Entry"
+                          variant="outlined"
+                          placeholder="Enter certificate number or URL"
+                          value={this.state.manualCertificate}
+                          onChange={(event) =>
+                              this.setState({ manualCertificate: event.target.value })
+                          }
+                          onKeyPress={(event) => {
+                            if (
+                                event.key === "Enter" &&
+                                this.state.manualCertificate
+                            ) {
+                              this.handleAddManualCertificate();
+                            }
+                          }}
+                          fullWidth
+                          disabled={this.state.processingCertificate}
+                          InputProps={{
+                            endAdornment: (
+                              <>
+                                <Button
+                                    variant=""
+                                    color="primary"
+                                    onClick={() => {
+                                      if (this.state.manualCertificate) {
+                                        this.handleAddManualCertificate();
+                                      }
+                                    }}
+                                    disabled={this.state.processingCertificate || !this.state.manualCertificate}
+                                    sx={{
+                                      minWidth: "40px",
+                                      width: "40px",
+                                      height: "40px",
+                                      borderRadius: "50%",
+                                      marginRight: "8px",
+                                      transition: 'all 0.3s ease',
+                                      '&:hover': {
+                                        backgroundColor: 'rgba(25, 118, 210, 0.08)',
+                                        transform: 'scale(1.1)',
+                                        '& .MuiSvgIcon-root': {
+                                          color: 'primary.main'
+                                        }
+                                      }
+                                    }}
+                                >
+                                  {this.state.processingCertificate ? (
+                                    <div className="spinner-border spinner-border-sm" role="status">
+                                      <span className="visually-hidden">Loading...</span>
+                                    </div>
+                                  ) : (
+                                    <SearchIcon />
+                                  )}
+                                </Button>
+                                <Button
+                                    variant=""
+                                    color="primary"
+                                    onClick={this.handleOpenQRScanner}
+                                    disabled={this.state.processingCertificate}
+                                    sx={{
+                                      minWidth: "10px",
+                                      height: "40px",
+                                      transition: 'all 0.3s ease',
+                                      '&:hover': {
+                                        backgroundColor: 'rgba(25, 118, 210, 0.08)',
+                                        transform: 'scale(1.1)',
+                                        '& .MuiSvgIcon-root': {
+                                          color: 'primary.main'
+                                        }
+                                      }
+                                    }}
+                                >
+                                  {this.state.processingCertificate ? (
+                                    <div className="spinner-border spinner-border-sm" role="status">
+                                      <span className="visually-hidden">Loading...</span>
+                                    </div>
+                                  ) : (
+                                    <QrCodeScannerIcon />
+                                  )}
+                                </Button>
+                              </>
+                            ),
+                          }}
+                      />
                     </div>
-                    {/* <Button
-                      variant="outlined"
-                      color="secondary"
-                      onClick={this.processMultipleCertificateNumbers}
-                      style={{ alignSelf: 'flex-end' }}
-                    >
-                      Process All
-                    </Button> */}
-                  </div>
-                </FormControl>
-              </Grid>
-              {/*<Grid item xs={6} md={3} className='create-input'>
+                  </FormControl>
+                </Grid>
+                {/*<Grid item xs={6} md={3} className='create-input'>
                 <FormControl fullWidth>
                   <TextField
                     label="Qty"
@@ -821,7 +1309,7 @@ class StockPage extends Component {
                   </Select>
                 </FormControl>
               </Grid>*/}
-              {/*<Grid item xs={6} md={3} className='create-input'>
+                {/*<Grid item xs={6} md={3} className='create-input'>
                 <FormControl fullWidth>
                   <TextField
                     label="Price"
@@ -831,60 +1319,76 @@ class StockPage extends Component {
                   />
                 </FormControl>
               </Grid>*/}
-              <Grid item xs={6} md={3} className='create-input order-input button-right'>
-                <Button variant="contained" className='search-btn' onClick={this.handleSearch}>Search</Button>
+                {/* <Grid
+                item
+                xs={6}
+                md={3}
+                className="create-input order-input button-right"
+              >
+                <Button
+                  variant="contained"
+                  className="search-btn"
+                  onClick={this.handleSearch}
+                >
+                  Search
+                </Button>
+              </Grid> */}
               </Grid>
+            </Box>
+            <Grid container spacing={gridSpacing} className="orders-sale-button">
+              {console.log(this.props)}
+              <DataTable
+                  columns={this.columns}
+                  rows={this.state.items}
+                  page={this.state.queryParams.page}
+                  limit={this.state.queryParams.limit}
+                  total={this.state.total}
+                  handlePagination={this.handlePagination}
+                  actions={this.tableActions}
+                  haveAllOption={true}
+              />
             </Grid>
-          </Box>
-          <Grid container spacing={gridSpacing} className='orders-sale-button'>
-            {console.log(this.props)}
-            <DataTable
-              columns={this.columns}
-              rows={this.state.items}
-              page={this.state.queryParams.page}
-              limit={this.state.queryParams.limit}
-              total={this.state.total}
-              handlePagination={this.handlePagination}
-              actions={this.tableActions}
-              haveAllOption={true}
-            />
-          </Grid>
-        </MainCard>
+          </MainCard>
 
-        <Dialog
-          open={this.state.cartDialog}
-          onClose={this.handleDialogClose}
-          fullWidth
-          maxWidth="sm"
-          className="ratn-dialog-wrapper"
-        >
-          <DialogTitle>
-            {
-              this.state.cart_stock ?
-                <div className='cart-item-wrapper'>
-                  <span className='cart-item-header'>{this.state.cart_stock.name}</span>
-                  <div className='cart-item-header-right'>
-                    <p>Rate: &nbsp; &nbsp;
-                      <strong> {this.state.cart_stock.mrp_display} </strong>
-                    </p>
-                    &nbsp; &nbsp;
-                    <p>
-                      <strong> {this.state.cart_stock.total_weight_display} </strong>
-                    </p>
+          <Dialog
+              open={this.state.cartDialog}
+              onClose={this.handleDialogClose}
+              fullWidth
+              maxWidth="sm"
+              className="ratn-dialog-wrapper"
+          >
+            <DialogTitle>
+              {this.state.cart_stock ? (
+                  <div className="cart-item-wrapper">
+                <span className="cart-item-header">
+                  {this.state.cart_stock.name}
+                </span>
+                    <div className="cart-item-header-right">
+                      <p>
+                        Rate: &nbsp; &nbsp;
+                        <strong> {this.state.cart_stock.mrp_display} </strong>
+                      </p>
+                      &nbsp; &nbsp;
+                      <p>
+                        <strong>
+                          {" "}
+                          {this.state.cart_stock.total_weight_display}{" "}
+                        </strong>
+                      </p>
+                    </div>
                   </div>
-                </div>
-                : null
-            }
-          </DialogTitle>
-          <div>
-            <DialogContentText></DialogContentText>
-              {
-                this.state.cart_stock ?
-
+              ) : null}
+            </DialogTitle>
+            <div>
+              <DialogContentText></DialogContentText>
+              {this.state.cart_stock ? (
                   <TableContainer component={Paper}>
-                    <div className='ratn-table-purchase-wrapper'>
-                      <Table aria-label="collapsible table" className='invoice_product_list'>
-                        <TableHead className='ratn-table-header sale-modal-header'>
+                    <div className="ratn-table-purchase-wrapper">
+                      <Table
+                          aria-label="collapsible table"
+                          className="invoice_product_list"
+                      >
+                        <TableHead className="ratn-table-header sale-modal-header">
                           <TableRow>
                             <TableCell>Purity</TableCell>
                             <TableCell>Available Qty</TableCell>
@@ -894,10 +1398,16 @@ class StockPage extends Component {
                         </TableHead>
                         <TableBody>
                           <TableRow>
-                            <TableCell>{this.state.cart_stock.stock_materials[0].purity_name}</TableCell>
+                            <TableCell>
+                              {this.state.cart_stock.stock_materials[0].purity_name}
+                            </TableCell>
                             <TableCell>{this.state.cart_stock.quantity}</TableCell>
-                            <TableCell>{this.state.cart_stock.total_weight_display}</TableCell>
-                            <TableCell>{this.state.cart_stock.unit_display[0]}</TableCell>
+                            <TableCell>
+                              {this.state.cart_stock.total_weight_display}
+                            </TableCell>
+                            <TableCell>
+                              {this.state.cart_stock.unit_display[0]}
+                            </TableCell>
                           </TableRow>
                           {/* {this.state.suppliers.map((row, i) => (
                                 <Row key={i} row={row} index={i} />
@@ -906,107 +1416,149 @@ class StockPage extends Component {
                       </Table>
                     </div>
                   </TableContainer>
-
-                  : null
-              }
-            <div className='sale_modal_wrapper'>
-            <Box sx={{ flexGrow: 1, m: 0.5 }}>
-              <Grid container spacing={2}>
-              <Grid item xs={3}>
-              &nbsp;
-              </Grid>
-                <Grid item xs={3}>
-                  <TextField
-                    label="Quantity"
-                    variant="outlined"
-                    fullWidth
-                    value={this.state.quantity}
-                    onChange={(event) => this.setState({ quantity: event.target.value })}
-                    error={this.state.quantity_error}
-                  />
-                </Grid>
-                <Grid item xs={3}>
-                  <TextField
-                    label="Weight"
-                    variant="outlined"
-                    fullWidth
-                    value={this.state.weight}
-                    onChange={(event) => this.setState({ weight: event.target.value })}
-                    error={this.state.weight_error}
-                  />
-                </Grid>
-                <Grid item xs={3}>
-                  <FormControl fullWidth error={this.state.unit_error}>
-                    <InputLabel>Unit</InputLabel>
-                    <Select
-                      value={this.state.unit_id}
-                      label="Unit"
-                      onChange={(event) => this.setState({ unit_id: event.target.value })}
-                      className='input-inner'
-                      defaultValue=""
-                    >
-                      <MenuItem value=""></MenuItem>
-                      {
-                        this.state.unitList.map((item, index) => (
-                          <MenuItem value={item.id} key={index}>{item.name}</MenuItem>
-                        ))
-                      }
-                    </Select>
-                  </FormControl>
-                </Grid>
-                <Grid item xs={12} style={{paddingTop : '12px', }}>
-                  <Stack spacing={1} direction="row" justifyContent="flex-end">
-                    <Button variant="outlined" onClick={this.handleDialogClose}>Cancel</Button>
-                    <Button variant="contained" type="button" onClick={this.handleMaterialAddToCart}>Add to Cart</Button>
-                  </Stack>
-                </Grid>
-              </Grid>
-            </Box>
+              ) : null}
+              <div className="sale_modal_wrapper">
+                <Box sx={{ flexGrow: 1, m: 0.5 }}>
+                  <Grid container spacing={2}>
+                    <Grid item xs={3}>
+                      &nbsp;
+                    </Grid>
+                    <Grid item xs={3}>
+                      <TextField
+                          label="Quantity"
+                          variant="outlined"
+                          fullWidth
+                          value={this.state.quantity}
+                          onChange={(event) =>
+                              this.setState({ quantity: event.target.value })
+                          }
+                          error={this.state.quantity_error}
+                      />
+                    </Grid>
+                    <Grid item xs={3}>
+                      <TextField
+                          label="Weight"
+                          variant="outlined"
+                          fullWidth
+                          value={this.state.weight}
+                          onChange={(event) =>
+                              this.setState({ weight: event.target.value })
+                          }
+                          error={this.state.weight_error}
+                      />
+                    </Grid>
+                    <Grid item xs={3}>
+                      <FormControl fullWidth error={this.state.unit_error}>
+                        <InputLabel>Unit</InputLabel>
+                        <Select
+                            value={this.state.unit_id}
+                            label="Unit"
+                            onChange={(event) =>
+                                this.setState({ unit_id: event.target.value })
+                            }
+                            className="input-inner"
+                            defaultValue=""
+                        >
+                          <MenuItem value=""></MenuItem>
+                          {this.state.unitList.map((item, index) => (
+                              <MenuItem value={item.id} key={index}>
+                                {item.name}
+                              </MenuItem>
+                          ))}
+                        </Select>
+                      </FormControl>
+                    </Grid>
+                    <Grid item xs={12} style={{ paddingTop: "12px" }}>
+                      <Stack
+                          spacing={1}
+                          direction="row"
+                          justifyContent="flex-end"
+                      >
+                        <Button
+                            variant="outlined"
+                            onClick={this.handleDialogClose}
+                        >
+                          Cancel
+                        </Button>
+                        <Button
+                            variant="contained"
+                            type="button"
+                            onClick={this.handleMaterialAddToCart}
+                        >
+                          Add to Cart
+                        </Button>
+                      </Stack>
+                    </Grid>
+                  </Grid>
+                </Box>
+              </div>
             </div>
+          </Dialog>
 
-
-          </div>
-        </Dialog>
-
-        {/* Scan Dialog */}
-        <Dialog
-          open={this.state.scanDialogOpen}
-          onClose={this.handleCloseScanDialog}
-          fullWidth
-          maxWidth="sm"
-        >
-          <DialogTitle>Scan Certificate Numbers</DialogTitle>
-          <DialogContent>
-            <Stack spacing={2}>
-              <Typography>Scanned Certificates:</Typography>
-              <ul>
-                {this.state.scannedCertificates.map((cert, index) => (
-                  <li key={index}>{cert}</li>
-                ))}
-              </ul>
-              <Button
-                variant="contained"
-                color="primary"
-                onClick={this.handleAddScannedCertificate}
+          {/* QR Scanner Dialog */}
+          <Dialog
+              open={this.state.qrScannerOpen}
+              onClose={this.handleCloseQRScanner}
+              fullWidth
+              maxWidth="sm"
+              PaperProps={{
+                style: {
+                  borderRadius: '12px',
+                  overflow: 'hidden'
+                }
+              }}
+          >
+            <DialogTitle sx={{ 
+              background: '#f5f5f5',
+              borderBottom: '1px solid #e0e0e0',
+              padding: '16px 24px'
+            }}>
+              Scan QR Code
+            </DialogTitle>
+            <DialogContent sx={{ padding: '24px' }}>
+              <div
+                id="qr-reader"
+                style={{ 
+                  width: "100%", 
+                  height: "400px",
+                  borderRadius: '8px',
+                  overflow: 'hidden',
+                  position: 'relative'
+                }}
+              ></div>
+              {this.state.qrScannerError && (
+                <Typography 
+                  color="error" 
+                  sx={{ 
+                    mt: 2,
+                    textAlign: 'center',
+                    padding: '8px',
+                    background: '#ffebee',
+                    borderRadius: '4px'
+                  }}
+                >
+                  {this.state.qrScannerError}
+                </Typography>
+              )}
+            </DialogContent>
+            <DialogActions sx={{ 
+              padding: '16px 24px',
+              borderTop: '1px solid #e0e0e0'
+            }}>
+              <Button 
+                onClick={this.handleCloseQRScanner}
+                variant="outlined"
+                sx={{
+                  borderRadius: '8px',
+                  textTransform: 'none',
+                  padding: '8px 24px'
+                }}
               >
-                Add Certificate
+                Cancel
               </Button>
-            </Stack>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={this.handleCloseScanDialog} color="secondary">
-              Cancel
-            </Button>
-            <Button
-              onClick={this.handleProcessScannedCertificates}
-              color="primary"
-              variant="contained"
-            >
-              Add All to Cart
-            </Button>
-          </DialogActions>
-        </Dialog>
-      </>
+            </DialogActions>
+          </Dialog>
+        </>
     );
   }
 }
@@ -1027,23 +1579,28 @@ const mapStateToProps = (state) => ({
   sub_categories: state.superadmin.subCategory.items,
   unitList: state.superadmin.unit.items,
   sizeList: state.superadmin.size.items,
+  loading: state.superadmin.stocks.loading,
 });
 
-const mapDispatchToProps = dispatch => {
+const mapDispatchToProps = (dispatch) => {
   return {
     dispatch,
-    actions: bindActionCreators({
-      stocksList,
-      subCategoryList,
-      cartStore,
-      cartList,
-      categoryList,
-      materialList,
-      unitList,
-      sizeList
-    }, dispatch)
-  }
+    actions: bindActionCreators(
+        {
+          stocksList,
+          subCategoryList,
+          cartStore,
+          cartList,
+          categoryList,
+          materialList,
+          unitList,
+          sizeList,
+        },
+        dispatch
+    ),
+  };
 };
 
-
-export default withSnackbar(withRouter(connect(mapStateToProps, mapDispatchToProps)(StockPage)));
+export default withSnackbar(
+    withRouter(connect(mapStateToProps, mapDispatchToProps)(StockPage))
+);

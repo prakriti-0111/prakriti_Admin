@@ -18,15 +18,22 @@ const initialState = {
    editSuccess: false,
    successMessage: null,
    errorMessage: null,
+   loading: false,
 };
 
 export default function (state = initialState, action) {
    const { type, payload } = action;
    switch (type) {
+       case 'LIST_STOCKAPPLICATION_REQUEST':
+           return {
+               ...state,
+               loading: true
+           }
        case LIST_STOCKAPPLICATION:
            return {
                ...state,
-               ...payload
+               ...payload,
+               loading: false
            }
        case ADD_STOCKAPPLICATION:
            return {
