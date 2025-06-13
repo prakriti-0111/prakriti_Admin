@@ -11,6 +11,7 @@ import {objectToQuery} from 'src/helpers/helper';
 export const stocksList = (params) => {
     params = objectToQuery(params, true)
     return (dispatch) => {
+        dispatch({ type: 'LIST_STOCKAPPLICATION_REQUEST' });
         axios.get(`/superadmin/stocks${params}`)
         .then(response => {
             if(response.data.success){
