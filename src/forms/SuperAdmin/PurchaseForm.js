@@ -219,6 +219,8 @@ class PurchaseForm extends React.Component {
       qrScannerOpen: false,
       qrScanner: null,
       qrScannerError: null,
+      processingCertificate: false,
+      manualCertificate: "",
     };
     this.isSuperAdmin = isSuperAdmin();
     this.debouncedFetchData = _.debounce(this.fetchData, 500); // Debounce API calls with a 500ms delay
@@ -899,65 +901,88 @@ class PurchaseForm extends React.Component {
   };
 
   fetchData = async (url) => {
-    // Check if URL contains igi.org
-    if (url.includes("igi.org")) {
-      try {
-        const pdfData = await extractPdfData(url);
-        console.log("pdfData", pdfData);
-        // Extract SUMMARY NO from the PDF data
-
-        // Set the certificate_no with the extracted value
-        this.updateProductFormValues(
-          pdfData.text.summary_number,
-          "certificate_no"
-        );
-        return;
-      } catch (error) {
-        console.error("Error extracting PDF data:", error);
-        return;
-      }
-    }
-
-    // Original code for non-IGI URLs
-    const requestOptions = {
-      method: "GET",
-      redirect: "follow",
-    };
-
+    this.setState({ processingCertificate: true });
     try {
+      // Check if URL contains igi.org
+      if (url.includes("igi.org")) {
+        try {
+          const result = await extractPdfData(url);
+          console.log(result,"----- this value is the result ");
+          
+          if (result.error) {
+            this.props.enqueueSnackbar(result.error, { variant: "error" });
+            return;
+          }
+
+          // Process the certificate number from either summary_number or report_number
+          let certificateNo = '';
+          if (result.text.summary_number) {
+            certificateNo = result.text.summary_number.replace(/[^0-9A-Za-z-]/g, '');
+            await this.handleAddCertificateToList(certificateNo);
+            this.props.enqueueSnackbar(
+              `Certificate ${certificateNo} processed successfully`,
+              { variant: "success" }
+            );
+          } else if (result.text.report_number) {
+            certificateNo = result.text.report_number.replace(/[^0-9A-Za-z-]/g, '');
+            await this.handleAddCertificateToList(certificateNo);
+            this.props.enqueueSnackbar(
+              `Certificate ${certificateNo} processed successfully`,
+              { variant: "success" }
+            );
+          } else {
+            this.props.enqueueSnackbar("No valid certificate number found in PDF", {
+              variant: "warning",
+            });
+          }
+          return;
+        } catch (error) {
+          console.error("Error extracting PDF data:", error);
+          this.props.enqueueSnackbar("Error extracting certificate data", {
+            variant: "error",
+          });
+          return;
+        }
+      }
+
+      // For non-IGI URLs, extract certificate number from the page
+      const requestOptions = {
+        method: "GET",
+        redirect: "follow",
+      };
+
       const response = await fetch(url, requestOptions);
       const result = await response.text();
       const parser = new DOMParser();
       const doc = parser.parseFromString(result, "text/html");
 
-      // Extract the "YOU HAVE SEARCHED FOR" text
+      // Extract the certificate number from the page
       const searchedForElement = doc.querySelector("b");
-      const searchedForText = searchedForElement
-        ? searchedForElement.textContent
-        : "No certificate found";
-
-      // Extract the product image
-      const productImgElement = doc.querySelectorAll("img");
-      console.log("productImgElement", productImgElement);
-
-      const productImgSrc = productImgElement[2]
-        ? productImgElement[2].src
-        : "No product image found";
-
-      if (productImgSrc !== "No product image found") {
-        const imageData = await this.fetchImageAndConvertToBase64(
-          productImgSrc
-        );
-        console.log(imageData);
+      if (searchedForElement) {
+        const certificateNo = searchedForElement.textContent.replace(/[^0-9A-Za-z-]/g, '');
+        if (certificateNo) {
+          await this.handleAddCertificateToList(certificateNo);
+          this.props.enqueueSnackbar(
+            `Certificate ${certificateNo} processed successfully`,
+            { variant: "success" }
+          );
+        } else {
+          this.props.enqueueSnackbar("No valid certificate number found", {
+            variant: "warning",
+          });
+        }
+      } else {
+        this.props.enqueueSnackbar("No certificate number found", {
+          variant: "warning",
+        });
       }
-
-      console.log("YOU HAVE SEARCHED FOR:", searchedForText);
-      console.log("Product Image URL:", productImgSrc);
-
-      // Set the certificate_no with the searched text
-      this.updateProductFormValues(searchedForText, "certificate_no");
     } catch (error) {
-      console.error("Error fetching data:", error);
+      console.error("Error processing certificate:", error);
+      this.props.enqueueSnackbar("Error processing certificate", {
+        variant: "error",
+      });
+    } finally {
+      this.setState({ processingCertificate: false });
     }
   };
 
@@ -2275,9 +2300,58 @@ class PurchaseForm extends React.Component {
   };
 
   // Inside your component class, add this method
-  handleCertificateChange = debounce((event) => {
-    this.handleProductFormDefaultChange(event, "certificate_no");
-  }, 1000);
+  handleCertificateChange = (event) => {
+    const value = event.target.value;
+    // Only allow alphanumeric characters and hyphens
+    const cleanedValue = value.replace(/[^0-9A-Za-z-]/g, '');
+    
+    this.setState((prevState) => ({
+      productFormValues: {
+        ...prevState.productFormValues,
+        certificate_no: cleanedValue
+      },
+      productFormErros: {
+        ...prevState.productFormErros,
+        certificate_no: ''
+      }
+    }));
+  };
+
+  handleAddManualCertificate = () => {
+    const { manualCertificate } = this.state;
+    if (!manualCertificate) return;
+
+    // Validate certificate format
+    if (!/^[0-9A-Za-z-]+$/.test(manualCertificate)) {
+      this.props.enqueueSnackbar("Invalid certificate format", {
+        variant: "error",
+        autoHideDuration: 2000
+      });
+      return;
+    }
+
+    // Handle as direct certificate number
+    this.handleAddCertificateToList(manualCertificate);
+    // Clear the input after processing
+    this.setState({ manualCertificate: "" });
+  };
+
+  handleAddCertificateToList = async (certificateNo) => {
+    // Remove any non-numeric characters except for the certificate number format
+    const cleanedCertNo = certificateNo.replace(/[^0-9A-Za-z-]/g, '');
+    
+    // Update the product form values with the certificate number
+    this.setState((prevState) => ({
+      productFormValues: {
+        ...prevState.productFormValues,
+        certificate_no: cleanedCertNo
+      },
+      productFormErros: {
+        ...prevState.productFormErros,
+        certificate_no: false
+      }
+    }));
+  };
 
   render() {
     const {
