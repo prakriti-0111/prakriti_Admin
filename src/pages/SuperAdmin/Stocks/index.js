@@ -150,10 +150,6 @@ class StockPage extends Component {
         display_name: "Purity Name",
         width: "165px",
       },
-      /*{
-        name: 'quantity',
-        display_name: 'Qty'
-      },*/
       {
         name: "weight_display",
         display_name: "Qty",
@@ -357,16 +353,76 @@ class StockPage extends Component {
             this.props.enqueueSnackbar(`Certificate ${searchCert} found but cannot be added to cart`, {
               variant: "warning"
             });
+            // Reset all states when item cannot be added to cart
+            this.setState({
+              processingCertificate: false,
+              manualCertificate: "",
+              pendingCertificateNo: null,
+              searchingCertificate: false,
+              queryParams: {
+                ...this.state.queryParams,
+                search: "", // Clear search to show all items
+              }
+            }, () => {
+              this.loadListData(); // Refresh the list
+              // Focus on certificate input after state update
+              setTimeout(() => {
+                const certificateInput = document.querySelector('input[placeholder="Enter certificate number or URL"]');
+                if (certificateInput) {
+                  certificateInput.focus();
+                }
+              }, 100);
+            });
           }
         } else {
           console.log(`[WARNING] Certificate ${searchCert} not found in search results`);
           this.props.enqueueSnackbar(`Certificate ${searchCert} not found in search results`, {
             variant: "warning"
           });
+          // Reset all states when certificate is not found
+          this.setState({
+            processingCertificate: false,
+            manualCertificate: "",
+            pendingCertificateNo: null,
+            searchingCertificate: false,
+            queryParams: {
+              ...this.state.queryParams,
+              search: "", // Clear search to show all items
+            }
+          }, () => {
+            this.loadListData(); // Refresh the list
+            // Focus on certificate input after state update
+            setTimeout(() => {
+              const certificateInput = document.querySelector('input[placeholder="Enter certificate number or URL"]');
+              if (certificateInput) {
+                certificateInput.focus();
+              }
+            }, 100);
+          });
         }
       } else {
         this.props.enqueueSnackbar(`No items found for certificate ${searchCert}`, {
           variant: "warning"
+        });
+        // Reset all states when no items are found
+        this.setState({
+          processingCertificate: false,
+          manualCertificate: "",
+          pendingCertificateNo: null,
+          searchingCertificate: false,
+          queryParams: {
+            ...this.state.queryParams,
+            search: "", // Clear search to show all items
+          }
+        }, () => {
+          this.loadListData(); // Refresh the list
+          // Focus on certificate input after state update
+          setTimeout(() => {
+            const certificateInput = document.querySelector('input[placeholder="Enter certificate number or URL"]');
+            if (certificateInput) {
+              certificateInput.focus();
+            }
+          }, 100);
         });
       }
     }
@@ -424,6 +480,7 @@ class StockPage extends Component {
         console.log('[ERROR] Invalid QR code scan');
         this.props.enqueueSnackbar("Invalid QR code scan", { variant: "error" });
         this.handleCloseQRScanner(); // Close scanner on invalid scan
+        this.setState({ processingCertificate: false }); // Reset loading state
         return;
       }
       this.setState({ processingCertificate: true });
@@ -460,7 +517,10 @@ class StockPage extends Component {
 
   handleAddManualCertificate = () => {
     const { manualCertificate } = this.state;
-    if (!manualCertificate) return;
+    if (!manualCertificate) {
+      this.setState({ processingCertificate: false }); // Reset loading state
+      return;
+    }
     this.setState({ processingCertificate: true });
     if (
         manualCertificate.startsWith("http://") ||
@@ -489,17 +549,26 @@ class StockPage extends Component {
   handleAddToCart = async (row) => {
     if (this.addToCartProcess) {
       this.props.enqueueSnackbar("Processing please wait.", { variant: "error" });
+      this.setState({ processingCertificate: false }); // Reset loading state
       return;
     }
     
     try {
       this.addToCartProcess = true;
+      this.setState({ processingCertificate: true }); // Set loading state
       
       // Check if item can be added to cart first (faster check)
       if (!row.can_add_cart) {
         this.props.enqueueSnackbar(`Item ${row.certificate_no} cannot be added to cart`, {
           variant: "warning"
         });
+        this.setState({ 
+          processingCertificate: false,
+          manualCertificate: "",
+          pendingCertificateNo: null,
+          searchingCertificate: false
+        });
+        this.addToCartProcess = false;
         return;
       }
 
@@ -512,6 +581,20 @@ class StockPage extends Component {
       if (!check_cart.data.success) {
         this.props.enqueueSnackbar("Item already in cart! You can not add this item.", { 
           variant: "error" 
+        });
+        // Reset all states immediately
+        this.setState({ 
+          processingCertificate: false,
+          manualCertificate: "",
+          pendingCertificateNo: null,
+          searchingCertificate: false,
+          queryParams: {
+            ...this.state.queryParams,
+            search: "", // Clear search to show all items
+          }
+        }, () => {
+          this.addToCartProcess = false;
+          this.loadListData(); // Refresh the list
         });
         return;
       }
@@ -547,7 +630,11 @@ class StockPage extends Component {
             page: 1,
             limit: 50,
             search: "", // Clear search to show all items
-          }
+          },
+          manualCertificate: "", // Clear the certificate input field
+          pendingCertificateNo: null, // Clear pending certificate
+          searchingCertificate: false, // Reset searching state
+          processingCertificate: false // Reset loading state
         }, () => {
           this.loadListData();
         });
@@ -557,11 +644,25 @@ class StockPage extends Component {
           cart_stock: row,
           cartDialog: true,
           unit_id: row.stock_materials[0]?.unit_id || "",
+          processingCertificate: false // Reset loading state for material items
         });
       }
     } catch (error) {
       console.error("Error adding to cart:", error);
       this.props.enqueueSnackbar("Error adding item to cart", { variant: "error" });
+      this.setState({ 
+        processingCertificate: false,
+        manualCertificate: "",
+        pendingCertificateNo: null,
+        searchingCertificate: false,
+        queryParams: {
+          ...this.state.queryParams,
+          search: "", // Clear search to show all items
+        }
+      }, () => {
+        this.addToCartProcess = false;
+        this.loadListData(); // Refresh the list
+      });
     } finally {
       this.addToCartProcess = false;
     }
@@ -593,14 +694,28 @@ class StockPage extends Component {
   handleMaterialAddToCart = async () => {
     let row = this.state.cart_stock;
     if (!this.formValidate()) {
+      this.setState({ 
+        processingCertificate: false,
+        manualCertificate: "",
+        pendingCertificateNo: null,
+        searchingCertificate: false
+      });
       return false;
     } else if (parseInt(this.state.quantity) > parseInt(row.quantity)) {
       this.props.enqueueSnackbar("Quantity must be less than stock quantity", {
         variant: "error",
         autoHideDuration: 3000,
       });
+      this.setState({ 
+        processingCertificate: false,
+        manualCertificate: "",
+        pendingCertificateNo: null,
+        searchingCertificate: false
+      });
+      return;
     } else {
       try {
+        this.setState({ processingCertificate: true }); // Set loading state
         let materials = [];
         for (let i = 0; i < row.stock_materials.length; i++) {
           materials.push({
@@ -636,7 +751,11 @@ class StockPage extends Component {
             page: 1,
             limit: 50,
             search: "", // Clear search to show all items
-          }
+          },
+          manualCertificate: "", // Clear the certificate input field
+          pendingCertificateNo: null, // Clear pending certificate
+          searchingCertificate: false, // Reset searching state
+          processingCertificate: false // Reset loading state
         }, () => {
           // Refresh the list after successful add to cart
           this.loadListData();
@@ -647,6 +766,12 @@ class StockPage extends Component {
           variant: "error",
           autoHideDuration: 3000,
         });
+        this.setState({ 
+          processingCertificate: false,
+          manualCertificate: "",
+          pendingCertificateNo: null,
+          searchingCertificate: false
+        });
       }
     }
   };
@@ -654,6 +779,10 @@ class StockPage extends Component {
   handleDialogClose = () => {
     this.setState({
       cartDialog: false,
+      processingCertificate: false, // Reset processing state when dialog closes
+      manualCertificate: "",
+      pendingCertificateNo: null,
+      searchingCertificate: false
     });
     this.addToCartProcess = false;
   };
@@ -907,6 +1036,14 @@ class StockPage extends Component {
       qrScannerOpen: false, 
       qrScanner: null,
       processingCertificate: false // Reset processing state
+    }, () => {
+      // Focus on certificate input after scanner closes
+      setTimeout(() => {
+        const certificateInput = document.querySelector('input[placeholder="Enter certificate number or URL"]');
+        if (certificateInput) {
+          certificateInput.focus();
+        }
+      }, 100);
     });
   };
 
