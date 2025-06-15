@@ -595,6 +595,13 @@ class StockPage extends Component {
         }, () => {
           this.addToCartProcess = false;
           this.loadListData(); // Refresh the list
+          // Focus on certificate input after state update
+          setTimeout(() => {
+            const certificateInput = document.querySelector('input[placeholder="Enter certificate number or URL"]');
+            if (certificateInput) {
+              certificateInput.focus();
+            }
+          }, 100);
         });
         return;
       }
@@ -637,6 +644,13 @@ class StockPage extends Component {
           processingCertificate: false // Reset loading state
         }, () => {
           this.loadListData();
+          // Focus on certificate input after successful addition
+          setTimeout(() => {
+            const certificateInput = document.querySelector('input[placeholder="Enter certificate number or URL"]');
+            if (certificateInput) {
+              certificateInput.focus();
+            }
+          }, 100);
         });
       } else {
         // Handle material items - open cart dialog
@@ -662,6 +676,13 @@ class StockPage extends Component {
       }, () => {
         this.addToCartProcess = false;
         this.loadListData(); // Refresh the list
+        // Focus on certificate input after error
+        setTimeout(() => {
+          const certificateInput = document.querySelector('input[placeholder="Enter certificate number or URL"]');
+          if (certificateInput) {
+            certificateInput.focus();
+          }
+        }, 100);
       });
     } finally {
       this.addToCartProcess = false;
