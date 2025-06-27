@@ -219,8 +219,6 @@ class PurchaseForm extends React.Component {
       qrScannerOpen: false,
       qrScanner: null,
       qrScannerError: null,
-      processingCertificate: false,
-      manualCertificate: "",
     };
     this.isSuperAdmin = isSuperAdmin();
     this.debouncedFetchData = _.debounce(this.fetchData, 500); // Debounce API calls with a 500ms delay
@@ -901,88 +899,69 @@ class PurchaseForm extends React.Component {
   };
 
   fetchData = async (url) => {
-    this.setState({ processingCertificate: true });
-    try {
-      // Check if URL contains igi.org
-      if (url.includes("igi.org")) {
-        try {
-          const result = await extractPdfData(url);
-          console.log(result,"----- this value is the result ");
-          
-          if (result.error) {
-            this.props.enqueueSnackbar(result.error, { variant: "error" });
-            return;
-          }
+    // Check if URL contains igi.org
+    if (url.includes("igi.org")) {
+      try {
+        const pdfData = await extractPdfData(url);
+     
+        // Extract SUMMARY NO from the PDF data
 
-          // Process the certificate number from either summary_number or report_number
-          let certificateNo = '';
-          if (result.text.summary_number) {
-            certificateNo = result.text.summary_number.replace(/[^0-9A-Za-z-]/g, '');
-            await this.handleAddCertificateToList(certificateNo);
-            this.props.enqueueSnackbar(
-              `Certificate ${certificateNo} processed successfully`,
-              { variant: "success" }
-            );
-          } else if (result.text.report_number) {
-            certificateNo = result.text.report_number.replace(/[^0-9A-Za-z-]/g, '');
-            await this.handleAddCertificateToList(certificateNo);
-            this.props.enqueueSnackbar(
-              `Certificate ${certificateNo} processed successfully`,
-              { variant: "success" }
-            );
-          } else {
-            this.props.enqueueSnackbar("No valid certificate number found in PDF", {
-              variant: "warning",
-            });
-          }
-          return;
-        } catch (error) {
-          console.error("Error extracting PDF data:", error);
-          this.props.enqueueSnackbar("Error extracting certificate data", {
-            variant: "error",
-          });
-          return;
-        }
+        // Set the certificate_no with the extracted value
+        const certificateNo =
+          pdfData.text.report_number && pdfData.text.report_number.trim() !== ""
+            ? pdfData.text.report_number
+            : pdfData.text.summary_number;
+        this.updateProductFormValues(
+          certificateNo,
+          "certificate_no"
+        );
+        return;
+      } catch (error) {
+        console.error("Error extracting PDF data:", error);
+        return;
       }
+    }
 
-      // For non-IGI URLs, extract certificate number from the page
-      const requestOptions = {
-        method: "GET",
-        redirect: "follow",
-      };
+    // Original code for non-IGI URLs
+    const requestOptions = {
+      method: "GET",
+      redirect: "follow",
+    };
 
+    try {
       const response = await fetch(url, requestOptions);
       const result = await response.text();
       const parser = new DOMParser();
       const doc = parser.parseFromString(result, "text/html");
 
-      // Extract the certificate number from the page
+      // Extract the "YOU HAVE SEARCHED FOR" text
       const searchedForElement = doc.querySelector("b");
-      if (searchedForElement) {
-        const certificateNo = searchedForElement.textContent.replace(/[^0-9A-Za-z-]/g, '');
-        if (certificateNo) {
-          await this.handleAddCertificateToList(certificateNo);
-          this.props.enqueueSnackbar(
-            `Certificate ${certificateNo} processed successfully`,
-            { variant: "success" }
-          );
-        } else {
-          this.props.enqueueSnackbar("No valid certificate number found", {
-            variant: "warning",
-          });
-        }
-      } else {
-        this.props.enqueueSnackbar("No certificate number found", {
-          variant: "warning",
-        });
+      const searchedForText = searchedForElement
+        ? searchedForElement.textContent
+        : "No certificate found";
+
+      // Extract the product image
+      const productImgElement = doc.querySelectorAll("img");
+      console.log("productImgElement", productImgElement);
+
+      const productImgSrc = productImgElement[2]
+        ? productImgElement[2].src
+        : "No product image found";
+
+      if (productImgSrc !== "No product image found") {
+        const imageData = await this.fetchImageAndConvertToBase64(
+          productImgSrc
+        );
+        console.log(imageData);
       }
+
+      console.log("YOU HAVE SEARCHED FOR:", searchedForText);
+      console.log("Product Image URL:", productImgSrc);
+
+      // Set the certificate_no with the searched text
+      this.updateProductFormValues(searchedForText, "certificate_no");
     } catch (error) {
-      console.error("Error processing certificate:", error);
-      this.props.enqueueSnackbar("Error processing certificate", {
-        variant: "error",
-      });
-    } finally {
-      this.setState({ processingCertificate: false });
+      console.error("Error fetching data:", error);
     }
   };
 
@@ -2300,58 +2279,9 @@ class PurchaseForm extends React.Component {
   };
 
   // Inside your component class, add this method
-  handleCertificateChange = (event) => {
-    const value = event.target.value;
-    // Only allow alphanumeric characters and hyphens
-    const cleanedValue = value.replace(/[^0-9A-Za-z-]/g, '');
-    
-    this.setState((prevState) => ({
-      productFormValues: {
-        ...prevState.productFormValues,
-        certificate_no: cleanedValue
-      },
-      productFormErros: {
-        ...prevState.productFormErros,
-        certificate_no: ''
-      }
-    }));
-  };
-
-  handleAddManualCertificate = () => {
-    const { manualCertificate } = this.state;
-    if (!manualCertificate) return;
-
-    // Validate certificate format
-    if (!/^[0-9A-Za-z-]+$/.test(manualCertificate)) {
-      this.props.enqueueSnackbar("Invalid certificate format", {
-        variant: "error",
-        autoHideDuration: 2000
-      });
-      return;
-    }
-
-    // Handle as direct certificate number
-    this.handleAddCertificateToList(manualCertificate);
-    // Clear the input after processing
-    this.setState({ manualCertificate: "" });
-  };
-
-  handleAddCertificateToList = async (certificateNo) => {
-    // Remove any non-numeric characters except for the certificate number format
-    const cleanedCertNo = certificateNo.replace(/[^0-9A-Za-z-]/g, '');
-    
-    // Update the product form values with the certificate number
-    this.setState((prevState) => ({
-      productFormValues: {
-        ...prevState.productFormValues,
-        certificate_no: cleanedCertNo
-      },
-      productFormErros: {
-        ...prevState.productFormErros,
-        certificate_no: false
-      }
-    }));
-  };
+  handleCertificateChange = debounce((event) => {
+    this.handleProductFormDefaultChange(event, "certificate_no");
+  }, 1000);
 
   render() {
     const {
@@ -2521,42 +2451,42 @@ class PurchaseForm extends React.Component {
             </>
           ) : null}
           {!this.state.isReturnForm ? (
-                <Grid item xs={6} md={2} >
-                  <FormControl>
-                    <InputLabel>Purchase Type</InputLabel>
-                    <Select
-                      className="input-inner non_disable_text"
-                      value={formValues.type}
-                      fullWidth
-                      label="Purchase Type"
-                      onChange={this.handlePurchasTypeChange}
-                      disabled={!this.state.isCreateFrom}
-                      endAdornment={
-                        <InputAdornment position="end">
-                          <Button
-                            size="small"
-                            variant="contained"
-                            color="warning"
-                            onClick={this.handleAddNewProduct}
-                            disabled={!this.state.isCreateFrom}
-                            sx={{
-                              minWidth: "auto",
-                              px: 1,
-                              height: "28px",
-                              fontSize: "0.75rem",
-                            }}
-                          >
-                            Add
-                          </Button>
-                        </InputAdornment>
-                      }
-                    >
-                      <MenuItem value="product">Product</MenuItem>
-                      <MenuItem value="material">Material</MenuItem>
-                    </Select>
-                  </FormControl>
-                </Grid>
-              ) : null}
+            <Grid item xs={6} md={2}>
+              <FormControl>
+                <InputLabel>Purchase Type</InputLabel>
+                <Select
+                  className="input-inner non_disable_text"
+                  value={formValues.type}
+                  fullWidth
+                  label="Purchase Type"
+                  onChange={this.handlePurchasTypeChange}
+                  disabled={!this.state.isCreateFrom}
+                  endAdornment={
+                    <InputAdornment position="end">
+                      <Button
+                        size="small"
+                        variant="contained"
+                        color="warning"
+                        onClick={this.handleAddNewProduct}
+                        disabled={!this.state.isCreateFrom}
+                        sx={{
+                          minWidth: "auto",
+                          px: 1,
+                          height: "28px",
+                          fontSize: "0.75rem",
+                        }}
+                      >
+                        Add
+                      </Button>
+                    </InputAdornment>
+                  }
+                >
+                  <MenuItem value="product">Product</MenuItem>
+                  <MenuItem value="material">Material</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+          ) : null}
           {!formValues.supplier_id ? (
             <Grid item xs={6} md={2} className="create-input">
               <Box sx={{ display: "flex", alignItems: "center" }}>
@@ -2603,7 +2533,7 @@ class PurchaseForm extends React.Component {
               />
             </LocalizationProvider>
           </Grid>
-          
+
           {formValues.supplier_id ? (
             <>
               <Grid item xs={6} md={2} className="create-input">
@@ -2673,7 +2603,6 @@ class PurchaseForm extends React.Component {
               className="p_heading_list mb-0 mt-0"
               style={{ position: "relative" }}
             >
-              
               <span className="purchase_p_title ">
                 Purchase{" "}
                 {formValues.type == "product" ? "Products" : "Materials"}
@@ -2980,7 +2909,7 @@ class PurchaseForm extends React.Component {
                                     onClick={this.handleOpenQRScanner}
                                     style={{ width: "40px", height: "40px" }}
                                   >
-                                    <QrCodeScanner sx={{ color: '#1976d2' }} />
+                                    <QrCodeScanner sx={{ color: "#1976d2" }} />
                                   </Button>
                                 </InputAdornment>
                               ),
