@@ -119,6 +119,11 @@ import { parseNonNullablePickerDate } from "@mui/x-date-pickers/internals";
 import { supplierList } from "actions/superadmin/supplier.actions";
 import { getNotifiactions } from "actions/superadmin/notification.actions";
 import { reportChargeFetchRaw } from 'actions/superadmin/reportCharge.actions';
+import QrCodeScanner from "@mui/icons-material/QrCodeScanner";
+import Tooltip from "@mui/material/Tooltip";
+import extractPdfData from "../../helpers/scanPdf";
+import jsQR from "jsqr";
+import Modal from "@mui/material/Modal";
 
 class SaleForm extends React.Component {
   constructor(props) {
@@ -238,6 +243,13 @@ class SaleForm extends React.Component {
       approval_processing: false,
       processing: false,
       isMobile: window.innerWidth < 600, // adjust breakpoint as needed
+      globalCertificateNo: '',
+      qrScannerOpen: false,
+      qrScanner: null,
+      qrScannerError: null,
+      lastRemovedCert: null,
+      lastNotFoundCert: null,
+      qrScanNotified: false,
     };
 
     this.isSuperAdmin = isSuperAdmin();
@@ -297,6 +309,8 @@ class SaleForm extends React.Component {
         display_name: "Price",
       },
     ];
+
+    this.debouncedFetchData = _.debounce(this.fetchData, 500);
   }
 
   updateIsMobile = () => {
@@ -1471,7 +1485,11 @@ class SaleForm extends React.Component {
       true
     );
     if (response.data.success) {
-      this.props.enqueueSnackbar(response.data.message, { variant: "success" });
+      if (!this.lastRemovedCert || this.lastRemovedCert !== products[this.state.deletingIndex].certificate_no) {
+        this.lastRemovedCert = products[this.state.deletingIndex].certificate_no;
+        this.props.enqueueSnackbar(response.data.message, { variant: "success" });
+        setTimeout(() => { this.lastRemovedCert = null; }, 1000);
+      }
       this.loadCart();
       this.props.actions.cartList();
     } else {
@@ -1482,7 +1500,7 @@ class SaleForm extends React.Component {
         deleteDialogOpen: false,
       },
       () => {
-        //this.handleCalculateMainPrice();
+        this.handleCalculateMainPrice();
       }
     );
   };
@@ -2264,6 +2282,294 @@ class SaleForm extends React.Component {
     );
   };
 
+  handleOpenQRScanner = () => {
+    this.setState({ qrScannerOpen: true, qrScannerError: null }, () => {
+      setTimeout(() => {
+        const qrReaderElement = document.getElementById("qr-reader");
+        if (qrReaderElement) {
+          const video = document.createElement("video");
+          video.setAttribute("playsinline", "true");
+          video.style.width = "100%";
+          video.style.height = "auto";
+          const canvas = document.createElement("canvas");
+          const canvasContext = canvas.getContext("2d", { willReadFrequently: true });
+          const boundary = document.createElement("div");
+          boundary.className = "qr-scanner-boundary";
+          boundary.style.position = "absolute";
+          boundary.style.top = "50%";
+          boundary.style.left = "50%";
+          boundary.style.transform = "translate(-50%, -50%)";
+          boundary.style.width = "70%";
+          boundary.style.height = "70%";
+          boundary.style.border = "2px solid #2196f3";
+          boundary.style.borderRadius = "8px";
+          boundary.style.boxShadow = "0 0 0 5000px rgba(0, 0, 0, 0.3)";
+          boundary.style.zIndex = "1";
+          qrReaderElement.innerHTML = "";
+          qrReaderElement.style.position = "relative";
+          qrReaderElement.appendChild(video);
+          qrReaderElement.appendChild(boundary);
+          const scannerState = { video, canvas, canvasContext, boundary, animationFrameId: null, stream: null, active: true, lastScanTime: 0, scanInterval: 100 };
+          this.setState({ qrScanner: scannerState });
+          const hasBarcodeDetector = "BarcodeDetector" in window;
+          let barcodeDetector = null;
+          try {
+            if (hasBarcodeDetector) {
+              barcodeDetector = new BarcodeDetector({ formats: ["qr_code", "aztec", "data_matrix", "pdf417"] });
+            }
+          } catch (error) {}
+          navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false }).then((stream) => {
+            scannerState.stream = stream;
+            video.srcObject = stream;
+            video.play();
+            video.onloadedmetadata = () => {
+              canvas.width = video.videoWidth;
+              canvas.height = video.videoHeight;
+              const getBoundaryRect = () => {
+                const videoRect = video.getBoundingClientRect();
+                const boundaryRect = boundary.getBoundingClientRect();
+                const boundaryRatio = {
+                  x: boundaryRect.width / videoRect.width,
+                  y: boundaryRect.height / videoRect.height,
+                  left: (boundaryRect.left - videoRect.left) / videoRect.width,
+                  top: (boundaryRect.top - videoRect.top) / videoRect.height,
+                };
+                return {
+                  x: Math.floor(canvas.width * boundaryRatio.left),
+                  y: Math.floor(canvas.height * boundaryRatio.top),
+                  width: Math.floor(canvas.width * boundaryRatio.x),
+                  height: Math.floor(canvas.height * boundaryRatio.y),
+                };
+              };
+              const scanQRCode = () => {
+                if (!scannerState.active) return;
+                const now = Date.now();
+                if (now - scannerState.lastScanTime >= scannerState.scanInterval) {
+                  scannerState.lastScanTime = now;
+                  canvasContext.drawImage(video, 0, 0, canvas.width, canvas.height);
+                  const boundaryRect = getBoundaryRect();
+                  const imageData = canvasContext.getImageData(boundaryRect.x, boundaryRect.y, boundaryRect.width, boundaryRect.height);
+                  if (hasBarcodeDetector && barcodeDetector) {
+                    try {
+                      barcodeDetector.detect(imageData).then((barcodes) => {
+                        if (barcodes.length > 0) {
+                          const decodedText = barcodes[0].rawValue;
+                          this.handleQRCodeSuccess(decodedText);
+                        }
+                      }).catch(() => { scanWithJsQR(imageData); });
+                    } catch (error) { scanWithJsQR(imageData); }
+                  } else {
+                    scanWithJsQR(imageData);
+                  }
+                }
+                scannerState.animationFrameId = requestAnimationFrame(scanQRCode);
+              };
+              const scanWithJsQR = (imageData) => {
+                try {
+                  const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: "dontInvert" });
+                  if (code) {
+                    this.handleQRCodeSuccess(code.data);
+                  }
+                } catch (error) {}
+              };
+              scanQRCode();
+            };
+          }).catch((err) => {
+            this.setState({ qrScannerError: "Failed to access camera. Please check permissions and try again." });
+          });
+        } else {
+          this.setState({ qrScannerOpen: false, qrScannerError: "QR scanner initialization failed. Please try again." });
+        }
+      }, 300);
+    });
+  };
+
+  handleCloseQRScanner = () => {
+    if (this.state.qrScanner) {
+      const scannerState = this.state.qrScanner;
+      scannerState.active = false;
+      if (scannerState.animationFrameId) {
+        cancelAnimationFrame(scannerState.animationFrameId);
+      }
+      if (scannerState.stream) {
+        scannerState.stream.getTracks().forEach((track) => track.stop());
+      }
+      if (scannerState.video && scannerState.video.srcObject) {
+        scannerState.video.srcObject = null;
+      }
+      if (scannerState.boundary && scannerState.boundary.parentNode) {
+        scannerState.boundary.parentNode.removeChild(scannerState.boundary);
+      }
+      this.setState({ qrScannerOpen: false, qrScanner: null, qrScannerError: null });
+    } else {
+      this.setState({ qrScannerOpen: false, qrScannerError: null });
+    }
+  };
+
+  handleRetryQRScanner = () => {
+    if (this.state.qrScanner) {
+      const scannerState = this.state.qrScanner;
+      scannerState.active = false;
+      if (scannerState.animationFrameId) {
+        cancelAnimationFrame(scannerState.animationFrameId);
+      }
+      if (scannerState.stream) {
+        scannerState.stream.getTracks().forEach((track) => track.stop());
+      }
+      if (scannerState.video && scannerState.video.srcObject) {
+        scannerState.video.srcObject = null;
+      }
+      if (scannerState.boundary && scannerState.boundary.parentNode) {
+        scannerState.boundary.parentNode.removeChild(scannerState.boundary);
+      }
+      this.setState({ qrScannerError: null, qrScanner: null }, () => { this.handleOpenQRScanner(); });
+    } else {
+      this.handleOpenQRScanner();
+    }
+  };
+
+  handleQRCodeSuccess = async (decodedText) => {
+    // Debounce QR code scanned notification
+    if (!this.qrScanNotified) {
+      this.qrScanNotified = true;
+      if (this.props.enqueueSnackbar) {
+        this.props.enqueueSnackbar("QR code scanned successfully!", { variant: "success", autoHideDuration: 3000 });
+      }
+      setTimeout(() => { this.qrScanNotified = false; }, 1000);
+    }
+    if (typeof decodedText === "string" && decodedText.startsWith("http")) {
+      await this.fetchData(decodedText); // Wait for extraction and removal
+    } else {
+      this.handleCertificateInput(decodedText, true);
+    }
+    this.handleCloseQRScanner();
+  };
+
+  handleCertificateInput = (certificate_no, clearInput = false) => {
+    // If it's a URL, always try to extract the certificate number first
+    if (typeof certificate_no === 'string' && certificate_no.startsWith('http')) {
+      this.fetchData(certificate_no);
+      return;
+    }
+    this.handleDeleteByCertificateNo(certificate_no);
+  };
+
+  fetchData = async (url) => {
+    if (url.includes("igi.org")) {
+      try {
+        const pdfData = await extractPdfData(url);
+        const certificateNo = pdfData.text.report_number && pdfData.text.report_number.trim() !== "" ? pdfData.text.report_number : pdfData.text.summary_number;
+        if (certificateNo) {
+          this.setState({ globalCertificateNo: certificateNo }, () => {
+            this.handleCertificateInput(certificateNo, true);
+          });
+        } else {
+          if (this.props.enqueueSnackbar) {
+            this.props.enqueueSnackbar("Certificate number not found in IGI PDF.", { variant: "warning" });
+          }
+        }
+        return;
+      } catch (error) {
+        console.error("Error extracting PDF data:", error);
+        if (this.props.enqueueSnackbar) {
+          this.props.enqueueSnackbar("Failed to extract certificate number from PDF.", { variant: "error" });
+        }
+        return;
+      }
+    } else if (url.includes("iigl.org/verify-report/")) {
+      try {
+        // Fetch the page and extract the summary number from the HTML
+        const response = await fetch(url, { method: "GET", redirect: "follow" });
+        const result = await response.text();
+        const parser = new window.DOMParser();
+        const doc = parser.parseFromString(result, "text/html");
+        // Try to extract summary number (certificate number) from a <b> tag
+        const searchedForElement = doc.querySelector("b");
+        const searchedForText = searchedForElement ? searchedForElement.textContent : "";
+        if (searchedForText && !searchedForText.startsWith('http')) {
+          this.setState({ globalCertificateNo: searchedForText }, () => {
+            this.handleCertificateInput(searchedForText, true);
+          });
+          return;
+        }
+        // fallback: show warning if not found
+        if (this.props.enqueueSnackbar) {
+          this.props.enqueueSnackbar("Certificate number not found in IIGL page.", { variant: "warning" });
+        }
+      } catch (e) {}
+      return;
+    } else {
+      // Try to fetch and parse the page for a certificate number (like PurchaseForm.js)
+      try {
+        const response = await fetch(url, { method: "GET", redirect: "follow" });
+        const result = await response.text();
+        const parser = new window.DOMParser();
+        const doc = parser.parseFromString(result, "text/html");
+        // Try to extract certificate number from a <b> tag (as in PurchaseForm.js)
+        const searchedForElement = doc.querySelector("b");
+        const searchedForText = searchedForElement ? searchedForElement.textContent : "";
+        if (searchedForText && !searchedForText.startsWith('http')) {
+          this.setState({ globalCertificateNo: searchedForText }, () => {
+            this.handleCertificateInput(searchedForText, true);
+          });
+          return;
+        }
+      } catch (error) {
+        // fallback to warning below
+      }
+    }
+    // fallback: only use the url as certificate_no if it's not a URL
+    if (typeof url === 'string' && !url.startsWith('http')) {
+      this.setState({ globalCertificateNo: url }, () => {
+        this.handleCertificateInput(url, true);
+      });
+    } else {
+      if (this.props.enqueueSnackbar) {
+        this.props.enqueueSnackbar("Invalid certificate number or unsupported URL.", { variant: "warning" });
+      }
+    }
+  };
+
+  // Delete product by certificate number using the same logic as the action button
+  handleDeleteByCertificateNo = async (certificate_no) => {
+    let formValues = { ...this.state.formValues };
+    let idx = formValues.products.findIndex(p => p.certificate_no === certificate_no);
+    if (idx !== -1) {
+      let product = formValues.products[idx];
+      let response = await cartDelete(product.id, true);
+      if (response.data.success) {
+        if (!this.lastRemovedCert || this.lastRemovedCert !== certificate_no) {
+          this.lastRemovedCert = certificate_no;
+          this.props.enqueueSnackbar(response.data.message, { variant: "success" });
+          setTimeout(() => { this.lastRemovedCert = null; }, 1000);
+        }
+        this.loadCart();
+        this.props.actions.cartList();
+      } else {
+        this.props.enqueueSnackbar(response.data.message, { variant: "error" });
+      }
+      this.setState({
+        deleteDialogOpen: false,
+        globalCertificateNo: null
+      }, () => {
+        this.handleCalculateMainPrice();
+      });
+    } else {
+      this.setState({
+        globalCertificateNo: null
+      }, () => {
+        this.handleCalculateMainPrice();
+        if (!this.lastNotFoundCert || this.lastNotFoundCert !== certificate_no) {
+          this.lastNotFoundCert = certificate_no;
+          if (this.props.enqueueSnackbar) {
+            this.props.enqueueSnackbar(`Certificate #${certificate_no} not found in list.`, { variant: "warning" });
+          }
+          setTimeout(() => { this.lastNotFoundCert = null; }, 1000);
+        }
+      });
+    }
+  };
+
   render() {
     const {
       report_charge,
@@ -2639,6 +2945,46 @@ class SaleForm extends React.Component {
                             disabled={!this.state.isCreateFrom}
                           />
                         </Grid>
+                        {/* Certificate No. Remove/Scan input for main product list */}
+                        <Grid item xs={12} md={4} className='create-input'>
+                          <TextField
+                            label="Remove Product by Certificate Number"
+                            variant="outlined"
+                            fullWidth
+                            value={this.state.globalCertificateNo || ''}
+                            onChange={e => {
+                              this.setState({ globalCertificateNo: e.target.value });
+                              if (e.target.value.startsWith('http')) {
+                                this.debouncedFetchData(e.target.value);
+                              }
+                            }}
+                            onKeyDown={e => {
+                              if (e.key === 'Enter') {
+                                if (this.state.globalCertificateNo.startsWith('http')) {
+                                  this.fetchData(this.state.globalCertificateNo);
+                                } else {
+                                  this.handleCertificateInput(this.state.globalCertificateNo, true);
+                                }
+                              }
+                            }}
+                            InputProps={{
+                              endAdornment: (
+                                <InputAdornment position="end">
+                                  <Button
+                                    variant=""
+                                    className="add-button purchase_add_p"
+                                    color="primary"
+                                    onClick={this.handleOpenQRScanner}
+                                    style={{ width: "40px", height: "40px" }}
+                                  >
+                                    <QrCodeScanner sx={{ color: "#1976d2" }} />
+                                  </Button>
+                                </InputAdornment>
+                              ),
+                            }}
+                            placeholder="Scan or enter certificate number or verification URL to remove product"
+                          />
+                        </Grid>
                       </>
                     ) : null}
                     
@@ -2742,6 +3088,46 @@ class SaleForm extends React.Component {
                         }
                         className='non_disable_text'
                         disabled={!this.state.isCreateFrom}
+                      />
+                    </Grid>
+                    {/* Certificate No. Remove/Scan input for main product list */}
+                    <Grid item xs={12} md={4} className='create-input'>
+                      <TextField
+                        label="Remove Product by Certificate Number"
+                        variant="outlined"
+                        fullWidth
+                        value={this.state.globalCertificateNo || ''}
+                        onChange={e => {
+                          this.setState({ globalCertificateNo: e.target.value });
+                          if (e.target.value.startsWith('http')) {
+                            this.debouncedFetchData(e.target.value);
+                          }
+                        }}
+                        onKeyDown={e => {
+                          if (e.key === 'Enter') {
+                            if (this.state.globalCertificateNo.startsWith('http')) {
+                              this.fetchData(this.state.globalCertificateNo);
+                            } else {
+                              this.handleCertificateInput(this.state.globalCertificateNo, true);
+                            }
+                          }
+                        }}
+                        InputProps={{
+                          endAdornment: (
+                            <InputAdornment position="end">
+                              <Button
+                                variant=""
+                                className="add-button purchase_add_p"
+                                color="primary"
+                                onClick={this.handleOpenQRScanner}
+                                style={{ width: "40px", height: "40px" }}
+                              >
+                                <QrCodeScanner sx={{ color: "#1976d2" }} />
+                              </Button>
+                            </InputAdornment>
+                          ),
+                        }}
+                        placeholder="Scan or enter certificate number or verification URL to remove product"
                       />
                     </Grid>
                   </>
@@ -4916,6 +5302,49 @@ class SaleForm extends React.Component {
             </Box>
           </DialogContent>
         </Dialog>
+
+        <Modal
+          open={this.state.qrScannerOpen}
+          onClose={this.handleCloseQRScanner}
+          aria-labelledby="qr-scanner-modal"
+          aria-describedby="scan-qr-code-for-certificate-number"
+        >
+          <Box
+            sx={{
+              position: "absolute",
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%)",
+              width: 350,
+              bgcolor: "background.paper",
+              boxShadow: 24,
+              p: 4,
+              borderRadius: 2,
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+            }}
+          >
+            <Typography id="qr-scanner-modal" variant="h6" component="h2" sx={{ mb: 2 }}>
+              Scan QR Code
+            </Typography>
+            {this.state.qrScannerError && (
+              <Alert severity="warning" sx={{ width: "100%", mb: 2 }}>
+                {this.state.qrScannerError}
+              </Alert>
+            )}
+            <Box id="qr-reader" sx={{ width: "100%", height: 300, mb: 2 }}></Box>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2, textAlign: "center" }}>
+              Position the QR code within the frame to scan. Make sure it's well-lit and clearly visible.
+            </Typography>
+            <Button variant="outlined" color="primary" onClick={this.handleRetryQRScanner} fullWidth>
+              Retry
+            </Button>
+            <Button variant="contained" color="primary" onClick={this.handleCloseQRScanner} fullWidth>
+              Cancel
+            </Button>
+          </Box>
+        </Modal>
       </Box>
     );
   }
