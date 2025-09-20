@@ -16,7 +16,7 @@ import { salesExecutiveCreate, salesExecutiveUpdate } from 'actions/superadmin/s
 import DeleteIcon from '@mui/icons-material/Delete';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import _ from 'lodash';
-import {getRoleName, getUserDashboardRoute} from 'src/helpers/helper';
+import {getRoleName, getUserDashboardRoute, isSuperAdmin, isAdmin} from 'src/helpers/helper';
 import FilePreview from 'src/utils/FilePreview';
 import noImage from 'src/assets/images/no_image.jpg';
 import { distributorList } from 'actions/superadmin/distributor.actions';
@@ -139,6 +139,9 @@ class SalesExecutiveForm extends React.Component {
             remove_documents: [],
             profile_base64: ''
         }
+
+        this.isSuperAdmin = isSuperAdmin();
+        this.isAdmin = isAdmin();
         
         this.profile_imageRef = React.createRef();
         this.pan_imageRef = React.createRef();
@@ -437,7 +440,7 @@ class SalesExecutiveForm extends React.Component {
         }else{
             formErros.district_id = false;
         }
-        if(isEmpty(formValues.parent_id)){
+        if(isEmpty(formValues.parent_id) && !this.isSuperAdmin && !this.isAdmin){
             formErros.parent_id = true;
             hasErr = true;
         }else{
