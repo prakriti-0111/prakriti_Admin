@@ -254,6 +254,7 @@ class WalletPage extends Component {
       this.props.actions.distributorList({ all: 1 });
       this.props.actions.distributorList({ all: 1 });
     } else if (this.isSalesExecutive) {
+      this.props.actions.adminList({ all: 1, own: 1 });
       this.props.actions.distributorList({ all: 1 });
       this.props.actions.retailerList({ all: 1 });
     } else if (this.isDistributor) {
@@ -594,9 +595,13 @@ class WalletPage extends Component {
       if (paymentFormValues.payment_type == "send_money") {
         payment_roles = [
           {
+            label: "Admin",
+            value: "admin",
+          },
+          {
             label: "Distributor",
             value: "distributor",
-          },
+          }
         ];
       } else {
         payment_roles = [
