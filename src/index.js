@@ -35,7 +35,8 @@ window.onload = function () {
       if (
         url.includes("super-admin") ||
         url.includes("admin") ||
-        url.includes("distributor") ||
+        url.includes("distributor") || 
+        url.includes("sales-executive") ||
         url.includes("team")
       ) {
         document
