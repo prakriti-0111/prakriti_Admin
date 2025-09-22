@@ -324,6 +324,7 @@ class SaleForm extends React.Component {
     } else if (this.isAdmin) {
       this.props.actions.distributorList({ all: 1 });
       this.props.actions.supplierList({ all: 1, page: 1 });
+      this.props.actions.salesExecutiveList({ all: 1, role_id: 4 });
     } else if (this.isDistributor) {
       this.props.actions.retailerList({ all: 1 });
       this.props.actions.salesExecutiveList({ all: 1, role_id: 4 });
@@ -1851,6 +1852,12 @@ class SaleForm extends React.Component {
             if (this.state.supplierList[i].own) {
               ownDistri.push(this.state.supplierList[i]);
             }
+          }
+        }
+
+        for (let i = 0; i < this.state.salesExecutiveList.length; i++) {
+          if (this.state.salesExecutiveList[i].parent_id == this.state.profile.id) {
+            ownDistri.push(this.state.salesExecutiveList[i]);
           }
         }
         userList = ownDistri;
