@@ -626,9 +626,6 @@ class StockPage extends Component {
         };
         
         await this.props.actions.cartStore(data);
-        this.props.enqueueSnackbar(`Certificate ${row.certificate_no} added to cart successfully`, {
-          variant: "success"
-        });
 
         // Refresh the list after successful add to cart
         this.setState({
