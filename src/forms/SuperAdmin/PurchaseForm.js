@@ -43,6 +43,7 @@ import {
   Grid3x3,
   ThirtyFpsSelect,
   QrCodeScanner,
+  Edit,
 } from "@mui/icons-material";
 import {
   calculateProductPrice,
@@ -219,6 +220,9 @@ class PurchaseForm extends React.Component {
       qrScannerOpen: false,
       qrScanner: null,
       qrScannerError: null,
+      scannedFields: {
+        certificate_no: false,
+      },
     };
     this.isSuperAdmin = isSuperAdmin();
     this.debouncedFetchData = _.debounce(this.fetchData, 500); // Debounce API calls with a 500ms delay
@@ -562,6 +566,14 @@ class PurchaseForm extends React.Component {
     // this.updateFormValues(decodedText, "invoice_number");
     this.updateProductFormValues(decodedText, "certificate_no");
 
+    // Mark the field as scanned
+    this.setState(prevState => ({
+      scannedFields: {
+        ...prevState.scannedFields,
+        certificate_no: true,
+      }
+    }));
+
     // Show success message using snackbar
     if (this.props.enqueueSnackbar) {
       this.props.enqueueSnackbar("QR code scanned successfully!", {
@@ -572,6 +584,15 @@ class PurchaseForm extends React.Component {
 
     // Close the scanner
     this.handleCloseQRScanner();
+  };
+
+  handleEditScannedField = (fieldName) => {
+    this.setState(prevState => ({
+      scannedFields: {
+        ...prevState.scannedFields,
+        [fieldName]: false,
+      }
+    }));
   };
 
   getNewInvoiceNumber = async () => {
@@ -2887,6 +2908,7 @@ class PurchaseForm extends React.Component {
                             variant="outlined"
                             fullWidth
                             value={productFormValues.certificate_no}
+                            disabled={this.state.scannedFields.certificate_no}
                             onChange={(event) => {
                               // Update the input value immediately for UI responsiveness
                               this.setState((prevState) => ({
@@ -2902,15 +2924,29 @@ class PurchaseForm extends React.Component {
                             InputProps={{
                               endAdornment: (
                                 <InputAdornment position="end">
+                                  {this.state.scannedFields.certificate_no ? (
+                                    <Button
+                                      variant=""
+                                      className="add-button purchase_add_p"
+                                      color="primary"
+                                      onClick={() => this.handleEditScannedField("certificate_no")}
+                                      style={{ width: "40px", height: "40px" }}
+                                      title="Edit certificate number"
+                                    >
+                                      <Edit sx={{ color: "#1976d2" }} />
+                                    </Button>
+                                  ) : (
                                   <Button
                                     variant=""
                                     className="add-button purchase_add_p"
                                     color="primary"
                                     onClick={this.handleOpenQRScanner}
                                     style={{ width: "40px", height: "40px" }}
+                                      title="Scan QR code"
                                   >
                                     <QrCodeScanner sx={{ color: "#1976d2" }} />
                                   </Button>
+                                  )}
                                 </InputAdornment>
                               ),
                             }}
