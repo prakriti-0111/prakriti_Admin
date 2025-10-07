@@ -648,6 +648,8 @@ class SaleForm extends React.Component {
 
       this.props.actions.distributorList({ all: 1 });
 
+      this.props.actions.salesExecutiveList({ all: 1, role_id: 4 });
+
       this.props.actions.supplierList({ all: 1, page: 1 });
 
     } else if (this.isDistributor) {
@@ -3672,6 +3674,8 @@ class SaleForm extends React.Component {
 
         userList = userList.concat(ownAdmins);
 
+        userList = this.state.salesExecutiveList.concat(userList);
+
       } else {
 
         userList = this.state.adminList;
@@ -3709,6 +3713,8 @@ class SaleForm extends React.Component {
         }
 
         userList = ownDistri;
+
+        userList = this.state.salesExecutiveList.concat(userList);
 
       } else {
 
