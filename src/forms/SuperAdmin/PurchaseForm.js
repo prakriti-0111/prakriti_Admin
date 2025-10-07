@@ -567,11 +567,11 @@ class PurchaseForm extends React.Component {
     this.updateProductFormValues(decodedText, "certificate_no");
 
     // Mark the field as scanned
-    this.setState(prevState => ({
+    this.setState((prevState) => ({
       scannedFields: {
         ...prevState.scannedFields,
         certificate_no: true,
-      }
+      },
     }));
 
     // Show success message using snackbar
@@ -587,11 +587,11 @@ class PurchaseForm extends React.Component {
   };
 
   handleEditScannedField = (fieldName) => {
-    this.setState(prevState => ({
+    this.setState((prevState) => ({
       scannedFields: {
         ...prevState.scannedFields,
         [fieldName]: false,
-      }
+      },
     }));
   };
 
@@ -924,7 +924,7 @@ class PurchaseForm extends React.Component {
     if (url.includes("igi.org")) {
       try {
         const pdfData = await extractPdfData(url);
-     
+
         // Extract SUMMARY NO from the PDF data
 
         // Set the certificate_no with the extracted value
@@ -932,10 +932,12 @@ class PurchaseForm extends React.Component {
           pdfData.text.report_number && pdfData.text.report_number.trim() !== ""
             ? pdfData.text.report_number
             : pdfData.text.summary_number;
-        this.updateProductFormValues(
-          certificateNo,
-          "certificate_no"
-        );
+        this.updateProductFormValues(certificateNo, "certificate_no");
+        if (certificateNo) {
+          this.setState((prevState) => ({
+            scannedFields: { ...prevState.scannedFields, certificate_no: true },
+          }));
+        }
         return;
       } catch (error) {
         console.error("Error extracting PDF data:", error);
@@ -981,6 +983,15 @@ class PurchaseForm extends React.Component {
 
       // Set the certificate_no with the searched text
       this.updateProductFormValues(searchedForText, "certificate_no");
+      if (
+        searchedForText &&
+        !searchedForText.startsWith("http") &&
+        searchedForText !== "No certificate found"
+      ) {
+        this.setState((prevState) => ({
+          scannedFields: { ...prevState.scannedFields, certificate_no: true },
+        }));
+      }
     } catch (error) {
       console.error("Error fetching data:", error);
     }
@@ -2925,27 +2936,45 @@ class PurchaseForm extends React.Component {
                               endAdornment: (
                                 <InputAdornment position="end">
                                   {this.state.scannedFields.certificate_no ? (
+                                    <>
+                                      <Button
+                                        variant=""
+                                        className="add-button purchase_add_p"
+                                        color="primary"
+                                        onClick={() =>
+                                          this.handleEditScannedField(
+                                            "certificate_no"
+                                          )
+                                        }
+                                        style={{ width: "40px", height: "40px", marginRight: 6, padding: 0, minWidth: 0 }}
+                                        title="Edit certificate / link"
+                                      >
+                                        <Edit sx={{ color: "#1976d2" }} />
+                                      </Button>
+                                      <Button
+                                        variant=""
+                                        className="add-button purchase_add_p"
+                                        color="primary"
+                                        onClick={this.handleRetryQRScanner}
+                                        style={{ width: "40px", height: "40px", padding: 0, minWidth: 0 }}
+                                        title="Rescan QR code"
+                                      >
+                                        <QrCodeScanner sx={{ color: "#1976d2" }} />
+                                      </Button>
+                                    </>
+                                  ) : (
                                     <Button
                                       variant=""
                                       className="add-button purchase_add_p"
                                       color="primary"
-                                      onClick={() => this.handleEditScannedField("certificate_no")}
-                                      style={{ width: "40px", height: "40px" }}
-                                      title="Edit certificate number"
-                                    >
-                                      <Edit sx={{ color: "#1976d2" }} />
-                                    </Button>
-                                  ) : (
-                                  <Button
-                                    variant=""
-                                    className="add-button purchase_add_p"
-                                    color="primary"
-                                    onClick={this.handleOpenQRScanner}
-                                    style={{ width: "40px", height: "40px" }}
+                                      onClick={this.handleOpenQRScanner}
+                                      style={{ width: "40px", height: "40px", padding: 0, minWidth: 0 }}
                                       title="Scan QR code"
-                                  >
-                                    <QrCodeScanner sx={{ color: "#1976d2" }} />
-                                  </Button>
+                                    >
+                                      <QrCodeScanner
+                                        sx={{ color: "#1976d2" }}
+                                      />
+                                    </Button>
                                   )}
                                 </InputAdornment>
                               ),
