@@ -662,6 +662,8 @@ class SaleForm extends React.Component {
 
     } else if (this.isSalesExecutive) {
 
+      this.props.actions.adminList({ all: 1 });
+
       this.props.actions.retailerList({ all: 1 });
 
       this.props.actions.distributorList({ all: 1 });
@@ -3759,6 +3761,8 @@ class SaleForm extends React.Component {
           this.state.salesExecutiveList
 
         );
+
+        userList = this.state.adminList.concat(userList);
 
       } else {
 
