@@ -188,7 +188,7 @@ class StockPage extends Component {
       },
       {
         label: "+",
-        onClick: this.handleAddToCart,
+        onClick: this.handleActionAddToCart,
         color: "primary",
         show: this.props.query.get("by_specific") ? false : true,
         conditions: [
@@ -488,24 +488,9 @@ class StockPage extends Component {
         await this.fetchData(cleanedText);
         this.handleCloseQRScanner(); // Close scanner after URL processing
       } else {
-        // Set pendingCertificateNo and trigger search
-        this.setState({
-          queryParams: {
-            ...this.state.queryParams,
-            search: cleanedText,
-            page: 1,
-            limit: 50,
-          },
-          pendingCertificateNo: cleanedText,
-          searchingCertificate: true
-        }, async () => {
-          await this.loadListData();
-          this.setState({ 
-            searchingCertificate: false,
-            qrScannerOpen: false // Close scanner after successful scan
-          });
-          this.handleCloseQRScanner(); // Ensure proper cleanup
-        });
+        // Try direct add to cart first (faster)
+        await this.handleDirectAddToCartByCertificate(cleanedText);
+        this.handleCloseQRScanner(); // Close scanner after processing
       }
     } catch (error) {
       console.error("Error processing QR code:", error);
@@ -528,27 +513,143 @@ class StockPage extends Component {
     ) {
       this.fetchData(manualCertificate);
     } else {
-      // Set pendingCertificateNo and trigger search
+      // Try direct add to cart first (faster)
+      this.handleDirectAddToCartByCertificate(manualCertificate);
+    }
+    this.setState({ manualCertificate: "" });
+  };
+
+  handleDirectAddToCartByCertificate = async (certificateNo) => {
+    try {
+      // First, try to find the item by certificate number directly
+      const searchParams = {
+        search: certificateNo,
+        page: 1,
+        limit: 1, // Only need one result
+        by_specific: this.state.queryParams.by_specific,
+        own_distributor: this.state.queryParams.own_distributor,
+        own_admin: this.state.queryParams.own_admin,
+        own_se: this.state.queryParams.own_se,
+        total_avl_stock: this.state.queryParams.total_avl_stock,
+        manager: this.state.queryParams.manager,
+      };
+
+      // Make a direct API call to get the item
+      const response = await this.props.actions.stocksList(searchParams);
+      
+      if (response && response.data && response.data.success && response.data.data.items && response.data.data.items.length > 0) {
+        const item = response.data.data.items[0];
+        
+        // Check if item can be added to cart
+        if (!item.can_add_cart) {
+          this.props.enqueueSnackbar(`Item ${item.certificate_no} cannot be added to cart`, {
+            variant: "warning"
+          });
+          this.setState({ processingCertificate: false });
+          return;
+        }
+
+        // Check if item is already in cart
+        let check_cart = await getCartItemById({
+          stock_id: item.id,
+          product_id: item.product_id,
+        });
+        
+        if (!check_cart.data.success) {
+          this.props.enqueueSnackbar("Error checking cart status", { variant: "error" });
+          this.setState({ processingCertificate: false });
+          return;
+        }
+
+        if (check_cart.data.data && check_cart.data.data.length > 0) {
+          this.props.enqueueSnackbar(`Item ${item.certificate_no} is already in cart`, {
+            variant: "warning"
+          });
+          this.setState({ processingCertificate: false });
+          return;
+        }
+
+        // Add to cart directly
+        if (item.type !== "material") {
+          const materials = item.stock_materials.map(material => ({
+            material_id: material.material_id,
+            purity_id: material.purity_id,
+            weight: material.weight,
+            unit_id: material.unit_id,
+            quantity: material.quantity,
+          }));
+          
+          const data = {
+            stock_id: item.id,
+            product_id: item.product_id,
+            size_id: item.size_id,
+            materials,
+            quantity: 1,
+          };
+          
+          await this.props.actions.cartStore(data);
+        } else {
+          // Handle material items - open cart dialog
+          this.setState({
+            cart_stock: item,
+            cartDialog: true,
+            unit_id: item.stock_materials[0]?.unit_id || "",
+            processingCertificate: false
+          });
+          return;
+        }
+
+        // Clear certificate input and refresh
+        this.setState({
+          manualCertificate: "",
+          processingCertificate: false
+        }, () => {
+          // Focus on certificate input after successful addition
+          setTimeout(() => {
+            const certificateInput = document.querySelector('input[placeholder="Enter certificate number or URL"]');
+            if (certificateInput) {
+              certificateInput.focus();
+            }
+          }, 100);
+        });
+
+      } else {
+        // If direct add fails, fall back to search process
+        this.setState({
+          queryParams: {
+            ...this.state.queryParams,
+            search: certificateNo,
+            page: 1,
+            limit: 50,
+          },
+          pendingCertificateNo: certificateNo,
+          searchingCertificate: true
+        }, async () => {
+          await this.loadListData();
+          this.setState({ searchingCertificate: false });
+        });
+      }
+    } catch (error) {
+      console.error("Error in direct add to cart:", error);
+      // Fall back to search process on error
       this.setState({
         queryParams: {
           ...this.state.queryParams,
-          search: manualCertificate,
+          search: certificateNo,
           page: 1,
           limit: 50,
         },
-        pendingCertificateNo: manualCertificate,
+        pendingCertificateNo: certificateNo,
         searchingCertificate: true
       }, async () => {
         await this.loadListData();
         this.setState({ searchingCertificate: false });
       });
     }
-    this.setState({ manualCertificate: "" });
   };
 
   handleAddToCart = async (row) => {
     if (this.addToCartProcess) {
-      this.props.enqueueSnackbar("Processing please wait.", { variant: "error" });
       this.setState({ processingCertificate: false }); // Reset loading state
       return;
     }
@@ -681,6 +782,91 @@ class StockPage extends Component {
           }
         }, 100);
       });
+    } finally {
+      this.addToCartProcess = false;
+    }
+  };
+
+  // Separate function for action buttons that doesn't affect certificate input
+  handleActionAddToCart = async (row) => {
+    if (this.addToCartProcess) {
+      return;
+    }
+    
+    try {
+      this.addToCartProcess = true;
+      
+      // Check if item can be added to cart first (faster check)
+      if (!row.can_add_cart) {
+        this.props.enqueueSnackbar(`Item ${row.certificate_no} cannot be added to cart`, {
+          variant: "warning"
+        });
+        this.addToCartProcess = false;
+        return;
+      }
+
+      // Check if item is already in cart
+      let check_cart = await getCartItemById({
+        stock_id: row.id,
+        product_id: row.product_id,
+      });
+      
+      if (!check_cart.data.success) {
+        this.props.enqueueSnackbar("Error checking cart status", { variant: "error" });
+        this.addToCartProcess = false;
+        return;
+      }
+
+      if (check_cart.data.data && check_cart.data.data.length > 0) {
+        this.props.enqueueSnackbar(`Item ${row.certificate_no} is already in cart`, {
+          variant: "warning"
+        });
+        this.addToCartProcess = false;
+        return;
+      }
+
+      // Process based on item type
+      if (row.type !== "material") {
+        // Handle non-material items - optimized data preparation
+        const materials = row.stock_materials.map(material => ({
+          material_id: material.material_id,
+          purity_id: material.purity_id,
+          weight: material.weight,
+          unit_id: material.unit_id,
+          quantity: material.quantity,
+        }));
+        
+        const data = {
+          stock_id: row.id,
+          product_id: row.product_id,
+          size_id: row.size_id,
+          materials,
+          quantity: 1,
+        };
+        
+        await this.props.actions.cartStore(data);
+
+        // Refresh the list after successful add to cart (without affecting certificate input)
+        this.setState({
+          queryParams: {
+            ...this.state.queryParams,
+            page: 1,
+            limit: 50,
+          }
+        }, () => {
+          this.loadListData();
+        });
+      } else {
+        // Handle material items - open cart dialog
+        this.setState({
+          cart_stock: row,
+          cartDialog: true,
+          unit_id: row.stock_materials[0]?.unit_id || ""
+        });
+      }
+    } catch (error) {
+      console.error("Error adding to cart:", error);
+      this.props.enqueueSnackbar("Error adding item to cart", { variant: "error" });
     } finally {
       this.addToCartProcess = false;
     }
