@@ -2635,7 +2635,7 @@ class PurchaseForm extends React.Component {
               className="p_heading_list mb-0 mt-0"
               style={{ position: "relative" }}
             >
-              <span className="purchase_p_title ">
+              <span className="purchase_p_title " style={{ marginTop: '16px' }}>
                 Purchase{" "}
                 {formValues.type == "product" ? "Products" : "Materials"}
               </span>
@@ -3410,7 +3410,7 @@ class PurchaseForm extends React.Component {
             ) : null}
             <TableContainer
               component={Paper}
-              className="ratn-table-wrapper mt-10 purchase-table"
+              className="ratn-table-wrapper mt-4 purchase-table"
             >
               <Table
                 sx={{ minWidth: 650 }}
