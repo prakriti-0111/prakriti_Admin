@@ -531,12 +531,12 @@ class DashboardPage extends Component {
             </CardContent>
           ) : null}
 
-          {!this.isSalesExecutive &&
-          (!this.isSuperAdmin ||
+          {(!this.isSalesExecutive &&
+          /* (!this.isSuperAdmin ||
             (this.isSuperAdmin &&
-              hasPermission(permissions, "supplier", "list"))) &&
+              hasPermission(permissions, "supplier", "list"))) && */
           !this.isDistributor && 
-          (this.isAdmin && profile && profile.own == false) ? (
+          (this.isAdmin && profile && profile.own == false)) || this.isSuperAdmin ? (
             <CardContent
               onClick={() => this.handleClick("suppliers")}
               className="dashboard_card_content bg-color-3"
