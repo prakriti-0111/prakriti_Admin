@@ -118,6 +118,7 @@ class StockPage extends Component {
       processingCertificate: false,
       pendingCertificateNo: null, // Track certificate to process after search
       searchingCertificate: false, // Track if a certificate search is in progress
+      processingCartItems: new Set(), // Track which specific items are being added to cart
     };
 
     this.columns = [
@@ -180,16 +181,34 @@ class StockPage extends Component {
       },
     ];
 
-    this.tableActions = [
+    // Initialize tableActions as empty - will be populated dynamically
+    this.tableActions = [];
+
+    this.addToCartProcess = false;
+  }
+
+  handleCartAdded = (row) => {
+    console.log("Item already in cart! You can not add this item.");
+    this.props.enqueueSnackbar(
+        "Item already in cart! You can not add this item.",
+        { variant: "error" }
+    );
+  };
+
+  // Generate table actions dynamically based on current state and specific row
+  getTableActions = (row = null) => {
+    const isProcessing = row ? this.state.processingCartItems.has(`${row.id}_${row.product_id}`) : false;
+    
+    return [
       {
         label: "View",
         onClick: this.handleView,
         color: "primary",
       },
       {
-        label: "+",
+        label: isProcessing ? "..." : "+", // Show dots when this specific item is loading
         onClick: this.handleActionAddToCart,
-        color: "primary",
+        color: isProcessing ? "secondary" : "primary", // Change color when loading
         show: this.props.query.get("by_specific") ? false : true,
         conditions: [
           {
@@ -197,6 +216,9 @@ class StockPage extends Component {
             value: true,
           },
         ],
+        loading: isProcessing, // Add loading state for this specific item
+        disabled: isProcessing || this.state.processingCertificate, // Disable when processing
+        icon: false, // Use text instead of icon for better loading visibility
       },
       {
         label: "green_tick",
@@ -211,16 +233,6 @@ class StockPage extends Component {
         ],
       },
     ];
-
-    this.addToCartProcess = false;
-  }
-
-  handleCartAdded = (row) => {
-    console.log("Item already in cart! You can not add this item.");
-    this.props.enqueueSnackbar(
-        "Item already in cart! You can not add this item.",
-        { variant: "error" }
-    );
   };
 
   componentDidMount() {
@@ -649,12 +661,21 @@ class StockPage extends Component {
   };
 
   handleAddToCart = async (row) => {
+    // Strict prevention of multiple requests
     if (this.addToCartProcess) {
+      console.log('Add to cart already in progress, ignoring request');
       this.setState({ processingCertificate: false }); // Reset loading state
       return;
     }
     
+    // Additional check for processing state
+    if (this.state.processingCertificate) {
+      console.log('Certificate processing in progress, ignoring cart request');
+      return;
+    }
+    
     try {
+      // Set processing flags immediately
       this.addToCartProcess = true;
       this.setState({ processingCertificate: true }); // Set loading state
       
@@ -789,19 +810,35 @@ class StockPage extends Component {
 
   // Separate function for action buttons that doesn't affect certificate input
   handleActionAddToCart = async (row) => {
-    if (this.addToCartProcess) {
+    const itemKey = `${row.id}_${row.product_id}`;
+    
+    // Check if this specific item is already being processed
+    if (this.state.processingCartItems.has(itemKey)) {
+      console.log('This item is already being added to cart, ignoring request');
+      return;
+    }
+    
+    // Additional check for processing state
+    if (this.state.processingCertificate) {
+      console.log('Certificate processing in progress, ignoring cart request');
       return;
     }
     
     try {
-      this.addToCartProcess = true;
+      // Add this specific item to processing set
+      const newProcessingItems = new Set(this.state.processingCartItems);
+      newProcessingItems.add(itemKey);
+      this.setState({ processingCartItems: newProcessingItems });
       
       // Check if item can be added to cart first (faster check)
       if (!row.can_add_cart) {
         this.props.enqueueSnackbar(`Item ${row.certificate_no} cannot be added to cart`, {
           variant: "warning"
         });
-        this.addToCartProcess = false;
+        // Remove this item from processing set
+        const newProcessingItems = new Set(this.state.processingCartItems);
+        newProcessingItems.delete(itemKey);
+        this.setState({ processingCartItems: newProcessingItems });
         return;
       }
 
@@ -813,7 +850,10 @@ class StockPage extends Component {
       
       if (!check_cart.data.success) {
         this.props.enqueueSnackbar("Error checking cart status", { variant: "error" });
-        this.addToCartProcess = false;
+        // Remove this item from processing set
+        const newProcessingItems = new Set(this.state.processingCartItems);
+        newProcessingItems.delete(itemKey);
+        this.setState({ processingCartItems: newProcessingItems });
         return;
       }
 
@@ -821,7 +861,10 @@ class StockPage extends Component {
         this.props.enqueueSnackbar(`Item ${row.certificate_no} is already in cart`, {
           variant: "warning"
         });
-        this.addToCartProcess = false;
+        // Remove this item from processing set
+        const newProcessingItems = new Set(this.state.processingCartItems);
+        newProcessingItems.delete(itemKey);
+        this.setState({ processingCartItems: newProcessingItems });
         return;
       }
 
@@ -868,7 +911,10 @@ class StockPage extends Component {
       console.error("Error adding to cart:", error);
       this.props.enqueueSnackbar("Error adding item to cart", { variant: "error" });
     } finally {
-      this.addToCartProcess = false;
+      // Remove this item from processing set
+      const newProcessingItems = new Set(this.state.processingCartItems);
+      newProcessingItems.delete(itemKey);
+      this.setState({ processingCartItems: newProcessingItems });
     }
   };
 
@@ -1685,8 +1731,9 @@ class StockPage extends Component {
                   limit={this.state.queryParams.limit}
                   total={this.state.total}
                   handlePagination={this.handlePagination}
-                  actions={this.tableActions}
+                  actions={this.getTableActions()}
                   haveAllOption={true}
+                  getRowActions={this.getTableActions} // Pass function to generate row-specific actions
               />
             </Grid>
           </MainCard>

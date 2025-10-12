@@ -10,6 +10,22 @@ import {
   FormControl,
   Rating,
 } from "@mui/material";
+
+// Add CSS for spinner animation
+const spinnerStyles = `
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+`;
+
+// Inject styles into the document head
+if (typeof document !== 'undefined') {
+  const styleSheet = document.createElement("style");
+  styleSheet.type = "text/css";
+  styleSheet.innerText = spinnerStyles;
+  document.head.appendChild(styleSheet);
+}
 import { Table, TableHead } from "@mui/material";
 import TableBody from "@mui/material/TableBody";
 import TableCell from "@mui/material/TableCell";
@@ -251,6 +267,16 @@ class DataTable extends React.Component {
 
       case "+":
         return <AddIcon />;
+        break;
+
+      case "...":
+        return <div style={{
+          width: "12px",
+          height: "12px",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center"
+        }}>...</div>;
         break;
 
       case "Download":
@@ -640,7 +666,7 @@ class DataTable extends React.Component {
                           justifyContent={rowAlign}
                           alignItems={rowAlign}
                         >
-                          {actions.map((a, index) => {
+                          {(this.props.getRowActions ? this.props.getRowActions(row) : actions).map((a, index) => {
                             return (
                               <React.Fragment key={index}>
                                 {(!("show" in a) || a.show) &&
@@ -655,12 +681,38 @@ class DataTable extends React.Component {
                                     variant="contained"
                                     color={a.color}
                                     onClick={() =>
-                                      this.handleActionButtonClick(a, row)
+                                      !a.disabled && !a.loading && this.handleActionButtonClick(a, row)
                                     }
-                                    disabled={a.disabled ? a.disabled : false}
-                                    style={{ fontSize: "10px" }}
+                                    disabled={a.disabled || a.loading || false}
+                                    style={{ 
+                                      fontSize: "10px",
+                                      minWidth: "32px",
+                                      minHeight: "32px",
+                                      opacity: a.loading ? 0.6 : (a.disabled ? 0.5 : 1),
+                                      cursor: a.disabled || a.loading ? "not-allowed" : "pointer",
+                                      transition: "all 0.2s ease-in-out"
+                                    }}
+                                    title={a.loading ? "Adding to cart..." : (a.disabled ? "Disabled" : "")}
                                   >
-                                    {this.getActionIcon(a)}
+                                    {a.loading ? (
+                                      <div 
+                                        className="spinner-border spinner-border-sm" 
+                                        role="status"
+                                        style={{
+                                          width: "14px",
+                                          height: "14px",
+                                          border: "2px solid rgba(255, 255, 255, 0.3)",
+                                          borderTop: "2px solid #ffffff",
+                                          borderRadius: "50%",
+                                          animation: "spin 1s linear infinite",
+                                          display: "inline-block"
+                                        }}
+                                      >
+                                        <span className="visually-hidden">Loading...</span>
+                                      </div>
+                                    ) : (
+                                      this.getActionIcon(a)
+                                    )}
                                   </Button>
                                 ) : null}
                               </React.Fragment>
