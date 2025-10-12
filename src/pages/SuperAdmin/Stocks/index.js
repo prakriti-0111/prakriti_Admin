@@ -118,6 +118,7 @@ class StockPage extends Component {
       processingCertificate: false,
       pendingCertificateNo: null, // Track certificate to process after search
       searchingCertificate: false, // Track if a certificate search is in progress
+      processingCartItems: new Set(), // Track which specific items are being added to cart
     };
 
     this.columns = [
@@ -180,16 +181,34 @@ class StockPage extends Component {
       },
     ];
 
-    this.tableActions = [
+    // Initialize tableActions as empty - will be populated dynamically
+    this.tableActions = [];
+
+    this.addToCartProcess = false;
+  }
+
+  handleCartAdded = (row) => {
+    console.log("Item already in cart! You can not add this item.");
+    this.props.enqueueSnackbar(
+        "Item already in cart! You can not add this item.",
+        { variant: "error" }
+    );
+  };
+
+  // Generate table actions dynamically based on current state and specific row
+  getTableActions = (row = null) => {
+    const isProcessing = row ? this.state.processingCartItems.has(`${row.id}_${row.product_id}`) : false;
+    
+    return [
       {
         label: "View",
         onClick: this.handleView,
         color: "primary",
       },
       {
-        label: "+",
-        onClick: this.handleAddToCart,
-        color: "primary",
+        label: isProcessing ? "..." : "+", // Show dots when this specific item is loading
+        onClick: this.handleActionAddToCart,
+        color: isProcessing ? "secondary" : "primary", // Change color when loading
         show: this.props.query.get("by_specific") ? false : true,
         conditions: [
           {
@@ -197,6 +216,9 @@ class StockPage extends Component {
             value: true,
           },
         ],
+        loading: isProcessing, // Add loading state for this specific item
+        disabled: isProcessing || this.state.processingCertificate, // Disable when processing
+        icon: false, // Use text instead of icon for better loading visibility
       },
       {
         label: "green_tick",
@@ -211,16 +233,6 @@ class StockPage extends Component {
         ],
       },
     ];
-
-    this.addToCartProcess = false;
-  }
-
-  handleCartAdded = (row) => {
-    console.log("Item already in cart! You can not add this item.");
-    this.props.enqueueSnackbar(
-        "Item already in cart! You can not add this item.",
-        { variant: "error" }
-    );
   };
 
   componentDidMount() {
@@ -488,24 +500,9 @@ class StockPage extends Component {
         await this.fetchData(cleanedText);
         this.handleCloseQRScanner(); // Close scanner after URL processing
       } else {
-        // Set pendingCertificateNo and trigger search
-        this.setState({
-          queryParams: {
-            ...this.state.queryParams,
-            search: cleanedText,
-            page: 1,
-            limit: 50,
-          },
-          pendingCertificateNo: cleanedText,
-          searchingCertificate: true
-        }, async () => {
-          await this.loadListData();
-          this.setState({ 
-            searchingCertificate: false,
-            qrScannerOpen: false // Close scanner after successful scan
-          });
-          this.handleCloseQRScanner(); // Ensure proper cleanup
-        });
+        // Try direct add to cart first (faster)
+        await this.handleDirectAddToCartByCertificate(cleanedText);
+        this.handleCloseQRScanner(); // Close scanner after processing
       }
     } catch (error) {
       console.error("Error processing QR code:", error);
@@ -528,32 +525,157 @@ class StockPage extends Component {
     ) {
       this.fetchData(manualCertificate);
     } else {
-      // Set pendingCertificateNo and trigger search
+      // Try direct add to cart first (faster)
+      this.handleDirectAddToCartByCertificate(manualCertificate);
+    }
+    this.setState({ manualCertificate: "" });
+  };
+
+  handleDirectAddToCartByCertificate = async (certificateNo) => {
+    try {
+      // First, try to find the item by certificate number directly
+      const searchParams = {
+        search: certificateNo,
+        page: 1,
+        limit: 1, // Only need one result
+        by_specific: this.state.queryParams.by_specific,
+        own_distributor: this.state.queryParams.own_distributor,
+        own_admin: this.state.queryParams.own_admin,
+        own_se: this.state.queryParams.own_se,
+        total_avl_stock: this.state.queryParams.total_avl_stock,
+        manager: this.state.queryParams.manager,
+      };
+
+      // Make a direct API call to get the item
+      const response = await this.props.actions.stocksList(searchParams);
+      
+      if (response && response.data && response.data.success && response.data.data.items && response.data.data.items.length > 0) {
+        const item = response.data.data.items[0];
+        
+        // Check if item can be added to cart
+        if (!item.can_add_cart) {
+          this.props.enqueueSnackbar(`Item ${item.certificate_no} cannot be added to cart`, {
+            variant: "warning"
+          });
+          this.setState({ processingCertificate: false });
+          return;
+        }
+
+        // Check if item is already in cart
+        let check_cart = await getCartItemById({
+          stock_id: item.id,
+          product_id: item.product_id,
+        });
+        
+        if (!check_cart.data.success) {
+          this.props.enqueueSnackbar("Error checking cart status", { variant: "error" });
+          this.setState({ processingCertificate: false });
+          return;
+        }
+
+        if (check_cart.data.data && check_cart.data.data.length > 0) {
+          this.props.enqueueSnackbar(`Item ${item.certificate_no} is already in cart`, {
+            variant: "warning"
+          });
+          this.setState({ processingCertificate: false });
+          return;
+        }
+
+        // Add to cart directly
+        if (item.type !== "material") {
+          const materials = item.stock_materials.map(material => ({
+            material_id: material.material_id,
+            purity_id: material.purity_id,
+            weight: material.weight,
+            unit_id: material.unit_id,
+            quantity: material.quantity,
+          }));
+          
+          const data = {
+            stock_id: item.id,
+            product_id: item.product_id,
+            size_id: item.size_id,
+            materials,
+            quantity: 1,
+          };
+          
+          await this.props.actions.cartStore(data);
+        } else {
+          // Handle material items - open cart dialog
+          this.setState({
+            cart_stock: item,
+            cartDialog: true,
+            unit_id: item.stock_materials[0]?.unit_id || "",
+            processingCertificate: false
+          });
+          return;
+        }
+
+        // Clear certificate input and refresh
+        this.setState({
+          manualCertificate: "",
+          processingCertificate: false
+        }, () => {
+          // Focus on certificate input after successful addition
+          setTimeout(() => {
+            const certificateInput = document.querySelector('input[placeholder="Enter certificate number or URL"]');
+            if (certificateInput) {
+              certificateInput.focus();
+            }
+          }, 100);
+        });
+
+      } else {
+        // If direct add fails, fall back to search process
+        this.setState({
+          queryParams: {
+            ...this.state.queryParams,
+            search: certificateNo,
+            page: 1,
+            limit: 50,
+          },
+          pendingCertificateNo: certificateNo,
+          searchingCertificate: true
+        }, async () => {
+          await this.loadListData();
+          this.setState({ searchingCertificate: false });
+        });
+      }
+    } catch (error) {
+      console.error("Error in direct add to cart:", error);
+      // Fall back to search process on error
       this.setState({
         queryParams: {
           ...this.state.queryParams,
-          search: manualCertificate,
+          search: certificateNo,
           page: 1,
           limit: 50,
         },
-        pendingCertificateNo: manualCertificate,
+        pendingCertificateNo: certificateNo,
         searchingCertificate: true
       }, async () => {
         await this.loadListData();
         this.setState({ searchingCertificate: false });
       });
     }
-    this.setState({ manualCertificate: "" });
   };
 
   handleAddToCart = async (row) => {
+    // Strict prevention of multiple requests
     if (this.addToCartProcess) {
-      this.props.enqueueSnackbar("Processing please wait.", { variant: "error" });
+      console.log('Add to cart already in progress, ignoring request');
       this.setState({ processingCertificate: false }); // Reset loading state
       return;
     }
     
+    // Additional check for processing state
+    if (this.state.processingCertificate) {
+      console.log('Certificate processing in progress, ignoring cart request');
+      return;
+    }
+    
     try {
+      // Set processing flags immediately
       this.addToCartProcess = true;
       this.setState({ processingCertificate: true }); // Set loading state
       
@@ -683,6 +805,116 @@ class StockPage extends Component {
       });
     } finally {
       this.addToCartProcess = false;
+    }
+  };
+
+  // Separate function for action buttons that doesn't affect certificate input
+  handleActionAddToCart = async (row) => {
+    const itemKey = `${row.id}_${row.product_id}`;
+    
+    // Check if this specific item is already being processed
+    if (this.state.processingCartItems.has(itemKey)) {
+      console.log('This item is already being added to cart, ignoring request');
+      return;
+    }
+    
+    // Additional check for processing state
+    if (this.state.processingCertificate) {
+      console.log('Certificate processing in progress, ignoring cart request');
+      return;
+    }
+    
+    try {
+      // Add this specific item to processing set
+      const newProcessingItems = new Set(this.state.processingCartItems);
+      newProcessingItems.add(itemKey);
+      this.setState({ processingCartItems: newProcessingItems });
+      
+      // Check if item can be added to cart first (faster check)
+      if (!row.can_add_cart) {
+        this.props.enqueueSnackbar(`Item ${row.certificate_no} cannot be added to cart`, {
+          variant: "warning"
+        });
+        // Remove this item from processing set
+        const newProcessingItems = new Set(this.state.processingCartItems);
+        newProcessingItems.delete(itemKey);
+        this.setState({ processingCartItems: newProcessingItems });
+        return;
+      }
+
+      // Check if item is already in cart
+      let check_cart = await getCartItemById({
+        stock_id: row.id,
+        product_id: row.product_id,
+      });
+      
+      if (!check_cart.data.success) {
+        this.props.enqueueSnackbar("Error checking cart status", { variant: "error" });
+        // Remove this item from processing set
+        const newProcessingItems = new Set(this.state.processingCartItems);
+        newProcessingItems.delete(itemKey);
+        this.setState({ processingCartItems: newProcessingItems });
+        return;
+      }
+
+      if (check_cart.data.data && check_cart.data.data.length > 0) {
+        this.props.enqueueSnackbar(`Item ${row.certificate_no} is already in cart`, {
+          variant: "warning"
+        });
+        // Remove this item from processing set
+        const newProcessingItems = new Set(this.state.processingCartItems);
+        newProcessingItems.delete(itemKey);
+        this.setState({ processingCartItems: newProcessingItems });
+        return;
+      }
+
+      // Process based on item type
+      if (row.type !== "material") {
+        // Handle non-material items - optimized data preparation
+        const materials = row.stock_materials.map(material => ({
+          material_id: material.material_id,
+          purity_id: material.purity_id,
+          weight: material.weight,
+          unit_id: material.unit_id,
+          quantity: material.quantity,
+        }));
+        
+        const data = {
+          stock_id: row.id,
+          product_id: row.product_id,
+          size_id: row.size_id,
+          materials,
+          quantity: 1,
+        };
+        
+        await this.props.actions.cartStore(data);
+
+        // Refresh the list after successful add to cart (without affecting certificate input)
+        this.setState({
+          queryParams: {
+            ...this.state.queryParams,
+            page: 1,
+            limit: 50,
+          }
+        }, () => {
+          this.loadListData();
+        });
+      } else {
+        // Handle material items - open cart dialog
+        this.setState({
+          cart_stock: row,
+          cartDialog: true,
+          unit_id: row.stock_materials[0]?.unit_id || ""
+        });
+      }
+    } catch (error) {
+      console.error("Error adding to cart:", error);
+      this.props.enqueueSnackbar("Error adding item to cart", { variant: "error" });
+    } finally {
+      // Remove this item from processing set
+      const newProcessingItems = new Set(this.state.processingCartItems);
+      newProcessingItems.delete(itemKey);
+      this.setState({ processingCartItems: newProcessingItems });
     }
   };
 
@@ -1499,8 +1731,9 @@ class StockPage extends Component {
                   limit={this.state.queryParams.limit}
                   total={this.state.total}
                   handlePagination={this.handlePagination}
-                  actions={this.tableActions}
+                  actions={this.getTableActions()}
                   haveAllOption={true}
+                  getRowActions={this.getTableActions} // Pass function to generate row-specific actions
               />
             </Grid>
           </MainCard>
