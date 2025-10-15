@@ -245,6 +245,7 @@ class StockPage extends Component {
 
   loadPriceByCategory = async () => {
     let res = await getPriceByCategory({
+      by_specific: this.state.queryParams.by_specific,
       own_distributor: this.state.queryParams.own_distributor,
       own_admin: this.state.queryParams.own_admin,
       own_se: this.state.queryParams.own_se,

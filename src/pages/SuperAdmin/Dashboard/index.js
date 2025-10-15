@@ -1008,7 +1008,7 @@ class DashboardPage extends Component {
           (profile && profile.own == false)*/ ? (
             <CardContent
               onClick={() =>
-                this.handleClick("stocks?total_avl_stock=1&by_specific=1")
+                this.handleClick(`stocks?total_avl_stock=1&by_specific=1${!this.isSalesExecutive?"": "&own_admin=1"}`)
               }
               className="dashboard_card_content bg-color-2"
               sx={{ display: "flex", justifyContent: "space-between" }}
