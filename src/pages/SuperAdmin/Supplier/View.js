@@ -569,7 +569,7 @@ class SupplierViewPage extends React.Component {
                       variant='contained'
                       className='add-button'
                       onClick={() => this.handlePayNow()}>
-                      Pay
+                      Advance Pay
                     </Button>
                   </Grid>
                 </Grid>

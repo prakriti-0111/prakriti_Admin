@@ -736,7 +736,7 @@ class SaleForm extends React.Component {
 
   initializeFormData = () => {
 
-    let formValues = { ...this.state.formData };
+    let formValues = { ...this.state.formValues, ...this.state.formData };
 
     let return_products = [],
 
@@ -890,6 +890,9 @@ class SaleForm extends React.Component {
 
         report_charge: reportCharge[0]
 
+      }, () => {
+        console.log("========================== after report charge setState ==========================");
+        this.calculateProductPrice();
       });
 
     }
@@ -1215,9 +1218,7 @@ class SaleForm extends React.Component {
         },
 
         () => {
-
           this.calculateProductPrice();
-
         }
 
       );
@@ -2127,6 +2128,7 @@ class SaleForm extends React.Component {
     //new code
 
     let formValues = this.state.formValues;
+    console.log("calculateProductPrice => formValues", formValues);   
 
     let products = formValues.products;
 
@@ -2348,7 +2350,7 @@ class SaleForm extends React.Component {
 
     if(!this.state.isAssign){
 
-      total_report_charge_amount = report_qty * parseFloat(formValues.report_charge_amount);
+      total_report_charge_amount = report_qty * parseFloat(this.state.report_charge.amount);
 
       total_report_charge_tax_amount = total_report_charge_amount * parseFloat(this.state.report_charge.tax)/100;
 
@@ -2358,7 +2360,7 @@ class SaleForm extends React.Component {
 
     console.log("report_qty : ", report_qty);
 
-    console.log("report_charge_amount : ", formValues.report_charge_amount);
+    console.log("report_charge_amount : ", this.state.report_charge.amount);
 
     console.log("total_report_charge_amount : ", total_report_charge_amount);
 
@@ -2370,13 +2372,13 @@ class SaleForm extends React.Component {
 
     formValues.report_qty = report_qty;
 
+    formValues.report_charge_amount = parseFloat(this.state.report_charge.amount);
+
     formValues.total_report_charge_amount = total_report_charge_amount;
 
     formValues.total_report_charge_tax_amount = total_report_charge_tax_amount;
 
     formValues.total_report_charge_amount_after_tax = total_report_charge_amount_after_tax;
-
-
 
     this.setState(
 
@@ -6446,7 +6448,7 @@ class SaleForm extends React.Component {
 
                           <TableCell>{item.certificate_no}</TableCell>
 
-                          <TableCell colSpan={6}>
+                          <TableCell colSpan={2}>
 
                             {item.total_weight} {productWeightUnitName}
 
