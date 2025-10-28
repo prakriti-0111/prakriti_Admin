@@ -72,7 +72,63 @@ class SaleOnApprovePage extends Component {
     this.isAdmin = isAdmin();
     this.isSalesExecutive = isSalesExecutive();
 
-    this.columns = [
+    this.columns = this.isAdmin ? [
+      {
+        name: "user_company_name",
+        display_name: "Company Name",
+      },
+      {
+        name: "invoice_number",
+        display_name: "Invoice Number",
+      },
+      {
+        name: "invoice_date",
+        display_name: "Invoice Date",
+      },
+      {
+        name: "total_amount",
+        display_name: "Total Amount",
+      },
+      {
+        name: "due_amount_display",
+        display_name: "Due Amount",
+      },
+      {
+        name: "due_date",
+        display_name: "Due Date",
+      },
+      {
+        name: "sale_by_name",
+        display_name: "Sale By",
+      },
+      {
+        name: "approve_status",
+        display_name: "Status",
+        show_tag: true,
+        color_conditions: [
+          {
+            key: "approve_status",
+            value: "Pending",
+            color: "primary",
+          },
+          {
+            key: "approve_status",
+            value: "Transfer To Sale",
+            color: "success",
+          },
+          {
+            key: "approve_status",
+            value: "Accepted",
+            color: "success",
+          },
+          {
+            key: "approve_status",
+            value: "Declined",
+            color: "error",
+          },
+        ],
+      },
+    ] : [
       {
         name: "user_company_name",
         display_name: "Company Name",
