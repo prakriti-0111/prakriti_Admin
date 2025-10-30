@@ -373,6 +373,14 @@ class SupplierViewPage extends React.Component {
     );
   };
 
+  handleInvoiceTransactionLedger = () => {
+    this.props.navigate(
+      getUserDashboardRoute(getRoleName(this.state.auth)) +
+        "/suppliers/invoice-transaction-ledger/" +
+        this.props.params.id
+    );
+  }
+
   render() {
     const { supplier, formValues, formErros } = this.state;
     const totalPage = Math.ceil(
@@ -570,6 +578,18 @@ class SupplierViewPage extends React.Component {
                       className='add-button'
                       onClick={() => this.handlePayNow()}>
                       Advance Pay
+                    </Button>
+                  </Grid>
+                  <Grid
+                    item
+                    xs={6}
+                    md={2}
+                    className='create-input button-right'>
+                    <Button
+                      variant='contained'
+                      className='add-button'
+                      onClick={() => this.handleInvoiceTransactionLedger()}>
+                      Invoice Transaction Ledger
                     </Button>
                   </Grid>
                 </Grid>
