@@ -3,6 +3,7 @@ import { Navigate } from 'react-router-dom';
 import Loadable from 'ui-component/Loadable';
 import MainLayout from 'layout/MainLayout';
 
+
 const LoginPage = Loadable(lazy(() => import('../pages/SuperAdmin/Auth/Login')));
 const ForgotPasswordPage = Loadable(lazy(() => import('../pages/SuperAdmin/Auth/ForgotPassword')));
 const DashboardPage = Loadable(lazy(() => import('../pages/SuperAdmin/Dashboard')));
@@ -48,6 +49,7 @@ const SupplierPage = Loadable(lazy(() => import('../pages/SuperAdmin/Supplier'))
 const SupplierCreatePage = Loadable(lazy(() => import('../pages/SuperAdmin/Supplier/Create')));
 const SupplierEditPage = Loadable(lazy(() => import('../pages/SuperAdmin/Supplier/Edit')));
 const SupplierViewPage = Loadable(lazy(() => import('../pages/SuperAdmin/Supplier/View')));
+const SupplierInvoiceTransactionLedgerPage = Loadable(lazy(() => import('../pages/SuperAdmin/Supplier/Ledger')));
 
 // employee
 const EmployeePage = Loadable(lazy(() => import('../pages/SuperAdmin/Employee')));
@@ -421,6 +423,10 @@ const SuperAdminRoutes = (isLoggedIn) => [
       {
         path: 'suppliers/View/:id',
         element: <SupplierViewPage />
+      },
+      {
+        path: 'suppliers/invoice-transaction-ledger/:id',
+        element: <SupplierInvoiceTransactionLedgerPage />
       },
       {
         path: 'employees',

@@ -339,20 +339,21 @@ class PurchaseViewPage extends React.Component {
         table_id: this.state.purchase.id,
       };
       this.props.actions.paymentStore(data);
-
-      await stocksTransferHistoryStore({
-        from_user_id: this.state.purchase.sale.user_id,
-        to_user_id: this.state.purchase.sale.sale_by,
-        material_id: this.state.formValues.material_id,
-        quantity: 0,
-        //material_stocks: this.state.materialStocks,
-        payment_mode: this.state.formValues.payment_mode,
-        amount: this.state.formValues.amount,
-        purity_id: this.state.formValues.purity_id,
-        unit_id: this.state.formValues.unit_id,
-        weight: this.state.formValues.weight,
-        effective_weight: this.state.formValues.effective_weight
-      });
+      if(this.state.purchase.sale != null){
+        await stocksTransferHistoryStore({
+          from_user_id: this.state.purchase.sale.user_id,
+          to_user_id: this.state.purchase.sale.sale_by,
+          material_id: this.state.formValues.material_id,
+          quantity: 0,
+          //material_stocks: this.state.materialStocks,
+          payment_mode: this.state.formValues.payment_mode,
+          amount: this.state.formValues.amount,
+          purity_id: this.state.formValues.purity_id,
+          unit_id: this.state.formValues.unit_id,
+          weight: this.state.formValues.weight,
+          effective_weight: this.state.formValues.effective_weight
+        });
+      }
     }
   };
 
