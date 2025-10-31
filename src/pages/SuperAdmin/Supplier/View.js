@@ -545,7 +545,7 @@ class SupplierViewPage extends React.Component {
                       }}
                     />
                   </Grid>
-                  <Grid item xs={6} md={6} className='create-input'>
+                  <Grid item xs={12} md={6} className='create-input'>
                     <FormControl fullWidth>
                       <OutlinedInput
                         value={this.state.queryParams.search}
@@ -570,7 +570,7 @@ class SupplierViewPage extends React.Component {
                   </Grid>
                   <Grid
                     item
-                    xs={6}
+                    xs={4}
                     md={2}
                     className='create-input button-right'>
                     <Button
@@ -582,14 +582,14 @@ class SupplierViewPage extends React.Component {
                   </Grid>
                   <Grid
                     item
-                    xs={6}
+                    xs={4}
                     md={2}
                     className='create-input button-right'>
                     <Button
                       variant='contained'
                       className='add-button'
                       onClick={() => this.handleInvoiceTransactionLedger()}>
-                      Invoice Transaction Ledger
+                      Ledger
                     </Button>
                   </Grid>
                 </Grid>
