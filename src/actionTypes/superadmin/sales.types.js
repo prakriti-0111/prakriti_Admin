@@ -1,4 +1,5 @@
 export const LIST_SALES = 'LIST_SALES';
+export const LIST_SALES_TXN_LEDGER = 'LIST_SALES_TXN_LEDGER';
 export const CREATE_SALES = 'CREATE_SALES';
 export const ADD_SALES = 'ADD_SALES';
 export const GET_SALES = 'GET_SALES';
