@@ -672,6 +672,7 @@ class StockPage extends Component {
     // Additional check for processing state
     if (this.state.processingCertificate) {
       console.log('Certificate processing in progress, ignoring cart request');
+      this.setState({ processingCertificate: false });
       return;
     }
     
