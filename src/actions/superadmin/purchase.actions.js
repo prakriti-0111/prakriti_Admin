@@ -216,3 +216,8 @@ export const purchaseDownloadInvoiceInfo = (id) => {
 export const purchaseDownloadInvoiceItems = (id) => {
     return axios.post(`/superadmin/purchases/download-invoice-items/${id}`);
 }
+
+export const purchaseDownloadLedger = (params) => {
+    params = objectToQuery(params, true)
+    return axios.get(`/superadmin/purchases/txn-ledger-download/${params}`);
+}
