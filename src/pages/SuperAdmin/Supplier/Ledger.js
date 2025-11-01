@@ -25,7 +25,7 @@ import withRouter from "src/helpers/withRouter";
 import DataTable from "src/utils/DataTable";
 import { withSnackbar } from "notistack";
 import { supplierFetch } from "actions/superadmin/supplier.actions";
-import { purchaseList, purchaseTxnLedgerList } from "actions/superadmin/purchase.actions";
+import { purchaseList, purchaseTxnLedgerList, purchaseDownloadLedger } from "actions/superadmin/purchase.actions";
 import { bindActionCreators } from "redux";
 import { Table, TableHead } from "@mui/material";
 import TableBody from "@mui/material/TableBody";
@@ -56,7 +56,7 @@ import { fontSize } from "@mui/system";
 import SearchIcon from "@mui/icons-material/Search";
 import { getRoleName, getUserDashboardRoute } from "src/helpers/helper";
 import { getNotifiactions } from "actions/superadmin/notification.actions";
-
+import FileDownloadIcon from "@mui/icons-material/FileDownload";
 
 class SupplierInvoiceTransactionLedgerPage extends React.Component  {
     constructor(props) {
@@ -72,6 +72,8 @@ class SupplierInvoiceTransactionLedgerPage extends React.Component  {
             search: "",
           },
           processing: false,
+          downloadingInfo: false,
+          note: ""
         };
         
         this.columns = [
@@ -206,8 +208,38 @@ class SupplierInvoiceTransactionLedgerPage extends React.Component  {
       );
     };
 
+    handleNote = (txt = "") => {
+      this.setState({
+        note: txt
+      });
+    }
+
+    handleDownloadLedger = async () => {
+      this.setState({
+        downloadingInfo: true,
+      });
+  
+      let data = { ...this.state.queryParams };
+      data.supplier_id = this.props.params.id;
+      let response = await purchaseDownloadLedger(data);
+      if (response.data.success) {
+        this.setState(
+          {
+            downloadingInfo: false,
+          },
+          () => {
+            window.open(response.data.data.url, "_blank").focus();
+          }
+        );
+      } else {
+        this.setState({
+          downloadingInfo: false,
+        });
+      }
+    };
+
     render() {
-      const { purchaseList, purchaseTotal, queryParams, processing } = this.state;
+      const { purchaseList, purchaseTotal, queryParams, processing, downloadingInfo } = this.state;
       const totalPage = Math.ceil(
         this.state.purchaseTotal / this.state.queryParams.limit
       );
@@ -217,9 +249,22 @@ class SupplierInvoiceTransactionLedgerPage extends React.Component  {
           <MainCard
             title='Transaction Ledger'
             secondary={
-              <Button variant='contained' onClick={() => this.props.navigate(-1)}>
-                Back
-              </Button>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', paddingTop: "7px" }}>
+                {downloadingInfo ? (
+                  <CircularProgress size='30px' />
+                ) : (
+                  <Button
+                    variant='contained'
+                    onClick={() =>
+                      this.handleDownloadLedger()
+                    }>
+                    <FileDownloadIcon />
+                  </Button>
+                )}
+                <Button variant='contained' onClick={() => this.props.navigate(-1)}>
+                  Back
+                </Button>
+              </div>
             }>
             {processing ? (
               <Grid container justifyContent='center'>
@@ -264,15 +309,15 @@ class SupplierInvoiceTransactionLedgerPage extends React.Component  {
                             <TableRow>
                               {/*<TableCell />*/}
                               
-                              <TableCell>&nbsp;&nbsp;#</TableCell>
-                              <TableCell>Date</TableCell>
-                              <TableCell>Invoice No</TableCell>
-                              <TableCell>Remarks</TableCell>
-                              <TableCell>Bill Amount</TableCell>
-                              <TableCell>Payment Amount</TableCell>
-                              <TableCell>Payment Mode</TableCell>
-                              <TableCell>Type</TableCell>
-                              <TableCell>Balance(Due)</TableCell>
+                              <TableCell sx={{ width: "50px" }}>&nbsp;&nbsp;#</TableCell>
+                              <TableCell sx={{ width: "50px" }}>Date</TableCell>
+                              <TableCell sx={{ width: "100px" }}>Invoice No</TableCell>
+                              <TableCell sx={{ width: "50px" }}>Remarks</TableCell>
+                              <TableCell sx={{ width: "150px" }}>Bill Amt</TableCell>
+                              <TableCell sx={{ width: "150px" }}>Payment Amt</TableCell>
+                              <TableCell sx={{ width: "50px" }}>Mode</TableCell>
+                              <TableCell sx={{ width: "50px" }}>Type</TableCell>
+                              <TableCell sx={{ width: "150px" }}>Balance(Due)</TableCell>
                               <TableCell sx={{ width: "50px" }}>Action</TableCell>
                             </TableRow>
                           </TableHead>
@@ -287,6 +332,7 @@ class SupplierInvoiceTransactionLedgerPage extends React.Component  {
                                 viewAction={this.handleInvoiceView}
                                 editAction={this.handleInvoiceEdit}
                                 returnAction={this.handleInvoiceReturn}
+                                handleNote={this.handleNote}
                                 /* payAction={this.handleInvoicePay} */
                               />
                             ))}
@@ -312,6 +358,92 @@ class SupplierInvoiceTransactionLedgerPage extends React.Component  {
                 </Grid>
               </>
             )}
+            <div
+
+              class='modal fade'
+
+              id='noteModal'
+
+              tabindex='-1'
+
+              aria-labelledby='exampleModalLabel'
+
+              aria-hidden='true'>
+
+              <div class='modal-dialog modal-dialog-centered'>
+
+                <div class='modal-content'>
+
+                  <div class='modal-header'>
+
+                    <h1 class='modal-title fs-5' id='exampleModalLabel'>
+
+                      sales Notes
+
+                    </h1>
+
+                    <button
+
+                      type='button'
+
+                      class='btn-close'
+
+                      data-bs-dismiss='modal'
+
+                      aria-label='Close'></button>
+
+                  </div>
+
+                  <div class='modal-body'>
+
+                    {/* <Grid
+
+                      item
+
+                      xs={12}
+
+                      md={6}
+
+                      className="create-input"
+
+                      style={{ paddingTop: "0px" }}
+
+                    >
+
+                      <TextareaAutosize
+
+                        className="description"
+
+                        minRows={1}
+
+                        placeholder="Notes datra"
+
+                        style={{ width: "80%" }}
+
+
+
+                      />
+
+                    </Grid> */}
+
+                    <textarea
+                      class='form-control'
+                      placeholder='Leave a comment here'
+                      id='floatingTextarea2'
+                      style={{ height: "100px" }}
+                      value={this.state.note}
+                      disabled={true}
+                      ></textarea>
+
+                    {/* <label for="floatingTextarea2">Comments</label> */}
+
+                  </div>
+
+                </div>
+
+              </div>
+
+            </div>
           </MainCard>
       );
     }
@@ -349,6 +481,7 @@ function Row(props) {
     editAction,
     payAction,
     returnAction,
+    handleNote
   } = props;
   const [open, setOpen] = React.useState(false);
 
@@ -375,7 +508,13 @@ function Row(props) {
         <TableCell>&nbsp;&nbsp;{row.sl_no}</TableCell>
         <TableCell >{row.txn_date}</TableCell>
         <TableCell >{row.invoice_number}</TableCell>
-        <TableCell >{row.remarks}</TableCell>
+        <TableCell ><div onClick={() => handleNote(row.remarks)} className="sticky-note"><i
+
+                    class='bi bi-pencil-square fs-4 '
+
+                    data-bs-toggle='modal'
+
+                    data-bs-target='#noteModal'></i></div></TableCell>
         <TableCell >{row.bill_amount}</TableCell>
         <TableCell >{row.payment_amount}</TableCell>
         <TableCell >{row.payment_mode}</TableCell>
