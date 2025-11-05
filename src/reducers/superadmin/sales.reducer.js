@@ -1,5 +1,6 @@
 import {
     LIST_SALES,
+    LIST_SALES_TXN_LEDGER,
     CREATE_SALES,
     ADD_SALES,
     GET_SALES,
@@ -31,6 +32,11 @@ export default function (state = initialState, action) {
                 ...state,
                 ...payload
             }
+        case LIST_SALES_TXN_LEDGER:
+            return {
+                ...state,
+                ...payload
+            }    
         case ADD_SALES:
             return {
                 ...state,

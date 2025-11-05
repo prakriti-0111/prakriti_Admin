@@ -448,8 +448,7 @@ class AdminViewPage extends React.Component {
 
   handleInvoiceTransactionLedger = () => {
     this.props.navigate(
-      getUserDashboardRoute(getRoleName(this.state.auth)) +
-        "/admins/invoice-transaction-ledger/" +
+        "/super-admin/admins/invoice-transaction-ledger/" +
         this.props.params.id
     );
   }
