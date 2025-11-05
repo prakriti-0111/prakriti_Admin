@@ -13,7 +13,7 @@ import {
 } from '../../actionTypes/superadmin/sales.types';
 import {objectToQuery} from 'src/helpers/helper';
 
-export const purchaseTxnLedgerList = (params) => {
+export const saleTxnLedgerList = (params) => {
     params = objectToQuery(params, true)
     return (dispatch) => {
         axios.get(`/superadmin/sales/txn-ledger${params}`)

@@ -58,7 +58,7 @@ import { getRoleName, getUserDashboardRoute } from "src/helpers/helper";
 import { getNotifiactions } from "actions/superadmin/notification.actions";
 import FileDownloadIcon from "@mui/icons-material/FileDownload";
 
-class SupplierInvoiceTransactionLedgerPage extends React.Component  {
+class DistributorInvoiceTransactionLedgerPage extends React.Component  {
     constructor(props) {
         super(props);
 
@@ -468,7 +468,7 @@ const mapDispatchToProps = (dispatch) => {
 };
 
 export default withSnackbar(
-  withRouter(connect(mapStateToProps, mapDispatchToProps)(SupplierInvoiceTransactionLedgerPage))
+  withRouter(connect(mapStateToProps, mapDispatchToProps)(DistributorInvoiceTransactionLedgerPage))
 );
 
 function Row(props) {

@@ -18,6 +18,7 @@ import {
   List,
   ListItem,
   ListItemText,
+  CircularProgress,
 } from "@mui/material";
 import { bindActionCreators } from "redux";
 import { gridSpacing } from "store/constant";
@@ -27,6 +28,7 @@ import {
   stocksList,
   getPriceByCategory,
   getCartItemById,
+  updateStockImage,
 } from "actions/superadmin/stocks.actions";
 import { subCategoryList } from "actions/superadmin/subCategory.actions";
 import { cartStore, cartList } from "actions/superadmin/cart.actions";
@@ -54,11 +56,13 @@ import { displayAmount } from "src/helpers/helper";
 import { FreeBreakfastOutlined } from "@mui/icons-material";
 import { unitList } from "actions/superadmin/unit.actions";
 import { sizeList } from "actions/superadmin/size.actions";
-import { convertUnitToGram, weightFormat } from "src/helpers/helper";
+import { convertUnitToGram, weightFormat, toBase64 } from "src/helpers/helper";
 import _ from "lodash";
 import jsQR from "jsqr";
 import extractPdfData from "src/helpers/scanPdf";
 import SearchIcon from "@mui/icons-material/Search";
+import CloseIcon from "@mui/icons-material/Close";
+import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 
 class StockPage extends Component {
   constructor(props) {
@@ -119,6 +123,10 @@ class StockPage extends Component {
       pendingCertificateNo: null, // Track certificate to process after search
       searchingCertificate: false, // Track if a certificate search is in progress
       processingCartItems: new Set(), // Track which specific items are being added to cart
+      imageUpdateDialogOpen: false, // State to control image update dialog
+      selectedStockForImageUpdate: null, // Store the stock item for image update
+      imageFile: null, // Store the selected image file
+      updatingImage: false, // Track if image is being updated
     };
 
     this.columns = [
@@ -453,6 +461,133 @@ class StockPage extends Component {
           .focus();
     } else {
       this.props.navigate("view/" + row.id);
+    }
+  };
+
+  handleImageClick = (imageUrl, row) => {
+    console.log("=== handleImageClick START ===");
+    console.log("imageUrl:", imageUrl);
+    console.log("row:", row);
+    console.log("total_avl_stock:", this.state.queryParams.total_avl_stock);
+    
+    // Always show update dialog when clicking on an image
+    if (row) {
+      console.log("Opening update dialog for certificate:", row.certificate_no);
+      this.setState({
+        imageUpdateDialogOpen: true,
+        selectedStockForImageUpdate: row,
+        imageFile: null,
+      }, () => {
+        console.log("Dialog state updated. imageUpdateDialogOpen:", this.state.imageUpdateDialogOpen);
+      });
+    } else {
+      console.log("No row data provided");
+    }
+    console.log("=== handleImageClick END ===");
+  };
+
+  handleImageUpdateDialogClose = () => {
+    this.setState({
+      imageUpdateDialogOpen: false,
+      selectedStockForImageUpdate: null,
+      imageFile: null,
+    });
+    // Reset file input - check if ref exists and has current property
+    // Use setTimeout to ensure the ref is available after state update
+    setTimeout(() => {
+      if (this.imageFileInputRef && this.imageFileInputRef.current) {
+        this.imageFileInputRef.current.value = '';
+      }
+    }, 0);
+  };
+
+  handleImageFileChange = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        this.props.enqueueSnackbar("Please select a valid image file", {
+          variant: "error",
+        });
+        return;
+      }
+      // Validate file size (e.g., max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        this.props.enqueueSnackbar("Image size should be less than 5MB", {
+          variant: "error",
+        });
+        return;
+      }
+      this.setState({ imageFile: file });
+    }
+  };
+
+  handleUpdateImage = async () => {
+    const { selectedStockForImageUpdate, imageFile } = this.state;
+    
+    if (!imageFile) {
+      this.props.enqueueSnackbar("Please select an image to update", {
+        variant: "warning",
+      });
+      return;
+    }
+
+    if (!selectedStockForImageUpdate) {
+      this.props.enqueueSnackbar("No stock selected for update", {
+        variant: "error",
+      });
+      return;
+    }
+
+    if (!selectedStockForImageUpdate.certificate_no) {
+      this.props.enqueueSnackbar("Certificate number is required", {
+        variant: "error",
+      });
+      return;
+    }
+
+    try {
+      this.setState({ updatingImage: true });
+
+      // Convert image to base64 (returns data URL format: "data:image/jpeg;base64,...")
+      const imageBase64 = await toBase64(imageFile);
+
+      // Prepare data for API - POST /api/superadmin/stocks/update-image
+      // Body: { "certificate_no": "365", "image": "data:image/jpeg;base64,..." }
+      const data = {
+        certificate_no: String(selectedStockForImageUpdate.certificate_no),
+        image: imageBase64,
+      };
+
+      console.log("Updating image for certificate:", selectedStockForImageUpdate.certificate_no);
+      console.log("Image data URL length:", imageBase64.length);
+
+      // Call update API - POST /api/superadmin/stocks/update-image
+      const response = await updateStockImage(data);
+
+      if (response && response.data && response.data.success) {
+        this.props.enqueueSnackbar(
+          response.data.message || "Image updated successfully",
+          { variant: "success" }
+        );
+        
+        // Close dialog and refresh list
+        this.handleImageUpdateDialogClose();
+        this.loadListData();
+      } else {
+        const errorMessage = response?.data?.message || response?.data?.error || "Failed to update image";
+        this.props.enqueueSnackbar(errorMessage, {
+          variant: "error",
+        });
+      }
+    } catch (error) {
+      console.error("Error updating image:", error);
+      const errorMessage = error.response?.data?.message || error.message || "Error updating image";
+      this.props.enqueueSnackbar(errorMessage, {
+        variant: "error",
+      });
+    } finally {
+      this.setState({ updatingImage: false });
     }
   };
 
@@ -1736,6 +1871,7 @@ class StockPage extends Component {
                   actions={this.getTableActions()}
                   haveAllOption={true}
                   getRowActions={this.getTableActions} // Pass function to generate row-specific actions
+                  onImageClick={this.handleImageClick} // Pass custom image click handler
               />
             </Grid>
           </MainCard>
@@ -1945,6 +2081,128 @@ class StockPage extends Component {
                 }}
               >
                 Cancel
+              </Button>
+            </DialogActions>
+          </Dialog>
+
+          {/* Image Update Dialog */}
+          <Dialog
+              open={this.state.imageUpdateDialogOpen}
+              onClose={this.handleImageUpdateDialogClose}
+              fullWidth
+              maxWidth="sm"
+              className="ratn-dialog-wrapper"
+          >
+            <DialogTitle sx={{ 
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              alignItems: 'center',
+              padding: '16px 24px',
+              backgroundColor: '#1976d2',
+              color: 'white'
+            }}>
+              <Typography variant="h6" sx={{ color: 'white' }}>
+                Update Image - Certificate {this.state.selectedStockForImageUpdate?.certificate_no}
+              </Typography>
+              <IconButton
+                onClick={this.handleImageUpdateDialogClose}
+                sx={{ padding: 0, color: 'white' }}
+              >
+                <CloseIcon sx={{ color: 'white' }} />
+              </IconButton>
+            </DialogTitle>
+            <DialogContent sx={{ padding: '24px' }}>
+              <Box sx={{ mt: 2, mb: 3 }}>
+                <Typography variant="body2" sx={{ mb: 2, fontWeight: 'bold' }}>
+                  Select New Image:
+                </Typography>
+                <Button
+                  variant="outlined"
+                  component="label"
+                  startIcon={<CloudUploadIcon />}
+                  fullWidth
+                  sx={{
+                    mb: 3,
+                    padding: '12px',
+                    borderStyle: 'dashed',
+                    borderColor: '#1976d2'
+                  }}
+                >
+                  {this.state.imageFile ? this.state.imageFile.name : 'Choose Image File'}
+                  <input
+                    ref={(ref) => { this.imageFileInputRef = ref; }}
+                    type="file"
+                    accept="image/*"
+                    onChange={this.handleImageFileChange}
+                    style={{ display: 'none' }}
+                  />
+                </Button>
+                
+                {/* Current Image and Preview in a single row using flex */}
+                <Box sx={{ 
+                  display: 'flex', 
+                  flexDirection: 'row', 
+                  gap: 2,
+                  justifyContent: 'space-around',
+                  alignItems: 'flex-start'
+                }}>
+                  {/* Current Image */}
+                  {this.state.selectedStockForImageUpdate && (
+                    <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                      <Typography variant="body2" sx={{ mb: 1, fontWeight: 'bold' }}>
+                        Current Image:
+                      </Typography>
+                      <img
+                        src={this.state.selectedStockForImageUpdate.current_image || this.state.selectedStockForImageUpdate.image}
+                        alt="Current"
+                        style={{
+                          width: '100%',
+                          maxWidth: '250px',
+                          height: 'auto',
+                          borderRadius: '8px',
+                          border: '1px solid #e0e0e0'
+                        }}
+                      />
+                    </Box>
+                  )}
+                  
+                  {/* Preview Image */}
+                  {this.state.imageFile && (
+                    <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                      <Typography variant="body2" sx={{ mb: 1, fontWeight: 'bold' }}>
+                        Preview:
+                      </Typography>
+                      <img
+                        src={URL.createObjectURL(this.state.imageFile)}
+                        alt="Preview"
+                        style={{
+                          width: '100%',
+                          maxWidth: '250px',
+                          height: 'auto',
+                          borderRadius: '8px',
+                          border: '1px solid #e0e0e0'
+                        }}
+                      />
+                    </Box>
+                  )}
+                </Box>
+              </Box>
+            </DialogContent>
+            <DialogActions sx={{ padding: '16px 24px', borderTop: '1px solid #e0e0e0' }}>
+              <Button
+                onClick={this.handleImageUpdateDialogClose}
+                variant="outlined"
+                disabled={this.state.updatingImage}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={this.handleUpdateImage}
+                variant="contained"
+                disabled={this.state.updatingImage || !this.state.imageFile}
+                startIcon={this.state.updatingImage ? <CircularProgress size={20} /> : null}
+              >
+                {this.state.updatingImage ? 'Updating...' : 'Update Image'}
               </Button>
             </DialogActions>
           </Dialog>
