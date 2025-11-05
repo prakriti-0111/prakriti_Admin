@@ -31,7 +31,7 @@ const AdminPage = Loadable(lazy(() => import('../pages/SuperAdmin/Admin')));
 const AdminCreatePage = Loadable(lazy(() => import('../pages/SuperAdmin/Admin/Create')));
 const AdminEditPage = Loadable(lazy(() => import('../pages/SuperAdmin/Admin/Edit')));
 const AdminViewPage = Loadable(lazy(() => import('../pages/SuperAdmin/Admin/View')));
-//const AdminInvoiceTransactionLedgerPage = Loadable(lazy(() => import('../pages/SuperAdmin/Admin/Ledger')));
+const AdminInvoiceTransactionLedgerPage = Loadable(lazy(() => import('../pages/SuperAdmin/Admin/Ledger')));
 
 
 // distributor
@@ -381,10 +381,10 @@ const SuperAdminRoutes = (isLoggedIn) => [
         path: 'admins/View/:id',
         element: <AdminViewPage />
       },
-      /* {
+      {
         path: 'admins/invoice-transaction-ledger/:id',
         element: <AdminInvoiceTransactionLedgerPage />
-      }, */
+      },
       {
         path: 'distributors',
         element: <DistributorPage />

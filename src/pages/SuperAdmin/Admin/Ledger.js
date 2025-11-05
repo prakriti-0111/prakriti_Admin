@@ -25,7 +25,7 @@ import withRouter from "src/helpers/withRouter";
 import DataTable from "src/utils/DataTable";
 import { withSnackbar } from "notistack";
 import { supplierFetch } from "actions/superadmin/supplier.actions";
-import { salesList, saleTxnLedgerList, saleDownloadLedger } from "actions/superadmin/sale.actions";
+import { salesList, saleTxnLedgerList, saleDownloadLedger } from "actions/superadmin/sales.actions";
 import { bindActionCreators } from "redux";
 import { Table, TableHead } from "@mui/material";
 import TableBody from "@mui/material/TableBody";
@@ -221,7 +221,7 @@ class SupplierInvoiceTransactionLedgerPage extends React.Component  {
   
       let data = { ...this.state.queryParams };
       data.supplier_id = this.props.params.id;
-      let response = await purchaseDownloadLedger(data);
+      let response = await saleDownloadLedger(data);
       if (response.data.success) {
         this.setState(
           {
@@ -450,8 +450,8 @@ class SupplierInvoiceTransactionLedgerPage extends React.Component  {
 }
 
 const mapStateToProps = (state) => ({
-  saleList: state.superadmin.sale.items,
-  saleTotal: state.superadmin.sale.total,
+  saleList: state.superadmin.sales.items,
+  saleTotal: state.superadmin.sales.total,
   auth: state.auth,
 });
 
