@@ -91,6 +91,11 @@ export const getCartItemById = async(params) => {
     return await axios.get(`/superadmin/cart/checkdetail${params}`);
 }
 
+export const getStocksList = async(params) => {
+    params = objectToQuery(params, true)
+    return await axios.get(`/superadmin/stocks${params}`);
+}
+
 export const returnStockMoveToStock = async(data) => {
     return await axios.post(`/superadmin/stocks/return-stock/move-to-stock`, data);
 }
