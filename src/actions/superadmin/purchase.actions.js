@@ -1,6 +1,7 @@
 import axios from 'actions/axios';
 import {
     LIST_PURCHASE,
+    LIST_PURCHASE_TXN_LEDGER,
     CREATE_PURCHASE,
     ADD_PURCHASE,
     GET_PURCHASE,
@@ -11,6 +12,23 @@ import {
     UPDATE_PURCHASE_STATUS,
 } from '../../actionTypes/superadmin/purchase.types';
 import {objectToQuery} from 'src/helpers/helper';
+
+export const purchaseTxnLedgerList = (params) => {
+    params = objectToQuery(params, true)
+    return (dispatch) => {
+        axios.get(`/superadmin/purchases/txn-ledger${params}`)
+        .then(response => {
+            if(response.data.success){
+                dispatch({
+                    type: LIST_PURCHASE_TXN_LEDGER,
+                    payload: response.data.data
+                });
+            }
+        })
+        .catch(error => {
+        })
+    }
+}
 
 export const purchaseList = (params) => {
     params = objectToQuery(params, true)
@@ -62,6 +80,7 @@ export const purchaseOnApproveView = (id) => {
         })
     }
 }
+
 export const purchaseStatusChange = (id, data) => {
     /*return (dispatch) => {
         axios.post(`/superadmin/purchases-on-approve/status/${id}`, data)
@@ -196,4 +215,9 @@ export const purchaseDownloadInvoiceInfo = (id) => {
 
 export const purchaseDownloadInvoiceItems = (id) => {
     return axios.post(`/superadmin/purchases/download-invoice-items/${id}`);
+}
+
+export const purchaseDownloadLedger = (params) => {
+    params = objectToQuery(params, true)
+    return axios.get(`/superadmin/purchases/txn-ledger-download/${params}`);
 }

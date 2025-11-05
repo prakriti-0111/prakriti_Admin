@@ -446,6 +446,13 @@ class AdminViewPage extends React.Component {
     );
   };
 
+  handleInvoiceTransactionLedger = () => {
+    this.props.navigate(
+        "/super-admin/admins/invoice-transaction-ledger/" +
+        this.props.params.id
+    );
+  }
+
   render() {
     const admin = this.state.item;
     const { formValues, formErros } = this.state;
@@ -780,7 +787,7 @@ class AdminViewPage extends React.Component {
                 <Grid item xs={12} className='p-add-product create-input'>
                   <div>
                     <Grid container spacing={2} className='loans_view p_view'>
-                      <Grid item xs={6} className='create-input'>
+                      <Grid item xs={12} md={6} className='create-input'>
                         <FormControl fullWidth>
                           <OutlinedInput
                             value={this.state.queryParams.search}
@@ -807,7 +814,7 @@ class AdminViewPage extends React.Component {
                       </Grid>
                       <Grid
                         item
-                        xs={12}
+                        xs={4}
                         md={2}
                         className='create-input button-right'>
                         <Button
@@ -815,6 +822,18 @@ class AdminViewPage extends React.Component {
                           className='add-button'
                           onClick={() => this.handlePayNow()}>
                           Pay
+                        </Button>
+                      </Grid>
+                      <Grid
+                        item
+                        xs={4}
+                        md={2}
+                        className='create-input button-right'>
+                        <Button
+                          variant='contained'
+                          className='add-button'
+                          onClick={() => this.handleInvoiceTransactionLedger()}>
+                          Ledger
                         </Button>
                       </Grid>
                     </Grid>
