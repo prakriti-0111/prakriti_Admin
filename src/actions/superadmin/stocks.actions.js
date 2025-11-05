@@ -95,3 +95,7 @@ export const returnStockMoveToStock = async(data) => {
     return await axios.post(`/superadmin/stocks/return-stock/move-to-stock`, data);
 }
 
+export const updateStockImage = async(data) => {
+    return await axios.post(`/superadmin/stocks/update-image`, data);
+}
+
