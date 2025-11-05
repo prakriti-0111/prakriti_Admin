@@ -220,7 +220,7 @@ class SupplierInvoiceTransactionLedgerPage extends React.Component  {
       });
   
       let data = { ...this.state.queryParams };
-      data.supplier_id = this.props.params.id;
+      data.user_id = this.props.params.id;
       let response = await saleDownloadLedger(data);
       if (response.data.success) {
         this.setState(
