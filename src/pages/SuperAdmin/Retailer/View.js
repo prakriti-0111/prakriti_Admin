@@ -641,6 +641,14 @@ class RetailerViewPage extends React.Component {
     }
   };
 
+  handleInvoiceTransactionLedger = () => {
+    this.props.navigate(
+        getUserDashboardRoute(getRoleName(this.state.auth)) +
+        "/retailers/invoice-transaction-ledger/" +
+        this.props.params.id
+    );
+  }
+
   render() {
     const retailer = this.state.item;
     const { formValues, formErros, visitformValues } = this.state;
@@ -934,7 +942,7 @@ class RetailerViewPage extends React.Component {
                         {!this.isAdmin ? (
                           <Grid
                             item
-                            xs={5}
+                            xs={6}
                             md={2}
                             className='create-input button-right'>
                             <Button
@@ -945,6 +953,18 @@ class RetailerViewPage extends React.Component {
                             </Button>
                           </Grid>
                         ) : null}
+                          <Grid
+                            item
+                            xs={6}
+                            md={2}
+                            className='create-input button-right'>
+                            <Button
+                              variant='contained'
+                              className='add-button'
+                              onClick={() => this.handleInvoiceTransactionLedger()}>
+                              Ledger
+                            </Button>
+                          </Grid>
                       </Grid>
                     </div>
                     <TableContainer component={Paper}>
