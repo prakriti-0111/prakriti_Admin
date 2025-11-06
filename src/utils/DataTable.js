@@ -209,13 +209,22 @@ class DataTable extends React.Component {
         if (!("isBanner" in i && i.isBanner)) {
           style.height = "40px";
         }
+        // Use custom onImageClick if provided, otherwise use default
+        const imageClickHandler = this.props.onImageClick 
+          ? (e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              console.log("DataTable: Calling custom onImageClick with:", { d, item });
+              this.props.onImageClick(d, item);
+            }
+          : () => this.handleImageClick(d);
         arr.push(
           <img
             src={d}
             style={style}
             name={"this is tested comment"}
             className="table-data-image cursor-pointer"
-            onClick={() => this.handleImageClick(d)}
+            onClick={imageClickHandler}
           />
         );
       } else if ("isRating" in i && i.isRating) {
