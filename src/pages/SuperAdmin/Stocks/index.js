@@ -56,7 +56,7 @@ import { displayAmount } from "src/helpers/helper";
 import { FreeBreakfastOutlined } from "@mui/icons-material";
 import { unitList } from "actions/superadmin/unit.actions";
 import { sizeList } from "actions/superadmin/size.actions";
-import { convertUnitToGram, weightFormat, toBase64 } from "src/helpers/helper";
+import { convertUnitToGram, weightFormat, toBase64, isMainSuperAdmin } from "src/helpers/helper";
 import _ from "lodash";
 import jsQR from "jsqr";
 import extractPdfData from "src/helpers/scanPdf";
@@ -127,6 +127,9 @@ class StockPage extends Component {
       selectedStockForImageUpdate: null, // Store the stock item for image update
       imageFile: null, // Store the selected image file
       updatingImage: false, // Track if image is being updated
+      // View-only image dialog for non-superadmin users
+      imageViewDialogOpen: false,
+      imageViewPath: "",
     };
 
     this.columns = [
@@ -465,25 +468,26 @@ class StockPage extends Component {
   };
 
   handleImageClick = (imageUrl, row) => {
-    console.log("=== handleImageClick START ===");
-    console.log("imageUrl:", imageUrl);
-    console.log("row:", row);
-    console.log("total_avl_stock:", this.state.queryParams.total_avl_stock);
-    
-    // Always show update dialog when clicking on an image
-    if (row) {
-      console.log("Opening update dialog for certificate:", row.certificate_no);
+    // Super Admin can update image; others can only view
+    if (isMainSuperAdmin() && row) {
       this.setState({
         imageUpdateDialogOpen: true,
         selectedStockForImageUpdate: row,
         imageFile: null,
-      }, () => {
-        console.log("Dialog state updated. imageUpdateDialogOpen:", this.state.imageUpdateDialogOpen);
       });
     } else {
-      console.log("No row data provided");
+      this.setState({
+        imageViewDialogOpen: true,
+        imageViewPath: imageUrl || (row ? (row.current_image || row.image) : ""),
+      });
     }
-    console.log("=== handleImageClick END ===");
+  };
+
+  handleImageViewDialogClose = () => {
+    this.setState({
+      imageViewDialogOpen: false,
+      imageViewPath: "",
+    });
   };
 
   handleImageUpdateDialogClose = () => {
@@ -1875,6 +1879,16 @@ class StockPage extends Component {
               />
             </Grid>
           </MainCard>
+
+          {/* Read-only Image Dialog for non-superadmin users */}
+          <Dialog onClose={this.handleImageViewDialogClose} open={this.state.imageViewDialogOpen}>
+            <DialogTitle>
+              <CloseIcon sx={{ cursor: 'pointer', float: 'right', marginTop: '5px', width: '30px' }} onClick={this.handleImageViewDialogClose} />
+            </DialogTitle>
+            <DialogContent>
+              <img src={this.state.imageViewPath} />
+            </DialogContent>
+          </Dialog>
 
           <Dialog
               open={this.state.cartDialog}
