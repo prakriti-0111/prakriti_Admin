@@ -57,6 +57,7 @@ import SearchIcon from "@mui/icons-material/Search";
 import { getRoleName, getUserDashboardRoute } from "src/helpers/helper";
 import { getNotifiactions } from "actions/superadmin/notification.actions";
 import FileDownloadIcon from "@mui/icons-material/FileDownload";
+import ClearIcon from '@mui/icons-material/Clear';
 
 class SupplierInvoiceTransactionLedgerPage extends React.Component  {
     constructor(props) {
@@ -69,6 +70,8 @@ class SupplierInvoiceTransactionLedgerPage extends React.Component  {
           queryParams: {
             page: 1,
             limit: 50,
+            date_from: null,
+            date_to: null,
             search: "",
           },
           processing: false,
@@ -127,6 +130,13 @@ class SupplierInvoiceTransactionLedgerPage extends React.Component  {
     loadSalesData = () => {
       let data = { ...this.state.queryParams };
       data.user_id = this.props.params.id;
+
+      if (data.date_from) {
+        data.date_from = moment(data.date_from.toString()).format("YYYY-MM-DD");
+      }
+      if (data.date_to) {
+        data.date_to = moment(data.date_to.toString()).format("YYYY-MM-DD");
+      }
       this.setState({processing : true});
       this.props.actions.saleTxnLedgerList(data);
     };
@@ -168,6 +178,15 @@ class SupplierInvoiceTransactionLedgerPage extends React.Component  {
           this.loadSalesData();
         }
       );
+    };
+
+    updateQueryParams = (value, key) => {
+      this.setState({
+        queryParams: {
+          ...this.state.queryParams,
+          [key]: value,
+        },
+      });
     };
   
     handleInvoiceView = (row) => {
@@ -221,6 +240,13 @@ class SupplierInvoiceTransactionLedgerPage extends React.Component  {
   
       let data = { ...this.state.queryParams };
       data.user_id = this.props.params.id;
+
+      if (data.date_from) {
+        data.date_from = moment(data.date_from.toString()).format("YYYY-MM-DD");
+      }
+      if (data.date_to) {
+        data.date_to = moment(data.date_to.toString()).format("YYYY-MM-DD");
+      }
       let response = await saleDownloadLedger(data);
       if (response.data.success) {
         this.setState(
@@ -278,28 +304,60 @@ class SupplierInvoiceTransactionLedgerPage extends React.Component  {
                   spacing={gridSpacing}
                   columnSpacing={{ xs: 1, sm: 2, md: 2 }}
                   className='details-header ratn-pur-wrapper loans_view'>
-                  <Grid item xs={10} md={10} className='create-input'>
+                  <Grid item xs={6} md={3} sx={{marginLeft:"20px"}} className='create-input'>
                     <FormControl fullWidth>
-                      <OutlinedInput
+                      <TextField
+                        label="Search"
+                        variant="outlined"
                         value={this.state.queryParams.search}
-                        onChange={(e) =>
-                          this.setState({
-                            queryParams: {
-                              ...this.state.queryParams,
-                              search: e.target.value,
-                            },
-                          })
-                        }
-                        endAdornment={
-                          <InputAdornment position='end'>
-                            <IconButton onClick={this.handleSearch} edge='end'>
-                              <SearchIcon />
-                            </IconButton>
-                          </InputAdornment>
-                        }
-                        sx={{ borderRadius: "25px", marginLeft: "20px", marginTop: "25px" }}
+                        onChange={(e) => this.updateQueryParams(e.target.value, 'search')}
+                        InputProps={{
+                          endAdornment: (
+                          <IconButton
+                            sx={{ visibility: this.state.queryParams.search ? "visible" : "hidden" }}
+                            onClick={(e) => this.updateQueryParams('', 'search')}
+                          >
+                            <ClearIcon />
+                          </IconButton>
+                          ),
+                        }}
                       />
                     </FormControl>
+                  </Grid>
+                  <Grid item xs={6} md={3} sx={{marginLeft:"20px"}} >
+                    <LocalizationProvider dateAdapter={AdapterDayjs}>
+                      <DatePicker
+                        label="Date From"
+                        inputFormat="DD/MM/YYYY"
+                        value={this.state.queryParams.date_from}
+                        onChange={(newValue) =>
+                          this.updateQueryParams(newValue, "date_from")
+                        }
+                        renderInput={(params) => <TextField {...params} />}
+                      />
+                    </LocalizationProvider>
+                  </Grid>
+                  <Grid item xs={6} md={3} sx={{marginLeft:"20px"}} >
+                    <LocalizationProvider dateAdapter={AdapterDayjs}>
+                      <DatePicker
+                        label="Date To"
+                        inputFormat="DD/MM/YYYY"
+                        value={this.state.queryParams.date_to}
+                        onChange={(newValue) =>
+                          this.updateQueryParams(newValue, "date_to")
+                        }
+                        renderInput={(params) => <TextField {...params} />}
+                      />
+                    </LocalizationProvider>
+                  </Grid>
+                  <Grid item xs={6} md={2} sx={{marginLeft:"20px"}}  className="create-input">
+                    <Button
+                      variant="contained"
+                      className="search-btn"
+                      onClick={this.handleSearch}
+                    >
+                      Search
+                    </Button>
                   </Grid>
                   <Grid item xs={12} md={12} className='p-add-product create-input'>
                     <TableContainer component={Paper}>

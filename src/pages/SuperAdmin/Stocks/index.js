@@ -566,6 +566,7 @@ class StockPage extends Component {
         let check_cart = await getCartItemById({
           stock_id: item.id,
           product_id: item.product_id,
+          certificate_no: item.certificate_no
         });
         
         if (!check_cart.data.success) {
@@ -700,6 +701,7 @@ class StockPage extends Component {
       let check_cart = await getCartItemById({
         stock_id: row.id,
         product_id: row.product_id,
+        certificate_no: row.certificate_no
       });
       
       if (!check_cart.data.success) {
@@ -848,6 +850,7 @@ class StockPage extends Component {
       let check_cart = await getCartItemById({
         stock_id: row.id,
         product_id: row.product_id,
+        certificate_no: row.certificate_no
       });
       
       if (!check_cart.data.success) {
