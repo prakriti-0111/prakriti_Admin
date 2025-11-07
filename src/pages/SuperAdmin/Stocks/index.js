@@ -355,7 +355,9 @@ class StockPage extends Component {
     }
 
     // Check for certificate match after items are updated
-    if (prevProps.items !== this.props.items && this.state.queryParams.search) {
+    // Only auto-add to cart if this is a certificate-specific search (not a regular product search)
+    if (prevProps.items !== this.props.items && this.state.queryParams.search && 
+        (this.state.processingCertificate || this.state.searchingCertificate || this.state.pendingCertificateNo)) {
       const searchCert = this.state.queryParams.search;
       console.log("Search results updated, checking for certificate:", searchCert);
       
@@ -1627,7 +1629,7 @@ class StockPage extends Component {
                     <TextField
                         label="Search"
                         variant="outlined"
-                        value={this.state.search}
+                        value={this.state.queryParams.search}
                         onChange={this.handleSearchChange}
                         InputProps={{
                           endAdornment: (
