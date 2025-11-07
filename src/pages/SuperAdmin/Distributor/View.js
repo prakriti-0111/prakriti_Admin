@@ -864,7 +864,7 @@ class DistrubutorViewPage extends React.Component {
                               Pay
                             </Button>
                           </Grid>
-                          <Grid
+                          {!admin.own && <Grid
                             item
                             xs={4}
                             md={2}
@@ -875,7 +875,7 @@ class DistrubutorViewPage extends React.Component {
                               onClick={() => this.handleInvoiceTransactionLedger()}>
                               Ledger
                             </Button>
-                          </Grid>
+                          </Grid>}
                         </Grid>
                       </div>
                       <TableContainer component={Paper}>

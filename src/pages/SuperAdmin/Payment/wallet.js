@@ -646,11 +646,11 @@ class WalletPage extends Component {
       this.columns,
       this.state.items
     );
-    let advanceData = 0;
+    /* let advanceData = 0; */
 
-    this.props.retailerList.map(
+    /* this.props.retailerList.map(
       (index) => (advanceData += index.advance_amount)
-    );
+    ); */
     return (
       <MainCard title="Wallet History" secondary="">
         {balance_by_mode ? (
@@ -739,7 +739,7 @@ class WalletPage extends Component {
                 component="span"
               >
                 <h1>Advance</h1>
-                <h2>{advanceData}</h2>
+                <h2>{balance_by_mode.advance}</h2>
               </Typography>
               <div className="card-icon">
                 <AccountBalanceWalletIcon />
