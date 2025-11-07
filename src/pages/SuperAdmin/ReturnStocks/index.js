@@ -459,13 +459,29 @@ class ReturnStockPage extends Component {
     this.setState({
       processing: true
     })
-    let res = await returnStockTrasnfer({stock_ids: this.state.transfers});
+    
+    // Get stock data including current_image for each selected stock
+    const stocksData = this.state.items
+      .filter(item => this.state.transfers.includes(item.id))
+      .map(item => ({
+        id: item.id,
+        current_image: item.current_image || item.image || null,
+        certificate_no: item.certificate_no
+      }));
+    
+    // Send both stock_ids and stock data with current_image to preserve images
+    let res = await returnStockTrasnfer({
+      stock_ids: this.state.transfers,
+      stocks_data: stocksData
+    });
+    
     if(res.data.success){
       this.props.enqueueSnackbar(res.data.message, { variant: 'success' });
       this.loadListData();
       this.loadPriceByCategory();
       this.setState({
-        trasnferDialogOpen: false
+        trasnferDialogOpen: false,
+        transfers: [] // Clear selections after transfer
       })
     }else{
       this.props.enqueueSnackbar(res.data.message, { variant: 'error' });
@@ -479,13 +495,29 @@ class ReturnStockPage extends Component {
     this.setState({
       processing: true
     })
-    let res = await returnStockMoveToStock({stock_ids: this.state.transfers});
+    
+    // Get stock data including current_image for each selected stock
+    const stocksData = this.state.items
+      .filter(item => this.state.transfers.includes(item.id))
+      .map(item => ({
+        id: item.id,
+        current_image: item.current_image || item.image || null,
+        certificate_no: item.certificate_no
+      }));
+    
+    // Send both stock_ids and stock data with current_image to preserve images
+    let res = await returnStockMoveToStock({
+      stock_ids: this.state.transfers,
+      stocks_data: stocksData
+    });
+    
     if(res.data.success){
       this.props.enqueueSnackbar(res.data.message, { variant: 'success' });
       this.loadListData();
       this.loadPriceByCategory();
       this.setState({
-        moveStockDialogOpen: false
+        moveStockDialogOpen: false,
+        transfers: [] // Clear selections after move
       })
     }else{
       this.props.enqueueSnackbar(res.data.message, { variant: 'error' });

@@ -396,3 +396,11 @@ FodyWeavers.xsd
 #build folder
 build/
 /src/dev/
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+.env.development
+.env.production
+.env.test
