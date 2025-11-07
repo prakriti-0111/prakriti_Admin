@@ -204,14 +204,6 @@ class DataTable extends React.Component {
         if (item.current_image != null) {
           d = item.current_image;
         }
-        // Fallback chain for images when stock image is null/undefined
-        if (!d || d === null || d === undefined || d === "") {
-          d = item.image
-            || item.product_main_image
-            || (item.product && (item.product.main_image || (item.product.images && (item.product.images[0]?.path || item.product.images[0]))))
-            || (item.images && (item.images[0]?.path || item.images[0]))
-            || "/assets/no_image.jpg";
-        }
         let width = "isBanner" in i && i.isBanner ? "200px" : "60px";
         let style = { width: width };
         if (!("isBanner" in i && i.isBanner)) {

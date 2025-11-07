@@ -34,7 +34,6 @@ import { unitList } from 'actions/superadmin/unit.actions';
 import { convertUnitToGram, weightFormat, isSalesExecutive, isAdmin } from 'src/helpers/helper';
 import CloseIcon from '@mui/icons-material/Close';
 import _ from 'lodash';
-import axios from 'actions/axios';
 
 class ReturnStockPage extends Component {
 
@@ -78,9 +77,7 @@ class ReturnStockPage extends Component {
       transfers: [],
       trasnferDialogOpen: false,
       moveStockDialogOpen: false,
-      processing: false,
-      // Cache of productId -> main image/url
-      productImages: {}
+      processing: false
     }
 
     this.columns = [
@@ -218,7 +215,7 @@ class ReturnStockPage extends Component {
     return update;
   }
 
-  componentDidUpdate(prevProps, prevState) {
+  componentDidUpdate() {
     if (this.state.cart_actionCalled) {
       if (this.state.cart_createSuccess) {
         this.props.enqueueSnackbar(this.state.cart_successMessage, { variant: 'success' });
@@ -233,11 +230,6 @@ class ReturnStockPage extends Component {
       this.props.dispatch({
         type: SUPERADMIN_CART_RESET
       });
-    }
-
-    // Prefetch product images for items that don't have stock images
-    if (prevState.items !== this.state.items) {
-      this.prefetchMissingProductImages(this.state.items);
     }
   }
 
@@ -414,49 +406,6 @@ class ReturnStockPage extends Component {
     this.setState({
       imageDialogOpen: false
     })
-  }
-
-  // Build robust image src for a row with fallback to product main image
-  getItemImageSrc = (item) => {
-    const cached = item.product_id && this.state.productImages[item.product_id];
-    let src = item.current_image 
-      || item.image 
-      || item.product_main_image
-      || (item.product && (item.product.main_image || (item.product.images && (item.product.images[0]?.path || item.product.images[0]))))
-      || (item.images && (item.images[0]?.path || item.images[0]))
-      || cached
-      || '/assets/no_image.jpg';
-    return src;
-  }
-
-  // Prefetch product main image for rows missing images
-  prefetchMissingProductImages = async (items) => {
-    const toFetch = [];
-    const { productImages } = this.state;
-    for (let it of items) {
-      const hasImage = !!(it && (it.current_image || it.image || (it.images && it.images.length) || (it.product && (it.product.main_image || (it.product.images && it.product.images.length)))));
-      if (!hasImage && it.product_id && !productImages[it.product_id]) {
-        toFetch.push(it.product_id);
-      }
-    }
-    if (!toFetch.length) return;
-
-    // Fetch one by one to avoid overloading
-    for (let pid of toFetch) {
-      try {
-        const res = await axios.get(`/superadmin/product/view/${pid}`);
-        const data = res?.data?.data;
-        const main = data?.main_image
-          || (Array.isArray(data?.images) ? (data.images[0]?.path || data.images[0]) : null);
-        if (main) {
-          this.setState(prev => ({
-            productImages: { ...prev.productImages, [pid]: main }
-          }));
-        }
-      } catch (e) {
-        // silent fail
-      }
-    }
   }
 
   handleCheckBox = (e, item) => {
@@ -706,12 +655,7 @@ class ReturnStockPage extends Component {
                     </TableCell>*/}
                         <TableCell>{index + 1}</TableCell>
                         <TableCell>
-                          {(() => {
-                            const imgSrc = this.getItemImageSrc(item);
-                            return (
-                              <img src={imgSrc} style={{ width: '60px', height: '40px' }} className='table-data-image cursor-pointer' onClick={() => this.handleImageClick(imgSrc)} />
-                            );
-                          })()}
+                          <img src={item.image} style={{ width: '60px', height: '40px' }} className='table-data-image cursor-pointer' onClick={() => this.handleImageClick(item.image)} />
                         </TableCell>
                         <TableCell>{item.name}</TableCell>
                         <TableCell>{item.certificate_no}</TableCell>
