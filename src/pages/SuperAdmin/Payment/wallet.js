@@ -50,6 +50,8 @@ import {
   isAdmin,
   isDistributor,
   isSalesExecutive,
+  getRoleName,
+  getUserDashboardRoute
 } from "src/helpers/helper";
 import { withSnackbar } from "notistack";
 import AccountBalanceWalletIcon from "@mui/icons-material/AccountBalanceWallet";
@@ -63,6 +65,7 @@ class WalletPage extends Component {
     super(props);
 
     this.state = {
+      auth: this.props.auth,
       advanceFilter: false,
       items: this.props.items,
       total: this.props.total,
@@ -309,6 +312,9 @@ class WalletPage extends Component {
 
     if (props.errorMessage !== state.errorMessage) {
       update.errorMessage = props.errorMessage;
+    }
+    if (props.auth !== state.auth) {
+      update.auth = props.auth;
     }
     if (props.balance_by_mode !== state.balance_by_mode) {
       update.balance_by_mode = props.balance_by_mode;
@@ -638,6 +644,13 @@ class WalletPage extends Component {
       payment_types.push({
         label: "Send Money",
         value: "send_money",
+      });
+    }
+
+    if(this.isSuperAdmin || (profile && !profile.own && this.isAdmin)){
+      payment_types.push({
+        label: "Payment",
+        value: "payment",
       });
     }
 
@@ -978,9 +991,16 @@ class WalletPage extends Component {
                       value={paymentFormValues.payment_type}
                       fullWidth
                       label="Payment Type"
-                      onChange={(event) =>
-                        this.updateFormValue(event.target.value, "payment_type")
-                      }
+                      onChange={(event) => {
+                        if(event.target.value == "payment"){
+                          this.props.navigate(
+                            getUserDashboardRoute(getRoleName(this.state.auth)) +
+                              "/suppliers"
+                          );
+                        } else {
+                          this.updateFormValue(event.target.value, "payment_type");
+                        }
+                      }}
                     >
                       {payment_types.map((item, index) => (
                         <MenuItem value={item.value} key={index}>
@@ -1194,6 +1214,7 @@ class WalletPage extends Component {
 }
 
 const mapStateToProps = (state) => ({
+  auth: state.auth,
   items: state.superadmin.payment.items,
   total: state.superadmin.payment.total,
   balance_by_mode: state.superadmin.payment.balance_by_mode,
