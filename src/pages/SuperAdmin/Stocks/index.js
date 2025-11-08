@@ -719,7 +719,7 @@ class StockPage extends Component {
         }
 
         // Add to cart directly
-        if (item.type !== "material") {
+        if (item.type !== "material" && row.certificate_no != "") {
           const materials = item.stock_materials.map(material => ({
             material_id: material.material_id,
             purity_id: material.purity_id,
@@ -868,7 +868,7 @@ class StockPage extends Component {
       }
 
       // Process based on item type
-      if (row.type !== "material") {
+      if (row.type !== "material" && row.certificate_no != "") {
         // Handle non-material items - optimized data preparation
         const materials = row.stock_materials.map(material => ({
           material_id: material.material_id,
@@ -1007,9 +1007,9 @@ class StockPage extends Component {
         this.setState({ processingCartItems: newProcessingItems });
         return;
       }
-
+      console.log("row.type : ", row.type);
       // Process based on item type
-      if (row.type !== "material") {
+      if (row.type !== "material" && row.certificate_no != "") {
         // Handle non-material items - optimized data preparation
         const materials = row.stock_materials.map(material => ({
           material_id: material.material_id,
