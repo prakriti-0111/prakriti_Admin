@@ -969,9 +969,9 @@ class SaleForm extends React.Component {
 
         let cart = cartList[i];
 
-        let materials = [],
+        let materials = [];
 
-          quantity = 1;
+          //quantity = 1;
 
         /* for those product with certificate no */
 
@@ -1157,7 +1157,7 @@ class SaleForm extends React.Component {
 
           sub_cat_making_charge_type: cart.sub_cat_making_charge_type,
 
-          quantity: quantity,
+          quantity: cart.quantity,
 
           order_product_id: cart.order_product_id,
 
@@ -2146,7 +2146,9 @@ class SaleForm extends React.Component {
 
         total_discount = 0,
 
-        total_quantity = 0;
+        total_quantity = 0,
+        
+        quantity = !isEmpty(products[x].quantity)?products[x].quantity:1;
 
       for (let i = 0; i < products[x].materials.length; i++) {
 
@@ -2314,27 +2316,27 @@ class SaleForm extends React.Component {
 
 
 
-      products[x].making_charge_discount_amount = discount_amount;
+      products[x].making_charge_discount_amount = discount_amount*quantity;
 
-      products[x].total_discount = priceFormat(total_discount);
+      products[x].total_discount = priceFormat(total_discount*quantity);
 
       products[x].sub_price = priceFormat(
 
-        parseFloat(total_price) + parseFloat(making_charge)
+        (parseFloat(total_price) + parseFloat(making_charge))*quantity
 
       );
 
-      products[x].making_charge = priceFormat(making_charge);
+      products[x].making_charge = priceFormat(making_charge*quantity);
 
-      products[x].total = priceFormat(total);
+      products[x].total = priceFormat(total*quantity);
 
-      products[x].total_tax = priceFormat(total_tax);
+      products[x].total_tax = priceFormat(total_tax*quantity);
 
-      products[x].cgst_tax = priceFormat(cgst_tax);
+      products[x].cgst_tax = priceFormat(cgst_tax*quantity);
 
-      products[x].sgst_tax = priceFormat(sgst_tax);
+      products[x].sgst_tax = priceFormat(sgst_tax*quantity);
 
-      products[x].igst_tax = priceFormat(igst_tax);
+      products[x].igst_tax = priceFormat(igst_tax*quantity);
 
     }
 
