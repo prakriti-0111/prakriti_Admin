@@ -52,7 +52,7 @@ import DialogContentText from "@mui/material/DialogContentText";
 import DialogTitle from "@mui/material/DialogTitle";
 import { categoryList } from "actions/superadmin/category.actions";
 import { materialList } from "actions/superadmin/material.actions";
-import { displayAmount } from "src/helpers/helper";
+import { displayAmount, isEmpty } from "src/helpers/helper";
 import { FreeBreakfastOutlined } from "@mui/icons-material";
 import { unitList } from "actions/superadmin/unit.actions";
 import { sizeList } from "actions/superadmin/size.actions";
@@ -1013,9 +1013,9 @@ class StockPage extends Component {
         this.setState({ processingCartItems: newProcessingItems });
         return;
       }
-      console.log("row.type : ", row.type);
+      console.log("row : ", row);
       // Process based on item type
-      if (row.type !== "material" && row.certificate_no != "") {
+      if (row.type !== "material" && !isEmpty(row.certificate_no)) {
         // Handle non-material items - optimized data preparation
         const materials = row.stock_materials.map(material => ({
           material_id: material.material_id,
@@ -1926,6 +1926,7 @@ class StockPage extends Component {
             </DialogTitle>
             <div>
               <DialogContentText></DialogContentText>
+              {console.log("this.state.cart_stock : ", this.state.cart_stock)}
               {this.state.cart_stock ? (
                   <TableContainer component={Paper}>
                     <div className="ratn-table-purchase-wrapper">
