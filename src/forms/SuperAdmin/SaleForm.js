@@ -6452,7 +6452,7 @@ class SaleForm extends React.Component {
 
                           <TableCell colSpan={2}>
 
-                            {item.total_weight} {productWeightUnitName}
+                            {item.total_weight} {productWeightUnitName != ""?productWeightUnitName:"Wt"}
 
                           </TableCell>
 
@@ -7076,7 +7076,7 @@ class SaleForm extends React.Component {
 
           </div>
 
-          {report_charge && !this.state.isAssign && formValues.user_id && <Grid
+          {report_charge && formValues.report_qty > 0 && !this.state.isAssign && formValues.user_id && <Grid
 
             item
 
