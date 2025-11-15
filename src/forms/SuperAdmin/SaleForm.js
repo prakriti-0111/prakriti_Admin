@@ -2316,27 +2316,27 @@ class SaleForm extends React.Component {
 
 
 
-      products[x].making_charge_discount_amount = discount_amount*quantity;
+      products[x].making_charge_discount_amount = discount_amount;
 
-      products[x].total_discount = priceFormat(total_discount*quantity);
+      products[x].total_discount = priceFormat(total_discount);
 
       products[x].sub_price = priceFormat(
 
-        (parseFloat(total_price) + parseFloat(making_charge))*quantity
+        (parseFloat(total_price) + parseFloat(making_charge))
 
       );
 
-      products[x].making_charge = priceFormat(making_charge*quantity);
+      products[x].making_charge = priceFormat(making_charge);
 
-      products[x].total = priceFormat(total*quantity);
+      products[x].total = priceFormat(total);
 
-      products[x].total_tax = priceFormat(total_tax*quantity);
+      products[x].total_tax = priceFormat(total_tax);
 
-      products[x].cgst_tax = priceFormat(cgst_tax*quantity);
+      products[x].cgst_tax = priceFormat(cgst_tax);
 
-      products[x].sgst_tax = priceFormat(sgst_tax*quantity);
+      products[x].sgst_tax = priceFormat(sgst_tax);
 
-      products[x].igst_tax = priceFormat(igst_tax*quantity);
+      products[x].igst_tax = priceFormat(igst_tax);
 
     }
 
@@ -5598,31 +5598,7 @@ class SaleForm extends React.Component {
 
 
 
-            {formValues.user_id ? (
-
-              <>
-
-                <Grid item xs={6} md={2} className='create-input'>
-
-                  <TextField
-
-                    label='Owner Name'
-
-                    variant='outlined'
-
-                    fullWidth
-
-                    value={this.state.admin_details.name}
-
-                    disabled
-
-                    inputProps={{ className: "non_disable_text" }}
-
-                  />
-
-                </Grid>
-
-              </>):null}
+            
 
             
 
