@@ -116,6 +116,7 @@ class ProductForm extends React.Component {
       categories: this.props.categories,
       certificates: this.props.certificates,
       materialList: this.props.materialList,
+      materialGroup: formData? formData.marerialGroups:[],
       sizeList: this.props.sizeList,
       sub_categories: this.props.sub_categories,
       product_type: formData ? formData.type : "in_house",
@@ -304,6 +305,7 @@ class ProductForm extends React.Component {
       is_featured: "0",
       material_id: "",
       materials: [],
+      materialGroup: [],
       sizes: [],
     };
   };
@@ -570,7 +572,8 @@ class ProductForm extends React.Component {
           this.getSelectedMaterialNames(selected).join(", ")
         }
       >
-        {this.state.materialList.map((item) => (
+        {console.log("this.state.materialGroup : ", this.state.materialGroup)}
+        {this.state.materialList.map((item, index) => (
           <MenuItem key={item.id} value={item.id} className="multi-select">
             <Checkbox
               checked={
@@ -578,6 +581,25 @@ class ProductForm extends React.Component {
               }
             />
             <ListItemText primary={item.name} />
+            <TextField
+              key={item.id}
+              id="outlined-basic"
+              name="material_group"
+              label={""}
+              variant="outlined"
+              type="number"
+              InputProps={{ inputProps: { min: 0, max: 10 } }}
+              value={this.state.materialGroup[item.id] ? this.state.materialGroup[item.id] : ''}
+              onClick={(e) => { e.stopPropagation(); return false; }}
+              onChange={(e) => {
+                let mg = this.state.materialGroup;
+                mg[item.id] = parseInt(e.target.value);
+                console.log("material group", mg);
+                this.setState({
+                  materialGroup: mg
+                });
+              }}
+            />
           </MenuItem>
         ))}
       </Select>
@@ -860,6 +882,14 @@ class ProductForm extends React.Component {
     }
 
     let values = { ...this.getDefaultValues(), ...data };
+    
+    if(values.materials && Array.isArray(values.materials)) {
+      for (let index = 0; index < values.materials.length; index++) {
+        values.materialGroup[index] = this.state.materialGroup[values.materials[index]] ? this.state.materialGroup[values.materials[index]] : '';
+      }
+    }
+
+    console.log("form values", values);
     values.description = this.state.description
       ? draftToHtml(convertToRaw(this.state.description.getCurrentContent()))
       : "";
@@ -901,6 +931,7 @@ class ProductForm extends React.Component {
 
     for (let i = 0; i < this.state.size_materials.length; i++) {
       for (let x = 0; x < this.state.size_materials[i].materials.length; x++) {
+        this.state.size_materials[i].materials[x]["material_group"] = this.state.materialGroup[this.state.size_materials[i].materials[x].material_id] ? this.state.materialGroup[this.state.size_materials[i].materials[x].material_id] : '';
         if (!this.state.size_materials[i].materials[x].purities.length) {
           this.state.size_materials[i].materials[x]["purity_error"] = true;
           errors = true;
@@ -947,6 +978,7 @@ class ProductForm extends React.Component {
       if (this.state.main_image_file) {
         values.main_image = await toBase64(this.state.main_image_file);
       }
+      console.log("final values", values);
       if (this.state.isCreateFrom) {
         return this.props.actions.productStore(values);
       } else {
@@ -1029,6 +1061,7 @@ class ProductForm extends React.Component {
           {
             material_id: materials[0],
             material_name: item.length ? item[0].name : "",
+            meterial_group: this.state.materialGroup[materials[0]] ? this.state.materialGroup[materials[0]] : '',
             purities: [],
             weight: "",
             unit_id: item.length ? item[0].unit_id : "",
@@ -1056,6 +1089,7 @@ class ProductForm extends React.Component {
             thisMaterials.push({
               material_id: m,
               material_name: item.length ? item[0].name : "",
+              meterial_group: this.state.materialGroup[materials[0]] ? this.state.materialGroup[materials[0]] : '',
               purities: [],
               weight: "",
               unit_id: item.length ? item[0].unit_id : "",
@@ -1071,7 +1105,7 @@ class ProductForm extends React.Component {
         }
       }
     }
-
+    console.log("size materials array", arr);
     this.setState({
       size_materials: arr,
     });
