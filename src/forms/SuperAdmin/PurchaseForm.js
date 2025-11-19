@@ -876,14 +876,16 @@ class PurchaseForm extends React.Component {
         let actualProductMaterials = [];
         /* group materials into array by material.group */
         productFormValues.materials.forEach((material, index) => {
-          if (!groupedMaterials[`grp_`+material.group]) {
-            materialGroups.push(`grp_`+material.group);
-            groupedMaterials[`grp_`+material.group] = [];
-            initialSelectedProductMaterial[`grp_`+material.group] = [];
-            initialSelectedProductMaterial[`grp_`+material.group].push(material);
-            actualProductMaterials.push(material);
+          if (!isEmpty(material.group)){
+            if(!groupedMaterials[`grp_`+material.group]) {
+              materialGroups.push(`grp_`+material.group);
+              groupedMaterials[`grp_`+material.group] = [];
+              initialSelectedProductMaterial[`grp_`+material.group] = [];
+              initialSelectedProductMaterial[`grp_`+material.group].push(material);
+              actualProductMaterials.push(material);
+            }
+            groupedMaterials[`grp_`+material.group].push(material);
           }
-          groupedMaterials[`grp_`+material.group].push(material);
         });
         console.log("Grouped Materials: ", groupedMaterials);
         console.log("Initial Selected Product Material: ", initialSelectedProductMaterial);
@@ -893,26 +895,38 @@ class PurchaseForm extends React.Component {
             selectedProductMaterial: initialSelectedProductMaterial
           });
         } */
-        
-        this.updateProductFormValues(
-            materialGroups,
-            "material_groups"
-          );
-        this.updateProductFormValues(
-            groupedMaterials,
-            "grp_materials"
-          );
-        this.updateProductFormValues(
-            initialSelectedProductMaterial,
-            "selected_grp_materials"
-          );
-        this.updateProductFormValues(
-            actualProductMaterials,
-            "actual_product_materials"
-          );  
+        if(materialGroups.length > 0){
+          this.updateProductFormValues(
+              materialGroups,
+              "material_groups"
+            );
+          this.updateProductFormValues(
+              groupedMaterials,
+              "grp_materials"
+            );
+          this.updateProductFormValues(
+              initialSelectedProductMaterial,
+              "selected_grp_materials"
+            );
+          this.updateProductFormValues(
+              actualProductMaterials,
+              "actual_product_materials"
+            ); 
+        } else {
+          this.updateProductFormValues(
+              materialGroups,
+              "material_groups"
+            );
+          this.updateProductFormValues(
+              groupedMaterials,
+              "grp_materials"
+            );
+          this.updateProductFormValues(
+              initialSelectedProductMaterial,
+              "selected_grp_materials"
+            );
+        }
       }
-
-      
     });
   };
 
@@ -2449,10 +2463,11 @@ class PurchaseForm extends React.Component {
                             newValue ? newValue.id : "",
                             "material_id"
                           ); */
-
+    console.log("productFormValues.materials: ", productFormValues.materials);
     console.log("material_groups : ", productFormValues.material_groups);
     console.log("grp_materials: ", productFormValues.grp_materials);
     console.log("selected_grp_materials: ", productFormValues.selected_grp_materials);
+    console.log("productFormValues.product_type != 'material' && productFormValues.materials.length > 0 && productFormValues.material_groups && productFormValues.material_groups.length > 0 : ", (productFormValues.product_type != "material" && productFormValues.materials.length > 0 && productFormValues.material_groups && productFormValues.material_groups.length > 0 ));
     
     if(productFormValues.selected_grp_materials){
       console.log("here----------------------------",Array.from(productFormValues.selected_grp_materials));
@@ -3190,7 +3205,7 @@ class PurchaseForm extends React.Component {
                                                 disabled={this.isMaterialFormDisabled()}
                                               >
                                                 <MenuItem value=""></MenuItem>
-                                                {productFormValues.grp_materials[grpName].map((itm, index) => (
+                                                {productFormValues.grp_materials[grpName] && productFormValues.grp_materials[grpName].map((itm, index) => (
                                                   <MenuItem value={itm.material_id} key={index}>
                                                     {itm.material_name}{" "}
                                                     {" "}
