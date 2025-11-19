@@ -1131,8 +1131,8 @@ class PurchaseForm extends React.Component {
       sizeList = m.length ? m[0].sizes : [];
       let paramMaterials = [...productFormValues.materials];
       let paramProductFrom = { ...productFormValues };
-      let res = this.loadDefaultWeightQty(paramProductFrom, paramMaterials);
-      productFormValues.materials = [...res];
+      //let res = this.loadDefaultWeightQty(paramProductFrom, paramMaterials);
+      //productFormValues.materials = [...res];
       change_default_material = true;
     } else if (key == "size_id") {
       let m = _.filter(this.state.sizeList, { id: val });
@@ -1140,8 +1140,8 @@ class PurchaseForm extends React.Component {
       if (this.state.change_default_material) {
         let paramMaterials = [...productFormValues.materials];
         let paramProductFrom = { ...productFormValues };
-        let res = this.loadDefaultWeightQty(paramProductFrom, paramMaterials);
-        productFormValues.materials = [...res];
+        //let res = this.loadDefaultWeightQty(paramProductFrom, paramMaterials);
+        //productFormValues.materials = [...res];
       }
     } else if (key == "material_id") {
       let m = _.filter(this.state.materialList, { id: val });
@@ -1181,8 +1181,8 @@ class PurchaseForm extends React.Component {
       sizeList = this.state.sizeList;
       let paramMaterials = [...productFormValues.materials];
       let paramProductFrom = { ...productFormValues };
-      let res = this.loadDefaultWeightQty(paramProductFrom, paramMaterials);
-      productFormValues.materials = [...res];
+      //let res = this.loadDefaultWeightQty(paramProductFrom, paramMaterials);
+      //productFormValues.materials = [...res];
       change_default_material = true;
     } else if(key == "grp_material_selected"){
       let grpMetArr = val.split("#");

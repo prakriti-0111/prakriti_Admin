@@ -1778,7 +1778,7 @@ class SaleForm extends React.Component {
 
 
   handleDefaultChange = (event, key) => {
-
+    console.log("handleDefaultChange => event.target.value", event.target.value);
     this.updateFormValues(event.target.value, key);
 
   };
@@ -1786,10 +1786,17 @@ class SaleForm extends React.Component {
 
 
   updateFormValues = (val, key) => {
+    console.log("updateFormValues => val, key", val, key);
+    /* let formValues = {
+      ...this.state.formValues,
+      key: val,
+    }; */
 
     let formValues = this.state.formValues;
-
+    
     formValues[key] = val;
+
+    
 
     console.log("updateFormValues => formValues", formValues);
 
@@ -2350,9 +2357,15 @@ class SaleForm extends React.Component {
 
     let total_report_charge_amount_after_tax = 0;
 
+    if(!this.state.isCreateFrom){
+      formValues.report_charge_amount = parseFloat(this.state.report_charge.amount);
+    } else {
+      formValues.report_charge_amount = parseFloat(this.state.formValues.report_charge_amount);
+    }
+
     if(!this.state.isAssign){
 
-      total_report_charge_amount = report_qty * parseFloat(this.state.report_charge.amount);
+      total_report_charge_amount = report_qty * parseFloat(formValues.report_charge_amount);
 
       total_report_charge_tax_amount = total_report_charge_amount * parseFloat(this.state.report_charge.tax)/100;
 
@@ -2362,7 +2375,7 @@ class SaleForm extends React.Component {
 
     console.log("report_qty : ", report_qty);
 
-    console.log("report_charge_amount : ", this.state.report_charge.amount);
+    console.log("report_charge_amount : ", formValues.report_charge_amount);
 
     console.log("total_report_charge_amount : ", total_report_charge_amount);
 
@@ -2373,8 +2386,8 @@ class SaleForm extends React.Component {
     formValues.products = products;
 
     formValues.report_qty = report_qty;
-
-    formValues.report_charge_amount = parseFloat(this.state.report_charge.amount);
+    
+    
 
     formValues.total_report_charge_amount = total_report_charge_amount;
 
@@ -5312,7 +5325,7 @@ class SaleForm extends React.Component {
 
     }
 
-
+    console.log("formValues.user_id : ", formValues.user_id);
 
     return (
 
@@ -5604,7 +5617,7 @@ class SaleForm extends React.Component {
 
             {isMobile ? <>
 
-              <Grid item xs={6} md={2} className='create-input'>
+              <Grid item xs={6} md={userIdColumnXs} className='create-input'>
 
                 <TextField
 
@@ -5624,7 +5637,7 @@ class SaleForm extends React.Component {
 
               </Grid>
 
-              <Grid item xs={6} md={2} className='create-input'>
+              <Grid item xs={6} md={userIdColumnXs} className={`create-input ${formValues.user_id ? 'create-input-responsive' : ''}`}>
 
                 <Accordion >
 
