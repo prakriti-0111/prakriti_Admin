@@ -39,6 +39,9 @@ class ProductEditPage extends Component {
   }
 
   componentDidMount() {
+    this.props.dispatch({
+      type: RESET_PRODUCT,
+    });
     this.props.actions.productView(this.state.id);
   }
 
