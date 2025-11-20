@@ -27,6 +27,20 @@ import { subCategoryList } from "actions/superadmin/subCategory.actions";
 import ClearIcon from "@mui/icons-material/Clear";
 import { hasPermission } from "src/helpers/helper";
 
+import Accordion from "@mui/material/Accordion";
+
+import AccordionSummary from "@mui/material/AccordionSummary";
+
+import AccordionDetails from "@mui/material/AccordionDetails";
+
+import Typography from "@mui/material/Typography";
+
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+
+import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
+
+import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
+
 class SizePage extends Component {
   constructor(props) {
     super(props);
@@ -374,64 +388,42 @@ class SizePage extends Component {
         </Box>*/}
         {/* {console.log("----------------itens",this.props.subCategoryList.length==1?this.props.subCategoryList[0].name:this.props)} */}
         {/* {!this.props?.Sub_Cat ? ( */}
-        {this.state.queryParams.sub_category_id ? (
-          <div class="accordion " id="accordionExample">
-            <div class="accordion-item">
-              <h2 class="accordion-header">
-                <button
-                  class="accordion-button"
-                  type="button"
-                  data-bs-toggle="collapse"
-                  data-bs-target="#collapseOne"
-                  aria-expanded="false"
-                  aria-controls="collapseOne"
-                >
-                  Category Size
-                </button>
-              </h2>
-              <div
-                id="collapseOne"
-                class="accordion-collapse collapse show"
-                data-bs-parent="#accordionExample"
-              >
-                <div class="accordion-body">
-                  <Grid container spacing={gridSpacing} className="abc">
-                    <DataTable
-                      columns={this.columns}
-                      rows={this.state.items}
-                      page={this.state.queryParams.page}
-                      limit={this.state.queryParams.limit}
-                      total={this.state.total}
-                      handlePagination={this.handlePagination}
-                      actions={[
-                        {
-                          label: "Edit",
-                          onClick: this.handleEdit,
-                          color: "primary",
-                          show: hasPermission(
-                            this.state.permissions,
-                            "size",
-                            "edit"
-                          ),
-                        },
-                        {
-                          label: "Delete",
-                          onClick: this.handleDelete,
-                          isDelete: true,
-                          color: "error",
-                          show: hasPermission(
-                            this.state.permissions,
-                            "size",
-                            "delete"
-                          ),
-                        },
-                      ]}
-                    />
-                  </Grid>
-                </div>
-              </div>
-            </div>
-          </div>
+        {this.state.items.length > 0 ? (
+          <>
+            <Grid container spacing={gridSpacing} className="abc">
+              <DataTable
+                columns={this.columns}
+                rows={this.state.items}
+                page={this.state.queryParams.page}
+                limit={this.state.queryParams.limit}
+                total={this.state.total}
+                handlePagination={this.handlePagination}
+                actions={[
+                  {
+                    label: "Edit",
+                    onClick: this.handleEdit,
+                    color: "primary",
+                    show: hasPermission(
+                      this.state.permissions,
+                      "size",
+                      "edit"
+                    ),
+                  },
+                  {
+                    label: "Delete",
+                    onClick: this.handleDelete,
+                    isDelete: true,
+                    color: "error",
+                    show: hasPermission(
+                      this.state.permissions,
+                      "size",
+                      "delete"
+                    ),
+                  },
+                ]}
+              />
+            </Grid>
+          </>
         ) : null}
 
         <Dialog

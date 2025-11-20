@@ -2350,6 +2350,7 @@ class SaleForm extends React.Component {
 
 
     /* report charge calculation */
+    let report_charge_amount = 0;
 
     let total_report_charge_amount = 0;
 
@@ -2358,14 +2359,16 @@ class SaleForm extends React.Component {
     let total_report_charge_amount_after_tax = 0;
 
     if(!this.state.isCreateFrom){
-      formValues.report_charge_amount = parseFloat(this.state.report_charge.amount);
+      formValues.report_charge_amount = this.state.report_charge.amount;
+      report_charge_amount = this.state.report_charge.amount != ""?parseFloat(this.state.report_charge.amount):0; 
     } else {
-      formValues.report_charge_amount = parseFloat(this.state.formValues.report_charge_amount);
+      formValues.report_charge_amount = this.state.formValues.report_charge_amount;
+      report_charge_amount = this.state.formValues.report_charge_amount != ""?parseFloat(this.state.formValues.report_charge_amount):0;
     }
 
     if(!this.state.isAssign){
 
-      total_report_charge_amount = report_qty * parseFloat(formValues.report_charge_amount);
+      total_report_charge_amount = report_qty * parseFloat(report_charge_amount);
 
       total_report_charge_tax_amount = total_report_charge_amount * parseFloat(this.state.report_charge.tax)/100;
 
