@@ -11,6 +11,7 @@ import {
   InputLabel,
   Select,
   MenuItem,
+  CircularProgress
 } from "@mui/material";
 import { ContactPageSharp } from "@mui/icons-material";
 import withRouter from "src/helpers/withRouter";
@@ -24,7 +25,7 @@ const validate = (values) => {
       errors[field] = "Required";
     }
   });
-
+  
   return errors;
 };
 
@@ -36,6 +37,7 @@ class SizeForm extends React.Component {
       formData: "formData" in this.props ? this.props.formData : null,
       subcategories: this.props.subcategories,
       submitSuccess: this.props.submitSuccess,
+      isLoading: false,
     };
   }
 
@@ -50,6 +52,7 @@ class SizeForm extends React.Component {
   componentDidUpdate(prevProps) {
     if (this.state.submitSuccess) {
       this.resetForm();
+      this.setState({ isLoading: false });
     }
     if (this.props.formData != prevProps.formData && this.state.formData) {
       let formValues = { ...this.state.formData };
@@ -85,8 +88,12 @@ class SizeForm extends React.Component {
     return update;
   }
 
-  renderTextField = ({ input, label, meta: { touched, error }, ...custom }) => (
-    <TextField
+  renderTextField = ({ input, label, meta: { touched, error }, ...custom }) => {
+    if(typeof error != "undefined" && error != "" && this.state.isLoading){
+      this.setState({ isLoading: false });
+    }
+
+    return <TextField
       label={label}
       fullWidth
       error={touched && error ? true : false}
@@ -94,15 +101,20 @@ class SizeForm extends React.Component {
       {...input}
       {...custom}
     />
-  );
+  };
 
   renderSubCategoryField = ({
     input,
     label,
     meta: { touched, error },
     ...custom
-  }) => (
-    <FormControl fullWidth error={touched && error ? true : false}>
+  }) => {
+    console.log("--------renderSubCategoryField error",error);
+    if(typeof error != "undefined" && error != "" && this.state.isLoading){
+      this.setState({ isLoading: false });
+    }
+
+    return <FormControl fullWidth error={touched && error ? true : false}>
       <InputLabel htmlFor="grouped-native-select">{}</InputLabel>
       <Select
         native
@@ -129,8 +141,8 @@ class SizeForm extends React.Component {
         })}
       </Select>
       {touched && error ? <FormHelperText>{error}</FormHelperText> : null}
-    </FormControl>
-  );
+    </FormControl>;
+  };
 
   getSubCategoryByGroup = () => {
     let arr = [];
@@ -160,7 +172,7 @@ class SizeForm extends React.Component {
     // })
 
     return (
-      <form onSubmit={handleSubmit}>
+      <form >
         <Box sx={{ flexGrow: 1 }}>
           <Grid container spacing={2}>
             <Grid item xs={6} md={4} className="create-input">
@@ -183,7 +195,7 @@ class SizeForm extends React.Component {
               />
             </Grid>
             <Grid item xs={12} md={4}>
-              <Stack
+              {!this.state.isLoading?<Stack
                 spacing={4}
                 mt={1}
                 direction="row"
@@ -202,11 +214,15 @@ class SizeForm extends React.Component {
                   variant="contained"
                   type="submit"
                   className="conf-button"
+                  onClick={() => {
+                    this.setState({ isLoading: true });
+                    this.props.handleSubmit();
+                  }}
                 >
-                  Add
+                  {this.state.formData == null?`Add`:`Update`}
                 </Button>
                 {/*<Button variant="outlined" onClick={() => this.props.handleCancel() }>Cancel</Button>*/}
-              </Stack>
+              </Stack>:<CircularProgress size="40px" />}
             </Grid>
           </Grid>
         </Box>
