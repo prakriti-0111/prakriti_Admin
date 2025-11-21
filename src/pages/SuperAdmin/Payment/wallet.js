@@ -743,7 +743,10 @@ class WalletPage extends Component {
             <CardContent
               className="dashboard_card_content bg-color-7"
               sx={{ display: "flex", justifyContent: "space-between" }}
-              onClick={() => this.setState({ advanceFilter: true })}
+              onClick={() => {
+                /* this.setState({ advanceFilter: true }) */
+                this.handleCardClick("advance");
+              }}
             >
               <Typography
                 sx={{ fontSize: 14, margin: 0 }}
