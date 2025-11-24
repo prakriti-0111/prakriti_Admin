@@ -100,6 +100,10 @@ class SaleViewPage extends React.Component {
         display_name: "Cheque #",
       },
       {
+        name: "purpose",
+        display_name: "Purpose",
+      },
+      {
         name: "txn_id",
         display_name: "Transaction #",
       },
