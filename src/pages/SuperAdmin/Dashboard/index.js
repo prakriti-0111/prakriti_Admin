@@ -76,6 +76,7 @@ class DashboardPage extends Component {
       month_wise_sales: [],
       profile: null,
       sales: [],
+      Total_sale_on_approval_products: 0,
       purchOnApproveList: [],
       Total_sales_on_approval: 0,
       Total_purchase_on_approval: 0,
@@ -156,13 +157,15 @@ class DashboardPage extends Component {
             sales: response.data.data,
           });
           let Total_sales_on_approval_count = 0;
-
+          let Total_sale_on_approval_products = 0;
           this.state.sales.items?.map((items) => {
             let items_data = items.bill_amount.split("₹");
+            Total_sale_on_approval_products += items.no_of_products;
             Total_sales_on_approval_count += Number(items_data[1]);
           });
 
           this.setState({
+            Total_sale_on_approval_products: Total_sale_on_approval_products,
             Total_sales_on_approval: Total_sales_on_approval_count.toFixed(2),
           });
         }
@@ -1257,7 +1260,7 @@ class DashboardPage extends Component {
                   Sales on Approval &nbsp;{" "}
                   <span>
                     {this.state.sales ? (
-                      this.state.sales.total
+                      this.state.Total_sale_on_approval_products
                     ) : (
                     <CircularProgress size="20px" />
                     )}

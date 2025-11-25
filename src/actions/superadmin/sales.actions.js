@@ -1,6 +1,7 @@
 import axios from 'actions/axios';
 import {
     LIST_SALES,
+    LIST_SALES_TXN_LEDGER,
     LIST_SALES_ON_APPROVE,
     GET_SALES_ON_APPROVE,
     UPDATE_SALES_STATUS,
@@ -11,6 +12,23 @@ import {
     DELETE_SALES,
 } from '../../actionTypes/superadmin/sales.types';
 import {objectToQuery} from 'src/helpers/helper';
+
+export const saleTxnLedgerList = (params) => {
+    params = objectToQuery(params, true)
+    return (dispatch) => {
+        axios.get(`/superadmin/sales/txn-ledger${params}`)
+        .then(response => {
+            if(response.data.success){
+                dispatch({
+                    type: LIST_SALES_TXN_LEDGER,
+                    payload: response.data.data
+                });
+            }
+        })
+        .catch(error => {
+        })
+    }
+}
 
 export const salesList = (params) => {
     params = objectToQuery(params, true)
@@ -198,8 +216,14 @@ export const saleReturn = (id, post) => {
 export const returnStockTrasnfer = (post) => {
     return axios.post(`/superadmin/sales/return-stock-transfer`, post)
 }
+
 export const saleProducts = (params) => {
     params = objectToQuery(params, true)
     return axios.get(`/superadmin/sales-products${params}`);
+}
+
+export const saleDownloadLedger = (params) => {
+    params = objectToQuery(params, true)
+    return axios.get(`/superadmin/sales/txn-ledger-download/${params}`);
 }
 

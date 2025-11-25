@@ -171,6 +171,15 @@ class SalesExecutivePage extends Component {
       }
     ];
 
+    if(this.isAdmin){
+      tableActions = [...tableActions, {
+        label: 'View',
+        onClick: this.handleView,
+        color: 'primary',
+        show: hasPermission(this.state.permissions, 'sales_executive', 'view')
+      }];
+    }
+
     if(this.isDistributor){
       tableActions = [{
         label: 'View',

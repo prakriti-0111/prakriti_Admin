@@ -27,7 +27,12 @@ import { subCategoryList } from "actions/superadmin/subCategory.actions";
 import { cartList } from "actions/superadmin/cart.actions";
 import DataTable from "src/utils/DataTable";
 import { categoryList } from "actions/superadmin/category.actions";
-import { displayAmount } from "src/helpers/helper";
+import {
+  isEmpty,
+  displayAmount,
+  getRoleName,
+  getUserDashboardRoute,
+} from "src/helpers/helper";
 import { getMyPerformance } from "actions/superadmin/my_performance.actions";
 
 class SalesExecutiveViewPage extends Component {
@@ -35,6 +40,7 @@ class SalesExecutiveViewPage extends Component {
     super(props);
 
     this.state = {
+      auth: this.props.auth,
       se: this.props.se,
       items: this.props.items,
       total: this.props.total,
@@ -117,6 +123,10 @@ class SalesExecutiveViewPage extends Component {
 
     if (props.total !== state.total) {
       update.total = props.total;
+    }
+
+    if (props.auth !== state.auth) {
+      update.auth = props.auth;
     }
 
     if (props.categories !== state.categories) {
@@ -234,6 +244,14 @@ class SalesExecutiveViewPage extends Component {
       }
     );
   };
+
+  handleInvoiceTransactionLedger = () => {
+    this.props.navigate(
+        getUserDashboardRoute(getRoleName(this.state.auth)) +
+        "/sales-executive/invoice-transaction-ledger/" +
+        this.props.params.id
+    );
+  }
 
   render() {
     return (
@@ -380,14 +398,22 @@ class SalesExecutiveViewPage extends Component {
                     </Grid>
                     <Grid
                       item
-                      xs={6}
+                      xs={12}
                       md={3}
+                      sx={{display:"flex"}}
                       className='create-input order-input button-right'>
                       <Button
                         variant='contained'
                         className='search-btn'
                         onClick={this.handleSearch}>
                         Search
+                      </Button>
+                      &nbsp;&nbsp;
+                      <Button
+                        variant='contained'
+                        className='add-button'
+                        onClick={() => this.handleInvoiceTransactionLedger()}>
+                        Ledger
                       </Button>
                     </Grid>
                   </Grid>
@@ -425,6 +451,7 @@ const mapStateToProps = (state) => ({
   total: state.superadmin.stocks.total,
   categories: state.superadmin.category.items,
   sub_categories: state.superadmin.subCategory.items,
+  auth: state.auth,
 });
 
 const mapDispatchToProps = (dispatch) => ({

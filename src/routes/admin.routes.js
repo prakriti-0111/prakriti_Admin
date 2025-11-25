@@ -36,6 +36,7 @@ const DistributorPage = Loadable(lazy(() => import('../pages/SuperAdmin/Distribu
 const DistributorCreatePage = Loadable(lazy(() => import('../pages/SuperAdmin/Distributor/Create')));
 const DistributorEditPage = Loadable(lazy(() => import('../pages/SuperAdmin/Distributor/Edit')));
 const DistributorViewPage = Loadable(lazy(() => import('../pages/SuperAdmin/Distributor/View')));
+const DistributorInvoiceTransactionLedgerPage = Loadable(lazy(() => import('../pages/SuperAdmin/Distributor/Ledger')));
 
 // retailer
 const RetailerPage = Loadable(lazy(() => import('../pages/SuperAdmin/Retailer')));
@@ -48,6 +49,7 @@ const SupplierPage = Loadable(lazy(() => import('../pages/SuperAdmin/Supplier'))
 const SupplierCreatePage = Loadable(lazy(() => import('../pages/SuperAdmin/Supplier/Create')));
 const SupplierEditPage = Loadable(lazy(() => import('../pages/SuperAdmin/Supplier/Edit')));
 const SupplierViewPage = Loadable(lazy(() => import('../pages/SuperAdmin/Supplier/View')));
+const SupplierInvoiceTransactionLedgerPage = Loadable(lazy(() => import('../pages/SuperAdmin/Supplier/Ledger')));
 
 // employee
 const EmployeePage = Loadable(lazy(() => import('../pages/SuperAdmin/Employee')));
@@ -59,6 +61,8 @@ const EmployeeViewPage = Loadable(lazy(() => import('../pages/SuperAdmin/Employe
 const SalesExecutivePage = Loadable(lazy(() => import('../pages/SuperAdmin/SalesExecutive')));
 const SalesExecutiveCreatePage = Loadable(lazy(() => import('../pages/SuperAdmin/SalesExecutive/Create')));
 const SalesExecutiveEditPage = Loadable(lazy(() => import('../pages/SuperAdmin/SalesExecutive/Edit')));
+const SalesExecutiveViewPage = Loadable(lazy(() => import('../pages/SuperAdmin/SalesExecutive/View')));
+const SalesExecutiveInvoiceTransactionLedgerPage = Loadable(lazy(() => import('../pages/SuperAdmin/SalesExecutive/Ledger')));
 
 //material stocks
 const MaterialStocksPage =Loadable(lazy(() => import('../pages/SuperAdmin/MaterialStocks')));
@@ -216,6 +220,10 @@ const AdminRoutes = (isLoggedIn) => [
         element: <DistributorViewPage />
       },
       {
+        path: 'distributors/invoice-transaction-ledger/:id',
+        element: <DistributorInvoiceTransactionLedgerPage />
+      },
+      {
         path: 'sales-executive',
         element: <SalesExecutivePage />
       },
@@ -226,6 +234,14 @@ const AdminRoutes = (isLoggedIn) => [
       {
         path: 'sales-executive/Edit/:id',
         element: <SalesExecutiveEditPage />
+      },
+      {
+        path: 'sales-executive/View/:id',
+        element: <SalesExecutiveViewPage />
+      },
+      {
+        path: 'sales-executive/invoice-transaction-ledger/:id',
+        element: <SalesExecutiveInvoiceTransactionLedgerPage />
       },
       {
         path: 'retailers',
@@ -258,6 +274,10 @@ const AdminRoutes = (isLoggedIn) => [
       {
         path: 'suppliers/View/:id',
         element: <SupplierViewPage />
+      },
+      {
+        path: 'suppliers/invoice-transaction-ledger/:id',
+        element: <SupplierInvoiceTransactionLedgerPage />
       },
       {
         path: 'expenses',

@@ -372,7 +372,7 @@ class StockPage extends Component {
                   <TextField
                     label="Search"
                     variant="outlined"
-                    value={this.state.search}
+                    value={this.state.queryParams.search}
                     onChange={this.handleSearchChange}
                   />
                 </FormControl>

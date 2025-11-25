@@ -736,7 +736,7 @@ class SaleForm extends React.Component {
 
   initializeFormData = () => {
 
-    let formValues = { ...this.state.formData };
+    let formValues = { ...this.state.formValues, ...this.state.formData };
 
     let return_products = [],
 
@@ -890,6 +890,9 @@ class SaleForm extends React.Component {
 
         report_charge: reportCharge[0]
 
+      }, () => {
+        console.log("========================== after report charge setState ==========================");
+        this.calculateProductPrice();
       });
 
     }
@@ -966,9 +969,9 @@ class SaleForm extends React.Component {
 
         let cart = cartList[i];
 
-        let materials = [],
+        let materials = [];
 
-          quantity = 1;
+          //quantity = 1;
 
         /* for those product with certificate no */
 
@@ -1154,7 +1157,7 @@ class SaleForm extends React.Component {
 
           sub_cat_making_charge_type: cart.sub_cat_making_charge_type,
 
-          quantity: quantity,
+          quantity: cart.quantity,
 
           order_product_id: cart.order_product_id,
 
@@ -1215,9 +1218,7 @@ class SaleForm extends React.Component {
         },
 
         () => {
-
           this.calculateProductPrice();
-
         }
 
       );
@@ -1777,7 +1778,7 @@ class SaleForm extends React.Component {
 
 
   handleDefaultChange = (event, key) => {
-
+    console.log("handleDefaultChange => event.target.value", event.target.value);
     this.updateFormValues(event.target.value, key);
 
   };
@@ -1785,10 +1786,17 @@ class SaleForm extends React.Component {
 
 
   updateFormValues = (val, key) => {
+    console.log("updateFormValues => val, key", val, key);
+    /* let formValues = {
+      ...this.state.formValues,
+      key: val,
+    }; */
 
     let formValues = this.state.formValues;
-
+    
     formValues[key] = val;
+
+    
 
     console.log("updateFormValues => formValues", formValues);
 
@@ -2127,6 +2135,7 @@ class SaleForm extends React.Component {
     //new code
 
     let formValues = this.state.formValues;
+    console.log("calculateProductPrice => formValues", formValues);   
 
     let products = formValues.products;
 
@@ -2144,7 +2153,9 @@ class SaleForm extends React.Component {
 
         total_discount = 0,
 
-        total_quantity = 0;
+        total_quantity = 0,
+        
+        quantity = !isEmpty(products[x].quantity)?products[x].quantity:1;
 
       for (let i = 0; i < products[x].materials.length; i++) {
 
@@ -2318,7 +2329,7 @@ class SaleForm extends React.Component {
 
       products[x].sub_price = priceFormat(
 
-        parseFloat(total_price) + parseFloat(making_charge)
+        (parseFloat(total_price) + parseFloat(making_charge))
 
       );
 
@@ -2339,6 +2350,7 @@ class SaleForm extends React.Component {
 
 
     /* report charge calculation */
+    let report_charge_amount = 0;
 
     let total_report_charge_amount = 0;
 
@@ -2346,9 +2358,17 @@ class SaleForm extends React.Component {
 
     let total_report_charge_amount_after_tax = 0;
 
+    if(!this.state.isCreateFrom){
+      formValues.report_charge_amount = this.state.report_charge.amount;
+      report_charge_amount = this.state.report_charge.amount != ""?parseFloat(this.state.report_charge.amount):0; 
+    } else {
+      formValues.report_charge_amount = this.state.formValues.report_charge_amount;
+      report_charge_amount = this.state.formValues.report_charge_amount != ""?parseFloat(this.state.formValues.report_charge_amount):0;
+    }
+
     if(!this.state.isAssign){
 
-      total_report_charge_amount = report_qty * parseFloat(formValues.report_charge_amount);
+      total_report_charge_amount = report_qty * parseFloat(report_charge_amount);
 
       total_report_charge_tax_amount = total_report_charge_amount * parseFloat(this.state.report_charge.tax)/100;
 
@@ -2369,14 +2389,14 @@ class SaleForm extends React.Component {
     formValues.products = products;
 
     formValues.report_qty = report_qty;
+    
+    
 
     formValues.total_report_charge_amount = total_report_charge_amount;
 
     formValues.total_report_charge_tax_amount = total_report_charge_tax_amount;
 
     formValues.total_report_charge_amount_after_tax = total_report_charge_amount_after_tax;
-
-
 
     this.setState(
 
@@ -3915,11 +3935,11 @@ class SaleForm extends React.Component {
 
 
   handleCheckBox = (e, index) => {
-
+   
     let products = this.state.formValues.products;
 
     let return_products = this.state.return_products;
-
+   
     let product = products[index];
 
     let hasReturn = this.hasReturn();
@@ -4043,6 +4063,9 @@ class SaleForm extends React.Component {
       });
 
     }
+
+    
+    //return false;  
 
     let res = await saleReturn(this.state.formData.id, {
 
@@ -4275,7 +4298,7 @@ class SaleForm extends React.Component {
     let return_products = this.state.return_products;
 
     let return_amount = 0,
-
+      
       return_charge = 0,
 
       product_amount = 0;
@@ -4367,9 +4390,8 @@ class SaleForm extends React.Component {
         } else {
 
           let thisAmt = parseFloat(formValues.products[i].total);
-
           thisAmt = priceFormat(thisAmt - discount_per_product);
-
+          
           let thisReturnCharge = formValues.have_return_charge
 
             ? parseFloat(formValues.products[i].return_charge_percent) > 0
@@ -4383,6 +4405,8 @@ class SaleForm extends React.Component {
               : 0
 
             : 0;
+         
+
 
           formValues.products[i].return_amount = thisAmt;
 
@@ -4432,13 +4456,18 @@ class SaleForm extends React.Component {
 
     }
 
+
     //if(totalReturnP == 1 && didNotReturned == 0){
 
     //return_amount -= parseFloat(formValues.discount);
 
     returnDis = parseFloat(formValues.discount);
 
+    
+
     //}
+
+    
 
     this.setState({
 
@@ -4448,9 +4477,11 @@ class SaleForm extends React.Component {
 
       return_charge: priceFormat(return_charge, true),
 
+
       formValues: formValues,
 
       return_discount: returnDis,
+
 
     });
 
@@ -5176,8 +5207,6 @@ class SaleForm extends React.Component {
 
       unique_materials,
 
-      isMobile
-
     } = this.state;
 
 
@@ -5228,6 +5257,36 @@ class SaleForm extends React.Component {
 
     let return_from_wallet = 0;
 
+     let didNotReturned = 0,
+
+        totalReturnP = 0;
+
+    for (let i = 0; i < this.state.return_products.length; i++) {
+
+      let product = _.filter(formValues.products, {
+
+        id: this.state.return_products[i].id,
+
+      });
+
+      if (product.length && product[0].is_return == true) {
+
+        continue;
+
+      }
+
+      if (this.state.return_products[i].is_return) {
+
+        totalReturnP++;
+
+      } else {
+
+        didNotReturned++;
+
+      }
+
+    }
+
     if (
 
       parseFloat(formValues.due_amount) == 0 &&
@@ -5236,35 +5295,7 @@ class SaleForm extends React.Component {
 
     ) {
 
-      let didNotReturned = 0,
-
-        totalReturnP = 0;
-
-      for (let i = 0; i < this.state.return_products.length; i++) {
-
-        let product = _.filter(formValues.products, {
-
-          id: this.state.return_products[i].id,
-
-        });
-
-        if (product.length && product[0].is_return == true) {
-
-          continue;
-
-        }
-
-        if (this.state.return_products[i].is_return) {
-
-          totalReturnP++;
-
-        } else {
-
-          didNotReturned++;
-
-        }
-
-      }
+      
 
 
 
@@ -5278,9 +5309,11 @@ class SaleForm extends React.Component {
 
         );
 
+        //return_from_wallet = priceFormat(this.state.return_amount);
+
       } else if (totalReturnP == 1 && didNotReturned > 0) {
 
-        return_from_wallet = parseFloat(this.state.return_amount);
+        return_from_wallet = priceFormat(parseFloat(this.state.return_amount));
 
       }
 
@@ -5306,9 +5339,31 @@ class SaleForm extends React.Component {
 
       }
 
+      //let paid_amount = parseFloat(formValues.paid_amount);
+      //if(paid_amount > 0){
+      //  return_from_wallet = paid_amount;
+      //}
+
+      if (totalReturnP == 1 && didNotReturned == 0) {
+
+        return_from_wallet = parseFloat(formValues.paid_amount);
+
+        return_from_wallet = priceFormat(
+
+          return_from_wallet - this.state.return_amount
+
+        );
+
+        //return_from_wallet = paid_amount;
+
+      } else if (totalReturnP == 1 && didNotReturned > 0) {
+
+        //return_from_wallet = priceFormat(parseFloat(this.state.return_amount));
+
+      }
     }
 
-
+    console.log("formValues.user_id : ", formValues.user_id);
 
     return (
 
@@ -5594,37 +5649,13 @@ class SaleForm extends React.Component {
 
 
 
-            {formValues.user_id ? (
-
-              <>
-
-                <Grid item xs={6} md={2} className='create-input'>
-
-                  <TextField
-
-                    label='Owner Name'
-
-                    variant='outlined'
-
-                    fullWidth
-
-                    value={this.state.admin_details.name}
-
-                    disabled
-
-                    inputProps={{ className: "non_disable_text" }}
-
-                  />
-
-                </Grid>
-
-              </>):null}
+            
 
             
 
             {isMobile ? <>
 
-              <Grid item xs={6} md={2} className='create-input'>
+              <Grid item xs={6} md={userIdColumnXs} className='create-input'>
 
                 <TextField
 
@@ -5644,7 +5675,7 @@ class SaleForm extends React.Component {
 
               </Grid>
 
-              <Grid item xs={6} md={2} className='create-input'>
+              <Grid item xs={6} md={userIdColumnXs} className={`create-input ${formValues.user_id ? 'create-input-responsive' : ''}`}>
 
                 <Accordion >
 
@@ -6438,7 +6469,7 @@ class SaleForm extends React.Component {
 
                           <TableCell>
 
-                            {item.product_name} X {item.quantity}
+                            {item.product_name} X {item.quantity?item.quantity:(item.certificate_no?1:item.materials[0].avl_qty)}
 
                           </TableCell>
 
@@ -6446,9 +6477,9 @@ class SaleForm extends React.Component {
 
                           <TableCell>{item.certificate_no}</TableCell>
 
-                          <TableCell colSpan={6}>
+                          <TableCell colSpan={2}>
 
-                            {item.total_weight} {productWeightUnitName}
+                            {item.total_weight} {productWeightUnitName != ""?productWeightUnitName:"Wt"}
 
                           </TableCell>
 
@@ -7072,7 +7103,7 @@ class SaleForm extends React.Component {
 
           </div>
 
-          {report_charge && !this.state.isAssign && formValues.user_id && <Grid
+          {report_charge && formValues.report_qty > 0 && !this.state.isAssign && formValues.user_id && <Grid
 
             item
 
@@ -7149,7 +7180,7 @@ class SaleForm extends React.Component {
                               type='text'
 
                               value={formValues.report_charge_amount}
-
+                              disabled={isReturn ? true : false}
                               onChange={(event) =>
 
                                 this.handleDefaultChange(event, "report_charge_amount")
@@ -8493,6 +8524,8 @@ class SaleForm extends React.Component {
                       </Grid>
 
                     ) : null}
+
+                    
 
                     {formValues.products.length == 1 ? (
 

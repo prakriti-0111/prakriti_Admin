@@ -459,5 +459,25 @@
         color: #ffffff !important;
         display: inline-block;
     }
+
+    .create-input-responsive {
+      position: relative;
+      left: 205px;
+    }
+  }
+
+  @media (max-width: 398px) {
+    .create-input-responsive {
+      position: relative;
+      left: 185px;
+    }
+  }
+
+
+  @media (max-width: 365px) {
+    .create-input-responsive {
+      position: relative;
+      left: 170px;
+    }
   }
   

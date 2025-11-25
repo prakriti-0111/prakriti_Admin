@@ -140,6 +140,7 @@ class PurchaseForm extends React.Component {
       materialList: this.props.materialList,
       sizeList: [],
       materials: [],
+      selectedProductMaterial: null,
       product_type: "",
       productDialog: false,
       supplier_gst_no: "",
@@ -865,7 +866,68 @@ class PurchaseForm extends React.Component {
   };
 
   handleProductChange = (event, val) => {
-    this.updateProductFormValues(val, "product_id");
+    this.updateProductFormValues(val, "product_id", () => {
+      let productFormValues = this.state.productFormValues;
+      if(productFormValues.product_type != "material" && productFormValues.materials.length > 0){
+        //this.handleMaterialChange();
+        let groupedMaterials = [];
+        let materialGroups = [];
+        let initialSelectedProductMaterial = [];
+        let actualProductMaterials = [];
+        /* group materials into array by material.group */
+        productFormValues.materials.forEach((material, index) => {
+          if (!isEmpty(material.group)){
+            if(!groupedMaterials[`grp_`+material.group]) {
+              materialGroups.push(`grp_`+material.group);
+              groupedMaterials[`grp_`+material.group] = [];
+              initialSelectedProductMaterial[`grp_`+material.group] = [];
+              initialSelectedProductMaterial[`grp_`+material.group].push(material);
+              actualProductMaterials.push(material);
+            }
+            groupedMaterials[`grp_`+material.group].push(material);
+          }
+        });
+        console.log("Grouped Materials: ", groupedMaterials);
+        console.log("Initial Selected Product Material: ", initialSelectedProductMaterial);
+        console.log("Object.values(groupedMaterials): ", Object.values(groupedMaterials));
+        /* if(!this.state.selectedProductMaterial){
+          this.setState({
+            selectedProductMaterial: initialSelectedProductMaterial
+          });
+        } */
+        if(materialGroups.length > 0){
+          this.updateProductFormValues(
+              materialGroups,
+              "material_groups"
+            );
+          this.updateProductFormValues(
+              groupedMaterials,
+              "grp_materials"
+            );
+          this.updateProductFormValues(
+              initialSelectedProductMaterial,
+              "selected_grp_materials"
+            );
+          this.updateProductFormValues(
+              actualProductMaterials,
+              "actual_product_materials"
+            ); 
+        } else {
+          this.updateProductFormValues(
+              materialGroups,
+              "material_groups"
+            );
+          this.updateProductFormValues(
+              groupedMaterials,
+              "grp_materials"
+            );
+          this.updateProductFormValues(
+              initialSelectedProductMaterial,
+              "selected_grp_materials"
+            );
+        }
+      }
+    });
   };
 
   handleProductFormDefaultChange = (event, key) => {
@@ -997,7 +1059,7 @@ class PurchaseForm extends React.Component {
     }
   };
 
-  updateProductFormValues = (val, key, data) => {
+  updateProductFormValues = (val, key, callBack = false) => {
     let productFormValues = this.state.productFormValues;
     let sizeList = this.state.sizeList;
     let materialFormErros = this.state.materialFormErros;
@@ -1025,6 +1087,7 @@ class PurchaseForm extends React.Component {
           materials.push({
             id: 0,
             material_id: item.id,
+            group: item.group,
             material_name: item.name,
             weight: "",
             pakka_weight: "",
@@ -1041,6 +1104,7 @@ class PurchaseForm extends React.Component {
             weight: false,
             pakka_weight: false,
             quantity: false,
+            material_id: false,
             purity_id: false,
             unit_id: false,
             rate: false,
@@ -1067,8 +1131,8 @@ class PurchaseForm extends React.Component {
       sizeList = m.length ? m[0].sizes : [];
       let paramMaterials = [...productFormValues.materials];
       let paramProductFrom = { ...productFormValues };
-      let res = this.loadDefaultWeightQty(paramProductFrom, paramMaterials);
-      productFormValues.materials = [...res];
+      //let res = this.loadDefaultWeightQty(paramProductFrom, paramMaterials);
+      //productFormValues.materials = [...res];
       change_default_material = true;
     } else if (key == "size_id") {
       let m = _.filter(this.state.sizeList, { id: val });
@@ -1076,8 +1140,8 @@ class PurchaseForm extends React.Component {
       if (this.state.change_default_material) {
         let paramMaterials = [...productFormValues.materials];
         let paramProductFrom = { ...productFormValues };
-        let res = this.loadDefaultWeightQty(paramProductFrom, paramMaterials);
-        productFormValues.materials = [...res];
+        //let res = this.loadDefaultWeightQty(paramProductFrom, paramMaterials);
+        //productFormValues.materials = [...res];
       }
     } else if (key == "material_id") {
       let m = _.filter(this.state.materialList, { id: val });
@@ -1117,9 +1181,29 @@ class PurchaseForm extends React.Component {
       sizeList = this.state.sizeList;
       let paramMaterials = [...productFormValues.materials];
       let paramProductFrom = { ...productFormValues };
-      let res = this.loadDefaultWeightQty(paramProductFrom, paramMaterials);
-      productFormValues.materials = [...res];
+      //let res = this.loadDefaultWeightQty(paramProductFrom, paramMaterials);
+      //productFormValues.materials = [...res];
       change_default_material = true;
+    } else if(key == "grp_material_selected"){
+      let grpMetArr = val.split("#");
+      let groupKey = grpMetArr[0];
+      let materialId = parseInt(grpMetArr[1]);
+      let selectedMaterials = productFormValues.selected_grp_materials;
+      
+      let currentSelectedMaterials = [];
+      let allMaterialsInGroup = productFormValues.grp_materials[groupKey] ? productFormValues.grp_materials[groupKey] : [];
+      let matToAddArr = _.filter(allMaterialsInGroup, { material_id: materialId });
+      if(matToAddArr.length){
+        currentSelectedMaterials.push(matToAddArr[0]);
+      }
+      
+      selectedMaterials[groupKey] = currentSelectedMaterials;
+      productFormValues.selected_grp_materials = selectedMaterials;
+      console.log("Selected Materials after update: ", Object.values(productFormValues.selected_grp_materials).flat());
+      productFormValues.materials = Object.values(productFormValues.selected_grp_materials).flat();
+
+    } else if(key == "actual_product_materials"){
+      productFormValues.materials = val;
     }
 
     this.setState(
@@ -1131,6 +1215,9 @@ class PurchaseForm extends React.Component {
       },
       () => {
         this.calculatePrice();
+        if(callBack && typeof callBack === "function"){ 
+          callBack();
+        } 
       }
     );
   };
@@ -2315,6 +2402,10 @@ class PurchaseForm extends React.Component {
     this.handleProductFormDefaultChange(event, "certificate_no");
   }, 1000);
 
+  handleMaterialChange = () => {
+    //productFormValues.materials
+  }
+
   render() {
     const {
       formValues,
@@ -2331,7 +2422,7 @@ class PurchaseForm extends React.Component {
       : null;
 
     console.log("QR code data------", this.state.qrScanner);
-
+    console.log("productFormValues.materials", productFormValues.materials);
     let total_report_charge_amount = 0;
     let total_report_charge_tax_amount = 0;
     let total_report_charge_amount_after_tax = 0;
@@ -2344,6 +2435,45 @@ class PurchaseForm extends React.Component {
         100;
       total_report_charge_amount_after_tax =
         total_report_charge_amount + total_report_charge_tax_amount;
+    }
+
+    /* let groupedMaterials = {};
+    if(productFormValues.product_type != "material" && productFormValues.materials.length > 0){
+      //this.handleMaterialChange();
+      let initialSelectedProductMaterial = [];
+      
+      productFormValues.materials.forEach((material, index) => {
+        if (!groupedMaterials[material.group]) {
+          groupedMaterials[material.group] = [];
+          initialSelectedProductMaterial.push(material);
+        }
+        groupedMaterials[material.group].push(material);
+      });
+      console.log("Grouped Materials: ", groupedMaterials);
+      console.log("Initial Selected Product Material: ", initialSelectedProductMaterial);
+      console.log("Object.values(groupedMaterials): ", Object.values(groupedMaterials));
+      if(!this.state.selectedProductMaterial){
+        this.setState({
+          selectedProductMaterial: initialSelectedProductMaterial
+        });
+      }
+    }
+
+    this.updateProductFormValues(
+                            newValue ? newValue.id : "",
+                            "material_id"
+                          ); */
+    console.log("productFormValues.materials: ", productFormValues.materials);
+    console.log("material_groups : ", productFormValues.material_groups);
+    console.log("grp_materials: ", productFormValues.grp_materials);
+    console.log("selected_grp_materials: ", productFormValues.selected_grp_materials);
+    console.log("productFormValues.product_type != 'material' && productFormValues.materials.length > 0 && productFormValues.material_groups && productFormValues.material_groups.length > 0 : ", (productFormValues.product_type != "material" && productFormValues.materials.length > 0 && productFormValues.material_groups && productFormValues.material_groups.length > 0 ));
+    
+    if(productFormValues.selected_grp_materials){
+      console.log("here----------------------------",Array.from(productFormValues.selected_grp_materials));
+      Array.from(productFormValues.selected_grp_materials).map((item, index) => {
+        console.log("material group item: ", item, index);
+      });
     }
 
     return (
@@ -3034,176 +3164,404 @@ class PurchaseForm extends React.Component {
                           </TableRow>
                         </TableHead>
                         <TableBody className="p-invoice-date">
-                          {productFormValues.materials.map((item, index) => (
-                            <TableRow key={index}>
-                              <TableCell>{item.material_name}</TableCell>
-                              <TableCell style={{ minWidth: "150px" }}>
-                                <FormControl
-                                  fullWidth
-                                  error={materialFormErros[index].purity_id}
-                                >
-                                  <InputLabel>Purity</InputLabel>
-                                  <Select
-                                    value={item.purity_id}
-                                    label="Purity"
-                                    onChange={(event) =>
-                                      this.handleMaterialFormChange(
-                                        event,
-                                        index,
-                                        "purity_id"
-                                      )
-                                    }
-                                    defaultValue=""
-                                    disabled={this.isMaterialFormDisabled()}
-                                  >
-                                    <MenuItem value=""></MenuItem>
-                                    {item.purities.map((item, index) => (
-                                      <MenuItem value={item.id} key={index}>
-                                        {item.name}{" "}
-                                        {item.mrp_display ? (
-                                          <>
-                                            ({displayAmount(item.mrp_display)} /{" "}
-                                            {item.unit_name})
-                                          </>
-                                        ) : (
-                                          ""
-                                        )}{" "}
-                                        {item.value != ""
-                                          ? item.value + "%"
-                                          : ""}
-                                      </MenuItem>
-                                    ))}
-                                  </Select>
-                                </FormControl>
-                              </TableCell>
-                              <TableCell>
-                                <TextField
-                                  label="Quantity"
-                                  variant="outlined"
-                                  fullWidth
-                                  value={item.quantity}
-                                  onChange={(event) =>
-                                    this.handleMaterialFormChange(
-                                      event,
-                                      index,
-                                      "quantity"
-                                    )
-                                  }
-                                  error={materialFormErros[index].quantity}
-                                  disabled={this.isMaterialFormDisabled()}
-                                />
-                              </TableCell>
-                              <TableCell>
-                                <TextField
-                                  label="Total Weight"
-                                  variant="outlined"
-                                  fullWidth
-                                  value={item.weight}
-                                  onChange={(event) =>
-                                    this.handleMaterialFormChange(
-                                      event,
-                                      index,
-                                      "weight"
-                                    )
-                                  }
-                                  error={materialFormErros[index].weight}
-                                  disabled={this.isMaterialFormDisabled()}
-                                />
-                              </TableCell>
-                              {productFormValues.product_type == "material" ? (
-                                <TableCell>
-                                  <TextField
-                                    label="Pakka"
-                                    variant="outlined"
-                                    fullWidth
-                                    value={item.pakka_weight}
-                                    onChange={(event) =>
-                                      this.handleMaterialFormChange(
-                                        event,
-                                        index,
-                                        "pakka_weight"
-                                      )
-                                    }
-                                    error={
-                                      materialFormErros[index].pakka_weight
-                                    }
-                                    disabled={this.isMaterialFormDisabled()}
-                                  />
-                                </TableCell>
-                              ) : (
-                                ""
-                              )}
-                              <TableCell style={{ minWidth: "150px" }}>
-                                <FormControl
-                                  fullWidth
-                                  error={materialFormErros[index].unit_id}
-                                >
-                                  <InputLabel>Unit</InputLabel>
-                                  <Select
-                                    value={item.unit_id}
-                                    label="Purity"
-                                    onChange={(event) =>
-                                      this.handleMaterialFormChange(
-                                        event,
-                                        index,
-                                        "unit_id"
-                                      )
-                                    }
-                                    defaultValue=""
-                                    disabled={this.isMaterialFormDisabled()}
-                                  >
-                                    <MenuItem value=""></MenuItem>
-                                    {this.state.unitList.map((item, index) => (
-                                      <MenuItem value={item.id} key={index}>
-                                        {item.name}
-                                      </MenuItem>
-                                    ))}
-                                  </Select>
-                                </FormControl>
-                              </TableCell>
-                              <TableCell>
-                                <TextField
-                                  label="Rate"
-                                  variant="outlined"
-                                  fullWidth
-                                  value={item.rate}
-                                  onChange={(event) =>
-                                    this.handleMaterialFormChange(
-                                      event,
-                                      index,
-                                      "rate"
-                                    )
-                                  }
-                                  InputProps={{
-                                    startAdornment: (
-                                      <InputAdornment position="start">
-                                        ₹
-                                      </InputAdornment>
-                                    ),
-                                  }}
-                                  error={materialFormErros[index].rate}
-                                  disabled={this.isMaterialFormDisabled()}
-                                />
-                              </TableCell>
-                              <TableCell>
-                                <TextField
-                                  label="Amount"
-                                  variant="outlined"
-                                  fullWidth
-                                  value={item.amount}
-                                  disabled
-                                  error={materialFormErros[index].amount}
-                                  InputProps={{
-                                    startAdornment: (
-                                      <InputAdornment position="start">
-                                        ₹
-                                      </InputAdornment>
-                                    ),
-                                  }}
-                                />
-                              </TableCell>
-                            </TableRow>
-                          ))}
+                          {productFormValues.product_type != "material" && productFormValues.materials.length > 0 && productFormValues.material_groups && productFormValues.material_groups.length > 0 
+                            ?<>
+                              {
+                                //productFormValues.material_groups && productFormValues.material_groups.map((grpName, index) => {
+                                  productFormValues.materials && productFormValues.materials.map((item, index) => {
+                                    let materialIndex = productFormValues.materials.findIndex(mat => mat.material_id == item.material_id && mat.group == item.group);
+                                    let grpName = "grp_"+item.group;
+                                    return (<React.Fragment key={`materialGrp-${index}`}>
+                                      {console.log("materialGrp : item : ", item)}
+                                      <TableRow>
+                                        <TableCell colSpan={8} sx={{ backgroundColor: '#f0f0f0', fontWeight: 'bold' }}>
+                                          Group {item.group}
+                                        </TableCell>
+                                      </TableRow>
+                                      {/* {materialObj.map((item, index) => ( */}
+                                        <TableRow key={materialIndex}>
+                                          <TableCell>{item.material_name}</TableCell>
+                                          <TableCell style={{ minWidth: "150px" }}>
+                                            <FormControl
+                                              fullWidth
+                                              error={materialFormErros[materialIndex]?.material_id}
+                                            >
+                                              <InputLabel>Material</InputLabel>
+                                              <Select
+                                                value={item.material_id}
+                                                label="Material"
+                                                onChange={(event) =>
+                                                  /* this.handleMaterialFormChange(
+                                                    event,
+                                                    index,  
+                                                    "grp_material"
+                                                  ) */
+                                                  this.updateProductFormValues(
+                                                    grpName+"#"+event.target.value,
+                                                    "grp_material_selected"
+                                                  )
+                                                }
+                                                defaultValue=""
+                                                disabled={this.isMaterialFormDisabled()}
+                                              >
+                                                <MenuItem value=""></MenuItem>
+                                                {productFormValues.grp_materials[grpName] && productFormValues.grp_materials[grpName].map((itm, index) => (
+                                                  <MenuItem value={itm.material_id} key={index}>
+                                                    {itm.material_name}{" "}
+                                                    {" "}
+                                                    
+                                                  </MenuItem>
+                                                ))}
+                                              </Select>
+                                            </FormControl>
+                                          </TableCell>
+                                          <TableCell style={{ minWidth: "150px" }}>
+                                            <FormControl
+                                              fullWidth
+                                              error={materialFormErros[materialIndex]?.purity_id}
+                                            >
+                                              <InputLabel>Purity</InputLabel>
+                                              <Select
+                                                value={item.purity_id}
+                                                label="Purity"
+                                                onChange={(event) =>
+                                                  this.handleMaterialFormChange(
+                                                    event,
+                                                    materialIndex,  
+                                                    "purity_id"
+                                                  )
+                                                }
+                                                defaultValue=""
+                                                disabled={this.isMaterialFormDisabled()}
+                                              >
+                                                <MenuItem value=""></MenuItem>
+                                                {item.purities.map((item, index) => (
+                                                  <MenuItem value={item.id} key={index}>
+                                                    {item.name}{" "}
+                                                    {item.mrp_display ? (
+                                                      <>
+                                                        ({displayAmount(item.mrp_display)} /{" "}
+                                                        {item.unit_name})
+                                                      </>
+                                                    ) : (
+                                                      ""
+                                                    )}{" "}
+                                                    {item.value != ""
+                                                      ? item.value + "%"
+                                                      : ""}
+                                                  </MenuItem>
+                                                ))}
+                                              </Select>
+                                            </FormControl>
+                                          </TableCell>
+                                          <TableCell>
+                                            <TextField
+                                              label="Quantity"
+                                              variant="outlined"
+                                              fullWidth
+                                              value={item.quantity}
+                                              onChange={(event) =>
+                                                this.handleMaterialFormChange(
+                                                  event,
+                                                  materialIndex,
+                                                  "quantity"
+                                                )
+                                              }
+                                              error={materialFormErros[materialIndex]?.quantity}
+                                              disabled={this.isMaterialFormDisabled()}
+                                            />
+                                          </TableCell>
+                                          <TableCell>
+                                            <TextField
+                                              label="Total Weight"
+                                              variant="outlined"
+                                              fullWidth
+                                              value={item.weight}
+                                              onChange={(event) =>
+                                                this.handleMaterialFormChange(
+                                                  event,
+                                                  materialIndex,
+                                                  "weight"
+                                                )
+                                              }
+                                              error={materialFormErros[materialIndex]?.weight}
+                                              disabled={this.isMaterialFormDisabled()}
+                                            />
+                                          </TableCell>
+                                          {productFormValues.product_type == "material" ? (
+                                            <TableCell>
+                                              <TextField
+                                                label="Pakka"
+                                                variant="outlined"
+                                                fullWidth
+                                                value={item.pakka_weight}
+                                                onChange={(event) =>
+                                                  this.handleMaterialFormChange(
+                                                    event,
+                                                    materialIndex,
+                                                    "pakka_weight"
+                                                  )
+                                                }
+                                                error={
+                                                  materialFormErros[materialIndex]?.pakka_weight
+                                                }
+                                                disabled={this.isMaterialFormDisabled()}
+                                              />  
+                                            </TableCell>
+                                          ) : (
+                                            ""  
+                                          )}
+                                          <TableCell style={{ minWidth: "150px" }}>
+                                            <FormControl
+                                              fullWidth
+                                              error={materialFormErros[materialIndex]?.unit_id}
+                                            >
+                                              <InputLabel>Unit</InputLabel>
+                                              <Select
+                                                value={item.unit_id}
+                                                label="Purity"
+                                                onChange={(event) =>
+                                                  this.handleMaterialFormChange(
+                                                    event,
+                                                    materialIndex,
+                                                    "unit_id"
+                                                  )
+                                                }
+                                                defaultValue=""
+                                                disabled={this.isMaterialFormDisabled()}
+                                              >
+                                                <MenuItem value=""></MenuItem>
+                                                {this.state.unitList.map((item, index) => (
+                                                  <MenuItem value={item.id} key={index}>
+                                                    {item.name}
+                                                  </MenuItem>
+                                                ))}
+                                              </Select>
+                                            </FormControl>
+                                          </TableCell>
+                                          <TableCell>
+                                            <TextField
+                                              label="Rate"
+                                              variant="outlined"
+                                              fullWidth
+                                              value={item.rate}
+                                              onChange={(event) =>
+                                                this.handleMaterialFormChange(
+                                                  event,
+                                                  materialIndex,
+                                                  "rate"
+                                                )
+                                              }
+                                              InputProps={{
+                                                startAdornment: (
+                                                  <InputAdornment position="start">
+                                                    ₹
+                                                  </InputAdornment>
+                                                ),
+                                              }}
+                                              error={materialFormErros[materialIndex]?.rate}
+                                              disabled={this.isMaterialFormDisabled()}
+                                            />
+                                          </TableCell>
+                                          <TableCell>
+                                            <TextField
+                                              label="Amount"
+                                              variant="outlined"
+                                              fullWidth
+                                              value={item.amount}
+                                              disabled
+                                              error={materialFormErros[materialIndex]?.amount}
+                                              InputProps={{
+                                                startAdornment: (
+                                                  <InputAdornment position="start">
+                                                    ₹
+                                                  </InputAdornment>
+                                                ),
+                                              }}
+                                            />
+                                          </TableCell>
+                                        </TableRow>
+                                      {/* ))} */}
+                                    </React.Fragment>)
+                                  })
+                                // })
+                              } 
+                            </>
+                            :<>
+                              {productFormValues.materials.map((item, index) => (
+                                <TableRow key={index}>
+                                  <TableCell>{item.material_name}</TableCell>
+                                  <TableCell style={{ minWidth: "150px" }}>
+                                    <FormControl
+                                      fullWidth
+                                      error={materialFormErros[index].purity_id}
+                                    >
+                                      <InputLabel>Purity</InputLabel>
+                                      <Select
+                                        value={item.purity_id}
+                                        label="Purity"
+                                        onChange={(event) =>
+                                          this.handleMaterialFormChange(
+                                            event,
+                                            index,
+                                            "purity_id"
+                                          )
+                                        }
+                                        defaultValue=""
+                                        disabled={this.isMaterialFormDisabled()}
+                                      >
+                                        <MenuItem value=""></MenuItem>
+                                        {item.purities.map((item, index) => (
+                                          <MenuItem value={item.id} key={index}>
+                                            {item.name}{" "}
+                                            {item.mrp_display ? (
+                                              <>
+                                                ({displayAmount(item.mrp_display)} /{" "}
+                                                {item.unit_name})
+                                              </>
+                                            ) : (
+                                              ""
+                                            )}{" "}
+                                            {item.value != ""
+                                              ? item.value + "%"
+                                              : ""}
+                                          </MenuItem>
+                                        ))}
+                                      </Select>
+                                    </FormControl>
+                                  </TableCell>
+                                  <TableCell>
+                                    <TextField
+                                      label="Quantity"
+                                      variant="outlined"
+                                      fullWidth
+                                      value={item.quantity}
+                                      onChange={(event) =>
+                                        this.handleMaterialFormChange(
+                                          event,
+                                          index,
+                                          "quantity"
+                                        )
+                                      }
+                                      error={materialFormErros[index].quantity}
+                                      disabled={this.isMaterialFormDisabled()}
+                                    />
+                                  </TableCell>
+                                  <TableCell>
+                                    <TextField
+                                      label="Total Weight"
+                                      variant="outlined"
+                                      fullWidth
+                                      value={item.weight}
+                                      onChange={(event) =>
+                                        this.handleMaterialFormChange(
+                                          event,
+                                          index,
+                                          "weight"
+                                        )
+                                      }
+                                      error={materialFormErros[index].weight}
+                                      disabled={this.isMaterialFormDisabled()}
+                                    />
+                                  </TableCell>
+                                  {productFormValues.product_type == "material" ? (
+                                    <TableCell>
+                                      <TextField
+                                        label="Pakka"
+                                        variant="outlined"
+                                        fullWidth
+                                        value={item.pakka_weight}
+                                        onChange={(event) =>
+                                          this.handleMaterialFormChange(
+                                            event,
+                                            index,
+                                            "pakka_weight"
+                                          )
+                                        }
+                                        error={
+                                          materialFormErros[index].pakka_weight
+                                        }
+                                        disabled={this.isMaterialFormDisabled()}
+                                      />
+                                    </TableCell>
+                                  ) : (
+                                    ""
+                                  )}
+                                  <TableCell style={{ minWidth: "150px" }}>
+                                    <FormControl
+                                      fullWidth
+                                      error={materialFormErros[index].unit_id}
+                                    >
+                                      <InputLabel>Unit</InputLabel>
+                                      <Select
+                                        value={item.unit_id}
+                                        label="Purity"
+                                        onChange={(event) =>
+                                          this.handleMaterialFormChange(
+                                            event,
+                                            index,
+                                            "unit_id"
+                                          )
+                                        }
+                                        defaultValue=""
+                                        disabled={this.isMaterialFormDisabled()}
+                                      >
+                                        <MenuItem value=""></MenuItem>
+                                        {this.state.unitList.map((item, index) => (
+                                          <MenuItem value={item.id} key={index}>
+                                            {item.name}
+                                          </MenuItem>
+                                        ))}
+                                      </Select>
+                                    </FormControl>
+                                  </TableCell>
+                                  <TableCell>
+                                    <TextField
+                                      label="Rate"
+                                      variant="outlined"
+                                      fullWidth
+                                      value={item.rate}
+                                      onChange={(event) =>
+                                        this.handleMaterialFormChange(
+                                          event,
+                                          index,
+                                          "rate"
+                                        )
+                                      }
+                                      InputProps={{
+                                        startAdornment: (
+                                          <InputAdornment position="start">
+                                            ₹
+                                          </InputAdornment>
+                                        ),
+                                      }}
+                                      error={materialFormErros[index].rate}
+                                      disabled={this.isMaterialFormDisabled()}
+                                    />
+                                  </TableCell>
+                                  <TableCell>
+                                    <TextField
+                                      label="Amount"
+                                      variant="outlined"
+                                      fullWidth
+                                      value={item.amount}
+                                      disabled
+                                      error={materialFormErros[index].amount}
+                                      InputProps={{
+                                        startAdornment: (
+                                          <InputAdornment position="start">
+                                            ₹
+                                          </InputAdornment>
+                                        ),
+                                      }}
+                                    />
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                            </>
+                          }
+
+                          
                         </TableBody>
                       </Table>
                     </TableContainer>

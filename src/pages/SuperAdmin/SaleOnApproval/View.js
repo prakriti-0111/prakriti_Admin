@@ -375,6 +375,7 @@ class SaleOnApproveViewPage extends React.Component {
 
   render() {
     const { sale, formValues, formErros } = this.state;
+    
     return (
       <MainCard
         secondary={
@@ -516,7 +517,7 @@ class SaleOnApproveViewPage extends React.Component {
                 </TableContainer>
               </Grid>
             </Grid>
-            {sale.is_approved == 3 ? (
+            {sale.is_approved == 3 && sale.sale_by_id == this.state.auth.user.id? (
               <div className='sale-view-button'>
                 <Button
                   variant='contained'

@@ -1,5 +1,6 @@
 import {
     LIST_PURCHASE,
+    LIST_PURCHASE_TXN_LEDGER,
     CREATE_PURCHASE,
     ADD_PURCHASE,
     GET_PURCHASE,
@@ -31,6 +32,11 @@ export default function (state = initialState, action) {
                 ...state,
                 ...payload
             }
+        case LIST_PURCHASE_TXN_LEDGER:
+            return {
+                ...state,
+                ...payload
+            }    
         case LIST_PURCHASE_ON_APPROVE:
             return {
                 ...state,

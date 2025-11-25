@@ -472,6 +472,14 @@ class DistrubutorViewPage extends React.Component {
     );
   };
 
+  handleInvoiceTransactionLedger = () => {
+    this.props.navigate(
+        getUserDashboardRoute(getRoleName(this.state.auth)) +
+        "/distributors/invoice-transaction-ledger/" +
+        this.props.params.id
+    );
+  }
+
   render() {
     const admin = this.state.item;
     const { formValues, formErros } = this.state;
@@ -856,6 +864,18 @@ class DistrubutorViewPage extends React.Component {
                               Pay
                             </Button>
                           </Grid>
+                          {!admin.own && <Grid
+                            item
+                            xs={4}
+                            md={2}
+                            className='create-input button-right'>
+                            <Button
+                              variant='contained'
+                              className='add-button'
+                              onClick={() => this.handleInvoiceTransactionLedger()}>
+                              Ledger
+                            </Button>
+                          </Grid>}
                         </Grid>
                       </div>
                       <TableContainer component={Paper}>

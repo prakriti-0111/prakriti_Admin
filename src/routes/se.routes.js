@@ -11,6 +11,7 @@ const MyRetailerPage = Loadable(lazy(() => import('../pages/SuperAdmin/MyRetaile
 const RetailerCreatePage = Loadable(lazy(() => import('../pages/SuperAdmin/Retailer/Create')));
 const RetailerEditPage = Loadable(lazy(() => import('../pages/SuperAdmin/Retailer/Edit')));
 const RetailerViewPage = Loadable(lazy(() => import('../pages/SuperAdmin/Retailer/View')));
+const RetailerInvoiceTransactionLedgerPage = Loadable(lazy(() => import('../pages/SuperAdmin/Retailer/Ledger')));
 
 //stocks
 const StocksPage =Loadable(lazy(() => import('../pages/SuperAdmin/Stocks')));
@@ -122,6 +123,10 @@ const SeRoutes = (isLoggedIn) => [
       {
         path: 'retailers/View/:id',
         element: <RetailerViewPage />
+      },
+      {
+        path: 'retailers/invoice-transaction-ledger/:id',
+        element: <RetailerInvoiceTransactionLedgerPage />
       },
       {
         path: 'stocks',
