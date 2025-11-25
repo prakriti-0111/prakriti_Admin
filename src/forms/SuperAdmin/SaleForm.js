@@ -456,8 +456,6 @@ class SaleForm extends React.Component {
 
       return_amount: 0,
 
-      return_from_wallet: 0,
-
       product_amount: 0,
 
       return_charge: 0,
@@ -3937,11 +3935,11 @@ class SaleForm extends React.Component {
 
 
   handleCheckBox = (e, index) => {
-    //alert("hi");
+   
     let products = this.state.formValues.products;
 
     let return_products = this.state.return_products;
-    console.log("return_products : ", return_products);
+   
     let product = products[index];
 
     let hasReturn = this.hasReturn();
@@ -4066,7 +4064,7 @@ class SaleForm extends React.Component {
 
     }
 
-    console.log("return_amount_from_wallet : ", parseFloat(this.state.return_from_wallet));
+    
     //return false;  
 
     let res = await saleReturn(this.state.formData.id, {
@@ -4087,15 +4085,13 @@ class SaleForm extends React.Component {
 
       return_payment_mode: this.state.return_payment_mode,
 
-      return_amount_from_wallet: parseFloat(this.state.return_from_wallet)
-
-      /* return_amount_from_wallet: priceFormat(
+      return_amount_from_wallet: priceFormat(
 
         parseFloat(this.state.return_amount) -
 
           parseFloat(this.state.formValues.due_amount)
 
-      ), */
+      ),
 
     });
 
@@ -4305,12 +4301,6 @@ class SaleForm extends React.Component {
       
       return_charge = 0,
 
-      hasCertifiedProduct = false,
-
-      return_report_charge = 0,
-
-      applicable_discount = 0,
-
       product_amount = 0;
 
     for (let i = 0; i < return_products.length; i++) {
@@ -4391,8 +4381,6 @@ class SaleForm extends React.Component {
 
           formValues.products[i].return_charge = thisReturnCharge;
 
-          formValues.products[i].discount_per_product = discount_per_product;
-
           return_amount += thisAmt - thisReturnCharge;
 
           return_charge += thisReturnCharge;
@@ -4402,10 +4390,8 @@ class SaleForm extends React.Component {
         } else {
 
           let thisAmt = parseFloat(formValues.products[i].total);
-          console.log("thisAmt before discount_per_product: ", thisAmt);
-          //console.log("discount_per_product: ", discount_per_product);
-          //thisAmt = priceFormat(thisAmt - discount_per_product);
-          //console.log("thisAmt after discount_per_product: ", thisAmt);
+          thisAmt = priceFormat(thisAmt - discount_per_product);
+          
           let thisReturnCharge = formValues.have_return_charge
 
             ? parseFloat(formValues.products[i].return_charge_percent) > 0
@@ -4419,31 +4405,16 @@ class SaleForm extends React.Component {
               : 0
 
             : 0;
-          console.log("thisReturnCharge: ", thisReturnCharge);
-
-          let product = _.filter(this.state.formValues.products, {
-
-            id: return_products[i].id,
-
-          });
-          console.log("product : ", product);
-          if(hasCertifiedProduct == false && product.length > 0 && !isEmpty(product[0].certificate_no)){
-            console.log("product.certificate_no : ", product[0].certificate_no);
-            hasCertifiedProduct = true;
-          }
+         
 
 
           formValues.products[i].return_amount = thisAmt;
 
           formValues.products[i].return_charge = thisReturnCharge;
 
-          formValues.products[i].discount_per_product = discount_per_product;
-
-          return_amount += thisAmt - thisReturnCharge - discount_per_product;
+          return_amount += thisAmt - thisReturnCharge;
 
           return_charge += thisReturnCharge;
-
-          applicable_discount += discount_per_product;
 
           product_amount += thisAmt;
 
@@ -4485,116 +4456,18 @@ class SaleForm extends React.Component {
 
     }
 
-    let return_from_wallet = 0;
-
-    if (
-
-      parseFloat(formValues.due_amount) == 0 &&
-
-      parseFloat(formValues.total_payable) == parseFloat(formValues.paid_amount)
-
-    ) {
-
-      
-
-
-
-      if (totalReturnP == 1 && didNotReturned == 0) {
-
-        /* return_from_wallet = parseFloat(formValues.paid_amount);
-
-        return_from_wallet = priceFormat(
-
-          return_from_wallet - this.state.return_amount
-
-        ); */
-
-        return_from_wallet = priceFormat(this.state.return_amount);
-
-      } else if (totalReturnP == 1 && didNotReturned > 0) {
-
-        //return_from_wallet = priceFormat(parseFloat(this.state.return_amount));
-
-      }
-
-    } else {
-
-      /* if (
-
-        this.state.formValues.due_amount &&
-
-        parseFloat(this.state.return_amount) >
-
-          parseFloat(this.state.formValues.due_amount)
-
-      ) {
-
-        return_from_wallet = priceFormat(
-
-          parseFloat(this.state.return_amount) -
-
-            parseFloat(this.state.formValues.due_amount)
-
-        );
-
-      } */
-
-      let paid_amount = parseFloat(formValues.paid_amount);
-      /* if(paid_amount > 0){
-        return_from_wallet = paid_amount;
-      } */
-
-      if (totalReturnP == 1 && didNotReturned == 0) {
-
-        /* return_from_wallet = parseFloat(formValues.paid_amount);
-
-        return_from_wallet = priceFormat(
-
-          return_from_wallet - this.state.return_amount
-
-        ); */
-
-        return_from_wallet = paid_amount;
-
-      } else if (totalReturnP == 1 && didNotReturned > 0) {
-
-        //return_from_wallet = priceFormat(parseFloat(this.state.return_amount));
-
-      }
-    }
 
     //if(totalReturnP == 1 && didNotReturned == 0){
 
     //return_amount -= parseFloat(formValues.discount);
 
-    returnDis = priceFormat(applicable_discount, true); //parseFloat(formValues.discount);
+    returnDis = parseFloat(formValues.discount);
 
-    if(hasCertifiedProduct){
-      return_report_charge = priceFormat(formValues.total_report_charge_amount_after_tax).toFixed(2);
-      return_amount = return_amount - return_report_charge;
-    }
+    
 
     //}
 
-    console.log({
-
-      return_amount: priceFormat(return_amount, true),
-
-      product_amount: priceFormat(product_amount, true),
-
-      return_charge: priceFormat(return_charge, true),
-
-      return_report_charge: priceFormat(return_report_charge, true),
-      
-      hasCertifiedProduct,
-
-      formValues: formValues,
-
-      return_discount: returnDis,
-
-      return_from_wallet: return_from_wallet
-
-    });
+    
 
     this.setState({
 
@@ -4604,13 +4477,11 @@ class SaleForm extends React.Component {
 
       return_charge: priceFormat(return_charge, true),
 
-      return_report_charge: priceFormat(return_report_charge, true),
 
       formValues: formValues,
 
       return_discount: returnDis,
 
-      return_from_wallet: priceFormat(return_from_wallet, true)
 
     });
 
@@ -5336,10 +5207,6 @@ class SaleForm extends React.Component {
 
       unique_materials,
 
-      isMobile,
-
-      return_from_wallet
-
     } = this.state;
 
 
@@ -5388,7 +5255,7 @@ class SaleForm extends React.Component {
 
 
 
-    /* let return_from_wallet = 0;
+    let return_from_wallet = 0;
 
      let didNotReturned = 0,
 
@@ -5494,7 +5361,7 @@ class SaleForm extends React.Component {
         //return_from_wallet = priceFormat(parseFloat(this.state.return_amount));
 
       }
-    } */
+    }
 
     console.log("formValues.user_id : ", formValues.user_id);
 
@@ -8658,57 +8525,7 @@ class SaleForm extends React.Component {
 
                     ) : null}
 
-                    <Grid item xs={12} md={12} className='pt-5'>
-
-                      <Grid
-
-                        container
-
-                        spacing={2}
-
-                        className='display_center justify-content-end'>
-
-                        <Grid item xs={4} md={6} className='text-right pt-0'>
-
-                          <b>Report Charge</b>
-
-                        </Grid>
-
-                        <Grid item xs={5} md={6} className='pt-0'>
-
-                          <TextField
-
-                            className='ft-amount'
-
-                            fullWidth
-
-                            value={this.state.return_report_charge}
-
-                            disabled
-
-                            InputProps={{
-
-                              startAdornment: (
-
-                                <InputAdornment position='start'>
-
-                                  ₹
-
-                                </InputAdornment>
-
-                              ),
-
-                              className: "non_disable_text",
-
-                            }}
-
-                          />
-
-                        </Grid>
-
-                      </Grid>
-
-                    </Grid>
+                    
 
                     {formValues.products.length == 1 ? (
 
