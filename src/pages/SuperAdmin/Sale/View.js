@@ -1091,7 +1091,7 @@ function Row(props) {
         <TableCell style={{ color: "#fff" }}>{row.total_weight}</TableCell>
         <TableCell style={{ color: "#fff" }}>{row.size_name}</TableCell>
         <TableCell style={{ color: "#fff" }}>{row.making_charge}</TableCell>
-        <TableCell style={{ color: "#fff" }}>{row.rep}</TableCell>
+        {/* <TableCell style={{ color: "#fff" }}>{row.rep}</TableCell> */}
         <TableCell style={{ color: "#fff" }}>{row.sub_total}</TableCell>
         <TableCell style={{ color: "#fff" }}>{row.total_discount}</TableCell>
         <TableCell style={{ color: "#fff" }}>{row.tax}</TableCell>
