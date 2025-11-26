@@ -454,11 +454,25 @@ class SaleForm extends React.Component {
 
       returnDialogOpen: false,
 
+      payNowForReturnDialogOpen: false,
+
+      returnChargeApplyDialogOpen: false,
+
       return_amount: 0,
+
+      return_from_wallet: 0,
 
       product_amount: 0,
 
+      product_amount_without_report_charge: 0,
+
       return_charge: 0,
+
+      return_report_charge: 0,
+
+      return_tax_charge: 0,
+
+      total_charge_for_return: 0,
 
       materialReturnDialog: false,
 
@@ -2359,10 +2373,11 @@ class SaleForm extends React.Component {
     let total_report_charge_amount_after_tax = 0;
 
     if(!this.state.isCreateFrom){
-      formValues.report_charge_amount = this.state.report_charge.amount;
-      report_charge_amount = this.state.report_charge.amount != ""?parseFloat(this.state.report_charge.amount):0; 
+      //formValues.report_charge_amount = this.state.report_charge.amount;
+      formValues.report_charge_amount = parseFloat(this.state.formValues.report_charge || 0);
+      report_charge_amount = parseFloat(this.state.formValues.report_charge || 0); 
     } else {
-      formValues.report_charge_amount = this.state.formValues.report_charge_amount;
+      formValues.report_charge_amount = parseFloat(this.state.formValues.report_charge_amount); // coming from loadCart function
       report_charge_amount = this.state.formValues.report_charge_amount != ""?parseFloat(this.state.formValues.report_charge_amount):0;
     }
 
@@ -2968,7 +2983,17 @@ class SaleForm extends React.Component {
 
   };
 
+  handlePayNowForReturnDialogClose = () => {
+    this.setState({
+      payNowForReturnDialogOpen: false,
+    });
+  };
 
+  handleReturnChargeApplyDialogOpen = () => {
+    this.setState({
+      returnChargeApplyDialogOpen: false,
+    });
+  }
 
   returnDialogClose = () => {
 
@@ -3935,11 +3960,11 @@ class SaleForm extends React.Component {
 
 
   handleCheckBox = (e, index) => {
-   
+    //alert("hi");
     let products = this.state.formValues.products;
 
     let return_products = this.state.return_products;
-   
+    console.log("return_products : ", return_products);
     let product = products[index];
 
     let hasReturn = this.hasReturn();
@@ -4018,6 +4043,8 @@ class SaleForm extends React.Component {
 
   handleReturn = () => {
 
+    const {total_charge_for_return, formValues, return_from_wallet} = this.state;
+
     let res = this.hasReturn();
 
     if (!res.isReturn) {
@@ -4030,15 +4057,34 @@ class SaleForm extends React.Component {
 
     }
 
+    if (
 
+      parseFloat(formValues.due_amount) == 0 
 
-    this.setState({
+      //&& parseFloat(formValues.total_payable) == parseFloat(formValues.paid_amount)
 
-      returnDialogOpen: true,
+    ) {
+      //return_from_wallet = formValues.paid_amount;
+      this.setState({
 
-      payment_type: res.will_return_charge_apply ? "return" : "advance",
+        returnChargeApplyDialogOpen: true,
 
-    });
+      });
+    } else if(formValues.due_amount == 0 && total_charge_for_return > 0 && total_charge_for_return > formValues.paid_amount){
+      //return_from_wallet = total_charge_for_return;
+      console.log("Customer need to pay : ", priceFormat(total_charge_for_return-formValues.paid_amount).toFixed(2));
+      this.setState({
+        payNowForReturnDialogOpen: true,
+      });
+    } else {
+      this.setState({
+
+        returnDialogOpen: true,
+
+        payment_type: res.will_return_charge_apply ? "return" : "advance",
+
+      });
+    }
 
   };
 
@@ -4064,7 +4110,27 @@ class SaleForm extends React.Component {
 
     }
 
-    
+    console.log("return payload : ", {
+
+      return_products: this.state.return_products,
+
+      return_data: this.state.formValues,
+
+      return_amount: this.state.return_amount,
+
+      product_amount: this.state.product_amount,
+
+      return_charge: this.state.return_charge,
+
+      return_date: this.state.return_date,
+
+      payment_type: this.state.payment_type,
+
+      return_payment_mode: this.state.return_payment_mode,
+
+      return_amount_from_wallet: parseFloat(this.state.return_from_wallet)
+
+    });
     //return false;  
 
     let res = await saleReturn(this.state.formData.id, {
@@ -4085,13 +4151,15 @@ class SaleForm extends React.Component {
 
       return_payment_mode: this.state.return_payment_mode,
 
-      return_amount_from_wallet: priceFormat(
+      return_amount_from_wallet: parseFloat(this.state.return_from_wallet)
+
+      /* return_amount_from_wallet: priceFormat(
 
         parseFloat(this.state.return_amount) -
 
           parseFloat(this.state.formValues.due_amount)
 
-      ),
+      ), */
 
     });
 
@@ -4301,6 +4369,16 @@ class SaleForm extends React.Component {
       
       return_charge = 0,
 
+      hasCertifiedProduct = 0,
+
+      return_report_charge = 0,
+
+      return_tax_charge = 0,
+
+      applicable_discount = 0,
+
+      total_charge_for_return = 0,
+      product_amount_without_report_charge = 0,
       product_amount = 0;
 
     for (let i = 0; i < return_products.length; i++) {
@@ -4377,21 +4455,37 @@ class SaleForm extends React.Component {
 
             : 0;
 
-          formValues.products[i].return_amount = thisAmt;
+          let returnAmount_val = thisAmt - thisReturnCharge - tax - discount_per_product;
+
+          formValues.products[i].return_amount = returnAmount_val;
 
           formValues.products[i].return_charge = thisReturnCharge;
 
-          return_amount += thisAmt - thisReturnCharge;
+          formValues.products[i].discount_per_product = discount_per_product;
+
+          //return_amount += thisAmt - thisReturnCharge;
+
+          return_amount += returnAmount_val;
 
           return_charge += thisReturnCharge;
 
+          applicable_discount += discount_per_product;
+
+          return_tax_charge += tax;
+
           product_amount += thisAmt;
+
+          product_amount_without_report_charge += thisAmt;
+
+          total_charge_for_return += thisReturnCharge + tax;
 
         } else {
 
           let thisAmt = parseFloat(formValues.products[i].total);
-          thisAmt = priceFormat(thisAmt - discount_per_product);
-          
+          console.log("thisAmt before discount_per_product: ", thisAmt);
+          //console.log("discount_per_product: ", discount_per_product);
+          //thisAmt = priceFormat(thisAmt - discount_per_product);
+          //console.log("thisAmt after discount_per_product: ", thisAmt);
           let thisReturnCharge = formValues.have_return_charge
 
             ? parseFloat(formValues.products[i].return_charge_percent) > 0
@@ -4405,18 +4499,43 @@ class SaleForm extends React.Component {
               : 0
 
             : 0;
-         
+          console.log("thisReturnCharge: ", thisReturnCharge);
 
+          let product = _.filter(this.state.formValues.products, {
 
-          formValues.products[i].return_amount = thisAmt;
+            id: return_products[i].id,
+
+          });
+          console.log("product : ", product);
+          if(product.length > 0 && !isEmpty(product[0].certificate_no)){
+            console.log("product.certificate_no : ", product[0].certificate_no);
+            hasCertifiedProduct += 1;
+          }
+
+          let taxCharge = parseFloat(formValues.products[i].total_tax);
+
+          let returnAmount_val = thisAmt - thisReturnCharge - taxCharge - discount_per_product;
+          console.log("return_amount: ", returnAmount_val);
+
+          formValues.products[i].return_amount = returnAmount_val;
 
           formValues.products[i].return_charge = thisReturnCharge;
 
-          return_amount += thisAmt - thisReturnCharge;
+          formValues.products[i].discount_per_product = discount_per_product;
+
+          return_amount += returnAmount_val;
 
           return_charge += thisReturnCharge;
 
+          return_tax_charge += taxCharge;
+
+          applicable_discount += discount_per_product;
+
           product_amount += thisAmt;
+
+          product_amount_without_report_charge += thisAmt;
+
+          total_charge_for_return += thisReturnCharge + taxCharge;
 
         }
 
@@ -4425,6 +4544,75 @@ class SaleForm extends React.Component {
     }
 
     let returnDis = 0;
+
+    //return_amount -= parseFloat(formValues.discount);
+
+    returnDis = priceFormat(applicable_discount, true); //parseFloat(formValues.discount);
+
+    if(hasCertifiedProduct > 0){
+      //return_report_charge = priceFormat(formValues.total_report_charge_amount_after_tax).toFixed(2);
+      //return_amount = return_amount - return_report_charge;
+
+      /* report charge calculation */
+      let report_charge_amount = 0;
+
+      let total_report_charge_amount = 0;
+
+      let total_report_charge_tax_amount = 0;
+
+      let total_report_charge_amount_after_tax = 0;
+
+      
+      //formValues.report_charge_amount = parseFloat(this.state.formValues.report_charge || 0);
+      report_charge_amount = parseFloat(this.state.formValues.report_charge || 0); 
+      
+
+      if(!this.state.isAssign){
+
+        total_report_charge_amount = this.state.formValues.report_qty * parseFloat(report_charge_amount);
+
+        total_report_charge_tax_amount = total_report_charge_amount * parseFloat(this.state.formValues.report_tax_percentage)/100;
+
+        total_report_charge_amount_after_tax = total_report_charge_amount + total_report_charge_tax_amount;
+
+      } 
+
+      console.log("report_qty : ", this.state.formValues.report_qty);
+
+      console.log("report_charge_amount : ", report_charge_amount);
+
+      console.log("total_report_charge_amount : ", total_report_charge_amount);
+
+      console.log("total_report_charge_tax_amount : ", total_report_charge_tax_amount);   
+
+      console.log("total_report_charge_amount_after_tax : ", total_report_charge_amount_after_tax);
+
+      
+
+      formValues.report_charge_amount = report_charge_amount;
+      
+      formValues.total_report_charge_amount = total_report_charge_amount;
+
+      formValues.total_report_charge_tax_amount = total_report_charge_tax_amount;
+
+      formValues.total_report_charge_amount_after_tax = total_report_charge_amount_after_tax;
+
+      return_report_charge = priceFormat(total_report_charge_amount_after_tax).toFixed(2);
+
+      /* per product */
+      let return_report_charge_per_product = return_report_charge/this.state.formValues.report_qty;
+
+      return_report_charge = return_report_charge_per_product * hasCertifiedProduct;
+
+      return_amount = return_amount - return_report_charge;
+
+      total_charge_for_return += return_report_charge;
+
+      /* if due amount exists then report change will be added with product amount */
+      if(formValues.due_amount > 0){
+        product_amount += return_report_charge;
+      }
+    }
 
     let didNotReturned = 0,
 
@@ -4456,18 +4644,124 @@ class SaleForm extends React.Component {
 
     }
 
+    /* return to wallet calculation */
+    let return_from_wallet = 0;
+
+    if (
+
+      parseFloat(formValues.due_amount) == 0 &&
+
+      parseFloat(formValues.total_payable) == parseFloat(formValues.paid_amount)
+
+    ) {
+
+      
+
+
+
+      if (totalReturnP == 1 && didNotReturned == 0) {
+
+        /* return_from_wallet = parseFloat(formValues.paid_amount);
+
+        return_from_wallet = priceFormat(
+
+          return_from_wallet - this.state.return_amount
+
+        ); */
+
+        //return_from_wallet = priceFormat(this.state.return_amount);
+
+      } else if (totalReturnP == 1 && didNotReturned > 0) {
+
+        //return_from_wallet = priceFormat(parseFloat(this.state.return_amount));
+
+      }
+
+    } else {
+
+      /* if (
+
+        this.state.formValues.due_amount &&
+
+        parseFloat(this.state.return_amount) >
+
+          parseFloat(this.state.formValues.due_amount)
+
+      ) {
+
+        return_from_wallet = priceFormat(
+
+          parseFloat(this.state.return_amount) -
+
+            parseFloat(this.state.formValues.due_amount)
+
+        );
+
+      } */
+
+      let paid_amount = parseFloat(formValues.paid_amount);
+      /* if(paid_amount > 0){
+        return_from_wallet = paid_amount;
+      } */
+
+      if (totalReturnP == 1 && didNotReturned == 0) {
+
+        /* return_from_wallet = parseFloat(formValues.paid_amount);
+
+        return_from_wallet = priceFormat(
+
+          return_from_wallet - this.state.return_amount
+
+        ); */
+
+        //return_from_wallet = paid_amount;
+
+      } else if (totalReturnP == 1 && didNotReturned > 0) {
+
+        //return_from_wallet = priceFormat(parseFloat(this.state.return_amount));
+
+      }
+
+      if(didNotReturned == 0){
+        /* now return amount from wallet to the user */
+        //if(total_charge_for_return > 0 && total_charge_for_return < formValues.paid_amount){
+          return_from_wallet = priceFormat(formValues.paid_amount).toFixed(2);
+        //}
+      }
+    }
 
     //if(totalReturnP == 1 && didNotReturned == 0){
-
-    //return_amount -= parseFloat(formValues.discount);
-
-    returnDis = parseFloat(formValues.discount);
-
-    
+    // if(didNotReturned == 0 && total_charge_for_return > 0 && total_charge_for_return < formValues.paid_amount){
+    //   return_from_wallet = priceFormat(formValues.paid_amount - total_charge_for_return).toFixed(2);
+    // }
 
     //}
 
-    
+    console.log({
+
+      return_amount: priceFormat(return_amount, true),
+
+      product_amount: priceFormat(product_amount, true),
+
+      product_amount_without_report_charge: priceFormat(product_amount_without_report_charge, true),
+
+      return_charge: priceFormat(return_charge, true),
+
+      return_report_charge: priceFormat(return_report_charge, true),
+
+      return_tax_charge: priceFormat(return_tax_charge, true),
+      
+      hasCertifiedProduct,
+
+      formValues: formValues,
+
+      return_discount: returnDis,
+
+      total_charge_for_return: priceFormat(total_charge_for_return, true),
+
+      return_from_wallet: priceFormat(return_from_wallet, true)
+
+    });
 
     this.setState({
 
@@ -4475,13 +4769,21 @@ class SaleForm extends React.Component {
 
       product_amount: priceFormat(product_amount, true),
 
+      product_amount_without_report_charge: priceFormat(product_amount_without_report_charge, true),
+
       return_charge: priceFormat(return_charge, true),
 
+      return_report_charge: priceFormat(return_report_charge, true),
+
+      return_tax_charge: priceFormat(return_tax_charge, true),
+
+      total_charge_for_return: priceFormat(total_charge_for_return, true),
 
       formValues: formValues,
 
       return_discount: returnDis,
 
+      return_from_wallet: priceFormat(return_from_wallet, true)
 
     });
 
@@ -5207,6 +5509,12 @@ class SaleForm extends React.Component {
 
       unique_materials,
 
+      isMobile,
+
+      return_from_wallet,
+
+      total_charge_for_return
+
     } = this.state;
 
 
@@ -5255,7 +5563,7 @@ class SaleForm extends React.Component {
 
 
 
-    let return_from_wallet = 0;
+    /* let return_from_wallet = 0;
 
      let didNotReturned = 0,
 
@@ -5361,7 +5669,7 @@ class SaleForm extends React.Component {
         //return_from_wallet = priceFormat(parseFloat(this.state.return_amount));
 
       }
-    }
+    } */
 
     console.log("formValues.user_id : ", formValues.user_id);
 
@@ -8385,7 +8693,7 @@ class SaleForm extends React.Component {
 
                             fullWidth
 
-                            value={this.state.product_amount}
+                            value={this.state.product_amount_without_report_charge}
 
                             disabled
 
@@ -8413,7 +8721,7 @@ class SaleForm extends React.Component {
 
                     </Grid>
 
-                    {this.state.return_discount > 0 ? (
+                    {formValues.due_amount == 0 && this.state.return_discount > 0 ? (
 
                       <Grid item xs={12} md={12} className='pt-5'>
 
@@ -8469,7 +8777,7 @@ class SaleForm extends React.Component {
 
                     ) : null}
 
-                    {formValues.have_return_charge ? (
+                    {formValues.due_amount == 0 && formValues.have_return_charge ? (
 
                       <Grid item xs={12} md={12} className='pt-5'>
 
@@ -8525,7 +8833,111 @@ class SaleForm extends React.Component {
 
                     ) : null}
 
-                    
+                    {formValues.due_amount == 0 && this.state.return_report_charge > 0 ? (
+                    <Grid item xs={12} md={12} className='pt-5'>
+
+                      <Grid
+
+                        container
+
+                        spacing={2}
+
+                        className='display_center justify-content-end'>
+
+                        <Grid item xs={4} md={6} className='text-right pt-0'>
+
+                          <b>Report Charge</b>
+
+                        </Grid>
+
+                        <Grid item xs={5} md={6} className='pt-0'>
+
+                          <TextField
+
+                            className='ft-amount'
+
+                            fullWidth
+
+                            value={this.state.return_report_charge}
+
+                            disabled
+
+                            InputProps={{
+
+                              startAdornment: (
+
+                                <InputAdornment position='start'>
+
+                                  ₹
+
+                                </InputAdornment>
+
+                              ),
+
+                              className: "non_disable_text",
+
+                            }}
+
+                          />
+
+                        </Grid>
+
+                      </Grid>
+
+                    </Grid>):null}
+
+                    {formValues.due_amount == 0 && this.state.return_tax_charge > 0 ? (
+                    <Grid item xs={12} md={12} className='pt-5'>
+
+                      <Grid
+
+                        container
+
+                        spacing={2}
+
+                        className='display_center justify-content-end'>
+
+                        <Grid item xs={4} md={6} className='text-right pt-0'>
+
+                          <b>Tax Charge</b>
+
+                        </Grid>
+
+                        <Grid item xs={5} md={6} className='pt-0'>
+
+                          <TextField
+
+                            className='ft-amount'
+
+                            fullWidth
+
+                            value={this.state.return_tax_charge}
+
+                            disabled
+
+                            InputProps={{
+
+                              startAdornment: (
+
+                                <InputAdornment position='start'>
+
+                                  ₹
+
+                                </InputAdornment>
+
+                              ),
+
+                              className: "non_disable_text",
+
+                            }}
+
+                          />
+
+                        </Grid>
+
+                      </Grid>
+
+                    </Grid>) : null}
 
                     {formValues.products.length == 1 ? (
 
@@ -8589,6 +9001,7 @@ class SaleForm extends React.Component {
 
                     ) : null}
 
+                    {formValues.due_amount == 0 && this.state.return_amount > 0 ? (
                     <Grid item xs={12} md={12} className='pt-5'>
 
                       <Grid
@@ -8643,7 +9056,7 @@ class SaleForm extends React.Component {
 
                       </Grid>
 
-                    </Grid>
+                    </Grid>): null}
 
                   </>
 
@@ -10158,6 +10571,108 @@ class SaleForm extends React.Component {
         </Dialog>
 
 
+
+        <Dialog
+
+          open={this.state.payNowForReturnDialogOpen}
+
+          onClose={this.handlePayNowForReturnDialogClose}
+
+          fullWidth
+
+          maxWidth='xs'
+
+          className='ratn-dialog-wrapper'>
+
+          <DialogTitle>Pay the amount!</DialogTitle>
+
+          <DialogContent>
+
+            <DialogContentText id='alert-dialog-slide-description'>
+
+              {`Total return charge is : ${total_charge_for_return} and customer paid : ${formValues.paid_amount}, so customer need to pay : ${priceFormat(total_charge_for_return-formValues.paid_amount).toFixed(2)} to initiate return process. Please goto paynow section to collect the amount from customer.`}
+
+            </DialogContentText>
+
+          </DialogContent>
+
+          <DialogActions>
+
+            <Stack spacing={2} direction='row' justifyContent='flex-end'>
+
+              <Button variant='outlined' onClick={this.handlePayNowForReturnDialogClose}>
+
+                Ok
+
+              </Button>
+
+            </Stack>
+
+          </DialogActions>
+
+        </Dialog>
+        
+        <Dialog
+
+          open={this.state.returnChargeApplyDialogOpen}
+
+          onClose={this.handleReturnChargeApplyDialogOpen}
+
+          fullWidth
+
+          maxWidth='xs'
+
+          className='ratn-dialog-wrapper'>
+
+          <DialogTitle>Payable amount!</DialogTitle>
+
+          <DialogContent>
+
+            <DialogContentText id='alert-dialog-slide-description'>
+
+              {`Total payable amount will be : ${this.state.return_amount}. Will receive within 7 working days as per company policy.`}
+
+            </DialogContentText>
+
+          </DialogContent>
+
+          <DialogActions>
+            {!submitting ? (
+              <Stack spacing={2} direction='row' justifyContent='flex-end'>
+
+                <Button variant='outlined' onClick={this.handleReturnChargeApplyDialogOpen}>
+
+                  Cancel
+
+                </Button>
+
+                <Button
+
+                    variant='contained'
+
+                    type='button'
+
+                    onClick={this.handleReturnConfirm}>
+
+                    Yes, Confirm
+
+                  </Button>
+
+              </Stack>
+
+            ) : (
+
+              <Stack spacing={2} direction='row' justifyContent='flex-end'>
+
+                <CircularProgress size='30px' />
+
+              </Stack>
+
+            )}
+
+          </DialogActions>
+
+        </Dialog>
 
         <Dialog
 
