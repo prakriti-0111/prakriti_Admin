@@ -99,10 +99,13 @@ class ReturnSaleViewPage extends React.Component {
 
   componentDidUpdate(prevProps) {
     if (this.props.params.id != prevProps.params.id) {
+      this.setState({
+        returnSale: null
+      })
       this.loadViewData();
     }
 
-    if(this.state.actionCalled){
+    if(this.state.returnSale != prevProps.returnSale){
       this.setState({
         approve_declined_processing: false,
       });
@@ -532,22 +535,22 @@ function Row(props) {
             {open ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
           </IconButton>
         </TableCell>
-        <TableCell component='th' scope='row' style={{ color: "#fff" }}>
+        <TableCell component='th' scope='row' >
           {sl_no <= 9 ? "0" + sl_no : sl_no}
         </TableCell>
-        <TableCell component='th' scope='row' style={{ color: "#fff" }}>
+        <TableCell component='th' scope='row' >
           {row.product_name}
         </TableCell>
-        <TableCell style={{ color: "#fff" }}>{row.category_name}</TableCell>
-        <TableCell style={{ color: "#fff" }}>{row.certificate_no}</TableCell>
-        <TableCell style={{ color: "#fff" }}>{row.total_weight}</TableCell>
-        <TableCell style={{ color: "#fff" }}>{row.size_name}</TableCell>
-        <TableCell style={{ color: "#fff" }}>{row.making_charge}</TableCell>
-        <TableCell style={{ color: "#fff" }}>{row.rep}</TableCell>
-        <TableCell style={{ color: "#fff" }}>{row.sub_total}</TableCell>
-        <TableCell style={{ color: "#fff" }}>{row.total_discount}</TableCell>
-        <TableCell style={{ color: "#fff" }}>{row.tax}</TableCell>
-        <TableCell style={{ color: "#fff" }}>{row.total}</TableCell>
+        <TableCell >{row.category_name}</TableCell>
+        <TableCell >{row.certificate_no}</TableCell>
+        {/* <TableCell >{row.total_weight}</TableCell> */}
+        <TableCell >{row.size_name}</TableCell>
+        {/* <TableCell >{row.making_charge}</TableCell>
+        <TableCell >{row.rep}</TableCell> */}
+        <TableCell >{row.sub_total}</TableCell>
+        {/* <TableCell >{row.total_discount}</TableCell>
+        <TableCell >{row.tax}</TableCell>
+        <TableCell >{row.total}</TableCell> */}
       </TableRow>
       <TableRow className={"table-inner-row sub_table " + odd_even_class}>
         <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={11}>

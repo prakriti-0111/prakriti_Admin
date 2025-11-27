@@ -8833,7 +8833,7 @@ class SaleForm extends React.Component {
 
                     ) : null}
 
-                    {formValues.due_amount == 0 && this.state.return_report_charge > 0 ? (
+                    {this.state.return_report_charge > 0 ? (
                     <Grid item xs={12} md={12} className='pt-5'>
 
                       <Grid
