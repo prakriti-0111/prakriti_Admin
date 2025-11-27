@@ -4649,9 +4649,9 @@ class SaleForm extends React.Component {
 
     if (
 
-      parseFloat(formValues.due_amount) == 0 &&
+      parseFloat(formValues.due_amount) == 0
 
-      //parseFloat(formValues.total_payable) == parseFloat(formValues.paid_amount)
+      // && parseFloat(formValues.total_payable) == parseFloat(formValues.paid_amount)
 
     ) {
 
