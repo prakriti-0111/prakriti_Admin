@@ -1808,10 +1808,13 @@ class SaleForm extends React.Component {
 
     let formValues = this.state.formValues;
     
-    formValues[key] = val;
-
+    if(key == "report_charge_amount"){
+      console.log("isEmpty(val) : ", isEmpty(val), "isNaN(val):", isNaN(val));
+      formValues[key] = isEmpty(val) || isNaN(val)?0:val;
+    } else {
+      formValues[key] = val;
+    }
     
-
     console.log("updateFormValues => formValues", formValues);
 
     this.setState(
