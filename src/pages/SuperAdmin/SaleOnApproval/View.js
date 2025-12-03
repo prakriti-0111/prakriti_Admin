@@ -521,13 +521,13 @@ class SaleOnApproveViewPage extends React.Component {
               <div className='sale-view-button'>
                 <Button
                   variant='contained'
-                  className='primary accept'
+                  className='primary approval'
                   onClick={() => this.handleStatusChange(4)}>
                   Transfer To Sale
                 </Button>
                 <Button
                   variant='contained'
-                  className='danger decline'
+                  className='danger nonapproval'
                   onClick={() => this.handleStatusChange(2)}>
                   Decline
                 </Button>

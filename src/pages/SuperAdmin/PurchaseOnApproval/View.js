@@ -532,7 +532,7 @@ class PurchaseOnApproveViewPage extends React.Component {
                 </TableContainer>
               </Grid>
             </Grid>
-            {purchase.is_approved == 3 ? (
+            {/*purchase.is_approved == 3 ? (
               <div className='sale-view-button'>
                 <Button
                   variant='contained'
@@ -547,7 +547,7 @@ class PurchaseOnApproveViewPage extends React.Component {
                   Decline
                 </Button>
               </div>
-            ) : null}
+            ) : null*/}
             <Grid
               container
               spacing={gridSpacing}
