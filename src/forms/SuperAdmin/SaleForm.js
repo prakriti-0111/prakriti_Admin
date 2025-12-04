@@ -9637,7 +9637,7 @@ class SaleForm extends React.Component {
 
                       }}>
 
-                      Approval
+                      On Approval
 
                     </LoadingButton>
 
@@ -9665,7 +9665,7 @@ class SaleForm extends React.Component {
 
                       }}>
 
-                      {this.state.isAssign ? "Transfer " : "Submit"}
+                      {this.state.isAssign ? "Transfer " : "Sale Now"}
 
                     </LoadingButton>
 
