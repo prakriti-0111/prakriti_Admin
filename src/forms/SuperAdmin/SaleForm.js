@@ -959,19 +959,19 @@ class SaleForm extends React.Component {
 
 
 
-          if (item.purity_id == 4 || item.purity_id == 18) {
+          // if (item.purity_id == 4 || item.purity_id == 18) {
 
-            material_total_by_unit[item.material_id] += parseFloat(
+          //   material_total_by_unit[item.material_id] += parseFloat(
 
-              cart.total_weight
+          //     cart.total_weight
 
-            );
+          //   );
 
-          } else {
+          // } else {
 
             material_total_by_unit[item.material_id] += parseFloat(item.weight);
 
-          }
+          //}
 
         }
 
@@ -6790,7 +6790,7 @@ class SaleForm extends React.Component {
 
                           <TableCell colSpan={2}>
 
-                            {item.total_weight} {productWeightUnitName != ""?productWeightUnitName:"Wt"}
+                            {item.total_weight} {"Wt"}
 
                           </TableCell>
 
@@ -7626,7 +7626,7 @@ class SaleForm extends React.Component {
 
                               {item.material_name} (
 
-                              {item["total_" + item.material_id].toFixed(3)}{" "}
+                              {item.unit.toLowerCase() != "gm"?item["total_" + item.material_id].toFixed(2):item["total_" + item.material_id].toFixed(3)}{" "}
 
                               {item.unit})
 
