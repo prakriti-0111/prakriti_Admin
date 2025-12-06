@@ -66,8 +66,8 @@ class SalePage extends Component {
         display_name: 'Invoice Date'
       },
       {
-        name: 'total_amount',
-        display_name: 'Total Amount'
+        name: 'bill_amount',
+        display_name: 'Bill Amount'
       },
       {
         name: 'due_amount_display',

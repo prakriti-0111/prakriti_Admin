@@ -1791,11 +1791,29 @@ span.forget_header h3 {
   color: #fff !important;
   min-width: 110px;
 }
+.sale-view-button .approval {
+  padding: 8px 20px;
+  border: 1px solid #cf108f !important;
+  border-radius: 25px;
+  background-color: #cf108f !important;
+  margin-left: 10px;
+  color: #fff !important;
+  min-width: 110px;
+}
 .sale-view-button .decline {
   padding: 8px 20px;
   border: 1px solid #c50d0d;
   border-radius: 25px;
   background-color: #c50d0d;
+  margin-left: 10px;
+  color: #fff !important;
+  min-width: 110px;
+}
+.sale-view-button .nonapproval {
+  padding: 8px 20px;
+  border: 1px solid #660202 !important;
+  border-radius: 25px;
+  background-color: #660202 !important;
   margin-left: 10px;
   color: #fff !important;
   min-width: 110px;

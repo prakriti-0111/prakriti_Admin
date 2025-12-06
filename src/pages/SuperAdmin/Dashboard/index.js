@@ -80,6 +80,7 @@ class DashboardPage extends Component {
       purchOnApproveList: [],
       Total_sales_on_approval: 0,
       Total_purchase_on_approval: 0,
+      Total_purchase_on_approval_products: 0,
     };
 
     this.chartCustomerOptions = {
@@ -196,12 +197,15 @@ class DashboardPage extends Component {
           });
 
           let onApprove_total = 0;
+          let Total_purchase_on_approval_products = 0;
           this.state.purchOnApproveList.items?.map((items) => {
             let items_data = items.bill_amount.split("₹");
+            Total_purchase_on_approval_products += items.no_of_products;
             onApprove_total += Number(items_data[1]);
           });
 
           this.setState({
+            Total_purchase_on_approval_products: Total_purchase_on_approval_products,
             Total_purchase_on_approval: onApprove_total.toFixed(2),
           });
         }
@@ -1299,7 +1303,7 @@ class DashboardPage extends Component {
                   Purchase on Approval &nbsp;{" "}
                   <span>
                     {this.state.sales ? (
-                      this.state.purchOnApproveList.total
+                      this.state.Total_purchase_on_approval_products
                     ) : (
                     <CircularProgress size="20px" />
                     )}
