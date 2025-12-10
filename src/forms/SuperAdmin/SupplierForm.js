@@ -18,7 +18,7 @@ import _ from 'lodash';
 import {getRoleName, getUserDashboardRoute} from 'src/helpers/helper';
 import FilePreview from 'src/utils/FilePreview';
 import noImage from 'src/assets/images/no_image.jpg';
-
+import { validateInteger, validateNumber } from '../../helpers/helper';
 
 class SupplierForm extends React.Component {
 
@@ -529,6 +529,7 @@ class SupplierForm extends React.Component {
                             value={formValues.mobile}
                             onChange={(event) => this.handleDefaultChange(event, 'mobile')}
                             error={formErros.mobile}
+                            onInput={(e) => validateInteger(e)}
                         />
                     </Grid>
                     <Grid item xs={3.5} className='create-input'>
@@ -670,6 +671,7 @@ class SupplierForm extends React.Component {
                             value={formValues.pincode}
                             onChange={(event) => this.handleDefaultChange(event, 'pincode')}
                             error={formErros.pincode}
+                            onInput={(e) => validateInteger(e)}
                         />
                     </Grid>
                     {/*<Grid item xs={12} md={3} className='create-input'>
@@ -760,6 +762,7 @@ class SupplierForm extends React.Component {
                             value={formValues.bank_account_no}
                             onChange={(event) => this.handleDefaultChange(event, 'bank_account_no')}
                             error={formErros.bank_account_no}
+                            onInput={(e) => validateInteger(e)}
                         />
                     </Grid>
                     <Grid item xs={12} md={3} className='create-input'>

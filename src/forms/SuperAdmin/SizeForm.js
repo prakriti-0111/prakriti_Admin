@@ -16,6 +16,7 @@ import {
 import { ContactPageSharp } from "@mui/icons-material";
 import withRouter from "src/helpers/withRouter";
 import _ from "lodash";
+import { validateInteger, validateNumber } from '../../helpers/helper';
 
 const validate = (values) => {
   const errors = {};

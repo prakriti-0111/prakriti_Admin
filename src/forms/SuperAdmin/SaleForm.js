@@ -85,6 +85,8 @@ import {
   isAdmin,
 
   isSalesExecutive,
+  validateNumber,
+  validateInteger
 
 } from "src/helpers/helper";
 
@@ -5982,6 +5984,8 @@ class SaleForm extends React.Component {
 
                   inputProps={{ className: "non_disable_text" }}
 
+                  onInput={(e) => validateInteger(e)}
+
                 />
 
               </Grid>
@@ -6081,6 +6085,8 @@ class SaleForm extends React.Component {
                             disabled
 
                             inputProps={{ className: "non_disable_text" }}
+
+                            onInput={(e) => validateInteger(e)}
 
                           />
 
@@ -6382,6 +6388,8 @@ class SaleForm extends React.Component {
 
                         inputProps={{ className: "non_disable_text" }}
 
+                        onInput={(e) => validateInteger(e)}
+
                       />
 
                     </Grid>
@@ -6421,6 +6429,7 @@ class SaleForm extends React.Component {
                         disabled
 
                         inputProps={{ className: "non_disable_text" }}
+                        onInput={(e) => validateInteger(e)}
 
                       />
 
@@ -8516,6 +8525,8 @@ class SaleForm extends React.Component {
 
                             }
 
+                            onInput={(e) => validateNumber(e)}
+
                             InputProps={{
 
                               startAdornment: (
@@ -8569,6 +8580,8 @@ class SaleForm extends React.Component {
                               fullWidth
 
                               value={formValues.advance_amount}
+
+                              onInput={(e) => validateNumber(e)}
 
                               InputProps={{
 
@@ -8972,6 +8985,8 @@ class SaleForm extends React.Component {
 
                               value={formValues.discount}
 
+                              onInput={(e) => validateNumber(e)}
+
                               onChange={(event) =>
 
                                 this.handleDefaultChange(event, "discount")
@@ -9030,6 +9045,8 @@ class SaleForm extends React.Component {
                             fullWidth
 
                             value={this.state.return_amount}
+
+                            onInput={(e) => validateNumber(e)}
 
                             onChange={(e) =>
 
@@ -9250,6 +9267,8 @@ class SaleForm extends React.Component {
                             fullWidth
 
                             value={formValues.paid_amount}
+
+                            onInput={(e) => validateNumber(e)}
 
                             onChange={(event) =>
 
@@ -10215,6 +10234,8 @@ class SaleForm extends React.Component {
 
                                   fullWidth
 
+                                  onInput={(e) => validateInteger(e)}
+
                                   value={item.quantity}
 
                                   onChange={(event) =>
@@ -10246,6 +10267,8 @@ class SaleForm extends React.Component {
                                   variant='outlined'
 
                                   fullWidth
+
+                                  onInput={(e) => validateNumber(e)}
 
                                   value={item.weight}
 
@@ -11037,6 +11060,8 @@ class SaleForm extends React.Component {
 
                       fullWidth
 
+                      onInput={(e) => validateInteger(e)}
+
                       value={actionProduct.materials[0].return_qty}
 
                       onChange={(event) =>
@@ -11066,6 +11091,8 @@ class SaleForm extends React.Component {
                       variant='outlined'
 
                       fullWidth
+
+                      onInput={(e) => validateNumber(e)}
 
                       value={actionProduct.materials[0].return_weight}
 
