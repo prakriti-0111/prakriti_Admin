@@ -35,6 +35,7 @@ import {
   convertToFormData,
   toBase64,
   getValuesFromKey,
+  validateInteger
 } from "src/helpers/helper";
 import { bindActionCreators } from "redux";
 import {
@@ -1742,6 +1743,7 @@ class ProductForm extends React.Component {
                                 variant="outlined"
                                 fullWidth
                                 value={m.quantity}
+                                onInput={(e) => validateInteger(e)}
                                 onChange={(e) =>
                                   this.handleQuantityChange(e, index, key)
                                 }

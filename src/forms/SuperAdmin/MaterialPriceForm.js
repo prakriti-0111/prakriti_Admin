@@ -36,6 +36,7 @@ import {
 import MaterialForm from 'forms/SuperAdmin/MaterialForm';
 import { purityList } from 'actions/superadmin/purity.actions';
 import { unitList } from 'actions/superadmin/unit.actions';
+import { validateInteger, validateNumber } from '../../helpers/helper';
 
 class MaterialPriceForm extends React.Component {
 
@@ -551,6 +552,7 @@ class MaterialPriceForm extends React.Component {
                                                                             InputProps={{
                                                                                 startAdornment: <InputAdornment position="start">₹</InputAdornment>
                                                                             }}
+                                                                            onInput={(e) => validateNumber(e)}
 
                                                                             error={item.price_error}
                                                                         />
@@ -578,6 +580,7 @@ class MaterialPriceForm extends React.Component {
                                                                                     InputProps={{
                                                                                         endAdornment: <InputAdornment position="start">%</InputAdornment>
                                                                                     }}
+                                                                                    onInput={(e) => validateNumber(e)}
                                                                                 />
                                                                             </FormControl>
                                                                         </div>
@@ -619,6 +622,7 @@ class MaterialPriceForm extends React.Component {
                                                                                     InputProps={{
                                                                                         endAdornment: <InputAdornment position="end" className='i-icon-right'>%</InputAdornment>
                                                                                     }}
+                                                                                    onInput={(e) => validateNumber(e)}
                                                                                     error={item.admin_discount_error}
                                                                                 />
                                                                             </FormControl>
@@ -659,6 +663,7 @@ class MaterialPriceForm extends React.Component {
                                                                                         endAdornment: <InputAdornment position="end" className='i-icon-right'>%</InputAdornment>
                                                                                     }}
                                                                                     error={item.distributor_discount_error}
+                                                                                    onInput={(e) => validateNumber(e)}
                                                                                 />
                                                                             </FormControl>
                                                                         </div>
@@ -701,6 +706,7 @@ class MaterialPriceForm extends React.Component {
                                                                                         endAdornment: <InputAdornment position="end" className='i-icon-right'>%</InputAdornment>
                                                                                     }}
                                                                                     error={item.se_discount_error}
+                                                                                    onInput={(e) => validateNumber(e)}
                                                                                 />
                                                                             </FormControl>
                                                                         </div>
@@ -740,6 +746,7 @@ class MaterialPriceForm extends React.Component {
                                                                                         endAdornment: <InputAdornment position="end" className='i-icon-right'>%</InputAdornment>
                                                                                     }}
                                                                                     error={item.retailer_max_discount_error}
+                                                                                    onInput={(e) => validateNumber(e)}
                                                                                 />
                                                                             </FormControl>
                                                                         </div>
@@ -779,6 +786,7 @@ class MaterialPriceForm extends React.Component {
                                                                                         endAdornment: <InputAdornment position="end" className='i-icon-right'>%</InputAdornment>
                                                                                     }}
                                                                                     error={item.customer_discount_error}
+                                                                                    onInput={(e) => validateNumber(e)}
                                                                                 />
                                                                             </FormControl>
                                                                         </div>

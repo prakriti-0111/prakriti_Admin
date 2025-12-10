@@ -32,6 +32,7 @@ import moment from 'moment';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import { validateInteger, validateNumber } from '../../helpers/helper';
 
 const validate = values => {
   const errors = {}
@@ -514,6 +515,7 @@ class StockProductBannerForm extends React.Component {
                 name="price"
                 component={this.renderTextField}
                 label="Price"
+                onInput={(e) => validateNumber(e)}
               />
             </Grid>
             <Grid item xs={4} className='create-input'>
@@ -522,6 +524,7 @@ class StockProductBannerForm extends React.Component {
                 name="discount"
                 component={this.renderTextField}
                 label="Discount"
+                onInput={(e) => validateNumber(e)}
               />
             </Grid>
             <Grid item xs={4} className='create-input'>
@@ -530,6 +533,7 @@ class StockProductBannerForm extends React.Component {
                 name="final_price"
                 component={this.renderTextField}
                 label="Final Price"
+                onInput={(e) => validateNumber(e)}
               />
             </Grid>
             <Grid item xs={6} className='create-input'>

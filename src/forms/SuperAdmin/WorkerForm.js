@@ -15,6 +15,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import _ from 'lodash';
 import {getRoleName, getUserDashboardRoute} from 'src/helpers/helper';
+import { validateInteger, validateNumber } from '../../helpers/helper';
 
 class WorkerForm extends React.Component {
 
@@ -388,6 +389,7 @@ class WorkerForm extends React.Component {
                             value={formValues.mobile}
                             onChange={(event) => this.handleDefaultChange(event, 'mobile')}
                             error={formErros.mobile}
+                            onInput={(e) => validateInteger(e)}
                         />
                     </Grid>
                     <Grid item xs={3} className='create-input'>
@@ -408,6 +410,7 @@ class WorkerForm extends React.Component {
                             value={formValues.adhar}
                             onChange={(event) => this.handleDefaultChange(event, 'adhar')}
                             error={formErros.adhar}
+                            onInput={(e) => validateInteger(e)}
                         />
                     </Grid>
                     <Grid item xs={3} className='create-input'>

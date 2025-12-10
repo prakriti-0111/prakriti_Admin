@@ -428,6 +428,35 @@ const ucWords = (text) => {
     return !text ? '' : text.replace(/(^\w|\s\w)(\S*)/g, (_, m1, m2) => m1.toUpperCase() + m2.toLowerCase());
 }
 
+const validateNumber = (event) => {
+  const input = event.target;
+  const value = input.value;
+
+  // Regular expression to allow numbers and a single decimal point
+  // ^\d*        - Zero or more digits at the beginning
+  // (\.\d{0,2})? - Optionally, a decimal point followed by zero, one, or two digits
+  // $           - End of the string
+  const regex = /^\d*(\.\d{0,2})?$/;
+
+  if (!regex.test(value)) {
+    // If the input is invalid, remove the last entered character
+    input.value = value.slice(0, -1);
+  }
+}
+
+const validateInteger = (event) => {
+    const input = event.target;
+    const value = input.value;
+
+    // Regular expression to allow numbers and no decimal point
+    const regex = /^\d*$/;
+
+    if (!regex.test(value)) {
+        // If the input is invalid, remove the last entered character
+        input.value = value.slice(0, -1);
+    }
+}
+
 
 export {
     getAuthData,
@@ -461,5 +490,7 @@ export {
     isMainSuperAdmin,
     isEmployee,
     isManager,
-    ucWords
+    ucWords,
+    validateNumber,
+    validateInteger
 }
