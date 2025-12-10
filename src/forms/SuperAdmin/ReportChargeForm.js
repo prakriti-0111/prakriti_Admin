@@ -4,6 +4,7 @@ import { Field, reduxForm } from 'redux-form/immutable';
 import {Box, TextField, Button, Grid, Stack, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
 import { ContactPageSharp } from '@mui/icons-material';
 import withRouter from 'src/helpers/withRouter';
+import { validateNumber } from 'src/helpers/helper';
 
 const validate = values => {
   const errors = {}
@@ -80,6 +81,7 @@ class ReportChargeForm extends React.Component {
                         component={this.renderTextField}
                         label="Amount"
                         style={{marginBottom:"5px"}}
+                        onInput={(e) => validateNumber(e)}
                       />
                 </Grid>
                 <Grid item xs={5} className='create-input'>
@@ -88,6 +90,7 @@ class ReportChargeForm extends React.Component {
                         component={this.renderTextField}
                         label="Tax(%)"
                         style={{marginBottom:"5px"}}
+                        onInput={(e) => validateNumber(e)}
                       />
                 </Grid>
                 <Grid item xs={2} className='create-input'>

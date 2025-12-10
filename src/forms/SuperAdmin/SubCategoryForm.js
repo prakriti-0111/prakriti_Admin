@@ -20,6 +20,7 @@ import withRouter from "src/helpers/withRouter";
 import { priceFormat, displayAmount } from "src/helpers/helper";
 import Autocomplete, { createFilterOptions } from "@mui/material/Autocomplete";
 import { subCategoryRawList } from "actions/superadmin/subCategory.actions";
+import { validateInteger, validateNumber } from '../../helpers/helper';
 
 const validate = (values) => {
   const errors = {};
@@ -462,6 +463,7 @@ class SubCategoryForm extends React.Component {
                 label="Making Charge"
                 disabled={!making_charge_type ? true : false}
                 onChange={this.handlePriceChange}
+                onInput={(e) => validateNumber(e)}
               />
             </Grid>
             <Grid item xs={6} md={2} className="create-input">
@@ -472,12 +474,14 @@ class SubCategoryForm extends React.Component {
                 disabled={!making_charge_type ? true : false}
                 onChange={this.handlePriceChange}
                 making_charge={making_charge}
+                onInput={(e) => validateNumber(e)}
               />
               <div style={{ display: "none" }}>
                 <Field
                   name="making_charge"
                   component={this.renderTextField}
                   label="Making Charge"
+                  onInput={(e) => validateNumber(e)}
                 />
               </div>
             </Grid>
@@ -498,6 +502,7 @@ class SubCategoryForm extends React.Component {
                 discounted_price={displayAmount(
                   this.state.admin_discounted_price
                 )}
+                onInput={(e) => validateNumber(e)}
               />
             </Grid>
             <Grid item xs={6} md={3} className="create-input">
@@ -509,6 +514,7 @@ class SubCategoryForm extends React.Component {
                 discounted_price={displayAmount(
                   this.state.distributor_discounted_price
                 )}
+                onInput={(e) => validateNumber(e)}
               />
             </Grid>
             <Grid item xs={6} md={2} className="create-input">
@@ -520,6 +526,7 @@ class SubCategoryForm extends React.Component {
                 discounted_price={displayAmount(
                   this.state.retailer_discounted_price
                 )}
+                onInput={(e) => validateNumber(e)}
               />
             </Grid>
             <Grid item xs={6} md={3} className="create-input">
@@ -531,6 +538,7 @@ class SubCategoryForm extends React.Component {
                 discounted_price={displayAmount(
                   this.state.customer_discounted_price
                 )}
+                onInput={(e) => validateNumber(e)}
               />
             </Grid>
             <Grid item xs={2}>

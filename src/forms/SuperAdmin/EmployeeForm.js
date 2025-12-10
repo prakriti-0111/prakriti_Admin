@@ -20,7 +20,7 @@ import _ from 'lodash';
 import {getRoleName, getUserDashboardRoute} from 'src/helpers/helper';
 import FilePreview from 'src/utils/FilePreview';
 import noImage from 'src/assets/images/no_image.jpg';
-
+import { validateInteger, validateNumber } from '../../helpers/helper';
 
 class EmployeeForm extends React.Component {
 
@@ -664,6 +664,7 @@ class EmployeeForm extends React.Component {
                             value={formValues.mobile}
                             onChange={(event) => this.handleDefaultChange(event, 'mobile')}
                             error={formErros.mobile}
+                            onInput={(e) => validateInteger(e)}
                         />
                     </Grid>
                     <Grid item xs={6} className='create-input'>
@@ -827,6 +828,7 @@ class EmployeeForm extends React.Component {
                             value={formValues.pincode}
                             onChange={(event) => this.handleDefaultChange(event, 'pincode')}
                             error={formErros.pincode}
+                            onInput={(e) => validateInteger(e)}
                         />
                     </Grid>
                     <Grid item xs={3} className='create-input'>
@@ -847,6 +849,7 @@ class EmployeeForm extends React.Component {
                             value={formValues.parents_contact_no}
                             onChange={(event) => this.handleDefaultChange(event, 'parents_contact_no')}
                             error={formErros.parents_contact_no}
+                            onInput={(e) => validateInteger(e)}
                         />
                     </Grid>
                     <Grid item xs={6} className='create-input'>
@@ -947,6 +950,7 @@ class EmployeeForm extends React.Component {
                             value={formValues.bank_account_no}
                             onChange={(event) => this.handleDefaultChange(event, 'bank_account_no')}
                             error={formErros.bank_account_no}
+                            onInput={(e) => validateInteger(e)}
                         />
                     </Grid>
                     <Grid item xs={4} className='create-input'>

@@ -20,7 +20,7 @@ import FilePreview from 'src/utils/FilePreview';
 import noImage from 'src/assets/images/no_image.jpg';
 import DataTable from 'src/utils/DataTable';
 import { gridSpacing } from 'store/constant';
-
+import { validateInteger, validateNumber } from '../../helpers/helper';
 
 
 
@@ -642,6 +642,7 @@ class AdminForm extends React.Component {
                                 startAdornment: <InputAdornment position="start">₹</InputAdornment>,
                                 className: "non_disable_text"
                             }}
+                            onInput={(e) => validateNumber(e)}
                         />
                     </Grid>
                     <Grid item xs={2.4} className='create-input'>
@@ -655,6 +656,7 @@ class AdminForm extends React.Component {
                                 startAdornment: <InputAdornment position="start">₹</InputAdornment>,
                                 className: "non_disable_text"
                             }}
+                            onInput={(e) => validateNumber(e)}
                         />
                     </Grid>
                     <Grid item xs={2.4} className='create-input'>
@@ -668,6 +670,7 @@ class AdminForm extends React.Component {
                                 startAdornment: <InputAdornment position="start">₹</InputAdornment>,
                                 className: "non_disable_text"
                             }}
+                            onInput={(e) => validateNumber(e)}
                         />
                     </Grid>
                     <Grid item xs={2.4} className='create-input'>
@@ -681,6 +684,7 @@ class AdminForm extends React.Component {
                                 startAdornment: <InputAdornment position="start">₹</InputAdornment>,
                                 className: "non_disable_text"
                               }}
+                            onInput={(e) => validateNumber(e)}
                         />
                     </Grid>
                 

@@ -51,6 +51,8 @@ import {
   displayAmount,
   isEmpty,
   calculateGST,
+  validateNumber,
+  validateInteger
 } from "src/helpers/helper";
 import { bindActionCreators } from "redux";
 import {
@@ -1716,7 +1718,7 @@ class PurchaseForm extends React.Component {
       productFormValues.product_type != "material" &&
       productFormValues.has_certificate
     ) {
-      if (isEmpty(productFormValues.certificate_no)) {
+      if (isEmpty(productFormValues.certificate_no) || productFormValues.certificate_no.startsWith("http") || !/^[A-Za-z0-9]+$/.test(productFormValues.certificate_no)) {
         productFormErros.certificate_no = true;
         hasErr = true;
       } else {
@@ -3055,7 +3057,7 @@ class PurchaseForm extends React.Component {
                               this.setState((prevState) => ({
                                 productFormValues: {
                                   ...prevState.productFormValues,
-                                  certificate_no: event.target.value,
+                                  certificate_no: event.target.value.trim(),
                                 },
                               }));
                               // Call the debounced function for API/processing
@@ -3260,6 +3262,7 @@ class PurchaseForm extends React.Component {
                                               variant="outlined"
                                               fullWidth
                                               value={item.quantity}
+                                              onInput={(e) => validateInteger(e)}
                                               onChange={(event) =>
                                                 this.handleMaterialFormChange(
                                                   event,
@@ -3277,6 +3280,7 @@ class PurchaseForm extends React.Component {
                                               variant="outlined"
                                               fullWidth
                                               value={item.weight}
+                                              onInput={(e) => validateNumber(e)}
                                               onChange={(event) =>
                                                 this.handleMaterialFormChange(
                                                   event,
@@ -3294,6 +3298,7 @@ class PurchaseForm extends React.Component {
                                                 label="Pakka"
                                                 variant="outlined"
                                                 fullWidth
+                                                onInput={(e) => validateNumber(e)}
                                                 value={item.pakka_weight}
                                                 onChange={(event) =>
                                                   this.handleMaterialFormChange(
@@ -3344,6 +3349,7 @@ class PurchaseForm extends React.Component {
                                               label="Rate"
                                               variant="outlined"
                                               fullWidth
+                                              onInput={(e) => validateNumber(e)}
                                               value={item.rate}
                                               onChange={(event) =>
                                                 this.handleMaterialFormChange(
@@ -3435,6 +3441,7 @@ class PurchaseForm extends React.Component {
                                       label="Quantity"
                                       variant="outlined"
                                       fullWidth
+                                      onInput={(e) => validateInteger(e)}
                                       value={item.quantity}
                                       onChange={(event) =>
                                         this.handleMaterialFormChange(
@@ -3452,6 +3459,7 @@ class PurchaseForm extends React.Component {
                                       label="Total Weight"
                                       variant="outlined"
                                       fullWidth
+                                      onInput={(e) => validateNumber(e)}
                                       value={item.weight}
                                       onChange={(event) =>
                                         this.handleMaterialFormChange(
@@ -3470,6 +3478,7 @@ class PurchaseForm extends React.Component {
                                         label="Pakka"
                                         variant="outlined"
                                         fullWidth
+                                        onInput={(e) => validateNumber(e)}
                                         value={item.pakka_weight}
                                         onChange={(event) =>
                                           this.handleMaterialFormChange(
@@ -3520,6 +3529,7 @@ class PurchaseForm extends React.Component {
                                       label="Rate"
                                       variant="outlined"
                                       fullWidth
+                                      onInput={(e) => validateNumber(e)}
                                       value={item.rate}
                                       onChange={(event) =>
                                         this.handleMaterialFormChange(
@@ -3603,6 +3613,7 @@ class PurchaseForm extends React.Component {
                       variant="outlined"
                       fullWidth
                       value={productFormValues.making_charge}
+                      onInput={(e) => validateNumber(e)}
                       onChange={(event) =>
                         this.updateProductMakingCharge(event)
                       }
@@ -3619,6 +3630,7 @@ class PurchaseForm extends React.Component {
                       variant="outlined"
                       fullWidth
                       value={productFormValues.rep}
+                      onInput={(e) => validateNumber(e)}
                       onChange={(event) =>
                         this.updateProductFormValues(event.target.value, "rep")
                       }
@@ -3637,6 +3649,7 @@ class PurchaseForm extends React.Component {
                           label="TAX%"
                           variant="outlined"
                           fullWidth
+                          onInput={(e) => validateNumber(e)}
                           value={
                             productFormValues.tax_percentage != 0
                               ? productFormValues.tax_percentage
