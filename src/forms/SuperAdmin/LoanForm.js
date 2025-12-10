@@ -6,6 +6,7 @@ import {Box, TextField, Button, Grid, Stack, FormControl, InputLabel, Select, Me
 import { ContactPageSharp } from '@mui/icons-material';
 import withRouter from 'src/helpers/withRouter';
 import { investorList } from 'actions/superadmin/investor.actions';
+import { validateInteger, validateNumber } from '../../helpers/helper';
 
 const validate = values => {
   const errors = {}
@@ -241,6 +242,7 @@ class LoanForm extends React.Component {
                   name="amount"
                   component={this.renderAmountField}
                   label="Loan Amount"
+                  onInput={(e) => validateNumber(e)}
                 />
               </Grid>
               <Grid item xs={3} className='create-input'>
@@ -248,6 +250,7 @@ class LoanForm extends React.Component {
                   name="interest"
                   component={this.renderInterestField}
                   label="Interest"
+                  onInput={(e) => validateNumber(e)}
                 />
               </Grid>
               <Grid item xs={3} className='create-input'>

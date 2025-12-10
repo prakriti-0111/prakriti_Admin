@@ -4,6 +4,7 @@ import { Box, TextField, Button, Grid, Link, InputAdornment } from '@mui/materia
 import { Link as ReactLink } from "react-router-dom";
 import Visibility from '@mui/icons-material/Visibility';
 import VisibilityOff from '@mui/icons-material/VisibilityOff';
+import { validateInteger, validateNumber } from '../../helpers/helper';
 
 const validate = values => {
   const errors = {}
@@ -53,6 +54,7 @@ let LoginForm = props => {
           name="mobile"
           component={renderTextField}
           label="Mobile"
+          onInput={(e) => validateInteger(e)}
         />
 
         <Field

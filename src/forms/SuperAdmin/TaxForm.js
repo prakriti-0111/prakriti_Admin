@@ -6,6 +6,7 @@ import {Box, TextField, Button, Grid, Stack, FormControl, InputLabel, Select, Me
 import { ContactPageSharp } from '@mui/icons-material';
 import withRouter from 'src/helpers/withRouter';
 import { priceFormat, isEmpty} from 'src/helpers/helper';
+import { validateInteger, validateNumber } from '../../helpers/helper';
 
 const validate = values => {
   const errors = {}
@@ -172,6 +173,7 @@ class TaxForm extends React.Component {
                         component={this.renderGSTField}
                         label="IGST"
                         onChange={this.handleIGST}
+                        onInput={(e) => validateNumber(e)}
                     />
                 </Grid>
               <Grid item xs={6} className='create-input'>
@@ -179,6 +181,7 @@ class TaxForm extends React.Component {
                         name="cgst"
                         component={this.renderGSTField}
                         label="CGST"
+                        onInput={(e) => validateNumber(e)}
                     />
                 </Grid>
            
@@ -188,6 +191,7 @@ class TaxForm extends React.Component {
                         name="sgst"
                         component={this.renderGSTField}
                         label="SGST"
+                        onInput={(e) => validateNumber(e)}
                     />
                 </Grid>
                 

@@ -5,6 +5,7 @@ import { bindActionCreators } from 'redux';
 import {Box, TextField, Button, Grid, Stack, FormControl, InputLabel, Select, MenuItem, FormHelperText, InputAdornment  } from '@mui/material';
 import { ContactPageSharp } from '@mui/icons-material';
 import withRouter from 'src/helpers/withRouter';
+import { validateInteger, validateNumber } from '../../helpers/helper';
 
 const validate = values => {
   const errors = {}
@@ -105,6 +106,7 @@ class LoanPaymentForm extends React.Component {
                   name="amount"
                   component={this.renderAmountField}
                   label="Amount"
+                  onInput={(e) => validateNumber(e)}
                 />
               </Grid>
               <Grid item xs={12} className='create-input'>

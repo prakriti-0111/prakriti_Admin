@@ -22,7 +22,7 @@ import { getRoleName, getUserDashboardRoute, displayAmount } from 'src/helpers/h
 import moment from 'moment';
 import { getMyPerformance } from 'actions/superadmin/my_performance.actions';
 import MainCard from 'ui-component/cards/MainCard';
-
+import { validateInteger, validateNumber } from '../../helpers/helper';
 
 class EmployeeEditForm extends React.Component {
 
@@ -522,6 +522,7 @@ class EmployeeEditForm extends React.Component {
                                     InputProps={{
                                         readOnly: true,
                                     }}
+                                    onInput={(e) => validateInteger(e)}
                                 />
                             </Grid>
                             <Grid item xs={2} className='create-input'>
@@ -552,6 +553,7 @@ class EmployeeEditForm extends React.Component {
                                     InputProps={{
                                         readOnly: true,
                                     }}
+                                    onInput={(e) => validateInteger(e)}
                                 />
                             </Grid>
                         </Grid>
@@ -712,6 +714,7 @@ class EmployeeEditForm extends React.Component {
                                         InputProps={{
                                             startAdornment: <InputAdornment position="start">₹</InputAdornment>,
                                         }}
+                                        onInput={(e) => validateNumber(e)}
                                     />
                                 </Grid>
 
@@ -726,6 +729,7 @@ class EmployeeEditForm extends React.Component {
                                         InputProps={{
                                             startAdornment: <InputAdornment position="start">₹</InputAdornment>,
                                         }}
+                                        onInput={(e) => validateNumber(e)}
                                     />
                                 </Grid>
 
@@ -785,6 +789,7 @@ class EmployeeEditForm extends React.Component {
                                             endAdornment: <InputAdornment position="end">%</InputAdornment>,
                                         }}
                                         InputLabelProps={{ shrink: true }}  
+                                        onInput={(e) => validateNumber(e)}
                                     />
                                 </Grid>
                                 <Grid item xs={2} className='create-input'>
@@ -799,6 +804,7 @@ class EmployeeEditForm extends React.Component {
                                             endAdornment: <InputAdornment position="end">%</InputAdornment>,
                                         }}
                                         InputLabelProps={{ shrink: true }}  
+                                        onInput={(e) => validateNumber(e)}
                                     />
                                 </Grid>
                                 <Grid item xs={2} className='create-input'>
@@ -813,6 +819,7 @@ class EmployeeEditForm extends React.Component {
                                             endAdornment: <InputAdornment position="end">%</InputAdornment>,
                                         }}
                                         InputLabelProps={{ shrink: true }}  
+                                        onInput={(e) => validateNumber(e)}
                                     />
                                 </Grid>
                                 <Grid item xs={2} className='create-input'>
@@ -827,6 +834,7 @@ class EmployeeEditForm extends React.Component {
                                             endAdornment: <InputAdornment position="end">%</InputAdornment>,
                                         }}
                                         InputLabelProps={{ shrink: true }}  
+                                        onInput={(e) => validateNumber(e)}
                                     />
                                 </Grid>
                                 <Grid item xs={2} className='create-input'>
@@ -841,6 +849,7 @@ class EmployeeEditForm extends React.Component {
                                             endAdornment: <InputAdornment position="end">%</InputAdornment>,
                                         }}
                                         InputLabelProps={{ shrink: true }}  
+                                        onInput={(e) => validateNumber(e)}
                                     />
                                 </Grid>
                                 <Grid item xs={2} className='create-input'>
@@ -854,7 +863,8 @@ class EmployeeEditForm extends React.Component {
                                         InputProps={{
                                             endAdornment: <InputAdornment position="end">%</InputAdornment>,
                                         }}
-                                        InputLabelProps={{ shrink: true }}  
+                                        InputLabelProps={{ shrink: true }} 
+                                        onInput={(e) => validateNumber(e)} 
                                     />
                                 </Grid>
 
@@ -870,6 +880,7 @@ class EmployeeEditForm extends React.Component {
                                             startAdornment: <InputAdornment position="start">₹</InputAdornment>,
                                             endAdornment: <InputAdornment position="end">/Month</InputAdornment>,
                                         }}
+                                        onInput={(e) => validateInteger(e)}
                                     />
                                 </Grid>
 
@@ -884,6 +895,7 @@ class EmployeeEditForm extends React.Component {
                                         InputProps={{
                                             endAdornment: <InputAdornment position="end">/Month</InputAdornment>
                                         }}
+                                        onInput={(e) => validateInteger(e)}
                                     />
                                 </Grid>
                                 {
@@ -900,6 +912,7 @@ class EmployeeEditForm extends React.Component {
                                             InputProps={{
                                                 endAdornment: <InputAdornment position="end">%</InputAdornment>,
                                             }}
+                                            onInput={(e) => validateNumber(e)} 
                                         />
                                     </Grid>
                                     <Grid item xs={2} className='create-input'>

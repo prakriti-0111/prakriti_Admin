@@ -14,7 +14,7 @@ import { withSnackbar } from 'notistack';
 const { updateSyncErrors } = require('redux-form/lib/actions').default;
 import LoadingButton from '@mui/lab/LoadingButton';
 import withRouter from 'src/helpers/withRouter';
-import { getRoleName, getUserDashboardRoute } from 'src/helpers/helper';
+import { getRoleName, getUserDashboardRoute, validateNumber } from 'src/helpers/helper';
 import _ from 'lodash';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { Table, TableHead } from '@mui/material';
@@ -529,6 +529,7 @@ class PromocodeForm extends React.Component {
                 name="discount"
                 component={this.renderTextField}
                 label="Discount"
+                onInput={(e) => validateNumber(e)}
               />
             </Grid>
             <Grid item xs={2} className='create-input'>

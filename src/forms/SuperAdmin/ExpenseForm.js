@@ -13,7 +13,7 @@ import withRouter from 'src/helpers/withRouter';
 import moment from 'moment';
 import { salesExecutiveList } from 'actions/superadmin/salesExecutive.actions';
 import {isSuperAdmin, isDistributor } from 'src/helpers/helper';
-
+import { validateInteger, validateNumber } from '../../helpers/helper';
 
 const validate = values => {
   const errors = {}
@@ -374,6 +374,7 @@ class ExpenseForm extends React.Component {
                   component={this.renderTextField}
                   label="Amount"
                   amount={this.state.amount}
+                  onInput={(e) => validateNumber(e)}
                 />
               </Grid>
               {
