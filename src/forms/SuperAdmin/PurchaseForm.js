@@ -1202,8 +1202,16 @@ class PurchaseForm extends React.Component {
       selectedMaterials[groupKey] = currentSelectedMaterials;
       productFormValues.selected_grp_materials = selectedMaterials;
       console.log("Selected Materials after update: ", Object.values(productFormValues.selected_grp_materials).flat());
-      productFormValues.materials = Object.values(productFormValues.selected_grp_materials).flat();
-
+      //productFormValues.materials = Object.values(productFormValues.selected_grp_materials).flat();
+      let newSelectedMaterials = Object.values(productFormValues.selected_grp_materials).flat();
+      productFormValues.materials = newSelectedMaterials.map((itm, i) => {
+        let findItem = productFormValues.materials.filter(m => m.material_id == itm.material_id);
+        if(findItem.length > 0){
+            return findItem[0];
+        } else {
+            return itm;
+        }
+      });
     } else if(key == "actual_product_materials"){
       productFormValues.materials = val;
     }
@@ -3237,6 +3245,7 @@ class PurchaseForm extends React.Component {
                                                 disabled={this.isMaterialFormDisabled()}
                                               >
                                                 <MenuItem value=""></MenuItem>
+                                                {console.log("item here : ", item, item.purities)}
                                                 {item.purities.map((item, index) => (
                                                   <MenuItem value={item.id} key={index}>
                                                     {item.name}{" "}
