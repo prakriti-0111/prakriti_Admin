@@ -270,12 +270,16 @@ class StockProductBannerForm extends React.Component {
         multi="true"
         renderValue={(selected) => this.getSelectedProductNames(selected).join(", ")}
       >
-        {this.state.stockProductList.map((item) => (
+        {this.state.stockProductList.map((item) => {
+          console.log("formData.products : ", this.state.formData.products);
+          console.log("input.value : ", input.value);
+          return (
           <MenuItem key={item.id} value={item.id} className='multi-select'>
             <Checkbox checked={(input.value && input.value.indexOf(item.id) > -1) ? true : false} />
+            <img src={item.image} id="product-img" style={{height: '100px', width: '100px'}} />
             <ListItemText primary={item.certificate_no} />
-          </MenuItem>
-        ))}
+          </MenuItem>);
+        })}
 
       </Select>
       {
