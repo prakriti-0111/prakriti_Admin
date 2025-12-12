@@ -273,12 +273,16 @@ class SaleForm extends React.Component {
       isCreateFrom: !formData,
 
       adminList: this.props.adminList,
+      adminListApiCall: false,
 
       retailerList: this.props.retailerList,
+      retailerListApiCall: false,
 
       distributorList: this.props.distributorList,
+      distributorListApiCall: false,
 
       salesExecutiveList: this.props.salesExecutiveList,
+      salesExecutiveListApiCall: false,
 
       productList: this.props.productList,
 
@@ -293,6 +297,9 @@ class SaleForm extends React.Component {
       subCategoryList: this.props.subCategoryList,
 
       supplierList: this.props.supplierList,
+      supplierListApiCall: false,
+
+      loadSaleOnApprovalApiCall: false,
 
       materialList: [],
 
@@ -337,6 +344,8 @@ class SaleForm extends React.Component {
         total_payable: "",
 
         paid_amount: "",
+
+        already_paid_amount: 0,
 
         due_amount: "",
 
@@ -652,7 +661,7 @@ class SaleForm extends React.Component {
 
 
 
-  componentDidMount() {
+  async componentDidMount() {
 
     if (this.isSuperAdmin) {
 
@@ -698,23 +707,23 @@ class SaleForm extends React.Component {
 
     }
 
-    this.loadReportCharge();
+    await this.loadReportCharge();
 
     if (this.state.formData) {
 
       this.initializeFormData();
 
-    } else {
+    } else {  
 
-      this.loadCart();
+      await this.loadCart();
 
-      this.loadSaleOnApproval();
+      //await this.loadSaleOnApproval();
 
     }
 
 
 
-    this.loadProfile();
+    await this.loadProfile();
 
     
 
@@ -852,15 +861,22 @@ class SaleForm extends React.Component {
 
               ...this.state.formValues,
 
-              paid_amount: res.data.data.paid_amount
+              /* paid_amount: res.data.data.paid_amount
 
                 ? res.data.data.paid_amount
 
-                : "",
+                : "", */
+
+              already_paid_amount: res.data.data.paid_amount
+
+                ? res.data.data.paid_amount
+
+                : 0,
 
               user_id: res.data.data.user_id,
 
             },
+            loadSaleOnApprovalApiCall: true
 
           },
 
@@ -869,7 +885,7 @@ class SaleForm extends React.Component {
             this.handleCalculateMainPrice();
 
             setTimeout(() => {
-
+              
               this.handleAdminChange("", res.data.data.user_id);
 
             }, 1000);
@@ -1254,6 +1270,7 @@ class SaleForm extends React.Component {
     if (props.adminList !== state.adminList) {
 
       update.adminList = props.adminList;
+      update.adminListApiCall = true;
 
     }
 
@@ -1332,19 +1349,20 @@ class SaleForm extends React.Component {
     if (props.distributorList !== state.distributorList) {
 
       update.distributorList = props.distributorList;
+      update.distributorListApiCall = true;
 
     }
 
     if (props.retailerList !== state.retailerList) {
 
       update.retailerList = props.retailerList;
-
+      update.retailerListApiCall = true;
     }
 
     if (props.salesExecutiveList !== state.salesExecutiveList) {
 
       update.salesExecutiveList = props.salesExecutiveList;
-
+      update.salesExecutiveListApiCall = true;
     }
 
     if (props.auth !== state.auth) {
@@ -1356,7 +1374,7 @@ class SaleForm extends React.Component {
     if (props.employeeList !== state.employeeList) {
 
       update.employeeList = props.employeeList;
-
+      update.employeeListApiCall = true;
     }
 
     if (props.formData !== state.formData) {
@@ -1368,7 +1386,7 @@ class SaleForm extends React.Component {
     if (props.supplierList !== state.supplierList) {
 
       update.supplierList = props.supplierList;
-
+      update.supplierListApiCall = true;
     }
 
     return update;
@@ -1377,24 +1395,43 @@ class SaleForm extends React.Component {
 
 
 
-  componentDidUpdate(prevProps) {
+  async componentDidUpdate(prevProps, prevState) {
 
     if (this.props.formData != prevProps.formData) {
 
       this.initializeFormData();
 
-    } else {
+    } else { 
+      let canLoadSaleOnApproval = false;
 
-      if (
+      if (this.isSuperAdmin) {
+        if(this.state.adminList.length > 0 && this.state.employeeList.length > 0){
+          canLoadSaleOnApproval = true;
+        }
+      } else if (this.isAdmin) {
+        if(this.state.distributorList.length > 0 && this.state.salesExecutiveList.length > 0 && this.state.supplierList.length > 0){
+          canLoadSaleOnApproval = true;
+        }
+      } else if (this.isDistributor) {
+        if(this.state.retailerList.length > 0 && this.state.salesExecutiveList.length > 0 && this.state.supplierList.length > 0){
+          canLoadSaleOnApproval = true;
+        }
+      } else if (this.isSalesExecutive) {
+        console.log("this.state.adminListApiCall : ",this.state.adminListApiCall," this.state.retailerListApiCall : ", this.state.retailerListApiCall, " this.state.distributorListApiCall : ",this.state.distributorListApiCall," this.state.salesExecutiveListApiCall : ", this.state.salesExecutiveListApiCall);
+        //alert("componentDidUpdate");
+        
+        if(this.state.adminListApiCall && this.state.retailerListApiCall && this.state.distributorListApiCall && this.state.salesExecutiveListApiCall){
+          canLoadSaleOnApproval = true;
+        }
+      }
 
-        this.props.query.get("sale_on_approval") !=
+      if(canLoadSaleOnApproval){
+        //alert("loadSaleOnApproval");
+        if (!isEmpty(this.props.query.get("sale_on_approval")) && !this.state.loadSaleOnApprovalApiCall) {
 
-        prevProps.query.get("sale_on_approval")
+          await this.loadSaleOnApproval();
 
-      ) {
-
-        this.loadSaleOnApproval();
-
+        }
       }
 
     }
@@ -1672,13 +1709,13 @@ class SaleForm extends React.Component {
     this.updateFormValues(val, "user_id");
 
     let userList = this.getUserList();
-
+    console.log("userList : ", userList);
     let m = _.filter(userList, { id: val });
 
     let user_gst_no = "",
 
       advance_amount = 0;
-
+    console.log("m : ", m);
     if (m.length) {
 
       user_gst_no = m[0].gst;
@@ -1702,7 +1739,7 @@ class SaleForm extends React.Component {
       advance_amount = advnc_amt;
 
     }
-
+    
     this.setState(
 
       {
@@ -2812,13 +2849,19 @@ class SaleForm extends React.Component {
 
     }
 
-    total_payable = priceFormat(total_amount - discount, true);
+    if(!isEmpty(this.props.query.get("sale_on_approval"))){
+      total_payable = priceFormat(total_amount - discount - formValues.already_paid_amount, true);
+    } else {
+      total_payable = priceFormat(total_amount - discount, true);
+    }
 
     if (!isEmpty(formValues.paid_amount)) {
 
       paid_amount = parseFloat(formValues.paid_amount);
 
     }
+
+
 
     let advance_amount = formValues.advance_amount
 
@@ -8489,6 +8532,61 @@ class SaleForm extends React.Component {
 
                     </Grid>
 
+                    {!isEmpty(this.props.query.get("sale_on_approval")) && 
+                      <Grid item xs={12} className='pt-5'>
+
+                        <Grid
+
+                          container
+
+                          spacing={2}
+
+                          columnSpacing={{ xs: 1, sm: 2, md: 2 }}
+
+                          className='display_center justify-content-end'>
+
+                          <Grid item xs={4} md={6} className='text-right pt-0'>
+
+                            <span className='tax-text'>Already Paid Amount</span>
+
+                          </Grid>
+
+                          <Grid item xs={5} md={6} className='pt-0'>
+
+                            <TextField
+
+                              className='ft-amount'
+
+                              fullWidth
+
+                              value={formValues.already_paid_amount}
+
+                              disabled
+
+                              InputProps={{
+
+                                startAdornment: (
+
+                                  <InputAdornment position='start'>
+
+                                    ₹
+
+                                  </InputAdornment>
+
+                                ),
+
+                                className: "non_disable_text",
+
+                              }}
+
+                            />
+
+                          </Grid>
+
+                        </Grid>
+
+                      </Grid>
+                    }
 
 
                     <Grid item xs={12} className='pt-5'>
@@ -9754,7 +9852,21 @@ class SaleForm extends React.Component {
 
             </Grid>
 
-          ) : null}
+          ) : (!isEmpty(this.props.query.get("sale_on_approval"))?<Stack
+
+                  spacing={1}
+
+                  direction='row'
+
+                  className='ratn-footer-buttons'
+
+                  justifyContent='flex-end'
+
+                  style={{ paddingRight: "16px", paddingBottom: "16px" }}>
+
+                  <CircularProgress size='30px' />
+
+                </Stack>:null)}
 
         </Grid>
 
