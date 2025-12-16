@@ -255,8 +255,12 @@ export const purchaseDownloadInvoiceInfo = (id) => {
     return axios.post(`/superadmin/purchases/download-invoice-info/${id}`);
 }
 
-export const purchaseDownloadInvoiceItems = (id) => {
-    return axios.post(`/superadmin/purchases/download-invoice-items/${id}`);
+export const purchaseDownloadInvoiceItemList = (id) => {
+    return axios.post(`/superadmin/purchases/download-invoice-item-list/${id}`);
+}
+
+export const purchaseDownloadInvoiceItemDetails = (id) => {
+    return axios.post(`/superadmin/purchases/download-invoice-item-details/${id}`);
 }
 
 export const purchaseDownloadLedger = (params) => {

@@ -300,6 +300,24 @@
     }
   }
 
+  @media screen and (max-width: 767px) {
+    .download-text {
+      font-size: 10px;
+    }
+
+    .MuiCardHeader-action .MuiButton-containedPrimary {
+        border-radius: 25px;
+        background-color: #1e2746;
+        color: #fff !important;
+        padding: 8px 12px;
+        min-width: 55px;
+    }
+
+    #downloadViewSale .action_btn button svg {
+        font-size: 15px !important;
+    }
+  }
+
   @media (min-width: 768px) and (max-width: 1365px) {
     .ratn-content {
       margin-left: 0px; 

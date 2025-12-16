@@ -27,7 +27,8 @@ import {
   salesView,
   salesDownloadInvoice,
   salesDownloadInvoiceInfo,
-  salesDownloadInvoiceItems,
+  salesDownloadInvoiceItemList,
+  salesDownloadInvoiceItemDetails,
 } from "actions/superadmin/sales.actions";
 import { bindActionCreators } from "redux";
 import { Table, TableHead } from "@mui/material";
@@ -87,6 +88,7 @@ class SaleViewPage extends React.Component {
       },
       auth: this.props.auth,
       downloadingInfo: false,
+      downloadingList: false,
       downloadingItem: false,
     };
 
@@ -185,12 +187,50 @@ class SaleViewPage extends React.Component {
     }
   };
 
+  handleDownloadList = async (id) => {
+    this.setState({
+      downloadingList: true,
+    });
+
+    let response = await salesDownloadInvoiceItemList(id);
+    if (response.data.success) {
+      this.setState(
+        {
+          downloadingList: false,
+        },
+        () => {
+          window.open(response.data.data.url, "_blank").focus();
+        }
+      );
+
+      /*var xhr = new XMLHttpRequest();
+      xhr.responseType = 'blob';
+      xhr.onload = (event) => {
+        var blob = xhr.response;
+        var downloaded = document.createElement('a');
+        var downloadedurl = window.URL.createObjectURL(blob);
+        downloaded.href = downloadedurl;
+        downloaded.download = response.data.data.file_name;
+        document.body.append(downloaded);
+        downloaded.click();
+        downloaded.remove();
+        window.URL.revokeObjectURL(downloadedurl);
+      };
+      xhr.open('GET', response.data.data.url);
+      xhr.send();*/
+    } else {
+      this.setState({
+        downloadingList: false,
+      });
+    }
+  };
+
   handleDownloadItems = async (id) => {
     this.setState({
       downloadingItem: true,
     });
 
-    let response = await salesDownloadInvoiceItems(id);
+    let response = await salesDownloadInvoiceItemDetails(id);
     if (response.data.success) {
       this.setState(
         {
@@ -465,7 +505,7 @@ class SaleViewPage extends React.Component {
   };
 
   render() {
-    const { sale, formValues, formErros, downloadingInfo, downloadingItem } =
+    const { sale, formValues, formErros, downloadingInfo, downloadingItem, downloadingList } =
       this.state;
     let metalPurityList = [];
         if(this.state.materialStocks.length > 0 && isSuperAdmin && isAdmin && formValues.payment_mode == "metal"){
@@ -502,7 +542,7 @@ class SaleViewPage extends React.Component {
         }
         secondary={
           <>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginLeft: "10px" }}>
             {downloadingInfo ? (
               <CircularProgress size='30px' />
             ) : (
@@ -511,7 +551,7 @@ class SaleViewPage extends React.Component {
                 onClick={() =>
                   this.handleDownloadInfo(this.props.params.id)
                 }>
-                <FileDownloadIcon />
+                <span className="download-text">Invoice</span><FileDownloadIcon />
               </Button>
             )}
             <Button variant='contained' onClick={() => this.props.navigate(-1)}>
@@ -799,10 +839,24 @@ class SaleViewPage extends React.Component {
               container
               spacing={{ xs: 2, md: 3 }}
               >
-              <Grid item xs={8} md={10} sm={9}>
+              <Grid item xs={4} md={2} sm={2} className='action_btn'>
+                {downloadingList ? (
+                  <CircularProgress size='30px' />
+                ) : (
+                  <Button
+                    variant='contained'
+                   
+                    onClick={() =>
+                      this.handleDownloadList(this.props.params.id)
+                    }>
+                    <span className="download-text">List</span><FileDownloadIcon size='20px'/>
+                  </Button>
+                )}
+              </Grid>
+              <Grid item xs={4} md={8} sm={8}>
                 <h3 className='p_heading_list text-center'>Product List</h3>
               </Grid>
-              <Grid item xs={4} md={2} sm={3} className='action_btn'>
+              <Grid item xs={4} md={2} sm={2} className='action_btn'>
                 {downloadingItem ? (
                   <CircularProgress size='30px' />
                 ) : (
@@ -812,7 +866,7 @@ class SaleViewPage extends React.Component {
                     onClick={() =>
                       this.handleDownloadItems(this.props.params.id)
                     }>
-                    <FileDownloadIcon size='20px'/>
+                    <span className="download-text">Details</span><FileDownloadIcon size='20px'/>
                   </Button>
                 )}
               </Grid>
