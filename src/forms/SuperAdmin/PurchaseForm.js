@@ -56,11 +56,14 @@ import {
 } from "src/helpers/helper";
 import { bindActionCreators } from "redux";
 import {
+  purchasePreStore,
   purchaseStore,
   purchaseUpdate,
   purchaseNewInvoiceNumber,
   purchaseReturn,
   purchaseRawEdit,
+  purchasePreStoreList,
+  prePurchaseDelete
 } from "actions/superadmin/purchase.actions";
 import { employeeList } from "actions/superadmin/employee.actions";
 import { supplierList } from "actions/superadmin/supplier.actions";
@@ -135,6 +138,7 @@ class PurchaseForm extends React.Component {
       isReturnForm: this.props.isReturnForm,
       supplierList: this.props.supplierList,
       productList: this.props.productList,
+      prePurchaseItems: this.props.prePurchaseItems,
       workerList: this.props.workerList,
       unitList: this.props.unitList,
       categoryList: this.props.categoryList,
@@ -151,7 +155,7 @@ class PurchaseForm extends React.Component {
         supplier_id: "",
         invoice_number: "",
         invoice_date: moment().format("MM/DD/YYYY"),
-        products: [],
+        products: this.props.prePurchaseItems || [],
         notes: "",
         payment_mode: "cash",
         transaction_no: "",
@@ -232,6 +236,7 @@ class PurchaseForm extends React.Component {
   }
 
   componentDidMount() {
+    this.props.actions.purchasePreStoreList({ all: 1 });
     this.props.actions.productList({ all: 1, purity_price: 1 });
     this.props.actions.categoryList({ all: 1 });
     this.props.actions.supplierList({ all: 1 });
@@ -668,6 +673,9 @@ class PurchaseForm extends React.Component {
     if (props.productList !== state.productList) {
       update.productList = props.productList;
     }
+    if (props.prePurchaseItems !== state.prePurchaseItems) {
+      update.prePurchaseItems = props.prePurchaseItems;
+    }
     if (props.workerList !== state.workerList) {
       update.workerList = props.workerList;
     }
@@ -737,9 +745,22 @@ class PurchaseForm extends React.Component {
     );
   };
 
-  componentDidUpdate(prevProps) {
+  componentDidUpdate(prevProps, prevState) {
     if (this.props.formData != prevProps.formData) {
       this.initializeFormData();
+    }
+
+    if(this.state.prePurchaseItems != prevState.prePurchaseItems){
+      this.setState(
+        {
+          formValues: {
+            ...this.state.formValues,
+            products: this.state.prePurchaseItems || [],
+          },
+        }, () => {
+          this.handleCalculateMainPrice();
+        }
+      );
     }
 
     if (
@@ -1673,6 +1694,26 @@ class PurchaseForm extends React.Component {
         ...this.state.productFormValues,
         current_image: this.state.current_image[0]?.data_url,
       };
+
+      /* save product into api */
+      console.log("Saving product to API:", this.state.formValues.products);
+      try {
+        let savedProduct = await purchasePreStore(_data);
+        console.log("Product saved successfully:", savedProduct);
+        /* save purchasePreSave record id in formValues.product seleted item */
+        
+        _data.id = savedProduct.data.data.id;
+        console.log("Saved product record ID:", _data.id);
+      } catch (error) {
+        console.error("Error saving product:", error);
+        return this.props.enqueueSnackbar(
+          "An error occurred while saving the product.",
+          {
+            variant: "error",
+          }
+        );
+      }
+
       // console.log("this hdkh", this.state.productFormValues);
       let products = [...formValues.products];
 
@@ -1846,6 +1887,11 @@ class PurchaseForm extends React.Component {
 
   handleDeleteConfirm = () => {
     let formValues = this.state.formValues;
+    let proIdxData = formValues.products.find(
+      (item, index) => index === this.state.deletingIndex
+    );
+    console.log("proIdxData : ", proIdxData);
+    this.props.actions.prePurchaseDelete(proIdxData.id);
     formValues.products.splice(this.state.deletingIndex, 1);
     this.setState(
       {
@@ -1959,6 +2005,7 @@ class PurchaseForm extends React.Component {
           return_sale_id: return_sale_data ? return_sale_data.id : "",
         };
         this.props.actions.purchaseStore(data);
+        this.props.actions.prePurchaseDelete("all");
       } else {
         this.props.actions.purchaseUpdate(
           this.state.formData.id,
@@ -2430,8 +2477,8 @@ class PurchaseForm extends React.Component {
     const actionProduct = formValues.products.length
       ? formValues.products[actionProductIndex]
       : null;
-
-    console.log("QR code data------", this.state.qrScanner);
+    console.log("formValues.products : ------", formValues.products);
+    console.log("QR code data : ------", this.state.qrScanner);
     console.log("productFormValues.materials", productFormValues.materials);
     let total_report_charge_amount = 0;
     let total_report_charge_tax_amount = 0;
@@ -5364,6 +5411,7 @@ const mapStateToProps = (state) => ({
   materialList: state.superadmin.material.items,
   workerList: state.superadmin.employee.items,
   unitList: state.superadmin.unit.items,
+  prePurchaseItems: state.superadmin.purchase.pre_purchase_items,
   actionCalled: state.superadmin.purchase.actionCalled,
   createSuccess: state.superadmin.purchase.createSuccess,
   editSuccess: state.superadmin.purchase.editSuccess,
@@ -5378,6 +5426,8 @@ const mapDispatchToProps = (dispatch) => ({
   dispatch,
   actions: bindActionCreators(
     {
+      purchasePreStoreList,
+      prePurchaseDelete,
       purchaseStore,
       purchaseUpdate,
       supplierList,
