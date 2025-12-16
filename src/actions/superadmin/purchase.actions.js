@@ -10,6 +10,7 @@ import {
     LIST_PURCHASE_ON_APPROVE,
     GET_PURCHASE_ON_APPROVE,
     UPDATE_PURCHASE_STATUS,
+    LIST_PURCHASE_PRE_STORE
 } from '../../actionTypes/superadmin/purchase.types';
 import {objectToQuery} from 'src/helpers/helper';
 
@@ -113,6 +114,36 @@ export const purchaseCreate = (params) => {
     }
 }
 
+export const purchasePreStore = async (data) => {
+    console.log("---purchasePreStore",data)
+    return await axios.post("/superadmin/purchases/pre-store", data);
+    /* return (dispatch) => {
+        axios.post("/superadmin/purchases/pre-store", data)
+        .then(response => {
+            
+        })
+        .catch(error => {
+        })
+    } */
+}
+
+export const purchasePreStoreList = (params) => {
+    params = objectToQuery(params, true)
+    return (dispatch) => {
+        axios.get(`/superadmin/purchases/pre-store-list${params}`)
+        .then(response => {
+            if(response.data.success){
+                dispatch({
+                    type: LIST_PURCHASE_PRE_STORE,
+                    payload: response.data.data
+                });
+            }
+        })
+        .catch(error => {
+        })
+    }
+}
+
 export const purchaseStore = (data) => {
     console.log("---purchaseStore",data)
     return (dispatch) => {
@@ -184,6 +215,17 @@ export const purchaseDelete = (id, data) => {
                 type: DELETE_PURCHASE,
                 payload: response.data
             });
+        })
+        .catch(error => {
+        })
+    }
+}
+
+export const prePurchaseDelete = (id, data) => {
+    return (dispatch) => {
+        axios.delete(`/superadmin/purchases/pre-purchase-delete/${id}`, data)
+        .then(response => {
+            
         })
         .catch(error => {
         })
