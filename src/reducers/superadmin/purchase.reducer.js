@@ -10,10 +10,12 @@ import {
      LIST_PURCHASE_ON_APPROVE,
     GET_PURCHASE_ON_APPROVE,
     UPDATE_PURCHASE_STATUS,
+    LIST_PURCHASE_PRE_STORE
 } from '../../actionTypes/superadmin/purchase.types';
 
 const initialState = {
     items: [],
+    pre_purchase_items: [],
     total: 0,
     purchase: null,
     actionCalled: false,
@@ -42,6 +44,11 @@ export default function (state = initialState, action) {
                 ...state,
                 ...payload
             }    
+        case LIST_PURCHASE_PRE_STORE:
+            return {
+                ...state,
+                ...payload
+            }
         case ADD_PURCHASE:
             return {
                 ...state,
