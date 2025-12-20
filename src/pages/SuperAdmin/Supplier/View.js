@@ -36,6 +36,7 @@ import Paper from "@mui/material/Paper";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
 import RemoveRedEyeIcon from "@mui/icons-material/RemoveRedEye";
+import FileDownloadIcon from "@mui/icons-material/FileDownload";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
@@ -238,6 +239,14 @@ class SupplierViewPage extends React.Component {
       openDialog: true,
       ...this.defaultFormValues(),
     });
+  };
+
+  handleInvoiceDownloadView = (row) => {
+    this.props.navigate(
+      getUserDashboardRoute(getRoleName(this.state.auth)) +
+        "/purchases/download-view/" +
+        row.id
+    );
   };
 
   handlePayNow = () => {
@@ -630,6 +639,7 @@ class SupplierViewPage extends React.Component {
                             editAction={this.handleInvoiceEdit}
                             returnAction={this.handleInvoiceReturn}
                             payAction={this.handleInvoicePay}
+                            downloadAction={this.handleInvoiceDownloadView}
                           />
                         ))}
                       </TableBody>
@@ -946,6 +956,7 @@ function Row(props) {
     editAction,
     payAction,
     returnAction,
+    downloadAction
   } = props;
   const [open, setOpen] = React.useState(false);
 
@@ -1032,6 +1043,12 @@ function Row(props) {
                 Pay
               </Button>
             ) : null}
+            <Button
+              variant='contained'
+              color='primary'
+              onClick={() => downloadAction(row)}>
+              <FileDownloadIcon />
+            </Button>
           </Stack>
         </TableCell>
       </TableRow>

@@ -305,6 +305,14 @@ class DistrubutorViewPage extends React.Component {
     });
   };
 
+  handleInvoiceDownloadView = (row) => {
+    this.props.navigate(
+        getUserDashboardRoute(getRoleName(this.state.auth)) +
+        "/sales/download-view/" +
+        row.id
+    );
+  };
+
   handlePayNow = () => {
     this.setState({
       openDialog: true,
@@ -906,8 +914,9 @@ class DistrubutorViewPage extends React.Component {
                                   limit={this.state.queryParams.limit}
                                   index={i}
                                   viewAction={this.handleInvoiceView}
-                                  downloadAction={this.handleInvoiceDownload}
+                                  // downloadAction={this.handleInvoiceDownload}
                                   payAction={this.handleInvoicePay}
+                                  downloadAction={this.handleInvoiceDownloadView}
                                 />
                               ))}
                             </TableBody>
