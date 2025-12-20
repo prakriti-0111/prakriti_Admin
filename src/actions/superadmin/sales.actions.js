@@ -205,6 +205,18 @@ export const salesDownloadInvoiceItemDetails = (id) => {
     return axios.post(`/superadmin/sales/download-invoice-item-details/${id}`);
 }
 
+export const salesOnApprovalDownloadInvoiceInfo = (id) => {
+    return axios.post(`/superadmin/sales-on-approve/download-invoice-info/${id}`);
+}
+
+export const salesOnApprovalDownloadInvoiceItemList = (id) => {
+    return axios.post(`/superadmin/sales-on-approve/download-invoice-item-list/${id}`);
+}
+
+export const salesOnApprovalDownloadInvoiceItemDetails = (id) => {
+    return axios.post(`/superadmin/sales-on-approve/download-invoice-item-details/${id}`);
+}
+
 export const salesViewRaw = (id) => {
     return axios.get(`/superadmin/sales/view/${id}`)
 }
