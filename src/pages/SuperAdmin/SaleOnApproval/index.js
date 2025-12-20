@@ -244,6 +244,10 @@ class SaleOnApprovePage extends Component {
     this.props.actions.salesList(data);
   };
 
+  handleDownloadView = (row) => {
+    this.props.navigate('download-view/' + row.id);
+  }
+
   handleDownload = async (row) => {
     let response = await salesDownloadInvoice(row.id);
     if (response.data.success) {
@@ -467,6 +471,12 @@ class SaleOnApprovePage extends Component {
                   "sale_on_approval",
                   "view"
                 ),
+              },
+              {
+                label: 'Download',
+                onClick: this.handleDownloadView,
+                color: 'primary',
+                show: hasPermission(this.state.permissions, 'sale_on_approval', 'view')
               },
             ]}
           />

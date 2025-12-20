@@ -176,6 +176,24 @@ export const purchaseView = (id) => {
     }
 }
 
+export const purchaseOnApprovalView = (id) => {
+    return (dispatch) => {
+        axios.get(`/superadmin/purchases-on-approve/view/${id}`)
+        .then(response => {
+            console.log(response.data.data)
+            if(response.data.success){
+                dispatch({
+                    type: GET_PURCHASE,
+                    payload: response.data.data
+                });
+            }
+        })
+        .catch(error => {
+        })
+    }
+}
+
+
 export const purchaseEdit = (id) => {
     return (dispatch) => {
         axios.get(`/superadmin/purchases/edit/${id}`)
@@ -261,6 +279,18 @@ export const purchaseDownloadInvoiceItemList = (id) => {
 
 export const purchaseDownloadInvoiceItemDetails = (id) => {
     return axios.post(`/superadmin/purchases/download-invoice-item-details/${id}`);
+}
+
+export const purchaseOnApprovalDownloadInvoiceInfo = (id) => {
+    return axios.post(`/superadmin/purchases-on-approve/download-invoice-info/${id}`);
+}
+
+export const purchaseOnApprovalDownloadInvoiceItemList = (id) => {
+    return axios.post(`/superadmin/purchases-on-approve/download-invoice-item-list/${id}`);
+}
+
+export const purchaseOnApprovalDownloadInvoiceItemDetails = (id) => {
+    return axios.post(`/superadmin/purchases-on-approve/download-invoice-item-details/${id}`);
 }
 
 export const purchaseDownloadLedger = (params) => {
