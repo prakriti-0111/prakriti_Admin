@@ -55,6 +55,7 @@ import ReplayIcon from "@mui/icons-material/Replay";
 import { fontSize } from "@mui/system";
 import SearchIcon from "@mui/icons-material/Search";
 import { getRoleName, getUserDashboardRoute } from "src/helpers/helper";
+import { distributorFetch } from "actions/superadmin/distributor.actions";
 import { getNotifiactions } from "actions/superadmin/notification.actions";
 import FileDownloadIcon from "@mui/icons-material/FileDownload";
 import ClearIcon from '@mui/icons-material/Clear';
@@ -65,6 +66,7 @@ class DistributorInvoiceTransactionLedgerPage extends React.Component  {
 
         this.state = {
           auth: this.props.auth,
+          item: this.props.item,
           saleList: this.props.saleList,
           saleTotal: this.props.saleTotal,
           queryParams: {
@@ -85,7 +87,12 @@ class DistributorInvoiceTransactionLedgerPage extends React.Component  {
     }
 
     loadAllData = () => {
+      this.loadViewData();
       this.loadSalesData();
+    };
+
+    loadViewData = () => {
+      this.props.actions.distributorFetch(this.props.params.id);
     };
 
     loadSalesData = () => {
@@ -104,7 +111,10 @@ class DistributorInvoiceTransactionLedgerPage extends React.Component  {
 
     static getDerivedStateFromProps(props, state) {
       let update = {};
-      
+      if (props.item !== state.item) {
+        update.item = props.item;
+      }
+
       if (props.saleList !== state.saleList) {
         update.processing = false;
         update.saleList = props.saleList;
@@ -226,6 +236,7 @@ class DistributorInvoiceTransactionLedgerPage extends React.Component  {
     };
 
     render() {
+      const admin = this.state.item;
       const { saleList, saleTotal, queryParams, processing, downloadingInfo } = this.state;
       const totalPage = Math.ceil(
         this.state.saleTotal / this.state.queryParams.limit
@@ -234,7 +245,7 @@ class DistributorInvoiceTransactionLedgerPage extends React.Component  {
       console.log("saleList", saleList);
       return (    
           <MainCard
-            title='Transaction Ledger'
+            title={`Transaction Ledger - ${admin?admin.company_name:""}`}
             secondary={
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', paddingTop: "7px" }}>
                 {downloadingInfo ? (
@@ -471,6 +482,7 @@ class DistributorInvoiceTransactionLedgerPage extends React.Component  {
 }
 
 const mapStateToProps = (state) => ({
+  item: state.superadmin.distributor.item,
   saleList: state.superadmin.sales.items,
   saleTotal: state.superadmin.sales.total,
   auth: state.auth,
@@ -481,6 +493,7 @@ const mapDispatchToProps = (dispatch) => {
     dispatch,
     actions: bindActionCreators(
       {
+        distributorFetch,
         saleTxnLedgerList
       },
       dispatch
