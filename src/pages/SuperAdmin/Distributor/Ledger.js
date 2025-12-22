@@ -78,45 +78,6 @@ class DistributorInvoiceTransactionLedgerPage extends React.Component  {
           downloadingInfo: false,
           note: ""
         };
-        
-        this.columns = [
-            {
-                name: "sl_no",
-                display_name: "Sl No.",
-            },
-            {
-                name: "invoice_number",
-                display_name: "Invoice Number",
-            },
-            {
-                name: "txn_date",
-                display_name: "Date",
-            },
-            {
-                name: "remarks",
-                display_name: "Remarks",
-            },
-            {
-                name: "bill_amount",
-                display_name: "Bill Amount",
-            },
-            {
-                name: "payment_amount",
-                display_name: "Payment Amount",
-            },
-            {
-                name: "payment_mode",
-                display_name: "Payment Mode",
-            },
-            {
-                name: "type",
-                display_name: "Type",
-            },
-            {
-                name: "balance",
-                display_name: "Balance",
-            },
-        ];
     }
 
     componentDidMount() {
@@ -371,10 +332,12 @@ class DistributorInvoiceTransactionLedgerPage extends React.Component  {
                               <TableCell sx={{ width: "50px" }}>Date</TableCell>
                               <TableCell sx={{ width: "100px" }}>Invoice No</TableCell>
                               <TableCell sx={{ width: "50px" }}>Remarks</TableCell>
+                              <TableCell sx={{ width: "50px" }}>Purpose</TableCell>
                               <TableCell sx={{ width: "150px" }}>Bill Amt</TableCell>
                               <TableCell sx={{ width: "150px" }}>Payment Amt</TableCell>
                               <TableCell sx={{ width: "50px" }}>Mode</TableCell>
                               <TableCell sx={{ width: "50px" }}>Type</TableCell>
+                              <TableCell sx={{ width: "50px" }}>Status</TableCell>
                               <TableCell sx={{ width: "150px" }}>Balance(Due)</TableCell>
                               <TableCell sx={{ width: "50px" }}>Action</TableCell>
                             </TableRow>
@@ -573,10 +536,12 @@ function Row(props) {
                     data-bs-toggle='modal'
 
                     data-bs-target='#noteModal'></i></div></TableCell>
+        <TableCell >{row.purpose}</TableCell>
         <TableCell >{row.bill_amount}</TableCell>
         <TableCell >{row.payment_amount}</TableCell>
         <TableCell >{row.payment_mode}</TableCell>
-        <TableCell >{row.type}</TableCell>
+        <TableCell >{row.type}{row.is_advance?"(Advance)":""}</TableCell>
+        <TableCell >{row.approve_status}</TableCell>
         <TableCell >{row.balance}</TableCell>
         <TableCell className={'action_btn'}>
           <Stack
