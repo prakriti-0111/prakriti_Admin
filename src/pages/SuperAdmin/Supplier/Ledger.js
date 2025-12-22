@@ -65,6 +65,7 @@ class SupplierInvoiceTransactionLedgerPage extends React.Component  {
 
         this.state = {
           auth: this.props.auth,
+          supplier: this.props.supplier,
           purchaseList: this.props.purchaseList,
           purchaseTotal: this.props.purchaseTotal,
           queryParams: {
@@ -85,6 +86,7 @@ class SupplierInvoiceTransactionLedgerPage extends React.Component  {
     }
 
     loadAllData = () => {
+      this.props.actions.supplierFetch(this.props.params.id);
       this.loadPurchaseData();
     };
 
@@ -104,7 +106,10 @@ class SupplierInvoiceTransactionLedgerPage extends React.Component  {
 
     static getDerivedStateFromProps(props, state) {
       let update = {};
-      
+      if (props.supplier !== state.supplier) {
+        update.supplier = props.supplier;
+      }
+
       if (props.purchaseList !== state.purchaseList) {
         update.processing = false;
         update.purchaseList = props.purchaseList;
@@ -226,7 +231,7 @@ class SupplierInvoiceTransactionLedgerPage extends React.Component  {
     };
 
     render() {
-      const { purchaseList, purchaseTotal, queryParams, processing, downloadingInfo } = this.state;
+      const { purchaseList, purchaseTotal, queryParams, processing, downloadingInfo, supplier } = this.state;
       const totalPage = Math.ceil(
         this.state.purchaseTotal / this.state.queryParams.limit
       );
@@ -234,7 +239,7 @@ class SupplierInvoiceTransactionLedgerPage extends React.Component  {
       console.log("purchaseList", purchaseList);
       return (    
           <MainCard
-            title='Transaction Ledger'
+            title={`Transaction Ledger - ${supplier?supplier.company_name:""}`}
             secondary={
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', paddingTop: "7px" }}>
                 {downloadingInfo ? (
@@ -471,6 +476,7 @@ class SupplierInvoiceTransactionLedgerPage extends React.Component  {
 }
 
 const mapStateToProps = (state) => ({
+  supplier: state.superadmin.supplier.item,
   purchaseList: state.superadmin.purchase.items,
   purchaseTotal: state.superadmin.purchase.total,
   auth: state.auth,
@@ -481,6 +487,7 @@ const mapDispatchToProps = (dispatch) => {
     dispatch,
     actions: bindActionCreators(
       {
+        supplierFetch,
         purchaseTxnLedgerList
       },
       dispatch
