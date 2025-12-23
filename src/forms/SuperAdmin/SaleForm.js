@@ -85,6 +85,8 @@ import {
   isAdmin,
 
   isSalesExecutive,
+  validateNumber,
+  validateInteger
 
 } from "src/helpers/helper";
 
@@ -271,12 +273,16 @@ class SaleForm extends React.Component {
       isCreateFrom: !formData,
 
       adminList: this.props.adminList,
+      adminListApiCall: false,
 
       retailerList: this.props.retailerList,
+      retailerListApiCall: false,
 
       distributorList: this.props.distributorList,
+      distributorListApiCall: false,
 
       salesExecutiveList: this.props.salesExecutiveList,
+      salesExecutiveListApiCall: false,
 
       productList: this.props.productList,
 
@@ -291,6 +297,9 @@ class SaleForm extends React.Component {
       subCategoryList: this.props.subCategoryList,
 
       supplierList: this.props.supplierList,
+      supplierListApiCall: false,
+
+      loadSaleOnApprovalApiCall: false,
 
       materialList: [],
 
@@ -335,6 +344,8 @@ class SaleForm extends React.Component {
         total_payable: "",
 
         paid_amount: "",
+
+        already_paid_amount: 0,
 
         due_amount: "",
 
@@ -454,11 +465,25 @@ class SaleForm extends React.Component {
 
       returnDialogOpen: false,
 
+      payNowForReturnDialogOpen: false,
+
+      returnChargeApplyDialogOpen: false,
+
       return_amount: 0,
+
+      return_from_wallet: 0,
 
       product_amount: 0,
 
+      product_amount_without_report_charge: 0,
+
       return_charge: 0,
+
+      return_report_charge: 0,
+
+      return_tax_charge: 0,
+
+      total_charge_for_return: 0,
 
       materialReturnDialog: false,
 
@@ -636,7 +661,7 @@ class SaleForm extends React.Component {
 
 
 
-  componentDidMount() {
+  async componentDidMount() {
 
     if (this.isSuperAdmin) {
 
@@ -682,23 +707,23 @@ class SaleForm extends React.Component {
 
     }
 
-    this.loadReportCharge();
+    await this.loadReportCharge();
 
     if (this.state.formData) {
 
       this.initializeFormData();
 
-    } else {
+    } else {  
 
-      this.loadCart();
+      await this.loadCart();
 
-      this.loadSaleOnApproval();
+      //await this.loadSaleOnApproval();
 
     }
 
 
 
-    this.loadProfile();
+    await this.loadProfile();
 
     
 
@@ -836,15 +861,22 @@ class SaleForm extends React.Component {
 
               ...this.state.formValues,
 
-              paid_amount: res.data.data.paid_amount
+              /* paid_amount: res.data.data.paid_amount
 
                 ? res.data.data.paid_amount
 
-                : "",
+                : "", */
+
+              already_paid_amount: res.data.data.paid_amount
+
+                ? res.data.data.paid_amount
+
+                : 0,
 
               user_id: res.data.data.user_id,
 
             },
+            loadSaleOnApprovalApiCall: true
 
           },
 
@@ -853,7 +885,7 @@ class SaleForm extends React.Component {
             this.handleCalculateMainPrice();
 
             setTimeout(() => {
-
+              
               this.handleAdminChange("", res.data.data.user_id);
 
             }, 1000);
@@ -945,19 +977,19 @@ class SaleForm extends React.Component {
 
 
 
-          if (item.purity_id == 4 || item.purity_id == 18) {
+          // if (item.purity_id == 4 || item.purity_id == 18) {
 
-            material_total_by_unit[item.material_id] += parseFloat(
+          //   material_total_by_unit[item.material_id] += parseFloat(
 
-              cart.total_weight
+          //     cart.total_weight
 
-            );
+          //   );
 
-          } else {
+          // } else {
 
             material_total_by_unit[item.material_id] += parseFloat(item.weight);
 
-          }
+          //}
 
         }
 
@@ -969,9 +1001,9 @@ class SaleForm extends React.Component {
 
         let cart = cartList[i];
 
-        let materials = [],
+        let materials = [];
 
-          quantity = 1;
+          //quantity = 1;
 
         /* for those product with certificate no */
 
@@ -1157,7 +1189,7 @@ class SaleForm extends React.Component {
 
           sub_cat_making_charge_type: cart.sub_cat_making_charge_type,
 
-          quantity: quantity,
+          quantity: cart.quantity,
 
           order_product_id: cart.order_product_id,
 
@@ -1238,6 +1270,7 @@ class SaleForm extends React.Component {
     if (props.adminList !== state.adminList) {
 
       update.adminList = props.adminList;
+      update.adminListApiCall = true;
 
     }
 
@@ -1316,19 +1349,20 @@ class SaleForm extends React.Component {
     if (props.distributorList !== state.distributorList) {
 
       update.distributorList = props.distributorList;
+      update.distributorListApiCall = true;
 
     }
 
     if (props.retailerList !== state.retailerList) {
 
       update.retailerList = props.retailerList;
-
+      update.retailerListApiCall = true;
     }
 
     if (props.salesExecutiveList !== state.salesExecutiveList) {
 
       update.salesExecutiveList = props.salesExecutiveList;
-
+      update.salesExecutiveListApiCall = true;
     }
 
     if (props.auth !== state.auth) {
@@ -1340,7 +1374,7 @@ class SaleForm extends React.Component {
     if (props.employeeList !== state.employeeList) {
 
       update.employeeList = props.employeeList;
-
+      update.employeeListApiCall = true;
     }
 
     if (props.formData !== state.formData) {
@@ -1352,7 +1386,7 @@ class SaleForm extends React.Component {
     if (props.supplierList !== state.supplierList) {
 
       update.supplierList = props.supplierList;
-
+      update.supplierListApiCall = true;
     }
 
     return update;
@@ -1361,24 +1395,43 @@ class SaleForm extends React.Component {
 
 
 
-  componentDidUpdate(prevProps) {
+  async componentDidUpdate(prevProps, prevState) {
 
     if (this.props.formData != prevProps.formData) {
 
       this.initializeFormData();
 
-    } else {
+    } else { 
+      let canLoadSaleOnApproval = false;
 
-      if (
+      if (this.isSuperAdmin) {
+        if(this.state.adminList.length > 0 && this.state.employeeList.length > 0){
+          canLoadSaleOnApproval = true;
+        }
+      } else if (this.isAdmin) {
+        if(this.state.distributorList.length > 0 && this.state.salesExecutiveList.length > 0 && this.state.supplierList.length > 0){
+          canLoadSaleOnApproval = true;
+        }
+      } else if (this.isDistributor) {
+        if(this.state.retailerList.length > 0 && this.state.salesExecutiveList.length > 0 && this.state.supplierList.length > 0){
+          canLoadSaleOnApproval = true;
+        }
+      } else if (this.isSalesExecutive) {
+        console.log("this.state.adminListApiCall : ",this.state.adminListApiCall," this.state.retailerListApiCall : ", this.state.retailerListApiCall, " this.state.distributorListApiCall : ",this.state.distributorListApiCall," this.state.salesExecutiveListApiCall : ", this.state.salesExecutiveListApiCall);
+        //alert("componentDidUpdate");
+        
+        if(this.state.adminListApiCall && this.state.retailerListApiCall && this.state.distributorListApiCall && this.state.salesExecutiveListApiCall){
+          canLoadSaleOnApproval = true;
+        }
+      }
 
-        this.props.query.get("sale_on_approval") !=
+      if(canLoadSaleOnApproval){
+        //alert("loadSaleOnApproval");
+        if (!isEmpty(this.props.query.get("sale_on_approval")) && !this.state.loadSaleOnApprovalApiCall) {
 
-        prevProps.query.get("sale_on_approval")
+          await this.loadSaleOnApproval();
 
-      ) {
-
-        this.loadSaleOnApproval();
-
+        }
       }
 
     }
@@ -1656,13 +1709,13 @@ class SaleForm extends React.Component {
     this.updateFormValues(val, "user_id");
 
     let userList = this.getUserList();
-
+    console.log("userList : ", userList);
     let m = _.filter(userList, { id: val });
 
     let user_gst_no = "",
 
       advance_amount = 0;
-
+    console.log("m : ", m);
     if (m.length) {
 
       user_gst_no = m[0].gst;
@@ -1686,7 +1739,7 @@ class SaleForm extends React.Component {
       advance_amount = advnc_amt;
 
     }
-
+    
     this.setState(
 
       {
@@ -1778,7 +1831,7 @@ class SaleForm extends React.Component {
 
 
   handleDefaultChange = (event, key) => {
-
+    console.log("handleDefaultChange => event.target.value", event.target.value);
     this.updateFormValues(event.target.value, key);
 
   };
@@ -1786,11 +1839,21 @@ class SaleForm extends React.Component {
 
 
   updateFormValues = (val, key) => {
+    console.log("updateFormValues => val, key", val, key);
+    /* let formValues = {
+      ...this.state.formValues,
+      key: val,
+    }; */
 
     let formValues = this.state.formValues;
-
-    formValues[key] = val;
-
+    
+    if(key == "report_charge_amount"){
+      console.log("isEmpty(val) : ", isEmpty(val), "isNaN(val):", isNaN(val));
+      formValues[key] = isEmpty(val) || isNaN(val)?0:val;
+    } else {
+      formValues[key] = val;
+    }
+    
     console.log("updateFormValues => formValues", formValues);
 
     this.setState(
@@ -2146,7 +2209,9 @@ class SaleForm extends React.Component {
 
         total_discount = 0,
 
-        total_quantity = 0;
+        total_quantity = 0,
+        
+        quantity = !isEmpty(products[x].quantity)?products[x].quantity:1;
 
       for (let i = 0; i < products[x].materials.length; i++) {
 
@@ -2320,7 +2385,7 @@ class SaleForm extends React.Component {
 
       products[x].sub_price = priceFormat(
 
-        parseFloat(total_price) + parseFloat(making_charge)
+        (parseFloat(total_price) + parseFloat(making_charge))
 
       );
 
@@ -2341,6 +2406,7 @@ class SaleForm extends React.Component {
 
 
     /* report charge calculation */
+    let report_charge_amount = 0;
 
     let total_report_charge_amount = 0;
 
@@ -2348,9 +2414,18 @@ class SaleForm extends React.Component {
 
     let total_report_charge_amount_after_tax = 0;
 
+    if(!this.state.isCreateFrom){
+      //formValues.report_charge_amount = this.state.report_charge.amount;
+      formValues.report_charge_amount = parseFloat(this.state.formValues.report_charge || 0);
+      report_charge_amount = parseFloat(this.state.formValues.report_charge || 0); 
+    } else {
+      formValues.report_charge_amount = parseFloat(this.state.formValues.report_charge_amount); // coming from loadCart function
+      report_charge_amount = this.state.formValues.report_charge_amount != ""?parseFloat(this.state.formValues.report_charge_amount):0;
+    }
+
     if(!this.state.isAssign){
 
-      total_report_charge_amount = report_qty * parseFloat(this.state.report_charge.amount);
+      total_report_charge_amount = report_qty * parseFloat(report_charge_amount);
 
       total_report_charge_tax_amount = total_report_charge_amount * parseFloat(this.state.report_charge.tax)/100;
 
@@ -2360,7 +2435,7 @@ class SaleForm extends React.Component {
 
     console.log("report_qty : ", report_qty);
 
-    console.log("report_charge_amount : ", this.state.report_charge.amount);
+    console.log("report_charge_amount : ", formValues.report_charge_amount);
 
     console.log("total_report_charge_amount : ", total_report_charge_amount);
 
@@ -2371,8 +2446,8 @@ class SaleForm extends React.Component {
     formValues.products = products;
 
     formValues.report_qty = report_qty;
-
-    formValues.report_charge_amount = parseFloat(this.state.report_charge.amount);
+    
+    
 
     formValues.total_report_charge_amount = total_report_charge_amount;
 
@@ -2774,13 +2849,19 @@ class SaleForm extends React.Component {
 
     }
 
-    total_payable = priceFormat(total_amount - discount, true);
+    if(!isEmpty(this.props.query.get("sale_on_approval"))){
+      total_payable = priceFormat(total_amount - discount - formValues.already_paid_amount, true);
+    } else {
+      total_payable = priceFormat(total_amount - discount, true);
+    }
 
     if (!isEmpty(formValues.paid_amount)) {
 
       paid_amount = parseFloat(formValues.paid_amount);
 
     }
+
+
 
     let advance_amount = formValues.advance_amount
 
@@ -2950,7 +3031,17 @@ class SaleForm extends React.Component {
 
   };
 
+  handlePayNowForReturnDialogClose = () => {
+    this.setState({
+      payNowForReturnDialogOpen: false,
+    });
+  };
 
+  handleReturnChargeApplyDialogOpen = () => {
+    this.setState({
+      returnChargeApplyDialogOpen: false,
+    });
+  }
 
   returnDialogClose = () => {
 
@@ -3917,11 +4008,11 @@ class SaleForm extends React.Component {
 
 
   handleCheckBox = (e, index) => {
-
+    //alert("hi");
     let products = this.state.formValues.products;
 
     let return_products = this.state.return_products;
-
+    console.log("return_products : ", return_products);
     let product = products[index];
 
     let hasReturn = this.hasReturn();
@@ -4000,6 +4091,8 @@ class SaleForm extends React.Component {
 
   handleReturn = () => {
 
+    const {total_charge_for_return, formValues, return_from_wallet} = this.state;
+
     let res = this.hasReturn();
 
     if (!res.isReturn) {
@@ -4012,15 +4105,34 @@ class SaleForm extends React.Component {
 
     }
 
+    if (
 
+      parseFloat(formValues.due_amount) == 0 
 
-    this.setState({
+      //&& parseFloat(formValues.total_payable) == parseFloat(formValues.paid_amount)
 
-      returnDialogOpen: true,
+    ) {
+      //return_from_wallet = formValues.paid_amount;
+      this.setState({
 
-      payment_type: res.will_return_charge_apply ? "return" : "advance",
+        returnChargeApplyDialogOpen: true,
 
-    });
+      });
+    } else if(formValues.due_amount == 0 && total_charge_for_return > 0 && total_charge_for_return > formValues.paid_amount){
+      //return_from_wallet = total_charge_for_return;
+      console.log("Customer need to pay : ", priceFormat(total_charge_for_return-formValues.paid_amount).toFixed(2));
+      this.setState({
+        payNowForReturnDialogOpen: true,
+      });
+    } else {
+      this.setState({
+
+        returnDialogOpen: true,
+
+        payment_type: res.will_return_charge_apply ? "return" : "advance",
+
+      });
+    }
 
   };
 
@@ -4046,6 +4158,29 @@ class SaleForm extends React.Component {
 
     }
 
+    console.log("return payload : ", {
+
+      return_products: this.state.return_products,
+
+      return_data: this.state.formValues,
+
+      return_amount: this.state.return_amount,
+
+      product_amount: this.state.product_amount,
+
+      return_charge: this.state.return_charge,
+
+      return_date: this.state.return_date,
+
+      payment_type: this.state.payment_type,
+
+      return_payment_mode: this.state.return_payment_mode,
+
+      return_amount_from_wallet: parseFloat(this.state.return_from_wallet)
+
+    });
+    //return false;  
+
     let res = await saleReturn(this.state.formData.id, {
 
       return_products: this.state.return_products,
@@ -4064,13 +4199,15 @@ class SaleForm extends React.Component {
 
       return_payment_mode: this.state.return_payment_mode,
 
-      return_amount_from_wallet: priceFormat(
+      return_amount_from_wallet: parseFloat(this.state.return_from_wallet)
+
+      /* return_amount_from_wallet: priceFormat(
 
         parseFloat(this.state.return_amount) -
 
           parseFloat(this.state.formValues.due_amount)
 
-      ),
+      ), */
 
     });
 
@@ -4277,9 +4414,19 @@ class SaleForm extends React.Component {
     let return_products = this.state.return_products;
 
     let return_amount = 0,
-
+      
       return_charge = 0,
 
+      hasCertifiedProduct = 0,
+
+      return_report_charge = 0,
+
+      return_tax_charge = 0,
+
+      applicable_discount = 0,
+
+      total_charge_for_return = 0,
+      product_amount_without_report_charge = 0,
       product_amount = 0;
 
     for (let i = 0; i < return_products.length; i++) {
@@ -4356,22 +4503,37 @@ class SaleForm extends React.Component {
 
             : 0;
 
-          formValues.products[i].return_amount = thisAmt;
+          let returnAmount_val = thisAmt - thisReturnCharge - tax - discount_per_product;
+
+          formValues.products[i].return_amount = returnAmount_val;
 
           formValues.products[i].return_charge = thisReturnCharge;
 
-          return_amount += thisAmt - thisReturnCharge;
+          formValues.products[i].discount_per_product = discount_per_product;
+
+          //return_amount += thisAmt - thisReturnCharge;
+
+          return_amount += returnAmount_val;
 
           return_charge += thisReturnCharge;
 
+          applicable_discount += discount_per_product;
+
+          return_tax_charge += tax;
+
           product_amount += thisAmt;
+
+          product_amount_without_report_charge += thisAmt;
+
+          total_charge_for_return += thisReturnCharge + tax;
 
         } else {
 
           let thisAmt = parseFloat(formValues.products[i].total);
-
-          thisAmt = priceFormat(thisAmt - discount_per_product);
-
+          console.log("thisAmt before discount_per_product: ", thisAmt);
+          //console.log("discount_per_product: ", discount_per_product);
+          //thisAmt = priceFormat(thisAmt - discount_per_product);
+          //console.log("thisAmt after discount_per_product: ", thisAmt);
           let thisReturnCharge = formValues.have_return_charge
 
             ? parseFloat(formValues.products[i].return_charge_percent) > 0
@@ -4385,16 +4547,43 @@ class SaleForm extends React.Component {
               : 0
 
             : 0;
+          console.log("thisReturnCharge: ", thisReturnCharge);
 
-          formValues.products[i].return_amount = thisAmt;
+          let product = _.filter(this.state.formValues.products, {
+
+            id: return_products[i].id,
+
+          });
+          console.log("product : ", product);
+          if(product.length > 0 && !isEmpty(product[0].certificate_no)){
+            console.log("product.certificate_no : ", product[0].certificate_no);
+            hasCertifiedProduct += 1;
+          }
+
+          let taxCharge = parseFloat(formValues.products[i].total_tax);
+
+          let returnAmount_val = thisAmt - thisReturnCharge - taxCharge - discount_per_product;
+          console.log("return_amount: ", returnAmount_val);
+
+          formValues.products[i].return_amount = returnAmount_val;
 
           formValues.products[i].return_charge = thisReturnCharge;
 
-          return_amount += thisAmt - thisReturnCharge;
+          formValues.products[i].discount_per_product = discount_per_product;
+
+          return_amount += returnAmount_val;
 
           return_charge += thisReturnCharge;
 
+          return_tax_charge += taxCharge;
+
+          applicable_discount += discount_per_product;
+
           product_amount += thisAmt;
+
+          product_amount_without_report_charge += thisAmt;
+
+          total_charge_for_return += thisReturnCharge + taxCharge;
 
         }
 
@@ -4403,6 +4592,75 @@ class SaleForm extends React.Component {
     }
 
     let returnDis = 0;
+
+    //return_amount -= parseFloat(formValues.discount);
+
+    returnDis = priceFormat(applicable_discount, true); //parseFloat(formValues.discount);
+
+    if(hasCertifiedProduct > 0){
+      //return_report_charge = priceFormat(formValues.total_report_charge_amount_after_tax).toFixed(2);
+      //return_amount = return_amount - return_report_charge;
+
+      /* report charge calculation */
+      let report_charge_amount = 0;
+
+      let total_report_charge_amount = 0;
+
+      let total_report_charge_tax_amount = 0;
+
+      let total_report_charge_amount_after_tax = 0;
+
+      
+      //formValues.report_charge_amount = parseFloat(this.state.formValues.report_charge || 0);
+      report_charge_amount = parseFloat(this.state.formValues.report_charge || 0); 
+      
+
+      if(!this.state.isAssign){
+
+        total_report_charge_amount = this.state.formValues.report_qty * parseFloat(report_charge_amount);
+
+        total_report_charge_tax_amount = total_report_charge_amount * parseFloat(this.state.formValues.report_tax_percentage)/100;
+
+        total_report_charge_amount_after_tax = total_report_charge_amount + total_report_charge_tax_amount;
+
+      } 
+
+      console.log("report_qty : ", this.state.formValues.report_qty);
+
+      console.log("report_charge_amount : ", report_charge_amount);
+
+      console.log("total_report_charge_amount : ", total_report_charge_amount);
+
+      console.log("total_report_charge_tax_amount : ", total_report_charge_tax_amount);   
+
+      console.log("total_report_charge_amount_after_tax : ", total_report_charge_amount_after_tax);
+
+      
+
+      formValues.report_charge_amount = report_charge_amount;
+      
+      formValues.total_report_charge_amount = total_report_charge_amount;
+
+      formValues.total_report_charge_tax_amount = total_report_charge_tax_amount;
+
+      formValues.total_report_charge_amount_after_tax = total_report_charge_amount_after_tax;
+
+      return_report_charge = priceFormat(total_report_charge_amount_after_tax).toFixed(2);
+
+      /* per product */
+      let return_report_charge_per_product = return_report_charge/this.state.formValues.report_qty;
+
+      return_report_charge = return_report_charge_per_product * hasCertifiedProduct;
+
+      return_amount = return_amount - return_report_charge;
+
+      total_charge_for_return += return_report_charge;
+
+      /* if due amount exists then report change will be added with product amount */
+      if(formValues.due_amount > 0){
+        product_amount += return_report_charge;
+      }
+    }
 
     let didNotReturned = 0,
 
@@ -4434,13 +4692,124 @@ class SaleForm extends React.Component {
 
     }
 
+    /* return to wallet calculation */
+    let return_from_wallet = 0;
+
+    if (
+
+      parseFloat(formValues.due_amount) == 0
+
+      // && parseFloat(formValues.total_payable) == parseFloat(formValues.paid_amount)
+
+    ) {
+
+      
+
+
+
+      if (totalReturnP == 1 && didNotReturned == 0) {
+
+        /* return_from_wallet = parseFloat(formValues.paid_amount);
+
+        return_from_wallet = priceFormat(
+
+          return_from_wallet - this.state.return_amount
+
+        ); */
+
+        //return_from_wallet = priceFormat(this.state.return_amount);
+
+      } else if (totalReturnP == 1 && didNotReturned > 0) {
+
+        //return_from_wallet = priceFormat(parseFloat(this.state.return_amount));
+
+      }
+
+    } else {
+
+      /* if (
+
+        this.state.formValues.due_amount &&
+
+        parseFloat(this.state.return_amount) >
+
+          parseFloat(this.state.formValues.due_amount)
+
+      ) {
+
+        return_from_wallet = priceFormat(
+
+          parseFloat(this.state.return_amount) -
+
+            parseFloat(this.state.formValues.due_amount)
+
+        );
+
+      } */
+
+      let paid_amount = parseFloat(formValues.paid_amount);
+      /* if(paid_amount > 0){
+        return_from_wallet = paid_amount;
+      } */
+
+      if (totalReturnP == 1 && didNotReturned == 0) {
+
+        /* return_from_wallet = parseFloat(formValues.paid_amount);
+
+        return_from_wallet = priceFormat(
+
+          return_from_wallet - this.state.return_amount
+
+        ); */
+
+        //return_from_wallet = paid_amount;
+
+      } else if (totalReturnP == 1 && didNotReturned > 0) {
+
+        //return_from_wallet = priceFormat(parseFloat(this.state.return_amount));
+
+      }
+
+      if(didNotReturned == 0){
+        /* now return amount from wallet to the user */
+        //if(total_charge_for_return > 0 && total_charge_for_return < formValues.paid_amount){
+          return_from_wallet = priceFormat(formValues.paid_amount).toFixed(2);
+        //}
+      }
+    }
+
     //if(totalReturnP == 1 && didNotReturned == 0){
-
-    //return_amount -= parseFloat(formValues.discount);
-
-    returnDis = parseFloat(formValues.discount);
+    // if(didNotReturned == 0 && total_charge_for_return > 0 && total_charge_for_return < formValues.paid_amount){
+    //   return_from_wallet = priceFormat(formValues.paid_amount - total_charge_for_return).toFixed(2);
+    // }
 
     //}
+
+    console.log({
+
+      return_amount: priceFormat(return_amount, true),
+
+      product_amount: priceFormat(product_amount, true),
+
+      product_amount_without_report_charge: priceFormat(product_amount_without_report_charge, true),
+
+      return_charge: priceFormat(return_charge, true),
+
+      return_report_charge: priceFormat(return_report_charge, true),
+
+      return_tax_charge: priceFormat(return_tax_charge, true),
+      
+      hasCertifiedProduct,
+
+      formValues: formValues,
+
+      return_discount: returnDis,
+
+      total_charge_for_return: priceFormat(total_charge_for_return, true),
+
+      return_from_wallet: priceFormat(return_from_wallet, true)
+
+    });
 
     this.setState({
 
@@ -4448,11 +4817,21 @@ class SaleForm extends React.Component {
 
       product_amount: priceFormat(product_amount, true),
 
+      product_amount_without_report_charge: priceFormat(product_amount_without_report_charge, true),
+
       return_charge: priceFormat(return_charge, true),
+
+      return_report_charge: priceFormat(return_report_charge, true),
+
+      return_tax_charge: priceFormat(return_tax_charge, true),
+
+      total_charge_for_return: priceFormat(total_charge_for_return, true),
 
       formValues: formValues,
 
       return_discount: returnDis,
+
+      return_from_wallet: priceFormat(return_from_wallet, true)
 
     });
 
@@ -5178,7 +5557,11 @@ class SaleForm extends React.Component {
 
       unique_materials,
 
-      isMobile
+      isMobile,
+
+      return_from_wallet,
+
+      total_charge_for_return
 
     } = this.state;
 
@@ -5228,7 +5611,37 @@ class SaleForm extends React.Component {
 
 
 
-    let return_from_wallet = 0;
+    /* let return_from_wallet = 0;
+
+     let didNotReturned = 0,
+
+        totalReturnP = 0;
+
+    for (let i = 0; i < this.state.return_products.length; i++) {
+
+      let product = _.filter(formValues.products, {
+
+        id: this.state.return_products[i].id,
+
+      });
+
+      if (product.length && product[0].is_return == true) {
+
+        continue;
+
+      }
+
+      if (this.state.return_products[i].is_return) {
+
+        totalReturnP++;
+
+      } else {
+
+        didNotReturned++;
+
+      }
+
+    }
 
     if (
 
@@ -5238,35 +5651,7 @@ class SaleForm extends React.Component {
 
     ) {
 
-      let didNotReturned = 0,
-
-        totalReturnP = 0;
-
-      for (let i = 0; i < this.state.return_products.length; i++) {
-
-        let product = _.filter(formValues.products, {
-
-          id: this.state.return_products[i].id,
-
-        });
-
-        if (product.length && product[0].is_return == true) {
-
-          continue;
-
-        }
-
-        if (this.state.return_products[i].is_return) {
-
-          totalReturnP++;
-
-        } else {
-
-          didNotReturned++;
-
-        }
-
-      }
+      
 
 
 
@@ -5280,9 +5665,11 @@ class SaleForm extends React.Component {
 
         );
 
+        //return_from_wallet = priceFormat(this.state.return_amount);
+
       } else if (totalReturnP == 1 && didNotReturned > 0) {
 
-        return_from_wallet = parseFloat(this.state.return_amount);
+        return_from_wallet = priceFormat(parseFloat(this.state.return_amount));
 
       }
 
@@ -5308,9 +5695,31 @@ class SaleForm extends React.Component {
 
       }
 
-    }
+      //let paid_amount = parseFloat(formValues.paid_amount);
+      //if(paid_amount > 0){
+      //  return_from_wallet = paid_amount;
+      //}
 
+      if (totalReturnP == 1 && didNotReturned == 0) {
 
+        return_from_wallet = parseFloat(formValues.paid_amount);
+
+        return_from_wallet = priceFormat(
+
+          return_from_wallet - this.state.return_amount
+
+        );
+
+        //return_from_wallet = paid_amount;
+
+      } else if (totalReturnP == 1 && didNotReturned > 0) {
+
+        //return_from_wallet = priceFormat(parseFloat(this.state.return_amount));
+
+      }
+    } */
+
+    console.log("formValues.user_id : ", formValues.user_id);
 
     return (
 
@@ -5596,37 +6005,13 @@ class SaleForm extends React.Component {
 
 
 
-            {formValues.user_id ? (
-
-              <>
-
-                <Grid item xs={6} md={2} className='create-input'>
-
-                  <TextField
-
-                    label='Owner Name'
-
-                    variant='outlined'
-
-                    fullWidth
-
-                    value={this.state.admin_details.name}
-
-                    disabled
-
-                    inputProps={{ className: "non_disable_text" }}
-
-                  />
-
-                </Grid>
-
-              </>):null}
+            
 
             
 
             {isMobile ? <>
 
-              <Grid item xs={6} md={2} className='create-input'>
+              <Grid item xs={6} md={userIdColumnXs} className='create-input'>
 
                 <TextField
 
@@ -5642,11 +6027,13 @@ class SaleForm extends React.Component {
 
                   inputProps={{ className: "non_disable_text" }}
 
+                  onInput={(e) => validateInteger(e)}
+
                 />
 
               </Grid>
 
-              <Grid item xs={6} md={2} className='create-input'>
+              <Grid item xs={6} md={userIdColumnXs} className={`create-input ${formValues.user_id ? 'create-input-responsive' : ''}`}>
 
                 <Accordion >
 
@@ -5741,6 +6128,8 @@ class SaleForm extends React.Component {
                             disabled
 
                             inputProps={{ className: "non_disable_text" }}
+
+                            onInput={(e) => validateInteger(e)}
 
                           />
 
@@ -6042,6 +6431,8 @@ class SaleForm extends React.Component {
 
                         inputProps={{ className: "non_disable_text" }}
 
+                        onInput={(e) => validateInteger(e)}
+
                       />
 
                     </Grid>
@@ -6081,6 +6472,7 @@ class SaleForm extends React.Component {
                         disabled
 
                         inputProps={{ className: "non_disable_text" }}
+                        onInput={(e) => validateInteger(e)}
 
                       />
 
@@ -6440,7 +6832,7 @@ class SaleForm extends React.Component {
 
                           <TableCell>
 
-                            {item.product_name} X {item.quantity}
+                            {item.product_name} X {item.quantity?item.quantity:(item.certificate_no?1:item.materials[0].avl_qty)}
 
                           </TableCell>
 
@@ -6450,7 +6842,7 @@ class SaleForm extends React.Component {
 
                           <TableCell colSpan={2}>
 
-                            {item.total_weight} {productWeightUnitName}
+                            {item.total_weight} {"Wt"}
 
                           </TableCell>
 
@@ -7074,7 +7466,7 @@ class SaleForm extends React.Component {
 
           </div>
 
-          {report_charge && !this.state.isAssign && formValues.user_id && <Grid
+          {report_charge && formValues.report_qty > 0 && !this.state.isAssign && formValues.user_id && <Grid
 
             item
 
@@ -7151,7 +7543,7 @@ class SaleForm extends React.Component {
                               type='text'
 
                               value={formValues.report_charge_amount}
-
+                              disabled={isReturn ? true : false}
                               onChange={(event) =>
 
                                 this.handleDefaultChange(event, "report_charge_amount")
@@ -7286,7 +7678,7 @@ class SaleForm extends React.Component {
 
                               {item.material_name} (
 
-                              {item["total_" + item.material_id].toFixed(3)}{" "}
+                              {item.unit.toLowerCase() != "gm"?item["total_" + item.material_id].toFixed(2):item["total_" + item.material_id].toFixed(3)}{" "}
 
                               {item.unit})
 
@@ -8140,6 +8532,61 @@ class SaleForm extends React.Component {
 
                     </Grid>
 
+                    {!isEmpty(this.props.query.get("sale_on_approval")) && 
+                      <Grid item xs={12} className='pt-5'>
+
+                        <Grid
+
+                          container
+
+                          spacing={2}
+
+                          columnSpacing={{ xs: 1, sm: 2, md: 2 }}
+
+                          className='display_center justify-content-end'>
+
+                          <Grid item xs={4} md={6} className='text-right pt-0'>
+
+                            <span className='tax-text'>Already Paid Amount</span>
+
+                          </Grid>
+
+                          <Grid item xs={5} md={6} className='pt-0'>
+
+                            <TextField
+
+                              className='ft-amount'
+
+                              fullWidth
+
+                              value={formValues.already_paid_amount}
+
+                              disabled
+
+                              InputProps={{
+
+                                startAdornment: (
+
+                                  <InputAdornment position='start'>
+
+                                    ₹
+
+                                  </InputAdornment>
+
+                                ),
+
+                                className: "non_disable_text",
+
+                              }}
+
+                            />
+
+                          </Grid>
+
+                        </Grid>
+
+                      </Grid>
+                    }
 
 
                     <Grid item xs={12} className='pt-5'>
@@ -8175,6 +8622,8 @@ class SaleForm extends React.Component {
                               this.handleDefaultChange(event, "discount")
 
                             }
+
+                            onInput={(e) => validateNumber(e)}
 
                             InputProps={{
 
@@ -8229,6 +8678,8 @@ class SaleForm extends React.Component {
                               fullWidth
 
                               value={formValues.advance_amount}
+
+                              onInput={(e) => validateNumber(e)}
 
                               InputProps={{
 
@@ -8356,7 +8807,7 @@ class SaleForm extends React.Component {
 
                             fullWidth
 
-                            value={this.state.product_amount}
+                            value={this.state.product_amount_without_report_charge}
 
                             disabled
 
@@ -8384,7 +8835,7 @@ class SaleForm extends React.Component {
 
                     </Grid>
 
-                    {this.state.return_discount > 0 ? (
+                    {formValues.due_amount == 0 && this.state.return_discount > 0 ? (
 
                       <Grid item xs={12} md={12} className='pt-5'>
 
@@ -8440,7 +8891,7 @@ class SaleForm extends React.Component {
 
                     ) : null}
 
-                    {formValues.have_return_charge ? (
+                    {formValues.due_amount == 0 && formValues.have_return_charge ? (
 
                       <Grid item xs={12} md={12} className='pt-5'>
 
@@ -8496,6 +8947,112 @@ class SaleForm extends React.Component {
 
                     ) : null}
 
+                    {this.state.return_report_charge > 0 ? (
+                    <Grid item xs={12} md={12} className='pt-5'>
+
+                      <Grid
+
+                        container
+
+                        spacing={2}
+
+                        className='display_center justify-content-end'>
+
+                        <Grid item xs={4} md={6} className='text-right pt-0'>
+
+                          <b>Report Charge</b>
+
+                        </Grid>
+
+                        <Grid item xs={5} md={6} className='pt-0'>
+
+                          <TextField
+
+                            className='ft-amount'
+
+                            fullWidth
+
+                            value={this.state.return_report_charge}
+
+                            disabled
+
+                            InputProps={{
+
+                              startAdornment: (
+
+                                <InputAdornment position='start'>
+
+                                  ₹
+
+                                </InputAdornment>
+
+                              ),
+
+                              className: "non_disable_text",
+
+                            }}
+
+                          />
+
+                        </Grid>
+
+                      </Grid>
+
+                    </Grid>):null}
+
+                    {formValues.due_amount == 0 && this.state.return_tax_charge > 0 ? (
+                    <Grid item xs={12} md={12} className='pt-5'>
+
+                      <Grid
+
+                        container
+
+                        spacing={2}
+
+                        className='display_center justify-content-end'>
+
+                        <Grid item xs={4} md={6} className='text-right pt-0'>
+
+                          <b>Tax Charge</b>
+
+                        </Grid>
+
+                        <Grid item xs={5} md={6} className='pt-0'>
+
+                          <TextField
+
+                            className='ft-amount'
+
+                            fullWidth
+
+                            value={this.state.return_tax_charge}
+
+                            disabled
+
+                            InputProps={{
+
+                              startAdornment: (
+
+                                <InputAdornment position='start'>
+
+                                  ₹
+
+                                </InputAdornment>
+
+                              ),
+
+                              className: "non_disable_text",
+
+                            }}
+
+                          />
+
+                        </Grid>
+
+                      </Grid>
+
+                    </Grid>) : null}
+
                     {formValues.products.length == 1 ? (
 
                       <Grid item xs={12} className='pt-5'>
@@ -8525,6 +9082,8 @@ class SaleForm extends React.Component {
                               fullWidth
 
                               value={formValues.discount}
+
+                              onInput={(e) => validateNumber(e)}
 
                               onChange={(event) =>
 
@@ -8558,6 +9117,7 @@ class SaleForm extends React.Component {
 
                     ) : null}
 
+                    {formValues.due_amount == 0 && this.state.return_amount > 0 ? (
                     <Grid item xs={12} md={12} className='pt-5'>
 
                       <Grid
@@ -8583,6 +9143,8 @@ class SaleForm extends React.Component {
                             fullWidth
 
                             value={this.state.return_amount}
+
+                            onInput={(e) => validateNumber(e)}
 
                             onChange={(e) =>
 
@@ -8612,7 +9174,7 @@ class SaleForm extends React.Component {
 
                       </Grid>
 
-                    </Grid>
+                    </Grid>): null}
 
                   </>
 
@@ -8803,6 +9365,8 @@ class SaleForm extends React.Component {
                             fullWidth
 
                             value={formValues.paid_amount}
+
+                            onInput={(e) => validateNumber(e)}
 
                             onChange={(event) =>
 
@@ -9190,7 +9754,7 @@ class SaleForm extends React.Component {
 
                       }}>
 
-                      Approval
+                      On Approval
 
                     </LoadingButton>
 
@@ -9218,7 +9782,7 @@ class SaleForm extends React.Component {
 
                       }}>
 
-                      {this.state.isAssign ? "Transfer " : "Submit"}
+                      {this.state.isAssign ? "Transfer " : "Sale Now"}
 
                     </LoadingButton>
 
@@ -9288,7 +9852,21 @@ class SaleForm extends React.Component {
 
             </Grid>
 
-          ) : null}
+          ) : (!isEmpty(this.props.query.get("sale_on_approval"))?<Stack
+
+                  spacing={1}
+
+                  direction='row'
+
+                  className='ratn-footer-buttons'
+
+                  justifyContent='flex-end'
+
+                  style={{ paddingRight: "16px", paddingBottom: "16px" }}>
+
+                  <CircularProgress size='30px' />
+
+                </Stack>:null)}
 
         </Grid>
 
@@ -9768,6 +10346,8 @@ class SaleForm extends React.Component {
 
                                   fullWidth
 
+                                  onInput={(e) => validateInteger(e)}
+
                                   value={item.quantity}
 
                                   onChange={(event) =>
@@ -9799,6 +10379,8 @@ class SaleForm extends React.Component {
                                   variant='outlined'
 
                                   fullWidth
+
+                                  onInput={(e) => validateNumber(e)}
 
                                   value={item.weight}
 
@@ -10127,6 +10709,108 @@ class SaleForm extends React.Component {
         </Dialog>
 
 
+
+        <Dialog
+
+          open={this.state.payNowForReturnDialogOpen}
+
+          onClose={this.handlePayNowForReturnDialogClose}
+
+          fullWidth
+
+          maxWidth='xs'
+
+          className='ratn-dialog-wrapper'>
+
+          <DialogTitle>Pay the amount!</DialogTitle>
+
+          <DialogContent>
+
+            <DialogContentText id='alert-dialog-slide-description'>
+
+              {`Total return charge is : ${total_charge_for_return} and customer paid : ${formValues.paid_amount}, so customer need to pay : ${priceFormat(total_charge_for_return-formValues.paid_amount).toFixed(2)} to initiate return process. Please goto paynow section to collect the amount from customer.`}
+
+            </DialogContentText>
+
+          </DialogContent>
+
+          <DialogActions>
+
+            <Stack spacing={2} direction='row' justifyContent='flex-end'>
+
+              <Button variant='outlined' onClick={this.handlePayNowForReturnDialogClose}>
+
+                Ok
+
+              </Button>
+
+            </Stack>
+
+          </DialogActions>
+
+        </Dialog>
+        
+        <Dialog
+
+          open={this.state.returnChargeApplyDialogOpen}
+
+          onClose={this.handleReturnChargeApplyDialogOpen}
+
+          fullWidth
+
+          maxWidth='xs'
+
+          className='ratn-dialog-wrapper'>
+
+          <DialogTitle>Payable amount!</DialogTitle>
+
+          <DialogContent>
+
+            <DialogContentText id='alert-dialog-slide-description'>
+
+              {`Total payable amount will be : ${this.state.return_amount}. Will receive within 7 working days as per company policy.`}
+
+            </DialogContentText>
+
+          </DialogContent>
+
+          <DialogActions>
+            {!submitting ? (
+              <Stack spacing={2} direction='row' justifyContent='flex-end'>
+
+                <Button variant='outlined' onClick={this.handleReturnChargeApplyDialogOpen}>
+
+                  Cancel
+
+                </Button>
+
+                <Button
+
+                    variant='contained'
+
+                    type='button'
+
+                    onClick={this.handleReturnConfirm}>
+
+                    Yes, Confirm
+
+                  </Button>
+
+              </Stack>
+
+            ) : (
+
+              <Stack spacing={2} direction='row' justifyContent='flex-end'>
+
+                <CircularProgress size='30px' />
+
+              </Stack>
+
+            )}
+
+          </DialogActions>
+
+        </Dialog>
 
         <Dialog
 
@@ -10488,6 +11172,8 @@ class SaleForm extends React.Component {
 
                       fullWidth
 
+                      onInput={(e) => validateInteger(e)}
+
                       value={actionProduct.materials[0].return_qty}
 
                       onChange={(event) =>
@@ -10517,6 +11203,8 @@ class SaleForm extends React.Component {
                       variant='outlined'
 
                       fullWidth
+
+                      onInput={(e) => validateNumber(e)}
 
                       value={actionProduct.materials[0].return_weight}
 

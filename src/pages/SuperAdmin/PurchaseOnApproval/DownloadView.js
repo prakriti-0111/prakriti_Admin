@@ -24,11 +24,10 @@ import withRouter from "src/helpers/withRouter";
 import DataTable from "src/utils/DataTable";
 import { withSnackbar } from "notistack";
 import {
-  purchaseView,
-  purchaseStatusChange,
-  purchaseDownloadInvoiceInfo,
-  purchaseDownloadInvoiceItemList,
-  purchaseDownloadInvoiceItemDetails,
+  purchaseOnApprovalView,
+  purchaseOnApprovalDownloadInvoiceInfo,
+  purchaseOnApprovalDownloadInvoiceItemList,
+  purchaseOnApprovalDownloadInvoiceItemDetails,
 } from "actions/superadmin/purchase.actions";
 import { bindActionCreators } from "redux";
 import { Table, TableHead } from "@mui/material";
@@ -141,7 +140,7 @@ class PurchaseViewPage extends React.Component {
       downloadingInfo: true,
     });
 
-    let response = await purchaseDownloadInvoiceInfo(id);
+    let response = await purchaseOnApprovalDownloadInvoiceInfo(id);
     if (response.data.success) {
       this.setState(
         {
@@ -179,7 +178,7 @@ class PurchaseViewPage extends React.Component {
       downloadingList: true,
     });
 
-    let response = await purchaseDownloadInvoiceItemList(id);
+    let response = await purchaseOnApprovalDownloadInvoiceItemList(id);
     if (response.data.success) {
       this.setState(
         {
@@ -216,7 +215,7 @@ class PurchaseViewPage extends React.Component {
     this.setState({
       downloadingItem: true,
     });
-    let response = await purchaseDownloadInvoiceItemDetails(id);
+    let response = await purchaseOnApprovalDownloadInvoiceItemDetails(id);
     if (response.data.success) {
       this.setState(
         {
@@ -280,7 +279,7 @@ class PurchaseViewPage extends React.Component {
     return update;
   }
 
-  handlePayNow = () => {
+  /* handlePayNow = () => {
     this.setState({
       openDialog: true,
     });
@@ -291,7 +290,7 @@ class PurchaseViewPage extends React.Component {
     this.setState({
       openDialog: false,
     });
-  };
+  }; */
 
   handleSupplierChange = (event) => {
     this.updateFormValue(event.target.value, "user_id");
@@ -429,8 +428,8 @@ class PurchaseViewPage extends React.Component {
   }
 
   loadViewData = () => {
-    this.props.actions.purchaseView(this.props.params.id);
-    console.log(this.props.actions.purchaseView(this.props.params.id));
+    this.props.actions.purchaseOnApprovalView(this.props.params.id);
+    console.log(this.props.actions.purchaseOnApprovalView(this.props.params.id));
   };
 
   render() {
@@ -936,7 +935,7 @@ const mapDispatchToProps = (dispatch) => {
     dispatch,
     actions: bindActionCreators(
       {
-        purchaseView,
+        purchaseOnApprovalView,
         paymentStore,
         paymentList,
         getNotifiactions,

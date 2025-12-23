@@ -4,6 +4,7 @@ import { Field, reduxForm } from 'redux-form/immutable';
 import {Box, TextField, Button, Grid, Stack, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
 import { ContactPageSharp } from '@mui/icons-material';
 import withRouter from 'src/helpers/withRouter';
+import { validateNumber } from 'src/helpers/helper';
 
 const validate = values => {
   const errors = {}
@@ -87,6 +88,7 @@ class PurityForm extends React.Component {
                         name="value"
                         component={this.renderTextField}
                         label="Purity Percentage(%)"
+                        onInput={(e) => validateNumber(e)}
                       />
                 </Grid>
             </Grid>

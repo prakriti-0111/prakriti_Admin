@@ -123,6 +123,7 @@ const SaleDownloadViewPage = Loadable(lazy(() => import('../pages/SuperAdmin/Sal
 //Sale On Approval
 const SaleOnApprovePage = Loadable(lazy(() => import('../pages/SuperAdmin/SaleOnApproval')));
 const SaleOnApproveViewPage = Loadable(lazy(() => import('../pages/SuperAdmin/SaleOnApproval/View')));
+const SaleOnApproveDownloadViewPage = Loadable(lazy(() => import('../pages/SuperAdmin/SaleOnApproval/DownloadView')));
 const PurchaseOnApprovePage = Loadable(lazy(() => import('../pages/SuperAdmin/PurchaseOnApproval')));
 const PurchaseOnApproveViewPage = Loadable(lazy(() => import('../pages/SuperAdmin/PurchaseOnApproval/View')));
 
@@ -233,6 +234,10 @@ const DistributorRoutes = (isLoggedIn, permissions) => [
       {
         path: 'sales/Download-View/:id',
         element: <SaleDownloadViewPage />
+      },
+      {
+        path: 'sale-on-approve/Download-View/:id',
+        element: <SaleOnApproveDownloadViewPage />
       },
       {
         path: 'sale-on-approve',

@@ -52,7 +52,7 @@ import DialogContentText from "@mui/material/DialogContentText";
 import DialogTitle from "@mui/material/DialogTitle";
 import { categoryList } from "actions/superadmin/category.actions";
 import { materialList } from "actions/superadmin/material.actions";
-import { displayAmount } from "src/helpers/helper";
+import { displayAmount, isEmpty } from "src/helpers/helper";
 import { FreeBreakfastOutlined } from "@mui/icons-material";
 import { unitList } from "actions/superadmin/unit.actions";
 import { sizeList } from "actions/superadmin/size.actions";
@@ -720,6 +720,7 @@ class StockPage extends Component {
         let check_cart = await getCartItemById({
           stock_id: item.id,
           product_id: item.product_id,
+          certificate_no: item.certificate_no
         });
         
         if (!check_cart.data.success) {
@@ -737,7 +738,7 @@ class StockPage extends Component {
         }
 
         // Add to cart directly
-        if (item.type !== "material") {
+        if (item.type !== "material" && row.certificate_no != "") {
           const materials = item.stock_materials.map(material => ({
             material_id: material.material_id,
             purity_id: material.purity_id,
@@ -858,6 +859,7 @@ class StockPage extends Component {
       let check_cart = await getCartItemById({
         stock_id: row.id,
         product_id: row.product_id,
+        certificate_no: row.certificate_no
       });
       
       if (!check_cart.data.success) {
@@ -889,7 +891,7 @@ class StockPage extends Component {
       }
 
       // Process based on item type
-      if (row.type !== "material") {
+      if (row.type !== "material" && row.certificate_no != "") {
         // Handle non-material items - optimized data preparation
         const materials = row.stock_materials.map(material => ({
           material_id: material.material_id,
@@ -1000,6 +1002,7 @@ class StockPage extends Component {
       let check_cart = await getCartItemById({
         stock_id: row.id,
         product_id: row.product_id,
+        certificate_no: row.certificate_no
       });
       
       if (!check_cart.data.success) {
@@ -1021,9 +1024,9 @@ class StockPage extends Component {
         this.setState({ processingCartItems: newProcessingItems });
         return;
       }
-
+      console.log("row : ", row);
       // Process based on item type
-      if (row.type !== "material") {
+      if (row.type !== "material" && !isEmpty(row.certificate_no)) {
         // Handle non-material items - optimized data preparation
         const materials = row.stock_materials.map(material => ({
           material_id: material.material_id,
@@ -1948,6 +1951,7 @@ class StockPage extends Component {
             </DialogTitle>
             <div>
               <DialogContentText></DialogContentText>
+              {console.log("this.state.cart_stock : ", this.state.cart_stock)}
               {this.state.cart_stock ? (
                   <TableContainer component={Paper}>
                     <div className="ratn-table-purchase-wrapper">

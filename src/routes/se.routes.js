@@ -76,6 +76,7 @@ const LeaveApplicationEditPage = Loadable(lazy(() => import('../pages/SuperAdmin
 //Sale On Approval
 const SaleOnApprovePage = Loadable(lazy(() => import('../pages/SuperAdmin/SaleOnApproval')));
 const SaleOnApproveViewPage = Loadable(lazy(() => import('../pages/SuperAdmin/SaleOnApproval/View')));
+const SaleOnApproveDownloadViewPage = Loadable(lazy(() => import('../pages/SuperAdmin/SaleOnApproval/DownloadView')));
 
 //My Performance
 const MyPerformancePage = Loadable(lazy(() => import('../pages/SuperAdmin/MyPerformance')));
@@ -231,6 +232,10 @@ const SeRoutes = (isLoggedIn) => [
       {
         path: 'sales/Download-View/:id',
         element: <SaleDownloadViewPage />
+      },
+      {
+        path: 'sale-on-approve/Download-View/:id',
+        element: <SaleOnApproveDownloadViewPage />
       },
       {
         path: 'transfer',

@@ -55,8 +55,10 @@ import ReplayIcon from "@mui/icons-material/Replay";
 import { fontSize } from "@mui/system";
 import SearchIcon from "@mui/icons-material/Search";
 import { getRoleName, getUserDashboardRoute } from "src/helpers/helper";
+import { salesExecutiveFetch } from "actions/superadmin/salesExecutive.actions";
 import { getNotifiactions } from "actions/superadmin/notification.actions";
 import FileDownloadIcon from "@mui/icons-material/FileDownload";
+import ClearIcon from '@mui/icons-material/Clear';
 
 class DistributorInvoiceTransactionLedgerPage extends React.Component  {
     constructor(props) {
@@ -64,56 +66,20 @@ class DistributorInvoiceTransactionLedgerPage extends React.Component  {
 
         this.state = {
           auth: this.props.auth,
+          se: this.props.se,
           saleList: this.props.saleList,
           saleTotal: this.props.saleTotal,
           queryParams: {
             page: 1,
             limit: 50,
+            date_from: null,
+            date_to: null,
             search: "",
           },
           processing: false,
           downloadingInfo: false,
           note: ""
         };
-        
-        this.columns = [
-            {
-                name: "sl_no",
-                display_name: "Sl No.",
-            },
-            {
-                name: "invoice_number",
-                display_name: "Invoice Number",
-            },
-            {
-                name: "txn_date",
-                display_name: "Date",
-            },
-            {
-                name: "remarks",
-                display_name: "Remarks",
-            },
-            {
-                name: "bill_amount",
-                display_name: "Bill Amount",
-            },
-            {
-                name: "payment_amount",
-                display_name: "Payment Amount",
-            },
-            {
-                name: "payment_mode",
-                display_name: "Payment Mode",
-            },
-            {
-                name: "type",
-                display_name: "Type",
-            },
-            {
-                name: "balance",
-                display_name: "Balance",
-            },
-        ];
     }
 
     componentDidMount() {
@@ -121,18 +87,30 @@ class DistributorInvoiceTransactionLedgerPage extends React.Component  {
     }
 
     loadAllData = () => {
+      this.props.actions.salesExecutiveFetch(this.props.params.id);
       this.loadSalesData();
     };
 
     loadSalesData = () => {
       let data = { ...this.state.queryParams };
       data.user_id = this.props.params.id;
+
+      if (data.date_from) {
+        data.date_from = moment(data.date_from.toString()).format("YYYY-MM-DD");
+      }
+      if (data.date_to) {
+        data.date_to = moment(data.date_to.toString()).format("YYYY-MM-DD");
+      }
       this.setState({processing : true});
       this.props.actions.saleTxnLedgerList(data);
     };
 
     static getDerivedStateFromProps(props, state) {
       let update = {};
+
+      if (props.se !== state.se) {
+        update.se = props.se;
+      }
       
       if (props.saleList !== state.saleList) {
         update.processing = false;
@@ -168,6 +146,15 @@ class DistributorInvoiceTransactionLedgerPage extends React.Component  {
           this.loadSalesData();
         }
       );
+    };
+
+    updateQueryParams = (value, key) => {
+      this.setState({
+        queryParams: {
+          ...this.state.queryParams,
+          [key]: value,
+        },
+      });
     };
   
     handleInvoiceView = (row) => {
@@ -221,6 +208,13 @@ class DistributorInvoiceTransactionLedgerPage extends React.Component  {
   
       let data = { ...this.state.queryParams };
       data.user_id = this.props.params.id;
+
+      if (data.date_from) {
+        data.date_from = moment(data.date_from.toString()).format("YYYY-MM-DD");
+      }
+      if (data.date_to) {
+        data.date_to = moment(data.date_to.toString()).format("YYYY-MM-DD");
+      }
       let response = await saleDownloadLedger(data);
       if (response.data.success) {
         this.setState(
@@ -239,6 +233,7 @@ class DistributorInvoiceTransactionLedgerPage extends React.Component  {
     };
 
     render() {
+      const se = this.state.se;
       const { saleList, saleTotal, queryParams, processing, downloadingInfo } = this.state;
       const totalPage = Math.ceil(
         this.state.saleTotal / this.state.queryParams.limit
@@ -246,8 +241,8 @@ class DistributorInvoiceTransactionLedgerPage extends React.Component  {
 
       console.log("saleList", saleList);
       return (    
-          <MainCard
-            title='Transaction Ledger'
+          <MainCard 
+            title={`Transaction Ledger - ${se?se.company_name:""}`}
             secondary={
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', paddingTop: "7px" }}>
                 {downloadingInfo ? (
@@ -278,28 +273,60 @@ class DistributorInvoiceTransactionLedgerPage extends React.Component  {
                   spacing={gridSpacing}
                   columnSpacing={{ xs: 1, sm: 2, md: 2 }}
                   className='details-header ratn-pur-wrapper loans_view'>
-                  <Grid item xs={10} md={10} className='create-input'>
+                  <Grid item xs={6} md={3} sx={{marginLeft:"20px"}} className='create-input'>
                     <FormControl fullWidth>
-                      <OutlinedInput
+                      <TextField
+                        label="Search"
+                        variant="outlined"
                         value={this.state.queryParams.search}
-                        onChange={(e) =>
-                          this.setState({
-                            queryParams: {
-                              ...this.state.queryParams,
-                              search: e.target.value,
-                            },
-                          })
-                        }
-                        endAdornment={
-                          <InputAdornment position='end'>
-                            <IconButton onClick={this.handleSearch} edge='end'>
-                              <SearchIcon />
-                            </IconButton>
-                          </InputAdornment>
-                        }
-                        sx={{ borderRadius: "25px", marginLeft: "20px", marginTop: "25px" }}
+                        onChange={(e) => this.updateQueryParams(e.target.value, 'search')}
+                        InputProps={{
+                          endAdornment: (
+                          <IconButton
+                            sx={{ visibility: this.state.queryParams.search ? "visible" : "hidden" }}
+                            onClick={(e) => this.updateQueryParams('', 'search')}
+                          >
+                            <ClearIcon />
+                          </IconButton>
+                          ),
+                        }}
                       />
                     </FormControl>
+                  </Grid>
+                  <Grid item xs={6} md={3} sx={{marginLeft:"20px"}} >
+                    <LocalizationProvider dateAdapter={AdapterDayjs}>
+                      <DatePicker
+                        label="Date From"
+                        inputFormat="DD/MM/YYYY"
+                        value={this.state.queryParams.date_from}
+                        onChange={(newValue) =>
+                          this.updateQueryParams(newValue, "date_from")
+                        }
+                        renderInput={(params) => <TextField {...params} />}
+                      />
+                    </LocalizationProvider>
+                  </Grid>
+                  <Grid item xs={6} md={3} sx={{marginLeft:"20px"}} >
+                    <LocalizationProvider dateAdapter={AdapterDayjs}>
+                      <DatePicker
+                        label="Date To"
+                        inputFormat="DD/MM/YYYY"
+                        value={this.state.queryParams.date_to}
+                        onChange={(newValue) =>
+                          this.updateQueryParams(newValue, "date_to")
+                        }
+                        renderInput={(params) => <TextField {...params} />}
+                      />
+                    </LocalizationProvider>
+                  </Grid>
+                  <Grid item xs={6} md={2} sx={{marginLeft:"20px"}}  className="create-input">
+                    <Button
+                      variant="contained"
+                      className="search-btn"
+                      onClick={this.handleSearch}
+                    >
+                      Search
+                    </Button>
                   </Grid>
                   <Grid item xs={12} md={12} className='p-add-product create-input'>
                     <TableContainer component={Paper}>
@@ -313,10 +340,12 @@ class DistributorInvoiceTransactionLedgerPage extends React.Component  {
                               <TableCell sx={{ width: "50px" }}>Date</TableCell>
                               <TableCell sx={{ width: "100px" }}>Invoice No</TableCell>
                               <TableCell sx={{ width: "50px" }}>Remarks</TableCell>
+                              <TableCell sx={{ width: "50px" }}>Purpose</TableCell>
                               <TableCell sx={{ width: "150px" }}>Bill Amt</TableCell>
                               <TableCell sx={{ width: "150px" }}>Payment Amt</TableCell>
                               <TableCell sx={{ width: "50px" }}>Mode</TableCell>
                               <TableCell sx={{ width: "50px" }}>Type</TableCell>
+                              <TableCell sx={{ width: "50px" }}>Status</TableCell>
                               <TableCell sx={{ width: "150px" }}>Balance(Due)</TableCell>
                               <TableCell sx={{ width: "50px" }}>Action</TableCell>
                             </TableRow>
@@ -450,6 +479,7 @@ class DistributorInvoiceTransactionLedgerPage extends React.Component  {
 }
 
 const mapStateToProps = (state) => ({
+  se: state.superadmin.salesExecutive.item || null,
   saleList: state.superadmin.sales.items,
   saleTotal: state.superadmin.sales.total,
   auth: state.auth,
@@ -460,6 +490,7 @@ const mapDispatchToProps = (dispatch) => {
     dispatch,
     actions: bindActionCreators(
       {
+        salesExecutiveFetch,
         saleTxnLedgerList
       },
       dispatch
@@ -515,10 +546,12 @@ function Row(props) {
                     data-bs-toggle='modal'
 
                     data-bs-target='#noteModal'></i></div></TableCell>
+        <TableCell >{row.purpose}</TableCell>
         <TableCell >{row.bill_amount}</TableCell>
         <TableCell >{row.payment_amount}</TableCell>
         <TableCell >{row.payment_mode}</TableCell>
-        <TableCell >{row.type}</TableCell>
+        <TableCell >{row.type}{row.is_advance?"(Advance)":""}</TableCell>
+        <TableCell >{row.approve_status}</TableCell>
         <TableCell >{row.balance}</TableCell>
         <TableCell className={'action_btn'}>
           <Stack

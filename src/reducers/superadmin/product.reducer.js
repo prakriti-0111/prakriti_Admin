@@ -78,7 +78,8 @@ export default function (state = initialState, action) {
                 deleteSuccess: false,
                 editSuccess: false,
                 successMessage: null,
-                errorMessage: null
+                errorMessage: null,
+                product: null
             }
         case RESET_PRODUCT_LIST:
             return {

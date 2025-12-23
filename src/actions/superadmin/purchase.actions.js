@@ -10,6 +10,7 @@ import {
     LIST_PURCHASE_ON_APPROVE,
     GET_PURCHASE_ON_APPROVE,
     UPDATE_PURCHASE_STATUS,
+    LIST_PURCHASE_PRE_STORE
 } from '../../actionTypes/superadmin/purchase.types';
 import {objectToQuery} from 'src/helpers/helper';
 
@@ -113,6 +114,36 @@ export const purchaseCreate = (params) => {
     }
 }
 
+export const purchasePreStore = async (data) => {
+    console.log("---purchasePreStore",data)
+    return await axios.post("/superadmin/purchases/pre-store", data);
+    /* return (dispatch) => {
+        axios.post("/superadmin/purchases/pre-store", data)
+        .then(response => {
+            
+        })
+        .catch(error => {
+        })
+    } */
+}
+
+export const purchasePreStoreList = (params) => {
+    params = objectToQuery(params, true)
+    return (dispatch) => {
+        axios.get(`/superadmin/purchases/pre-store-list${params}`)
+        .then(response => {
+            if(response.data.success){
+                dispatch({
+                    type: LIST_PURCHASE_PRE_STORE,
+                    payload: response.data.data
+                });
+            }
+        })
+        .catch(error => {
+        })
+    }
+}
+
 export const purchaseStore = (data) => {
     console.log("---purchaseStore",data)
     return (dispatch) => {
@@ -144,6 +175,24 @@ export const purchaseView = (id) => {
         })
     }
 }
+
+export const purchaseOnApprovalView = (id) => {
+    return (dispatch) => {
+        axios.get(`/superadmin/purchases-on-approve/view/${id}`)
+        .then(response => {
+            console.log(response.data.data)
+            if(response.data.success){
+                dispatch({
+                    type: GET_PURCHASE,
+                    payload: response.data.data
+                });
+            }
+        })
+        .catch(error => {
+        })
+    }
+}
+
 
 export const purchaseEdit = (id) => {
     return (dispatch) => {
@@ -190,6 +239,17 @@ export const purchaseDelete = (id, data) => {
     }
 }
 
+export const prePurchaseDelete = (id, data) => {
+    return (dispatch) => {
+        axios.delete(`/superadmin/purchases/pre-purchase-delete/${id}`, data)
+        .then(response => {
+            
+        })
+        .catch(error => {
+        })
+    }
+}
+
 export const purchaseNewInvoiceNumber = () => {
     return axios.get(`/superadmin/purchases/new-invoice-number`);
 }
@@ -213,8 +273,24 @@ export const purchaseDownloadInvoiceInfo = (id) => {
     return axios.post(`/superadmin/purchases/download-invoice-info/${id}`);
 }
 
-export const purchaseDownloadInvoiceItems = (id) => {
-    return axios.post(`/superadmin/purchases/download-invoice-items/${id}`);
+export const purchaseDownloadInvoiceItemList = (id) => {
+    return axios.post(`/superadmin/purchases/download-invoice-item-list/${id}`);
+}
+
+export const purchaseDownloadInvoiceItemDetails = (id) => {
+    return axios.post(`/superadmin/purchases/download-invoice-item-details/${id}`);
+}
+
+export const purchaseOnApprovalDownloadInvoiceInfo = (id) => {
+    return axios.post(`/superadmin/purchases-on-approve/download-invoice-info/${id}`);
+}
+
+export const purchaseOnApprovalDownloadInvoiceItemList = (id) => {
+    return axios.post(`/superadmin/purchases-on-approve/download-invoice-item-list/${id}`);
+}
+
+export const purchaseOnApprovalDownloadInvoiceItemDetails = (id) => {
+    return axios.post(`/superadmin/purchases-on-approve/download-invoice-item-details/${id}`);
 }
 
 export const purchaseDownloadLedger = (params) => {

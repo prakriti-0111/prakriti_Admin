@@ -22,6 +22,7 @@ import noImage from 'src/assets/images/no_image.jpg';
 import { distributorList } from 'actions/superadmin/distributor.actions';
 import { formValues } from 'redux-form';
 import {UPDATE_GLOBAL_AUTH} from '../../actionTypes/global.types';
+import { validateInteger, validateNumber } from '../../helpers/helper';
 
 class SalesExecutiveForm extends React.Component {
 
@@ -655,6 +656,7 @@ class SalesExecutiveForm extends React.Component {
                             variant="outlined"
                             fullWidth
                             value={formValues.mobile}
+                            onInput={(e) => validateInteger(e)}
                             onChange={(event) => this.handleDefaultChange(event, 'mobile')}
                             error={formErros.mobile}
                             disabled={isEditProfile}
@@ -858,6 +860,7 @@ class SalesExecutiveForm extends React.Component {
                             onChange={(event) => this.handleDefaultChange(event, 'pincode')}
                             error={formErros.pincode}
                             disabled={isEditProfile}
+                            onInput={(e) => validateInteger(e)}
                             inputProps={{ className: "non_disable_text" }}
                         />
                     </Grid>
@@ -882,6 +885,7 @@ class SalesExecutiveForm extends React.Component {
                             onChange={(event) => this.handleDefaultChange(event, 'parents_contact_no')}
                             error={formErros.parents_contact_no}
                             disabled={isEditProfile}
+                            onInput={(e) => validateInteger(e)}
                             inputProps={{ className: "non_disable_text" }}
                         />
                     </Grid>
@@ -990,6 +994,7 @@ class SalesExecutiveForm extends React.Component {
                             onChange={(event) => this.handleDefaultChange(event, 'bank_account_no')}
                             error={formErros.bank_account_no}
                             disabled={isEditProfile}
+                            onInput={(e) => validateInteger(e)}
                             inputProps={{ className: "non_disable_text" }}
                         />
                     </Grid>

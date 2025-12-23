@@ -181,6 +181,10 @@ class PurchaseOnApprovePage extends Component {
     this.props.navigate('view/' + row.id);
   }
 
+  handleDownloadView = (row) => {
+    this.props.navigate('download-view/' + row.id);
+  }
+
   componentDidUpdate(previousProps, previousState){
     if(this.state.deleteSuccess){
       const { dispatch } = this.props;
@@ -208,7 +212,7 @@ class PurchaseOnApprovePage extends Component {
   render() {
     
     return (
-      <MainCard title="Purchase List" secondary={(!isDistributor() && hasPermission(this.state.permissions, 'purchase_on_approval', 'add')) ? <Button variant="contained" onClick={() => this.props.navigate(getUserDashboardRoute(getRoleName(this.state.auth)) + '/purchases/create?purchase_on_approval=0') }>Add</Button> : null} >
+      <MainCard title="Purchase On Approval List" secondary={(!isDistributor() && hasPermission(this.state.permissions, 'purchase_on_approval', 'add')) ? <Button variant="contained" onClick={() => this.props.navigate(getUserDashboardRoute(getRoleName(this.state.auth)) + '/purchases/create?purchase_on_approval=0') }>Add</Button> : null} >
         <Box sx={{ flexGrow: 1, m: 0.5 }} className='ratn-dialog-inner'>
           <Grid container spacing={2} columnSpacing={{ xs: 1, sm: 2, md: 2 }} className='tax-input loans_view p_view'>
             <Grid item xs={6} md={2} className='create-input'>
@@ -298,7 +302,13 @@ class PurchaseOnApprovePage extends Component {
                 onClick: this.handleView,
                 color: 'primary',
                 show: hasPermission(this.state.permissions, 'purchase_on_approval', 'view')
-              }
+              },
+              {
+                label: 'Download',
+                onClick: this.handleDownloadView,
+                color: 'primary',
+                show: hasPermission(this.state.permissions, 'purchase_on_approval', 'view')
+              },
             ]}
           />
         </Grid>

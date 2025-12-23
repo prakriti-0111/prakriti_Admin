@@ -50,6 +50,8 @@ import {
   isAdmin,
   isDistributor,
   isSalesExecutive,
+  getRoleName,
+  getUserDashboardRoute
 } from "src/helpers/helper";
 import { withSnackbar } from "notistack";
 import AccountBalanceWalletIcon from "@mui/icons-material/AccountBalanceWallet";
@@ -63,6 +65,7 @@ class WalletPage extends Component {
     super(props);
 
     this.state = {
+      auth: this.props.auth,
       advanceFilter: false,
       items: this.props.items,
       total: this.props.total,
@@ -309,6 +312,9 @@ class WalletPage extends Component {
 
     if (props.errorMessage !== state.errorMessage) {
       update.errorMessage = props.errorMessage;
+    }
+    if (props.auth !== state.auth) {
+      update.auth = props.auth;
     }
     if (props.balance_by_mode !== state.balance_by_mode) {
       update.balance_by_mode = props.balance_by_mode;
@@ -641,16 +647,23 @@ class WalletPage extends Component {
       });
     }
 
+    if(this.isSuperAdmin || (profile && !profile.own && this.isAdmin)){
+      payment_types.push({
+        label: "Payment",
+        value: "payment",
+      });
+    }
+
     console.log(
       "-----------------------------------------columns",
       this.columns,
       this.state.items
     );
-    let advanceData = 0;
+    /* let advanceData = 0; */
 
-    this.props.retailerList.map(
+    /* this.props.retailerList.map(
       (index) => (advanceData += index.advance_amount)
-    );
+    ); */
     return (
       <MainCard title="Wallet History" secondary="">
         {balance_by_mode ? (
@@ -730,7 +743,10 @@ class WalletPage extends Component {
             <CardContent
               className="dashboard_card_content bg-color-7"
               sx={{ display: "flex", justifyContent: "space-between" }}
-              onClick={() => this.setState({ advanceFilter: true })}
+              onClick={() => {
+                /* this.setState({ advanceFilter: true }) */
+                this.handleCardClick("advance");
+              }}
             >
               <Typography
                 sx={{ fontSize: 14, margin: 0 }}
@@ -739,7 +755,7 @@ class WalletPage extends Component {
                 component="span"
               >
                 <h1>Advance</h1>
-                <h2>{advanceData}</h2>
+                <h2>{balance_by_mode.advance}</h2>
               </Typography>
               <div className="card-icon">
                 <AccountBalanceWalletIcon />
@@ -978,9 +994,16 @@ class WalletPage extends Component {
                       value={paymentFormValues.payment_type}
                       fullWidth
                       label="Payment Type"
-                      onChange={(event) =>
-                        this.updateFormValue(event.target.value, "payment_type")
-                      }
+                      onChange={(event) => {
+                        if(event.target.value == "payment"){
+                          this.props.navigate(
+                            getUserDashboardRoute(getRoleName(this.state.auth)) +
+                              "/suppliers"
+                          );
+                        } else {
+                          this.updateFormValue(event.target.value, "payment_type");
+                        }
+                      }}
                     >
                       {payment_types.map((item, index) => (
                         <MenuItem value={item.value} key={index}>
@@ -1194,6 +1217,7 @@ class WalletPage extends Component {
 }
 
 const mapStateToProps = (state) => ({
+  auth: state.auth,
   items: state.superadmin.payment.items,
   total: state.superadmin.payment.total,
   balance_by_mode: state.superadmin.payment.balance_by_mode,

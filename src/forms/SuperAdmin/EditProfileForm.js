@@ -11,7 +11,7 @@ import withRouter from 'src/helpers/withRouter';
 import {SUPERADMIN_PROFILE_RESET} from '../../actionTypes/superadmin/profile.types';
 import {UPDATE_GLOBAL_AUTH} from '../../actionTypes/global.types';
 import {getRoleName, getUserDashboardRoute} from 'src/helpers/helper';
-
+import { validateInteger, validateNumber } from '../../helpers/helper';
 
 class EditProfileForm extends React.Component {
 
@@ -175,6 +175,7 @@ class EditProfileForm extends React.Component {
                             value={formValues.mobile}
                             onChange={(event) => this.handleDefaultChange(event, 'mobile')}
                             error={formErros.mobile}
+                            onInput={(e) => validateInteger(e)}
                         />
                     </Grid>
                     <Grid item xs={4} className='create-input'>

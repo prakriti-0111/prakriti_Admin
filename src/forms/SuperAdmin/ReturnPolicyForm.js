@@ -5,7 +5,8 @@ import { Field, reduxForm, getFormValues, change } from 'redux-form/immutable';
 import {Box, TextField, Button, Grid, Stack,  Select, MenuItem, InputLabel, FormControl, FormHelperText, InputAdornment } from '@mui/material';
 import { ContactPageSharp } from '@mui/icons-material';
 import withRouter from 'src/helpers/withRouter';
-import {priceFormat, displayAmount} from 'src/helpers/helper';
+import {priceFormat, displayAmount, validateNumber} from 'src/helpers/helper';
+import { validateInteger } from '../../helpers/helper';
 
 const validate = values => {
   const errors = {}
@@ -218,6 +219,7 @@ class ReturnPolicyForm extends React.Component {
                   name="amount"
                   component={this.renderAmountField}
                   label="Amount"
+                  onInput={(e) => validateNumber(e)}
                 />
               </Grid>
               <Grid item xs={2} className='create-input'>
@@ -225,6 +227,7 @@ class ReturnPolicyForm extends React.Component {
                   name="days"
                   component={this.renderTextField}
                   label="Days"
+                  onInput={(e) => validateInteger(e)}
                 />
               </Grid>
               <Grid item xs={2}>

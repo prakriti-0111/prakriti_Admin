@@ -32,6 +32,7 @@ import moment from 'moment';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import { validateInteger, validateNumber } from '../../helpers/helper';
 
 const validate = values => {
   const errors = {}
@@ -142,7 +143,7 @@ class StockProductBannerForm extends React.Component {
   static getDerivedStateFromProps(props, state) {
     let update = {};
 
-    if (props.formData !== state.formData) {
+    if (props.formData !== state.formData || props.formData.products !== state.formData.products) {
       update.formData = props.formData;
     }
     if (props.categories !== state.categories) {
@@ -267,14 +268,23 @@ class StockProductBannerForm extends React.Component {
         {...custom}
         value={input.value === "" ? value : input.value}
         multi="true"
-        renderValue={(selected) => this.getSelectedProductNames(selected).join(", ")}
+        renderValue={(selected) => {
+          console.log("selected : ", selected);
+          return this.getSelectedProductNames(selected).join(", ");
+        }}
       >
-        {this.state.stockProductList.map((item) => (
-          <MenuItem key={item.id} value={item.id} className='multi-select'>
-            <Checkbox checked={(input.value && input.value.indexOf(item.id) > -1) ? true : false} />
+        {this.state.stockProductList.map((item) => {
+          console.log("formData.products : ", this.state.formData.products);
+          console.log("input.value : ", input.value);
+          console.log("item : ", item);
+          console.log("selected : ", ((input.value && input.value.indexOf(String(item.id)) > -1) ? true : false));
+          return (
+          <MenuItem key={item.id} value={String(item.id)} className='multi-select'>
+            <Checkbox checked={(input.value && input.value.indexOf(String(item.id)) > -1) ? true : false} />
+            <img src={item.image} id="product-img" style={{height: '100px', width: '100px'}} />
             <ListItemText primary={item.certificate_no} />
-          </MenuItem>
-        ))}
+          </MenuItem>);
+        })}
 
       </Select>
       {
@@ -289,7 +299,8 @@ class StockProductBannerForm extends React.Component {
   getSelectedProductNames = (selected) => {
     let arr = [];
     for (let i = 0; i < selected.length; i++) {
-      let item = _.filter(this.state.stockProductList, { id: selected[i] });
+      let item = _.filter(this.state.stockProductList, { id: parseInt(selected[i]) });
+      console.log("getSelectedProductNames item : ", item);
       if (item.length)
         arr.push(item[0].certificate_no);
 
@@ -397,6 +408,10 @@ class StockProductBannerForm extends React.Component {
   }
 
   handleFormSubmit = async (data, dispatch) => {
+    console.log("data : ", data);
+    const productSelected = data.products.filter(pid => pid != "" && this.state.stockProductList.filter(itm => String(itm.id) == String(pid)).length > 0);
+    console.log("productSelected : ", productSelected);
+    data.products = productSelected;
     let errors = false;
     let values = { ...this.getDefaultValues(), ...data };
     /*if (values.products.length == 0) {
@@ -426,8 +441,19 @@ class StockProductBannerForm extends React.Component {
     }
   }
 
-  handleFieldChange = (e, vl) => {
-
+  handleProductChange = (e, vl) => {
+    console.log("vl : ", vl);
+    /* this.setState({
+      formData: {
+        ...this.state.formData,
+        products: [
+          ...new Set([
+            ...this.state.formData.products,
+            ...vl
+          ])
+        ]
+      }
+    }) */
   }
 
   onChangeBannerImage = (e) => {
@@ -455,6 +481,10 @@ class StockProductBannerForm extends React.Component {
     const { handleSubmit, pristine, submitting } = this.props;
     const {inProgress, formData} =  this.state;
     console.log("this.state.stockProductList : ", this.state.stockProductList);
+
+    const productSelected = formData.products.filter(pid => pid != "" && this.state.stockProductList.filter(itm => String(itm.id) == String(pid)) > 0);
+    console.log("productSelected : ", productSelected);
+
     return (
       <form onSubmit={handleSubmit(this.handleFormSubmit)} className="ratn-dialog-wrapper" ref={this.formRef}>
         <Box sx={{ flexGrow: 1, m: 0.5 }} className='ratn-dialog-inner'>
@@ -487,9 +517,9 @@ class StockProductBannerForm extends React.Component {
                 label="Products"
                 multi
                 type="select"
-                value={formData ? formData.products : []}
-                defaultValue={formData ? formData.products : []}
-                onChange={(event) => this.handleFieldChange(event)}
+                value={productSelected ? productSelected : []}
+                defaultValue={productSelected ? productSelected : []}
+                onChange={(event, val) => this.handleProductChange(event, val)}
               />
             </Grid>
             <Grid item xs={6} className='create-input'>
@@ -514,6 +544,7 @@ class StockProductBannerForm extends React.Component {
                 name="price"
                 component={this.renderTextField}
                 label="Price"
+                onInput={(e) => validateNumber(e)}
               />
             </Grid>
             <Grid item xs={4} className='create-input'>
@@ -522,6 +553,7 @@ class StockProductBannerForm extends React.Component {
                 name="discount"
                 component={this.renderTextField}
                 label="Discount"
+                onInput={(e) => validateNumber(e)}
               />
             </Grid>
             <Grid item xs={4} className='create-input'>
@@ -530,6 +562,7 @@ class StockProductBannerForm extends React.Component {
                 name="final_price"
                 component={this.renderTextField}
                 label="Final Price"
+                onInput={(e) => validateNumber(e)}
               />
             </Grid>
             <Grid item xs={6} className='create-input'>

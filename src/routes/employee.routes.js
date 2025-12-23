@@ -152,8 +152,10 @@ const SaleProductsPage = Loadable(lazy(() => import('../pages/SuperAdmin/Sale/Sa
 //Sale On Approval
 const SaleOnApprovePage = Loadable(lazy(() => import('../pages/SuperAdmin/SaleOnApproval')));
 const SaleOnApproveViewPage = Loadable(lazy(() => import('../pages/SuperAdmin/SaleOnApproval/View')));
+const SaleOnApproveDownloadViewPage = Loadable(lazy(() => import('../pages/SuperAdmin/SaleOnApproval/DownloadView')));
 const PurchaseOnApprovePage = Loadable(lazy(() => import('../pages/SuperAdmin/PurchaseOnApproval')));
 const PurchaseOnApproveViewPage = Loadable(lazy(() => import('../pages/SuperAdmin/PurchaseOnApproval/View')));
+const PurchaseOnApproveDownloadViewPage = Loadable(lazy(() => import('../pages/SuperAdmin/PurchaseOnApproval/DownloadView')));
 
 //roles
 const RolePage = Loadable(lazy(() => import('../pages/SuperAdmin/Role')));
@@ -554,6 +556,10 @@ const EmployeeRoutes = (isLoggedIn, permissions) => [
         element: <PurchaseDownloadViewPage />
       },
       {
+        path: 'purchase-on-approve/Download-View/:id',
+        element: <PurchaseOnApproveDownloadViewPage />
+      },
+      {
         path: 'sales',
         element: <SalePage />,
         permission: hasPermission(permissions, 'sales', 'list')
@@ -576,6 +582,10 @@ const EmployeeRoutes = (isLoggedIn, permissions) => [
       {
         path: 'sales/Download-View/:id',
         element: <SaleDownloadViewPage />
+      },
+      {
+        path: 'sale-on-approve/Download-View/:id',
+        element: <SaleOnApproveDownloadViewPage />
       },
       {
         path: 'sale-on-approve',

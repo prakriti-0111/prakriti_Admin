@@ -2343,6 +2343,26 @@ span.forget_header {
     color: #fff !important;
     min-width: 110px;
   }
+
+  .approval {
+    padding: 8px 20px;
+    border: 1px solid #cf108f !important;
+    border-radius: 25px;
+    background-color: #cf108f !important;
+    margin-left: 10px;
+    color: #fff !important;
+    min-width: 110px;
+  }
+
+  .nonapproval {
+    padding: 8px 20px;
+    border: 1px solid #660202 !important;
+    border-radius: 25px;
+    background-color: #660202 !important;
+    margin-left: 10px;
+    color: #fff !important;
+    min-width: 110px;
+  }
 }
 
 .sales_heading_list {

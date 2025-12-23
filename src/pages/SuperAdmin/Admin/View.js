@@ -294,6 +294,13 @@ class AdminViewPage extends React.Component {
     });
   };
 
+  handleInvoiceDownloadView = (row) => {
+    this.props.navigate(
+        "/super-admin/sales/download-view/" +
+        row.id
+    );
+  };
+
   handlePayNow = () => {
     this.setState({
       openDialog: true,
@@ -824,7 +831,7 @@ class AdminViewPage extends React.Component {
                           Pay
                         </Button>
                       </Grid>
-                      <Grid
+                      {!admin.own && <Grid
                         item
                         xs={4}
                         md={2}
@@ -835,7 +842,7 @@ class AdminViewPage extends React.Component {
                           onClick={() => this.handleInvoiceTransactionLedger()}>
                           Ledger
                         </Button>
-                      </Grid>
+                      </Grid>}
                     </Grid>
                   </div>
                   <TableContainer component={Paper}>
@@ -864,8 +871,9 @@ class AdminViewPage extends React.Component {
                               limit={this.state.queryParams.limit}
                               index={i}
                               viewAction={this.handleInvoiceView}
-                              downloadAction={this.handleInvoiceDownload}
+                              /* downloadAction={this.handleInvoiceDownload} */
                               payAction={this.handleInvoicePay}
+                              downloadAction={this.handleInvoiceDownloadView}
                             />
                           ))}
                         </TableBody>

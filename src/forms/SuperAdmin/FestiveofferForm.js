@@ -31,6 +31,7 @@ import moment from 'moment';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import { validateInteger, validateNumber } from '../../helpers/helper';
 
 const validate = values => {
   const errors = {}
@@ -549,6 +550,7 @@ class FestiveofferForm extends React.Component {
                 name="discount"
                 component={this.renderTextField}
                 label="Discount"
+                onInput={(e) => validateNumber(e)}
               />
             </Grid>
             <Grid item xs={2} className='create-input'>
