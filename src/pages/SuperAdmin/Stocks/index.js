@@ -357,7 +357,7 @@ class StockPage extends Component {
     // Check for certificate match after items are updated
     // Only auto-add to cart if this is a certificate-specific search (not a regular product search)
     if (prevProps.items !== this.props.items && this.state.queryParams.search && 
-        (this.state.processingCertificate || this.state.searchingCertificate || this.state.pendingCertificateNo)) {
+        this.state.pendingCertificateNo && this.state.searchingCertificate) {
       const searchCert = this.state.queryParams.search;
       console.log("Search results updated, checking for certificate:", searchCert);
       
@@ -374,7 +374,16 @@ class StockPage extends Component {
           console.log("Found exact match:", exactMatch);
           // Only show notification if item can be added to cart
           if (exactMatch.can_add_cart) {
-            this.handleAddToCart(exactMatch);
+            // Mark certificate as processed and ensure processing flags are cleared
+            // before calling handleAddToCart so the action is allowed to proceed.
+            this.setState({
+              pendingCertificateNo: null,
+              searchingCertificate: false,
+              processingCertificate: false
+            }, () => {
+              // Give React a tick to flush state, then trigger add to cart
+              setTimeout(() => this.handleAddToCart(exactMatch), 50);
+            });
           } else {
             this.props.enqueueSnackbar(`Certificate ${searchCert} found but cannot be added to cart`, {
               variant: "warning"
@@ -637,7 +646,11 @@ class StockPage extends Component {
         this.setState({ processingCertificate: false }); // Reset loading state
         return;
       }
-      this.setState({ processingCertificate: true });
+      // Display the scanned value in the certificate input field
+      this.setState({ 
+        processingCertificate: true,
+        manualCertificate: cleanedText // Show scanned value in input
+      });
       if (cleanedText.startsWith("http://") || cleanedText.startsWith("https://")) {
         await this.fetchData(cleanedText);
         this.handleCloseQRScanner(); // Close scanner after URL processing
@@ -777,10 +790,12 @@ class StockPage extends Component {
             limit: 50,
           },
           pendingCertificateNo: certificateNo,
-          searchingCertificate: true
+          searchingCertificate: true,
+          processingCertificate: true
         }, async () => {
           await this.loadListData();
-          this.setState({ searchingCertificate: false });
+          // Keep searchingCertificate true so componentDidUpdate can auto-add
+          // It will be cleared after auto-add completes
         });
       }
     } catch (error) {
@@ -794,10 +809,12 @@ class StockPage extends Component {
           limit: 50,
         },
         pendingCertificateNo: certificateNo,
-        searchingCertificate: true
+        searchingCertificate: true,
+        processingCertificate: true
       }, async () => {
         await this.loadListData();
-        this.setState({ searchingCertificate: false });
+        // Keep searchingCertificate true so componentDidUpdate can auto-add
+        // It will be cleared after auto-add completes
       });
     }
   };
@@ -961,12 +978,6 @@ class StockPage extends Component {
       return;
     }
     
-    // Additional check for processing state
-    if (this.state.processingCertificate) {
-      console.log('Certificate processing in progress, ignoring cart request');
-      return;
-    }
-    
     try {
       // Add this specific item to processing set
       const newProcessingItems = new Set(this.state.processingCartItems);
@@ -1038,7 +1049,11 @@ class StockPage extends Component {
             ...this.state.queryParams,
             page: 1,
             limit: 50,
-          }
+          },
+          processingCertificate: false,
+          manualCertificate: "",
+          pendingCertificateNo: null,
+          searchingCertificate: false
         }, () => {
           this.loadListData();
         });
@@ -1047,7 +1062,11 @@ class StockPage extends Component {
         this.setState({
           cart_stock: row,
           cartDialog: true,
-          unit_id: row.stock_materials[0]?.unit_id || ""
+          unit_id: row.stock_materials[0]?.unit_id || "",
+          processingCertificate: false,
+          manualCertificate: "",
+          pendingCertificateNo: null,
+          searchingCertificate: false
         });
       }
     } catch (error) {
@@ -1464,16 +1483,19 @@ class StockPage extends Component {
 
           if (certificateNumber) {
             console.log("Certificate number from PDF:", certificateNumber);
-            // Search for the certificate
+            // Update the manual certificate input to show the extracted certificate
             this.setState({
+              manualCertificate: certificateNumber,
               queryParams: {
                 ...this.state.queryParams,
                 search: certificateNumber,
                 page: 1,
                 limit: 50,
-              }
+              },
+              pendingCertificateNo: certificateNumber,
+              searchingCertificate: true
             }, () => {
-              // Perform search - handleAddToCart will be called in loadListData
+              // Perform search - componentDidUpdate will auto-add to cart
               this.loadListData();
               this.handleCloseQRScanner(); // Close scanner after processing
             });
@@ -1513,16 +1535,19 @@ class StockPage extends Component {
 
       if (searchedForText) {
         console.log("Certificate number from URL:", searchedForText);
-        // Search for the certificate
+        // Update the manual certificate input to show the extracted certificate
         this.setState({
+          manualCertificate: searchedForText,
           queryParams: {
             ...this.state.queryParams,
             search: searchedForText,
             page: 1,
             limit: 50,
-          }
+          },
+          pendingCertificateNo: searchedForText,
+          searchingCertificate: true
         }, () => {
-          // Perform search - handleAddToCart will be called in loadListData
+          // Perform search - componentDidUpdate will auto-add to cart
           this.loadListData();
           this.handleCloseQRScanner(); // Close scanner after processing
         });
