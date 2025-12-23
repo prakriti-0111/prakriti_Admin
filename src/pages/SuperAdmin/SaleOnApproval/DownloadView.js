@@ -24,12 +24,11 @@ import withRouter from "src/helpers/withRouter";
 import DataTable from "src/utils/DataTable";
 import { withSnackbar } from "notistack";
 import {
-  purchaseView,
-  purchaseStatusChange,
-  purchaseDownloadInvoiceInfo,
-  purchaseDownloadInvoiceItemList,
-  purchaseDownloadInvoiceItemDetails,
-} from "actions/superadmin/purchase.actions";
+  salesOnApproveView,
+  salesOnApprovalDownloadInvoiceInfo,
+  salesOnApprovalDownloadInvoiceItemList,
+  salesOnApprovalDownloadInvoiceItemDetails,
+} from "actions/superadmin/sales.actions";
 import { bindActionCreators } from "redux";
 import { Table, TableHead } from "@mui/material";
 import TableBody from "@mui/material/TableBody";
@@ -49,23 +48,27 @@ import Dialog from "@mui/material/Dialog";
 import DialogContent from "@mui/material/DialogContent";
 import DialogContentText from "@mui/material/DialogContentText";
 import DialogTitle from "@mui/material/DialogTitle";
-import { isEmpty } from "src/helpers/helper";
+import { isEmpty, isSuperAdmin, isAdmin } from "src/helpers/helper";
 import { paymentStore, paymentList } from "actions/superadmin/payment.actions";
 import { SUPERADMIN_RESET_PAYMENT } from "../../../actionTypes/superadmin/payment.types";
 import {
   getRoleName,
   getUserDashboardRoute,
-  getApprovalColor,
+  getApprovalColor
 } from "src/helpers/helper";
 import { getNotifiactions } from "actions/superadmin/notification.actions";
 import FileDownloadIcon from "@mui/icons-material/FileDownload";
+import { stocksList } from 'actions/superadmin/stocks.actions';
+import { stocksTransferHistoryStore } from 'actions/superadmin/stockHistory.actions';
 import './style.css';
-class PurchaseViewPage extends React.Component {
+
+class SaleViewPage extends React.Component {
   constructor(props) {
     super(props);
 
     this.state = {
-      purchase: this.props.purchase,
+      sale: this.props.sale,
+      materialStocks: this.props.materialStocks,
       openDialog: false,
       ...this.defaultFormValues(),
       actionCalled: this.props.actionCalled,
@@ -80,7 +83,7 @@ class PurchaseViewPage extends React.Component {
         limit: 50,
         date_from: null,
         date_to: null,
-        table_type: "purchase",
+        table_type: "sale",
       },
       auth: this.props.auth,
       downloadingInfo: false,
@@ -108,6 +111,10 @@ class PurchaseViewPage extends React.Component {
       {
         name: "txn_id",
         display_name: "Transaction #",
+      },
+      {
+        name: "weight",
+        display_name: "Weight",
       },
     ];
   }
@@ -141,8 +148,13 @@ class PurchaseViewPage extends React.Component {
       downloadingInfo: true,
     });
 
-    let response = await purchaseDownloadInvoiceInfo(id);
+    let response = await salesOnApprovalDownloadInvoiceInfo(id);
     if (response.data.success) {
+      /*if(response.data.data.html){
+        var newWindow = window.open();
+        newWindow.document.write(response.data.data.html);
+        return false;
+      }*/
       this.setState(
         {
           downloadingInfo: false,
@@ -179,7 +191,7 @@ class PurchaseViewPage extends React.Component {
       downloadingList: true,
     });
 
-    let response = await purchaseDownloadInvoiceItemList(id);
+    let response = await salesOnApprovalDownloadInvoiceItemList(id);
     if (response.data.success) {
       this.setState(
         {
@@ -216,7 +228,8 @@ class PurchaseViewPage extends React.Component {
     this.setState({
       downloadingItem: true,
     });
-    let response = await purchaseDownloadInvoiceItemDetails(id);
+
+    let response = await salesOnApprovalDownloadInvoiceItemDetails(id);
     if (response.data.success) {
       this.setState(
         {
@@ -251,8 +264,11 @@ class PurchaseViewPage extends React.Component {
 
   static getDerivedStateFromProps(props, state) {
     let update = {};
-    if (props.purchase !== state.purchase) {
-      update.purchase = props.purchase;
+    if (props.sale !== state.sale) {
+      update.sale = props.sale;
+    }
+    if (props.materialStocks !== state.materialStocks) {
+      update.materialStocks = props.materialStocks;
     }
     if (props.actionCalled !== state.actionCalled) {
       update.actionCalled = props.actionCalled;
@@ -280,18 +296,31 @@ class PurchaseViewPage extends React.Component {
     return update;
   }
 
-  handlePayNow = () => {
+  /* handlePayNow = () => {
+    this.props.actions.stocksList({
+      page: 1,
+      limit: 50,
+      category_id: '',
+      sub_category_id: '',
+      search: '',
+      type: 'material',
+      all: 0,
+      by_specific: "",
+      manager: "",
+      user_id: this.state.sale.user_id,
+      material_id: this.state.formValues.material_id, // Gold
+    });
     this.setState({
       openDialog: true,
     });
-  };
+  }; */
 
-  handleDialogClose = (event, reason) => {
+  /* handleDialogClose = (event, reason) => {
     if (reason && reason == "backdropClick") return;
     this.setState({
       openDialog: false,
     });
-  };
+  }; */
 
   handleSupplierChange = (event) => {
     this.updateFormValue(event.target.value, "user_id");
@@ -312,39 +341,59 @@ class PurchaseViewPage extends React.Component {
       formValues: {
         user_id: "",
         payment_mode: "",
+        material_id: "1", // Gold
+        purity_id: "",
+        unit_id: "",
         payment_date: moment().format("MM/DD/YYYY"),
         due_date: "",
         amount: "",
         notes: "",
         cheque_no: "",
         txn_id: "",
-        table_type: "purchase",
+        weight: "",
+        effective_weight: "",
+        table_type: "sale",
         table_id: "",
       },
       formErros: {
         user_id: false,
+        purity_id: false,
         payment_mode: false,
         payment_date: false,
         amount: false,
         notes: false,
         cheque_no: false,
         txn_id: false,
+        weight: false,
         due_date: false,
       },
     };
   };
 
-  handleSubmit = () => {
+  handleSubmit = async () => {
     if (!this.formValidate()) {
       this.setState({
         processing: true,
       });
       let data = {
         ...this.state.formValues,
-        user_id: this.state.purchase.user_id,
-        table_id: this.state.purchase.id,
+        user_id: this.state.sale.user_id,
+        table_id: this.state.sale.id,
       };
       this.props.actions.paymentStore(data);
+      await stocksTransferHistoryStore({
+        from_user_id: this.state.sale.user_id,
+        to_user_id: this.state.sale.sale_by_id,
+        material_id: this.state.formValues.material_id,
+        quantity: 0,
+        //material_stocks: this.state.materialStocks,
+        payment_mode: this.state.formValues.payment_mode,
+        amount: this.state.formValues.amount,
+        purity_id: this.state.formValues.purity_id,
+        unit_id: this.state.formValues.unit_id,
+        weight: this.state.formValues.weight,
+        effective_weight: this.state.formValues.effective_weight
+      });
     }
   };
 
@@ -353,7 +402,7 @@ class PurchaseViewPage extends React.Component {
     let formErros = this.state.formErros;
     let hasErr = false;
     if (
-      parseFloat(formValues.amount) > parseFloat(this.state.purchase.due_amount)
+      parseFloat(formValues.amount) > parseFloat(this.state.sale.due_amount)
     ) {
       hasErr = true;
       this.props.enqueueSnackbar(
@@ -372,6 +421,27 @@ class PurchaseViewPage extends React.Component {
       hasErr = true;
     } else {
       formErros.payment_mode = false;
+    }
+    if(this.state.materialStocks.length > 0 && isSuperAdmin && isAdmin && formValues.payment_mode == "metal"){
+      if (isEmpty(formValues.purity_id)) {
+        formErros.purity_id = true;
+        hasErr = true;
+      } else {
+        formErros.purity_id = false;
+      }
+      if (isEmpty(formValues.weight)) {
+        formErros.weight = true;
+        hasErr = true;
+      } else if(formValues.weight <= 0){
+        formErros.weight = true;
+        hasErr = true;
+        this.props.enqueueSnackbar(
+          "Weight must be greater than 0.",
+          { variant: "error" }
+        );
+      } else {
+        formErros.weight = false;
+      }
     }
     if (isEmpty(formValues.payment_date)) {
       formErros.payment_date = true;
@@ -429,36 +499,49 @@ class PurchaseViewPage extends React.Component {
   }
 
   loadViewData = () => {
-    this.props.actions.purchaseView(this.props.params.id);
-    console.log(this.props.actions.purchaseView(this.props.params.id));
+    this.props.actions.salesOnApproveView(this.props.params.id);
+    console.log(this.props.actions.salesOnApproveView(this.props.params.id));
   };
 
   render() {
-    const {
-      purchase,
-      formValues,
-      formErros,
-      downloadingInfo,
-      downloadingItem,
-      downloadingList
-    } = this.state;
-    console.log("purchase : ", purchase);
+    const { sale, formValues, formErros, downloadingInfo, downloadingItem, downloadingList } =
+      this.state;
+    let metalPurityList = [];
+        if(this.state.materialStocks.length > 0 && isSuperAdmin && isAdmin && formValues.payment_mode == "metal"){
+          this.state.materialStocks.map((item) => {
+            if(item.stock_materials.length > 0){
+              item.stock_materials.map((subItem) => {
+                subItem.purities.map((priority) => {
+                  metalPurityList.push({
+                    id: priority.id,
+                    unit_id: subItem.unit_id,
+                    value: priority.value,
+                    name: priority.name+`${priority.value?"("+priority.value+"%)":""}`,
+                  });
+                });
+              });
+            }
+          });
+        }
+        console.log("sale : ", sale);
+
     return (
       <MainCard
-        id="downloadViewPurchase"
+        id="downloadViewSale"
         title={
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginRight: "10px" }}>
-            <span>{'Purchase Details'}</span>
-            {purchase && (<div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span>{'Sale Details'}</span>
+            {sale && (<div>
               <Chip
-                label={purchase.approve_status}
-                color={getApprovalColor(purchase.is_approved)}
+                label={sale.approve_status}
+                color={getApprovalColor(sale.is_approved)}
               />
             </div>)}
           </div>
         }
         secondary={
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', paddingTop: "7px" }}>
+          <>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginLeft: "10px" }}>
             {downloadingInfo ? (
               <CircularProgress size='30px' />
             ) : (
@@ -474,8 +557,9 @@ class PurchaseViewPage extends React.Component {
               Back
             </Button>
           </div>
+          </>
         }>
-        {!purchase ? (
+        {!sale ? (
           <Grid container justifyContent='center'>
             <CircularProgress size='30px' />
           </Grid>
@@ -486,7 +570,7 @@ class PurchaseViewPage extends React.Component {
               spacing={{ xs: 2, md: 3 }}
               columns={{ xs: 4, sm: 8, md: 12 }}>
               <Grid item xs={11}>
-                <h3 className='p_heading_list text-center'>Purchase Details</h3>
+                <h3 className='p_heading_list text-center'>Sale Details</h3>
               </Grid>
               <Grid item xs={1} className='action_btn'>
                 {downloadingInfo ? (
@@ -507,13 +591,14 @@ class PurchaseViewPage extends React.Component {
             <Grid
               container
               spacing={{ xs: 2, md: 3 }}
-              columns={{ xs: 6, sm: 9, md: 12 }}
-              className='details-header'>
+              columns={{ xs: 6, sm: 9, md: 12 }}                                                                                                                                      
+              className="details-header" 
+            >
               <Grid item xs={3}>
                 <div className='single-item'>
                   <p>
-                    <span className={'download-field-title'}>Supplier Name: </span> <br />{" "}
-                    {purchase.supplier_name}
+                    <span className={'download-field-title'}>Company Name: </span> <br />{" "}
+                    {sale?.user_details?.company_name}
                   </p>
                 </div>
               </Grid>
@@ -521,31 +606,22 @@ class PurchaseViewPage extends React.Component {
                 <div className='single-item'>
                   <p>
                     <span className={'download-field-title'}>Contact Number: </span> <br />{" "}
-                    {purchase.supplier_mobile}
-                  </p>
-                </div>
-              </Grid>
-              {/* <Grid item xs={3}>
-                <div className='single-item'>
-                  <p>
-                    <span>Invoice Number: </span> <br />{" "}
-                    {purchase.invoice_number}
+                    {sale?.user_details?.mobile}
                   </p>
                 </div>
               </Grid>
               <Grid item xs={3}>
-                <div>
-                  <span>Status: </span> <br />
-                  <Chip
-                    label={purchase.approve_status}
-                    color={getApprovalColor(purchase.is_approved)}
-                  />
+                <div className='single-item'>
+                  <p>
+                    <span className={'download-field-title'}>Seller Name: </span> <br />
+                    {sale.user_name} {/*,  {sale.user_mobile} */}
+                  </p>
                 </div>
-              </Grid> */}
+              </Grid>
               <Grid item xs={3}>
                 <div className='single-item'>
                   <p>
-                    <span className={'download-field-title'}>Invoice Date: </span> <br /> {purchase.invoice_date}
+                    <span className={'download-field-title'}>Invoice Date: </span> <br /> {sale.invoice_date}
                   </p>
                 </div>
               </Grid>
@@ -553,61 +629,84 @@ class PurchaseViewPage extends React.Component {
                 <div className='single-item'>
                   <p>
                     <span className={'download-field-title'}>Due Date: </span> <br />
-                    {purchase.due_date}
+                    {sale.due_date}
                   </p>
                 </div>
               </Grid>
               <Grid item xs={3}>
                 <div className='single-item'>
                   <p>
-                    <span className={'download-field-title'}>Taxable Amount: </span> <br />{" "}
-                    {purchase.taxable_amount}
+                    <span className={'download-field-title'}>Settlement Date: </span> <br />
+                    {sale.settlement_date}
                   </p>
                 </div>
               </Grid>
+              {/* <Grid item xs={3}>
+                <div className='single-item'>
+                  <p>
+                    <span>Invoice Number: </span> <br /> {sale.invoice_number}
+                  </p>
+                </div>
+              </Grid> */}
+              {/* <Grid item xs={3}>
+                <div>
+                  <span>Status: </span> <br />
+                  <Chip
+                    label={sale.approve_status}
+                    color={getApprovalColor(sale.is_approved)}
+                  />
+                </div>
+              </Grid> */}
+              
+              
               <Grid item xs={3}>
                 <div className='single-item'>
                   <p>
-                    <span className={'download-field-title'}>Tax: </span> <br /> {purchase.tax}
+                    <span className={'download-field-title'}>Sub Total: </span> <br /> {sale.taxable_amount}
                   </p>
                 </div>
               </Grid>
-              <Grid item xs={3}>
+              {parseFloat(sale.cgst_tax) > 0 && <Grid item xs={3}>
                 <div className='single-item'>
                   <p>
-                    <span className={'download-field-title'}>Total Amount: </span> <br /> {purchase.total_amount}
+                    <span className={'download-field-title'}>Cgst Tax: </span> <br /> {sale.cgst_tax}
                   </p>
                 </div>
-              </Grid>
+              </Grid>}
+              {parseFloat(sale.sgst_tax) > 0 && <Grid item xs={3}>
+                <div className='single-item'>
+                  <p>
+                    <span className={'download-field-title'}>Sgst Tax: </span> <br /> {sale.sgst_tax}
+                  </p>
+                </div>
+              </Grid>}
+              {parseFloat(sale.igst_tax) > 0 && <Grid item xs={3}>
+                <div className='single-item'>
+                  <p>
+                    <span className={'download-field-title'}>Igst Tax: </span> <br /> {sale.igst_tax}
+                  </p>
+                </div>
+              </Grid>}
+              {/* <Grid item xs={3}>
+                <div className='single-item'>
+                  <p>
+                    <span>Total Amount: </span> <br /> {sale.total_amount}
+                  </p>
+                </div>
+              </Grid> */}
               <Grid item xs={3}>
                 <div className='single-item'>
                   <p>
                     <span className={'download-field-title'}>Discount: </span> <br />
-                    {purchase.discount}
+                    {sale.discount}
                   </p>
                 </div>
               </Grid>
-
-              <Grid item xs={3}>
-                <div className='single-item'>
-                  <p>
-                    <span className={'download-field-title'}>Bill Amount: </span> <br /> {purchase.bill_amount}
-                  </p>
-                </div>
-              </Grid>
-              <Grid item xs={3}>
-                <div className='single-item'>
-                  <p>
-                    <span className={'download-field-title'}>Total Return: </span> <br /> {purchase.return_amount}
-                  </p>
-                </div>
-              </Grid>
-
               <Grid item xs={3}>
                 <div className='single-item'>
                   <p>
                     <span className={'download-field-title'}>Total Payable: </span> <br />
-                    {purchase.total_payable}
+                    {sale.total_payable}
                   </p>
                 </div>
               </Grid>
@@ -615,7 +714,7 @@ class PurchaseViewPage extends React.Component {
                 <div className='single-item'>
                   <p>
                     <span className={'download-field-title'}>Paid Amount: </span> <br />
-                    {purchase.paid_amount_display}
+                    {sale.paid_amount_display}
                   </p>
                 </div>
               </Grid>
@@ -623,13 +722,13 @@ class PurchaseViewPage extends React.Component {
                 <div className='single-item'>
                   <p>
                     <span className={'download-field-title'}>Due Amount: </span> <br />
-                    {purchase.due_amount_display}
+                    {sale.due_amount_display}
                   </p>
                 </div>
               </Grid>
               <Grid item xs={3}>
                 <div className='single-item'>
-                  {purchase.notes ? <p>Notes: {purchase.notes}</p> : null}
+                  {sale.notes ? <p>Notes: {sale.notes}</p> : null}
                 </div>
               </Grid>
             </Grid>
@@ -660,7 +759,7 @@ class PurchaseViewPage extends React.Component {
                         </TableRow>
                       </TableHead>
                       <TableBody>
-                        {purchase.subCatItems.map((row, i) => (
+                        {sale.subCatItems.map((row, i) => (
                           <SubCatRow key={i} row={row} index={i} />
                         ))}
                       </TableBody>
@@ -672,21 +771,36 @@ class PurchaseViewPage extends React.Component {
 
             <Grid
               container
-              spacing={{ xs: 2, md: 3 }}
-              columns={{ xs: 4, sm: 8, md: 12 }}>
-              <Grid item xs={11}>
-                <h3 className='p_heading_list text-center'>Payment Details</h3>
-              </Grid>
+              spacing={{ xs: 2, md: 2 }}
+              style={{paddingBottom: "1%"}}
+              >
+              
+                {/* <h3 className='p_heading_list text-center'>Payment Details</h3> */}
+                <Grid item xs={8} md={10} sm={9}>
+                  {/* <h3 className='p_heading_list text-center'>Payment Details</h3> */}
+                </Grid>
+                <Grid item xs={4} md={2} sm={3} className='action_btn'>
+                  {/* {sale && parseFloat(sale.due_amount) > 0 ? 
+                    <Button
+                      variant='contained'
+                      
+                      className='' 
+                      onClick={() => this.handlePayNow()}
+                      >
+                      Pay Now
+                    </Button>
+                    : null} */}
+                </Grid>
             </Grid>
 
-            {!purchase.is_assigned ? (
+            {!sale.is_assigned ? (
               <Grid
                 item
                 xs={12}
                 className='p-add-product create-input button-right'>
-                <h3 className='p_heading_list sales_heading_list'>
+                {/* <h3 className='p_heading_list sales_heading_list'>
                   Payment List
-                </h3>
+                </h3> */}
                 <DataTable
                   columns={this.columns}
                   rows={this.state.items}
@@ -723,21 +837,21 @@ class PurchaseViewPage extends React.Component {
             <Grid
               container
               spacing={{ xs: 2, md: 3 }}
-              columns={{ xs: 4, sm: 8, md: 12 }}>
+              >
               <Grid item xs={4} md={2} sm={2} className='action_btn'>
-                              {downloadingList ? (
-                                <CircularProgress size='30px' />
-                              ) : (
-                                <Button
-                                  variant='contained'
-                                  
-                                  onClick={() =>
-                                    this.handleDownloadList(this.props.params.id)
-                                  }>
-                                  <span className="download-text">List</span><FileDownloadIcon size='20px'/>
-                                </Button>
-                              )}
-                            </Grid>
+                {downloadingList ? (
+                  <CircularProgress size='30px' />
+                ) : (
+                  <Button
+                    variant='contained'
+                   
+                    onClick={() =>
+                      this.handleDownloadList(this.props.params.id)
+                    }>
+                    <span className="download-text">List</span><FileDownloadIcon size='20px'/>
+                  </Button>
+                )}
+              </Grid>
               <Grid item xs={4} md={8} sm={8}>
                 <h3 className='p_heading_list text-center'>Product List</h3>
               </Grid>
@@ -747,11 +861,11 @@ class PurchaseViewPage extends React.Component {
                 ) : (
                   <Button
                     variant='contained'
-                    style={{ paddingLeft: "8%" }}
+                   
                     onClick={() =>
                       this.handleDownloadItems(this.props.params.id)
                     }>
-                    <span className="download-text">Details</span><FileDownloadIcon />
+                    <span className="download-text">Details</span><FileDownloadIcon size='20px'/>
                   </Button>
                 )}
               </Grid>
@@ -780,11 +894,12 @@ class PurchaseViewPage extends React.Component {
                           <TableCell>Sub Total</TableCell>
                           <TableCell>Dist</TableCell>
                           <TableCell>Tax</TableCell>
-                          <TableCell colSpan="2">Total</TableCell>
+                          <TableCell colSpan='2'>Total</TableCell>
                         </TableRow>
                       </TableHead>
                       <TableBody>
-                        {purchase.products.map((row, i) => (
+                        <TableRow><TableCell /></TableRow>
+                        {sale.products.map((row, i) => (
                           <Row key={i} row={row} index={i} />
                         ))}
                       </TableBody>
@@ -792,11 +907,12 @@ class PurchaseViewPage extends React.Component {
                   </div>
                 </TableContainer>
               </Grid>
+              
             </Grid>
           </>
         )}
 
-        {/*<Dialog
+        {/* <Dialog
           className="ratn-dialog-wrapper"
           open={this.state.openDialog}
           onClose={this.handleDialogClose}
@@ -851,6 +967,7 @@ class PurchaseViewPage extends React.Component {
                       <MenuItem value="cheque">Cheque</MenuItem>
                       <MenuItem value="imps_neft">BANKING/RTGS/NEFT</MenuItem>
                       <MenuItem value="online">UPI/PhonePe/Gpay</MenuItem>
+                      {isSuperAdmin && isAdmin && <MenuItem value='metal'>Metal</MenuItem>}
                     </Select>
                   </FormControl>
                 </Grid>
@@ -880,6 +997,93 @@ class PurchaseViewPage extends React.Component {
                     </Grid>
                     : null
                 }
+                {isSuperAdmin && isAdmin && formValues.payment_mode == "metal" ? (
+                  <>
+                    <Grid item md={4} xs={12} className='create-input'>
+                      <FormControl fullWidth error={formErros.payment_mode}>
+                        <InputLabel>Purity</InputLabel>
+                        <Select
+                          className='input-inner'
+                          value={formValues.purity_id}
+                          fullWidth
+                          label='Purity'
+                          error={formErros.purity_id}
+                          onChange={(event) => {
+                            let effective_weight = 0;
+                            let selected_purity = metalPurityList.find(
+                              (item) => item.id == event.target.value
+                            );
+                            if (selected_purity && parseFloat(formValues.weight) > 0) {
+                              effective_weight = selected_purity.value
+                              ?
+                                (parseFloat(formValues.weight) *
+                                parseFloat(selected_purity.value)) /
+                                100
+                              : parseFloat(formValues.weight);
+                            }
+                              
+                            console.log(" selected_purity : ", selected_purity);
+                            
+                            this.setState({
+                              formValues: {
+                                ...this.state.formValues,
+                                "effective_weight": effective_weight,
+                                "unit_id" : selected_purity.unit_id,
+                                "purity_id": selected_purity.id,
+                              }
+                            });
+                          }
+                          }>
+                          {metalPurityList.map((item, i) => (
+                            <MenuItem key={i} value={item.id}>
+                              {item.name}
+                            </MenuItem>
+                          ))}
+                        </Select>
+                      </FormControl>
+                    </Grid>
+                    
+                    <Grid item md={4} xs={12} className='create-input'>
+                      <TextField
+                        label='Weight(GM)'
+                        variant='outlined'
+                        fullWidth
+                        error={formErros.weight}
+                        value={formValues.weight}
+                        onChange={(event) => {
+                          let effective_weight = 0;
+                          let selected_purity = metalPurityList.find(
+                            (item) => item.id == formValues.purity_id
+                          );
+                          if (selected_purity && parseFloat(event.target.value) > 0) {
+                            effective_weight = selected_purity.value
+                            ?
+                              (parseFloat(event.target.value) *
+                              parseFloat(selected_purity.value)) /
+                              100
+                            : parseFloat(event.target.value);
+                          }
+                            
+                          console.log(" selected_purity : ", selected_purity);
+                          
+                          this.setState({
+                            formValues: {
+                              ...this.state.formValues,
+                              "weight": event.target.value,
+                              "unit_id" : selected_purity.unit_id,
+                              "effective_weight": effective_weight
+                            },
+                          });
+                        }
+                        }
+                      />
+                      {formValues.effective_weight > 0 ? <Typography
+                        variant='h6'
+                        gutterBottom
+                        component='div'>{`Effective weight : ${formValues.effective_weight} GM`}</Typography>:<></>}
+                    </Grid>
+                  </>
+                ) : null}
                 <Grid item md={4} xs={12} className='create-input'>
                   <TextareaAutosize
                     className='description'
@@ -914,14 +1118,15 @@ class PurchaseViewPage extends React.Component {
               </Grid>
             </Box>
           </DialogContent>
-        </Dialog>*/}
+        </Dialog> */}
       </MainCard>
     );
   }
 }
 
 const mapStateToProps = (state) => ({
-  purchase: state.superadmin.purchase.purchase,
+  sale: state.superadmin.sales.sale,
+  materialStocks: state.superadmin.stocks.items,
   actionCalled: state.superadmin.payment.actionCalled,
   createSuccess: state.superadmin.payment.createSuccess,
   successMessage: state.superadmin.payment.successMessage,
@@ -936,10 +1141,11 @@ const mapDispatchToProps = (dispatch) => {
     dispatch,
     actions: bindActionCreators(
       {
-        purchaseView,
+        salesOnApproveView,
         paymentStore,
         paymentList,
         getNotifiactions,
+        stocksList
       },
       dispatch
     ),
@@ -947,7 +1153,7 @@ const mapDispatchToProps = (dispatch) => {
 };
 
 export default withSnackbar(
-  withRouter(connect(mapStateToProps, mapDispatchToProps)(PurchaseViewPage))
+  withRouter(connect(mapStateToProps, mapDispatchToProps)(SaleViewPage))
 );
 
 function SubCatRow(props) {
@@ -1017,7 +1223,7 @@ function SubCatRow(props) {
               <Typography variant="h6" gutterBottom component="span">
 
               </Typography>
-              <Table size="medium" aria-label="purchases">
+              <Table size="medium" aria-label="sales">
                 <TableHead>
                   <TableRow className='pur-details-inner-table'>
                     <TableCell>Material Name</TableCell>
@@ -1104,7 +1310,7 @@ function Row(props) {
         <TableCell style={{ color: "#fff" }}>{row.total_weight}</TableCell>
         <TableCell style={{ color: "#fff" }}>{row.size_name}</TableCell>
         <TableCell style={{ color: "#fff" }}>{row.making_charge}</TableCell>
-        <TableCell style={{ color: "#fff" }}>{row.rep}</TableCell>
+        {/* <TableCell style={{color: "#fff"}}>{row.rep}</TableCell> */}
         <TableCell style={{ color: "#fff" }}>{row.sub_total}</TableCell>
         <TableCell style={{ color: "#fff" }}>{row.total_discount}</TableCell>
         <TableCell style={{ color: "#fff" }}>{row.tax}</TableCell>

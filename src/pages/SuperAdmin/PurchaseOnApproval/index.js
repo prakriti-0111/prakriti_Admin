@@ -181,6 +181,10 @@ class PurchaseOnApprovePage extends Component {
     this.props.navigate('view/' + row.id);
   }
 
+  handleDownloadView = (row) => {
+    this.props.navigate('download-view/' + row.id);
+  }
+
   componentDidUpdate(previousProps, previousState){
     if(this.state.deleteSuccess){
       const { dispatch } = this.props;
@@ -298,7 +302,13 @@ class PurchaseOnApprovePage extends Component {
                 onClick: this.handleView,
                 color: 'primary',
                 show: hasPermission(this.state.permissions, 'purchase_on_approval', 'view')
-              }
+              },
+              {
+                label: 'Download',
+                onClick: this.handleDownloadView,
+                color: 'primary',
+                show: hasPermission(this.state.permissions, 'purchase_on_approval', 'view')
+              },
             ]}
           />
         </Grid>

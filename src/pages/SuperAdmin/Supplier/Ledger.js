@@ -65,6 +65,7 @@ class SupplierInvoiceTransactionLedgerPage extends React.Component  {
 
         this.state = {
           auth: this.props.auth,
+          supplier: this.props.supplier,
           purchaseList: this.props.purchaseList,
           purchaseTotal: this.props.purchaseTotal,
           queryParams: {
@@ -78,45 +79,6 @@ class SupplierInvoiceTransactionLedgerPage extends React.Component  {
           downloadingInfo: false,
           note: ""
         };
-        
-        this.columns = [
-            {
-                name: "sl_no",
-                display_name: "Sl No.",
-            },
-            {
-                name: "invoice_number",
-                display_name: "Invoice Number",
-            },
-            {
-                name: "txn_date",
-                display_name: "Date",
-            },
-            {
-                name: "remarks",
-                display_name: "Remarks",
-            },
-            {
-                name: "bill_amount",
-                display_name: "Bill Amount",
-            },
-            {
-                name: "payment_amount",
-                display_name: "Payment Amount",
-            },
-            {
-                name: "payment_mode",
-                display_name: "Payment Mode",
-            },
-            {
-                name: "type",
-                display_name: "Type",
-            },
-            {
-                name: "balance",
-                display_name: "Balance",
-            },
-        ];
     }
 
     componentDidMount() {
@@ -124,6 +86,7 @@ class SupplierInvoiceTransactionLedgerPage extends React.Component  {
     }
 
     loadAllData = () => {
+      this.props.actions.supplierFetch(this.props.params.id);
       this.loadPurchaseData();
     };
 
@@ -143,7 +106,10 @@ class SupplierInvoiceTransactionLedgerPage extends React.Component  {
 
     static getDerivedStateFromProps(props, state) {
       let update = {};
-      
+      if (props.supplier !== state.supplier) {
+        update.supplier = props.supplier;
+      }
+
       if (props.purchaseList !== state.purchaseList) {
         update.processing = false;
         update.purchaseList = props.purchaseList;
@@ -265,7 +231,7 @@ class SupplierInvoiceTransactionLedgerPage extends React.Component  {
     };
 
     render() {
-      const { purchaseList, purchaseTotal, queryParams, processing, downloadingInfo } = this.state;
+      const { purchaseList, purchaseTotal, queryParams, processing, downloadingInfo, supplier } = this.state;
       const totalPage = Math.ceil(
         this.state.purchaseTotal / this.state.queryParams.limit
       );
@@ -273,7 +239,7 @@ class SupplierInvoiceTransactionLedgerPage extends React.Component  {
       console.log("purchaseList", purchaseList);
       return (    
           <MainCard
-            title='Transaction Ledger'
+            title={`Transaction Ledger - ${supplier?supplier.company_name:""}`}
             secondary={
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', paddingTop: "7px" }}>
                 {downloadingInfo ? (
@@ -371,10 +337,12 @@ class SupplierInvoiceTransactionLedgerPage extends React.Component  {
                               <TableCell sx={{ width: "50px" }}>Date</TableCell>
                               <TableCell sx={{ width: "100px" }}>Invoice No</TableCell>
                               <TableCell sx={{ width: "50px" }}>Remarks</TableCell>
+                              <TableCell sx={{ width: "50px" }}>Purpose</TableCell>
                               <TableCell sx={{ width: "150px" }}>Bill Amt</TableCell>
                               <TableCell sx={{ width: "150px" }}>Payment Amt</TableCell>
                               <TableCell sx={{ width: "50px" }}>Mode</TableCell>
                               <TableCell sx={{ width: "50px" }}>Type</TableCell>
+                              <TableCell sx={{ width: "50px" }}>Status</TableCell>
                               <TableCell sx={{ width: "150px" }}>Balance(Due)</TableCell>
                               <TableCell sx={{ width: "50px" }}>Action</TableCell>
                             </TableRow>
@@ -508,6 +476,7 @@ class SupplierInvoiceTransactionLedgerPage extends React.Component  {
 }
 
 const mapStateToProps = (state) => ({
+  supplier: state.superadmin.supplier.item,
   purchaseList: state.superadmin.purchase.items,
   purchaseTotal: state.superadmin.purchase.total,
   auth: state.auth,
@@ -518,6 +487,7 @@ const mapDispatchToProps = (dispatch) => {
     dispatch,
     actions: bindActionCreators(
       {
+        supplierFetch,
         purchaseTxnLedgerList
       },
       dispatch
@@ -573,10 +543,12 @@ function Row(props) {
                     data-bs-toggle='modal'
 
                     data-bs-target='#noteModal'></i></div></TableCell>
+        <TableCell >{row.purpose}</TableCell>
         <TableCell >{row.bill_amount}</TableCell>
         <TableCell >{row.payment_amount}</TableCell>
         <TableCell >{row.payment_mode}</TableCell>
-        <TableCell >{row.type}</TableCell>
+        <TableCell >{row.type}{row.is_advance?"(Advance)":""}</TableCell>
+        <TableCell >{row.approve_status}</TableCell>
         <TableCell >{row.balance}</TableCell>
         <TableCell className={'action_btn'}>
           <Stack
