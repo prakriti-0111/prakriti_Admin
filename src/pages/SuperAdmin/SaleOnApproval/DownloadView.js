@@ -1170,7 +1170,7 @@ function SubCatRow(props) {
     .join("\n")
     .replace(/\n/g, "<br/>");
   let materialWts = row.material
-    .map((itm) => itm.weight)
+    .map((itm) => itm.weight.toFixed(2))
     .join("\n")
     .replace(/\n/g, "<br/>");
   let materialUnits = row.material
@@ -1178,7 +1178,7 @@ function SubCatRow(props) {
     .join("\n")
     .replace(/\n/g, "<br/>");
   let materialRates = row.material
-    .map((itm) => itm.rate)
+    .map((itm) => itm.rate.toFixed(2))
     .join("\n")
     .replace(/\n/g, "<br/>");
 
@@ -1214,7 +1214,7 @@ function SubCatRow(props) {
         <TableCell
           dangerouslySetInnerHTML={{ __html: materialRates }}></TableCell>
         <TableCell>{row.tax}%</TableCell>
-        <TableCell>{row.taxableAmount}</TableCell>
+        <TableCell>{row.taxableAmount.toFixed(2)}</TableCell>
       </TableRow>
       {/* <TableRow className={'table-inner-row sub_table ' + odd_even_class}>
         <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={11}>
