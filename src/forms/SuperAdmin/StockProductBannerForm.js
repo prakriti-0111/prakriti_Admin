@@ -1,78 +1,104 @@
-import React from 'react';
-import { connect } from 'react-redux';
-import { Field, reduxForm, getFormValues, change } from 'redux-form/immutable';
-import { Box, TextField, Button, Grid, Link, TextareaAutosize, Stack, Select, MenuItem, InputLabel, FormControl, FormControlLabel, Checkbox, FormHelperText, ListItemText, Accordion, AccordionSummary, Typography, AccordionDetails, Paper, Tab, CircularProgress } from '@mui/material';
-import { toBase64 } from 'src/helpers/helper';
-import { bindActionCreators } from 'redux';
-import { stockproductCreate, stockproductStore, stockproductUpdate } from 'actions/superadmin/stockproductbanner.actions';
-import { stockProductList } from 'actions/superadmin/stockProduct.actions';
-import { productList } from 'actions/superadmin/product.actions';
-import { categoryList } from 'actions/superadmin/category.actions';
-import { subCategoryList } from 'actions/superadmin/subCategory.actions';
-import { materialList } from 'actions/superadmin/material.actions';
-import { taxList } from 'actions/superadmin/tax.actions';
-import { withSnackbar } from 'notistack';
-const { updateSyncErrors } = require('redux-form/lib/actions').default;
-import LoadingButton from '@mui/lab/LoadingButton';
-import withRouter from 'src/helpers/withRouter';
-import { getRoleName, getUserDashboardRoute } from 'src/helpers/helper';
-import _ from 'lodash';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import { Table, TableHead } from '@mui/material';
-import TableBody from '@mui/material/TableBody';
-import TableCell from '@mui/material/TableCell';
-import TableContainer from '@mui/material/TableContainer';
-import TableRow from '@mui/material/TableRow';
-import { unitList } from 'actions/superadmin/unit.actions';
-import { Editor } from 'react-draft-wysiwyg';
-import noImage from 'src/assets/images/no_image.jpg';
-import CloudUploadIcon from '@mui/icons-material/CloudUpload';
-import { RESET_PRODUCT_LIST } from '../../actionTypes/superadmin/product.types';
-import moment from 'moment';
-import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import { validateInteger, validateNumber } from '../../helpers/helper';
+import React from "react";
+import { connect } from "react-redux";
+import { Field, reduxForm, getFormValues, change } from "redux-form/immutable";
+import {
+  Box,
+  TextField,
+  Button,
+  Grid,
+  Link,
+  TextareaAutosize,
+  Stack,
+  Select,
+  MenuItem,
+  InputLabel,
+  FormControl,
+  FormControlLabel,
+  Checkbox,
+  FormHelperText,
+  ListItemText,
+  Accordion,
+  AccordionSummary,
+  Typography,
+  AccordionDetails,
+  Paper,
+  Tab,
+  CircularProgress,
+} from "@mui/material";
+import { toBase64 } from "src/helpers/helper";
+import { bindActionCreators } from "redux";
+import {
+  stockproductCreate,
+  stockproductStore,
+  stockproductUpdate,
+} from "actions/superadmin/stockproductbanner.actions";
+import { stockProductList } from "actions/superadmin/stockProduct.actions";
+import { productList } from "actions/superadmin/product.actions";
+import { categoryList } from "actions/superadmin/category.actions";
+import { subCategoryList } from "actions/superadmin/subCategory.actions";
+import { materialList } from "actions/superadmin/material.actions";
+import { taxList } from "actions/superadmin/tax.actions";
+import { withSnackbar } from "notistack";
+const { updateSyncErrors } = require("redux-form/lib/actions").default;
+import LoadingButton from "@mui/lab/LoadingButton";
+import withRouter from "src/helpers/withRouter";
+import { getRoleName, getUserDashboardRoute } from "src/helpers/helper";
+import _ from "lodash";
+import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
+import { Table, TableHead } from "@mui/material";
+import TableBody from "@mui/material/TableBody";
+import TableCell from "@mui/material/TableCell";
+import TableContainer from "@mui/material/TableContainer";
+import TableRow from "@mui/material/TableRow";
+import { unitList } from "actions/superadmin/unit.actions";
+import { Editor } from "react-draft-wysiwyg";
+import noImage from "src/assets/images/no_image.jpg";
+import CloudUploadIcon from "@mui/icons-material/CloudUpload";
+import { RESET_PRODUCT_LIST } from "../../actionTypes/superadmin/product.types";
+import moment from "moment";
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
+import { DatePicker } from "@mui/x-date-pickers/DatePicker";
+import { validateInteger, validateNumber } from "../../helpers/helper";
 
-const validate = values => {
-  const errors = {}
+const validate = (values) => {
+  const errors = {};
   const requiredFields = [
-    'title',
+    "title",
     //'description',
-    'category_id',
+    "category_id",
     //'sub_category_id',
-    'price',
-    'discount'
-  ]
-  requiredFields.forEach(field => {
+    "price",
+    "discount",
+  ];
+  requiredFields.forEach((field) => {
     if (!values[field]) {
-      errors[field] = 'Required'
+      errors[field] = "Required";
     }
   });
-  console.log(errors)
-  return errors
-}
+  console.log(errors);
+  return errors;
+};
 
 class StockProductBannerForm extends React.Component {
-
   constructor(props) {
     super(props);
 
-    let formData = 'formData' in this.props ? this.props.formData : null;
+    const propFormData = "formData" in this.props ? this.props.formData : null;
+    const formData = propFormData ? propFormData : this.getDefaultValues();
     this.state = {
       auth: this.props.auth,
       formData: formData,
-      isCreateFrom: !formData,
+      isCreateFrom: !propFormData,
       categories: this.props.categories,
       sub_categories: this.props.sub_categories,
       banner_file: null,
       existing_banner_image: null,
       stockProductList: this.props.stockProductList,
-      inProgress: false
-    }
+      inProgress: false,
+    };
 
     this.imageFileRef = React.createRef();
-
   }
 
   componentDidMount() {
@@ -82,19 +108,9 @@ class StockProductBannerForm extends React.Component {
       this.initializeFormData();
     } else {
       this.props.initialize({
-        status: 1
+        status: 1,
       });
     }
-  }
-
-  static getDerivedStateFromProps(props, state){
-    let update = {};
-
-    if(props.actionCalled !== state.actionCalled){
-      update.actionCalled = props.actionCalled;
-    }
-
-    return update;
   }
 
   componentDidUpdate(prevProps) {
@@ -102,49 +118,70 @@ class StockProductBannerForm extends React.Component {
       this.initializeFormData();
     }
 
-    if(this.state.actionCalled){
+    if (this.state.actionCalled) {
       this.setState({
-        inProgress: false 
+        inProgress: false,
       });
     }
   }
 
   initializeFormData = () => {
-    let formValues = { ...this.state.formData }
+    const stateFormData = this.state.formData || this.getDefaultValues();
+    let formValues = { ...stateFormData };
     formValues.status = formValues.status ? 1 : 0;
     delete formValues.banner;
-    this.props.actions.subCategoryList({ all: 1, category_id: formValues.category_id });
-    this.props.actions.stockProductList({ all: 1, sub_category_id: formValues.sub_category_id });
+    this.props.actions.subCategoryList({
+      all: 1,
+      category_id: formValues.category_id,
+    });
+    this.props.actions.stockProductList({
+      all: 1,
+      sub_category_id: formValues.sub_category_id,
+    });
     this.props.initialize(formValues);
     this.setState({
-      existing_banner_image: this.state.formData.banner,
+      existing_banner_image: stateFormData.banner,
     });
-  }
+  };
 
   loadFormExternalData = () => {
-    this.props.actions.categoryList({all: 1});
-  }
+    this.props.actions.categoryList({ all: 1 });
+  };
 
   getDefaultValues = () => {
     return {
-      category_id: '',
-      sub_category_id: '',
-      title: '',
-      description: '',
-      button_txt: '',
+      category_id: "",
+      sub_category_id: "",
+      title: "",
+      description: "",
+      button_txt: "",
       products: [],
-      price: '',
-      discount: '',
-      final_price: '',
-      status: '1'
-    }
-  }
+      price: "",
+      discount: "",
+      final_price: "",
+      status: "1",
+    };
+  };
 
   static getDerivedStateFromProps(props, state) {
     let update = {};
 
-    if (props.formData !== state.formData || props.formData.products !== state.formData.products) {
-      update.formData = props.formData;
+    const nextFormData = props.formData;
+    const prevFormData = state.formData;
+    const nextProducts =
+      nextFormData && Array.isArray(nextFormData.products)
+        ? nextFormData.products
+        : [];
+    const prevProducts =
+      prevFormData && Array.isArray(prevFormData.products)
+        ? prevFormData.products
+        : [];
+
+    if (
+      nextFormData &&
+      (nextFormData !== prevFormData || nextProducts !== prevProducts)
+    ) {
+      update.formData = nextFormData;
     }
     if (props.categories !== state.categories) {
       update.categories = props.categories;
@@ -155,25 +192,23 @@ class StockProductBannerForm extends React.Component {
     if (props.stockProductList !== state.stockProductList) {
       update.stockProductList = props.stockProductList;
     }
+    if (props.actionCalled !== state.actionCalled) {
+      update.actionCalled = props.actionCalled;
+    }
 
     return update;
   }
 
-  renderTextField = ({
-    input,
-    label,
-    meta: { touched, error },
-    ...custom
-  }) => (
+  renderTextField = ({ input, label, meta: { touched, error }, ...custom }) => (
     <TextField
       label={label}
       fullWidth
       error={touched && error ? true : false}
-      helperText={touched && error ? error : ''}
+      helperText={touched && error ? error : ""}
       {...input}
       {...custom}
     />
-  )
+  );
 
   renderCategoriesField = ({
     input,
@@ -182,35 +217,22 @@ class StockProductBannerForm extends React.Component {
     ...custom
   }) => (
     <FormControl fullWidth error={touched && error ? true : false}>
-      {
-        label ?
-          <InputLabel>{label}</InputLabel>
-          : null
-      }
-      <div className='list-menu'>
-        <Select
-          label={label}
-          fullWidth
-          {...input}
-          {...custom}
-        >
-
+      {label ? <InputLabel>{label}</InputLabel> : null}
+      <div className="list-menu">
+        <Select label={label} fullWidth {...input} {...custom}>
           <MenuItem value=""></MenuItem>
-          {
-            this.state.categories.map((item, index) => {
-              return <MenuItem value={item.id} key={index}>{item.name}</MenuItem>
-            })
-          }
+          {this.state.categories.map((item, index) => {
+            return (
+              <MenuItem value={item.id} key={index}>
+                {item.name}
+              </MenuItem>
+            );
+          })}
         </Select>
       </div>
-      {
-        touched && error ?
-          <FormHelperText>{error}</FormHelperText>
-          : null
-      }
-
+      {touched && error ? <FormHelperText>{error}</FormHelperText> : null}
     </FormControl>
-  )
+  );
 
   renderSubCategoriesField = ({
     input,
@@ -219,32 +241,20 @@ class StockProductBannerForm extends React.Component {
     ...custom
   }) => (
     <FormControl fullWidth error={touched && error ? true : false}>
-      {
-        label ?
-          <InputLabel>{label}</InputLabel>
-          : null
-      }
-      <Select
-        label={label}
-        fullWidth
-        {...input}
-        {...custom}
-      >
+      {label ? <InputLabel>{label}</InputLabel> : null}
+      <Select label={label} fullWidth {...input} {...custom}>
         <MenuItem value=""></MenuItem>
-        {
-          this.state.sub_categories.map((item, index) => {
-            return <MenuItem value={item.id} key={index}>{item.name}</MenuItem>
-          })
-        }
+        {this.state.sub_categories.map((item, index) => {
+          return (
+            <MenuItem value={item.id} key={index}>
+              {item.name}
+            </MenuItem>
+          );
+        })}
       </Select>
-      {
-        touched && error ?
-          <FormHelperText>{error}</FormHelperText>
-          : null
-      }
-
+      {touched && error ? <FormHelperText>{error}</FormHelperText> : null}
     </FormControl>
-  )
+  );
 
   renderProductField = ({
     input,
@@ -255,11 +265,7 @@ class StockProductBannerForm extends React.Component {
     ...custom
   }) => (
     <FormControl fullWidth error={touched && error ? true : false}>
-      {
-        label ?
-          <InputLabel>{label}</InputLabel>
-          : null
-      }
+      {label ? <InputLabel>{label}</InputLabel> : null}
       <Select
         label={label}
         fullWidth
@@ -277,36 +283,50 @@ class StockProductBannerForm extends React.Component {
           console.log("formData.products : ", this.state.formData.products);
           console.log("input.value : ", input.value);
           console.log("item : ", item);
-          console.log("selected : ", ((input.value && input.value.indexOf(String(item.id)) > -1) ? true : false));
+          console.log(
+            "selected : ",
+            input.value && input.value.indexOf(String(item.id)) > -1
+              ? true
+              : false,
+          );
           return (
-          <MenuItem key={item.id} value={String(item.id)} className='multi-select'>
-            <Checkbox checked={(input.value && input.value.indexOf(String(item.id)) > -1) ? true : false} />
-            <img src={item.image} id="product-img" style={{height: '100px', width: '100px'}} />
-            <ListItemText primary={item.certificate_no} />
-          </MenuItem>);
+            <MenuItem
+              key={item.id}
+              value={String(item.id)}
+              className="multi-select"
+            >
+              <Checkbox
+                checked={
+                  input.value && input.value.indexOf(String(item.id)) > -1
+                    ? true
+                    : false
+                }
+              />
+              <img
+                src={item.image}
+                id="product-img"
+                style={{ height: "100px", width: "100px" }}
+              />
+              <ListItemText primary={item.certificate_no} />
+            </MenuItem>
+          );
         })}
-
       </Select>
-      {
-        touched && error ?
-          <FormHelperText>{error}</FormHelperText>
-          : null
-      }
-
+      {touched && error ? <FormHelperText>{error}</FormHelperText> : null}
     </FormControl>
-  )
+  );
 
   getSelectedProductNames = (selected) => {
     let arr = [];
     for (let i = 0; i < selected.length; i++) {
-      let item = _.filter(this.state.stockProductList, { id: parseInt(selected[i]) });
+      let item = _.filter(this.state.stockProductList, {
+        id: parseInt(selected[i]),
+      });
       console.log("getSelectedProductNames item : ", item);
-      if (item.length)
-        arr.push(item[0].certificate_no);
-
+      if (item.length) arr.push(item[0].certificate_no);
     }
     return arr;
-  }
+  };
 
   renderStatusField = ({
     input,
@@ -315,44 +335,25 @@ class StockProductBannerForm extends React.Component {
     ...custom
   }) => (
     <FormControl fullWidth error={touched && error ? true : false}>
-      {
-        label ?
-          <InputLabel>{label}</InputLabel>
-          : null
-      }
-      <Select
-        label={label}
-        fullWidth
-        {...input}
-        {...custom}
-      >
+      {label ? <InputLabel>{label}</InputLabel> : null}
+      <Select label={label} fullWidth {...input} {...custom}>
         <MenuItem value="1">Active</MenuItem>
         <MenuItem value="0">Inactive</MenuItem>
       </Select>
-      {
-        touched && error ?
-          <FormHelperText>{error}</FormHelperText>
-          : null
-      }
-
+      {touched && error ? <FormHelperText>{error}</FormHelperText> : null}
     </FormControl>
-  )
+  );
 
-  renderTextArea = ({
-    input,
-    label,
-    meta: { touched, error },
-    ...custom
-  }) => (
+  renderTextArea = ({ input, label, meta: { touched, error }, ...custom }) => (
     <TextareaAutosize
       minRows={2}
       label={label}
-      error={touched && error ? error : ''}
-      style={{ width: '100%' }}
+      error={touched && error ? error : ""}
+      style={{ width: "100%" }}
       {...input}
       {...custom}
     />
-  )
+  );
 
   renderDiscountField = ({
     input,
@@ -361,55 +362,49 @@ class StockProductBannerForm extends React.Component {
     ...custom
   }) => (
     <FormControl fullWidth error={touched && error ? true : false}>
-      {
-        label ?
-          <InputLabel>{label}</InputLabel>
-          : null
-      }
-      <Select
-        label={label}
-        fullWidth
-        {...input}
-        {...custom}
-      >
+      {label ? <InputLabel>{label}</InputLabel> : null}
+      <Select label={label} fullWidth {...input} {...custom}>
         <MenuItem value="percentage">Percentage</MenuItem>
         <MenuItem value="flat">Flat</MenuItem>
       </Select>
-      {
-        touched && error ?
-          <FormHelperText>{error}</FormHelperText>
-          : null
-      }
-
+      {touched && error ? <FormHelperText>{error}</FormHelperText> : null}
     </FormControl>
-  )
+  );
 
   handleCategoryChange = (event, val) => {
     this.props.actions.subCategoryList({ all: 1, category_id: val });
-    this.props.dispatch(change('StockProductBannerForm', 'sub_category_id', ''));
+    this.props.dispatch(
+      change("StockProductBannerForm", "sub_category_id", ""),
+    );
     this.props.dispatch({
-      type: RESET_PRODUCT_LIST
+      type: RESET_PRODUCT_LIST,
     });
-
-  }
+  };
 
   handleSubCategoryChange = (event, val) => {
     if (val) {
       this.props.actions.stockProductList({ all: 1, sub_category_id: val });
     } else {
       this.props.dispatch({
-        type: RESET_PRODUCT_LIST
-      })
+        type: RESET_PRODUCT_LIST,
+      });
     }
-  }
+  };
 
   getImageSrc = (item) => {
     return URL.createObjectURL(item);
-  }
+  };
 
   handleFormSubmit = async (data, dispatch) => {
     console.log("data : ", data);
-    const productSelected = data.products.filter(pid => pid != "" && this.state.stockProductList.filter(itm => String(itm.id) == String(pid)).length > 0);
+    const selectedProducts = Array.isArray(data.products) ? data.products : [];
+    const productSelected = selectedProducts.filter(
+      (pid) =>
+        pid != "" &&
+        this.state.stockProductList.filter(
+          (itm) => String(itm.id) == String(pid),
+        ).length > 0,
+    );
     console.log("productSelected : ", productSelected);
     data.products = productSelected;
     let errors = false;
@@ -422,24 +417,29 @@ class StockProductBannerForm extends React.Component {
     }*/
     if (this.state.banner_file) {
       values.banner = await toBase64(this.state.banner_file);
-    }else{
-      if(this.state.isCreateFrom){
-        this.props.enqueueSnackbar('Please select banner image', { variant: 'error' });
+    } else {
+      if (this.state.isCreateFrom) {
+        this.props.enqueueSnackbar("Please select banner image", {
+          variant: "error",
+        });
         errors = true;
       }
     }
 
     if (!errors) {
       this.setState({
-        inProgress: true 
+        inProgress: true,
       });
       if (this.state.isCreateFrom) {
         return this.props.actions.stockproductStore(values);
       } else {
-        return this.props.actions.stockproductUpdate(this.state.formData.id, values);
+        return this.props.actions.stockproductUpdate(
+          this.state.formData.id,
+          values,
+        );
       }
     }
-  }
+  };
 
   handleProductChange = (e, vl) => {
     console.log("vl : ", vl);
@@ -454,44 +454,58 @@ class StockProductBannerForm extends React.Component {
         ]
       }
     }) */
-  }
+  };
 
   onChangeBannerImage = (e) => {
     this.setState({
       banner_file: e.target.files[0],
-      existing_banner_image: null
-    })
+      existing_banner_image: null,
+    });
 
     if (this.imageFileRef) {
       this.imageFileRef.current.value = null;
     }
-  }
+  };
 
   deleteBannerImage = () => {
     this.setState({
-      banner_file: null
-    })
+      banner_file: null,
+    });
 
     if (this.imageFileRef) {
       this.imageFileRef.current.value = null;
     }
-  }
+  };
 
   render() {
     const { handleSubmit, pristine, submitting } = this.props;
-    const {inProgress, formData} =  this.state;
+    const { inProgress } = this.state;
+    const formData = this.state.formData || this.getDefaultValues();
     console.log("this.state.stockProductList : ", this.state.stockProductList);
 
-    const productSelected = formData.products.filter(pid => pid != "" && this.state.stockProductList.filter(itm => String(itm.id) == String(pid)) > 0);
+    const formProducts = Array.isArray(formData.products)
+      ? formData.products
+      : [];
+    const productSelected = formProducts.filter(
+      (pid) =>
+        pid != "" &&
+        this.state.stockProductList.filter(
+          (itm) => String(itm.id) == String(pid),
+        ).length > 0,
+    );
     console.log("productSelected : ", productSelected);
 
     return (
-      <form onSubmit={handleSubmit(this.handleFormSubmit)} className="ratn-dialog-wrapper" ref={this.formRef}>
-        <Box sx={{ flexGrow: 1, m: 0.5 }} className='ratn-dialog-inner'>
+      <form
+        onSubmit={handleSubmit(this.handleFormSubmit)}
+        className="ratn-dialog-wrapper"
+        ref={this.formRef}
+      >
+        <Box sx={{ flexGrow: 1, m: 0.5 }} className="ratn-dialog-inner">
           <Grid container spacing={2} className="loans_view p_view">
-            <Grid item xs={3} className='create-input'>
+            <Grid item xs={3} className="create-input">
               <Field
-                className='input-inner'
+                className="input-inner"
                 name="category_id"
                 component={this.renderCategoriesField}
                 label="Category"
@@ -499,19 +513,21 @@ class StockProductBannerForm extends React.Component {
                 onChange={(event, val) => this.handleCategoryChange(event, val)}
               />
             </Grid>
-            <Grid item xs={3} className='create-input'>
+            <Grid item xs={3} className="create-input">
               <Field
-                className='input-inner'
+                className="input-inner"
                 name="sub_category_id"
                 component={this.renderSubCategoriesField}
                 label="Sub Category"
                 type="select"
-                onChange={(event, val) => this.handleSubCategoryChange(event, val)}
+                onChange={(event, val) =>
+                  this.handleSubCategoryChange(event, val)
+                }
               />
             </Grid>
-            <Grid item xs={6} className='create-input'>
+            <Grid item xs={6} className="create-input">
               <Field
-                className='input-inner'
+                className="input-inner"
                 name="products"
                 component={this.renderProductField}
                 label="Products"
@@ -522,132 +538,160 @@ class StockProductBannerForm extends React.Component {
                 onChange={(event, val) => this.handleProductChange(event, val)}
               />
             </Grid>
-            <Grid item xs={6} className='create-input'>
+            <Grid item xs={6} className="create-input">
               <Field
-                className='input-inner'
+                className="input-inner"
                 name="title"
                 component={this.renderTextField}
                 label="Title"
               />
             </Grid>
-            <Grid item xs={6} className='create-input'>
+            <Grid item xs={6} className="create-input">
               <Field
-                className='description'
+                className="description"
                 name="description"
                 component={this.renderTextArea}
                 placeholder="Description"
               />
             </Grid>
-            <Grid item xs={4} className='create-input'>
+            <Grid item xs={4} className="create-input">
               <Field
-                className='input-inner'
+                className="input-inner"
                 name="price"
                 component={this.renderTextField}
                 label="Price"
                 onInput={(e) => validateNumber(e)}
               />
             </Grid>
-            <Grid item xs={4} className='create-input'>
+            <Grid item xs={4} className="create-input">
               <Field
-                className='input-inner'
+                className="input-inner"
                 name="discount"
                 component={this.renderTextField}
                 label="Discount"
                 onInput={(e) => validateNumber(e)}
               />
             </Grid>
-            <Grid item xs={4} className='create-input'>
+            <Grid item xs={4} className="create-input">
               <Field
-                className='input-inner'
+                className="input-inner"
                 name="final_price"
                 component={this.renderTextField}
                 label="Final Price"
                 onInput={(e) => validateNumber(e)}
               />
             </Grid>
-            <Grid item xs={6} className='create-input'>
+            <Grid item xs={6} className="create-input">
               <Field
-                className='input-inner'
+                className="input-inner"
                 name="button_txt"
                 component={this.renderTextField}
                 label="Button Text"
               />
             </Grid>
-            <Grid item xs={2} className='create-input'>
+            <Grid item xs={2} className="create-input">
               <Field
-                className='input-inner'
+                className="input-inner"
                 name="status"
                 component={this.renderStatusField}
                 label="Status"
                 type="select"
               />
             </Grid>
-            
           </Grid>
-          <div className='custom-container ml-10'>
-            <div className='custom-row pl-0'>
-              <div className='custom-col-2'>
-              <div className="admin-buttons">
-                <div className='p-single-image-wrapper'>
-                  <div className='p-single-image'>
-                    {
-                      this.state.existing_banner_image ?
-                      <img src={this.state.existing_banner_image} />
-                      :
-                      <>
-                        {
-                          this.state.banner_file ?
-                          <img src={this.getImageSrc(this.state.banner_file)} />
-                          :
-                          <img src={noImage} />
-                        }
-                      </>
-                    }
-                    
+          <div className="custom-container ml-10">
+            <div className="custom-row pl-0">
+              <div className="custom-col-2">
+                <div className="admin-buttons">
+                  <div className="p-single-image-wrapper">
+                    <div className="p-single-image">
+                      {this.state.existing_banner_image ? (
+                        <img src={this.state.existing_banner_image} />
+                      ) : (
+                        <>
+                          {this.state.banner_file ? (
+                            <img
+                              src={this.getImageSrc(this.state.banner_file)}
+                            />
+                          ) : (
+                            <img src={noImage} />
+                          )}
+                        </>
+                      )}
+                    </div>
+                    <Button
+                      variant="contained"
+                      className="image-button"
+                      component="label"
+                      endIcon={<CloudUploadIcon />}
+                    >
+                      Banner
+                      <input
+                        name="banner_image"
+                        hidden
+                        accept="image/*"
+                        type="file"
+                        onChange={(e) => this.onChangeBannerImage(e)}
+                        ref={this.imageFileRef}
+                      />
+                    </Button>
                   </div>
-                  <Button variant="contained" className='image-button' component="label" endIcon={<CloudUploadIcon />}>
-                    Banner
-                    <input
-                      name="banner_image"
-                      hidden
-                      accept="image/*"
-                      type="file"
-                      onChange={(e) => this.onChangeBannerImage(e)}
-                      ref={this.imageFileRef}
-                    />
-                  </Button>
                 </div>
               </div>
-              </div>
-              <div className='custom-col-8'>&nbsp;</div>
-              <div className='custom-col-2'>&nbsp;</div>
+              <div className="custom-col-8">&nbsp;</div>
+              <div className="custom-col-2">&nbsp;</div>
             </div>
           </div>
           <Grid container spacing={0} className="loans_view p_view">
-            <Grid item xs={12} className='create-input' style = {{ paddingTop: "10px" }}>
-              <Stack spacing={1} direction="row" justifyContent="flex-end" className='p-submit-button' sx={{ marginTop: "0px" }}>
-                {inProgress?<CircularProgress />:<><LoadingButton
-                  variant="contained"
-                  type="button"
-                  loading={submitting}
-                  disabled={submitting}
-                  onClick={handleSubmit(this.handleFormSubmit)}
-                >
-                  Submit
-                </LoadingButton>
-                {
-                  !submitting ?
-                    <Button variant="outlined" onClick={() => this.props.navigate(getUserDashboardRoute(getRoleName(this.state.auth)) + '/stock-products')}>Cancel</Button>
-                    : null
-                }</>}
+            <Grid
+              item
+              xs={12}
+              className="create-input"
+              style={{ paddingTop: "10px" }}
+            >
+              <Stack
+                spacing={1}
+                direction="row"
+                justifyContent="flex-end"
+                className="p-submit-button"
+                sx={{ marginTop: "0px" }}
+              >
+                {inProgress ? (
+                  <CircularProgress />
+                ) : (
+                  <>
+                    <LoadingButton
+                      variant="contained"
+                      type="button"
+                      loading={submitting}
+                      disabled={submitting}
+                      onClick={handleSubmit(this.handleFormSubmit)}
+                    >
+                      Submit
+                    </LoadingButton>
+                    {!submitting ? (
+                      <Button
+                        variant="outlined"
+                        onClick={() =>
+                          this.props.navigate(
+                            getUserDashboardRoute(
+                              getRoleName(this.state.auth),
+                            ) + "/stock-products",
+                          )
+                        }
+                      >
+                        Cancel
+                      </Button>
+                    ) : null}
+                  </>
+                )}
               </Stack>
             </Grid>
           </Grid>
         </Box>
       </form>
-    )
+    );
   }
-
 }
 
 const mapStateToProps = (state) => ({
@@ -655,27 +699,36 @@ const mapStateToProps = (state) => ({
   sub_categories: state.superadmin.subCategory.items,
   auth: state.auth,
   stockProductList: state.superadmin.stockProduct.items,
-  formValues: getFormValues('StockProductBannerForm')(state, 'status'),
+  formValues: getFormValues("StockProductBannerForm")(state, "status"),
   actionCalled: state.superadmin.stockproductbanner.actionCalled,
 });
 
-const mapDispatchToProps = dispatch => ({
+const mapDispatchToProps = (dispatch) => ({
   dispatch,
-  actions: bindActionCreators({
-    stockproductCreate,
-    stockproductUpdate,
-    stockproductStore,
-    subCategoryList,
-    stockProductList,
-    categoryList,
-    change
-  }, dispatch)
+  actions: bindActionCreators(
+    {
+      stockproductCreate,
+      stockproductUpdate,
+      stockproductStore,
+      subCategoryList,
+      stockProductList,
+      categoryList,
+      change,
+    },
+    dispatch,
+  ),
 });
 
-export default withRouter(withSnackbar(connect(mapStateToProps, mapDispatchToProps)(reduxForm({
-  form: 'StockProductBannerForm',
-  validate
-})(StockProductBannerForm))));
-
-
-
+export default withRouter(
+  withSnackbar(
+    connect(
+      mapStateToProps,
+      mapDispatchToProps,
+    )(
+      reduxForm({
+        form: "StockProductBannerForm",
+        validate,
+      })(StockProductBannerForm),
+    ),
+  ),
+);
