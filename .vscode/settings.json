@@ -1,0 +1,8 @@
+{
+  "chat.tools.terminal.autoApprove": {
+    "/^git fetch origin prod && git rev-parse --short HEAD && git rev-parse --short origin/prod && echo '---' && git diff --name-only origin/prod\\.\\.HEAD$/": {
+      "approve": true,
+      "matchCommandLine": true
+    }
+  }
+}
