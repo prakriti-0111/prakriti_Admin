@@ -189,6 +189,7 @@ class SaleOnApprovePage extends Component {
     if (this.isSuperAdmin) {
       this.props.actions.adminList({ all: 1 });
     } else if (this.isAdmin) {
+      this.props.actions.adminList({ all: 1 });
       this.props.actions.distributorList({ all: 1 });
     } else if (this.isDistributor) {
       this.props.actions.retailerList({ all: 1 });
@@ -328,7 +329,7 @@ class SaleOnApprovePage extends Component {
     if (this.isSuperAdmin) {
       userList = this.state.adminList;
     } else if (this.isAdmin) {
-      userList = this.state.distributorList;
+      userList = this.state.adminList.concat(this.state.distributorList);
     } else if (this.isDistributor) {
       userList = this.state.retailerList;
     } else if (this.isSalesExecutive) {
@@ -343,7 +344,7 @@ class SaleOnApprovePage extends Component {
     if (this.isSuperAdmin) {
       userLabel = "Admin";
     } else if (this.isAdmin) {
-      userLabel = "Distributor";
+      userLabel = "Admin / Distributor";
     } else if (this.isDistributor) {
       userLabel = "Retailer";
     } else if (this.isSalesExecutive) {
