@@ -1394,7 +1394,7 @@ class SaleForm extends React.Component {
         if (
           (this.isSuperAdmin || this.isAdmin || this.isDistributor) &&
           /* (this.isAdmin && this.state.profile && this.state.profile.own) */ selectedUser &&
-          selectedUser.own
+          this.isOwnValue(selectedUser.own)
         ) {
           this.handleTransfer(val);
         } else {
@@ -1404,6 +1404,28 @@ class SaleForm extends React.Component {
         this.setAdminDetails();
       },
     );
+  };
+
+  isOwnValue = (value) => {
+    return (
+      value === true ||
+      value === 1 ||
+      value === "1" ||
+      value === "yes" ||
+      value === "Yes" ||
+      value === "true"
+    );
+  };
+
+  getCompanyOptionLabel = (option) => {
+    const companyName = option.company_name || option.name || "";
+    const cityName = option.city ? ` ( ${option.city} )` : "";
+    const userCode = option.user_name || "";
+    const isAdminUser = userCode.search("RVA") !== -1;
+    if (isAdminUser && !this.state.isAssign) {
+      return `${companyName}${cityName} - ${this.isOwnValue(option.own) ? "Own Admin" : "Other Admin"}`;
+    }
+    return `${companyName}${cityName}`;
   };
 
   setAdminDetails = () => {
@@ -2833,7 +2855,7 @@ class SaleForm extends React.Component {
         let ownAdmins = [];
 
         for (let i = 0; i < this.state.adminList.length; i++) {
-          if (this.state.adminList[i].own) {
+          if (this.isOwnValue(this.state.adminList[i].own)) {
             ownAdmins.push(this.state.adminList[i]);
           }
         }
@@ -2848,15 +2870,15 @@ class SaleForm extends React.Component {
       if (this.state.isAssign) {
         let ownDistri = [];
 
-        if (this.state.profile && this.state.profile.own) {
+        if (this.state.profile && this.isOwnValue(this.state.profile.own)) {
           for (let i = 0; i < this.state.distributorList.length; i++) {
-            if (this.state.distributorList[i].own) {
+            if (this.isOwnValue(this.state.distributorList[i].own)) {
               ownDistri.push(this.state.distributorList[i]);
             }
           }
 
           for (let i = 0; i < this.state.supplierList.length; i++) {
-            if (this.state.supplierList[i].own) {
+            if (this.isOwnValue(this.state.supplierList[i].own)) {
               ownDistri.push(this.state.supplierList[i]);
             }
           }
@@ -4522,7 +4544,9 @@ class SaleForm extends React.Component {
                     value={userIdValue}
                     autoHighlight
                     getOptionLabel={(option) =>
-                      this.state.isAssign ? option.name : option.company_name
+                      this.state.isAssign
+                        ? option.name
+                        : this.getCompanyOptionLabel(option)
                     }
                     renderOption={(props, option) => (
                       <li {...props} key={option.id}>
@@ -4542,7 +4566,7 @@ class SaleForm extends React.Component {
                             (option.user_name.search("RVR") != -1
                               ? "Retailer"
                               : "")
-                          : option.company_name + "( " + option.city + " )"}
+                          : this.getCompanyOptionLabel(option)}
                       </li>
                     )}
                     renderInput={(params) => (
