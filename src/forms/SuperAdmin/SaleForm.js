@@ -559,6 +559,8 @@ class SaleForm extends React.Component {
 
       this.props.actions.employeeList({ role_id: 9 });
     } else if (this.isAdmin) {
+      this.props.actions.adminList({ all: 1 });
+
       this.props.actions.distributorList({ all: 1 });
 
       this.props.actions.salesExecutiveList({ all: 1, role_id: 4 });
@@ -1360,6 +1362,10 @@ class SaleForm extends React.Component {
     let userList = this.getUserList();
     console.log("userList : ", userList);
     let selectedUser = this.getUserById(userList, val);
+    let isSelectedAdmin = !!_.find(
+      this.state.adminList,
+      (item) => String(item.id) === String(val),
+    );
 
     let user_gst_no = "",
       advance_amount = 0;
@@ -1394,7 +1400,8 @@ class SaleForm extends React.Component {
         if (
           (this.isSuperAdmin || this.isAdmin || this.isDistributor) &&
           /* (this.isAdmin && this.state.profile && this.state.profile.own) */ selectedUser &&
-          selectedUser.own
+          selectedUser.own &&
+          !(this.isAdmin && isSelectedAdmin)
         ) {
           this.handleTransfer(val);
         } else {
@@ -2866,7 +2873,21 @@ class SaleForm extends React.Component {
 
         userList = this.state.salesExecutiveList.concat(userList);
       } else {
-        userList = this.state.distributorList;
+        let loggedInUserId =
+          this.state.auth && this.state.auth.user
+            ? this.state.auth.user.id
+            : null;
+
+        let adminList = this.state.adminList;
+
+        if (loggedInUserId !== null && loggedInUserId !== undefined) {
+          adminList = _.filter(
+            this.state.adminList,
+            (item) => String(item.id) !== String(loggedInUserId),
+          );
+        }
+
+        userList = adminList.concat(this.state.distributorList);
       }
     } else if (this.isDistributor) {
       if (this.state.isAssign) {
