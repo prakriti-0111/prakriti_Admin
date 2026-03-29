@@ -114,7 +114,7 @@ class SaleViewPage extends React.Component {
       },
       () => {
         this.loadListData();
-      }
+      },
     );
   };
 
@@ -225,7 +225,7 @@ class SaleViewPage extends React.Component {
       hasErr = true;
       this.props.enqueueSnackbar(
         "Amount must be less than or equal due amount.",
-        { variant: "error" }
+        { variant: "error" },
       );
     }
     if (isEmpty(formValues.amount)) {
@@ -296,26 +296,26 @@ class SaleViewPage extends React.Component {
   render() {
     const { sale, formValues, formErros } = this.state;
     return (
-      <MainCard title='Sale Details'>
+      <MainCard title="Sale Details">
         {!sale ? (
-          <Grid container justifyContent='center'>
-            <CircularProgress size='30px' />
+          <Grid container justifyContent="center">
+            <CircularProgress size="30px" />
           </Grid>
         ) : (
           <>
-            <div className='single-item-wrapper details-header'>
-              <div className='single-item'>
+            <div className="single-item-wrapper details-header">
+              <div className="single-item">
                 <p>
                   <span>Distributor: </span> <br />
                   {sale.user_name}, {sale.user_mobile}
                 </p>
               </div>
-              <div className='single-item'>
+              <div className="single-item">
                 <p>
                   <span>Invoice Number: </span> <br /> {sale.invoice_number}
                 </p>
               </div>
-              <div className='single-item'>
+              <div className="single-item">
                 <p>
                   <span>Invoice Date: </span> <br /> {sale.invoice_date}
                 </p>
@@ -323,56 +323,56 @@ class SaleViewPage extends React.Component {
               {/*<div className='single-item'>
                   <p><span>Payment Mode: </span>  <br />{sale.payment_mode}</p>
                 </div>*/}
-              <div className='single-item'>
+              <div className="single-item">
                 <p>
                   <span>Taxable Amount: </span> <br /> {sale.taxable_amount}
                 </p>
               </div>
-              <div className='single-item'>
+              <div className="single-item">
                 <p>
                   <span>Cgst Tax: </span> <br /> {sale.cgst_tax}
                 </p>
               </div>
-              <div className='single-item'>
+              <div className="single-item">
                 <p>
                   <span>Sgst Tax: </span> <br /> {sale.sgst_tax}
                 </p>
               </div>
-              <div className='single-item'>
+              <div className="single-item">
                 <p>
                   <span>Igst Tax: </span> <br /> {sale.igst_tax}
                 </p>
               </div>
-              <div className='single-item'>
+              <div className="single-item">
                 <p>
                   <span>Total Amount: </span> <br /> {sale.total_amount}
                 </p>
               </div>
-              <div className='single-item'>
+              <div className="single-item">
                 <p>
                   <span>Discount: </span> <br />
                   {sale.discount}
                 </p>
               </div>
-              <div className='single-item'>
+              <div className="single-item">
                 <p>
                   <span>Total Payable: </span> <br />
                   {sale.total_payable}
                 </p>
               </div>
-              <div className='single-item'>
+              <div className="single-item">
                 <p>
                   <span>Paid Amount: </span> <br />
                   {sale.paid_amount}
                 </p>
               </div>
-              <div className='single-item'>
+              <div className="single-item">
                 <p>
                   <span>Due Amount: </span> <br />
                   {sale.due_amount_display}
                 </p>
               </div>
-              <div className='single-item'>
+              <div className="single-item">
                 <p>
                   <span>Due Date: </span> <br />
                   {sale.due_date}
@@ -388,12 +388,13 @@ class SaleViewPage extends React.Component {
             <Grid
               container
               spacing={gridSpacing}
-              className='details-header ratn-pur-wrapper loans_view'>
+              className="details-header ratn-pur-wrapper loans_view"
+            >
               <Grid item xs={12}>
                 <TableContainer component={Paper}>
-                  <div className='ratn-table-purchase-wrapper'>
-                    <Table aria-label='collapsible table'>
-                      <TableHead className='ratn-table-header'>
+                  <div className="ratn-table-purchase-wrapper">
+                    <Table aria-label="collapsible table">
+                      <TableHead className="ratn-table-header">
                         <TableRow>
                           <TableCell />
                           <TableCell>Product Name</TableCell>
@@ -420,14 +421,16 @@ class SaleViewPage extends React.Component {
               <Grid
                 item
                 xs={12}
-                className='p-add-product create-input button-right'>
-                <h3 className='p_heading_list'>
+                className="p-add-product create-input button-right"
+              >
+                <h3 className="p_heading_list">
                   Payment List{" "}
                   {parseFloat(sale.due_amount) > 0 ? (
                     <Button
-                      variant='contained'
-                      className='add-button'
-                      onClick={() => this.handlePayNow()}>
+                      variant="contained"
+                      className="add-button"
+                      onClick={() => this.handlePayNow()}
+                    >
                       Pay Now
                     </Button>
                   ) : null}
@@ -446,22 +449,23 @@ class SaleViewPage extends React.Component {
         )}
 
         <Dialog
-          className='ratn-dialog-wrapper'
+          className="ratn-dialog-wrapper"
           open={this.state.openDialog}
           onClose={this.handleDialogClose}
           fullWidth
-          maxWidth='md'>
+          maxWidth="md"
+        >
           <DialogTitle>Pay Now</DialogTitle>
           <DialogContent>
             <DialogContentText></DialogContentText>
             <Box sx={{ flexGrow: 1, m: 0.5 }}>
               <Grid container spacing={2}>
-                <Grid item xs={4} className='p-invoice-date create-input'>
+                <Grid item xs={4} className="p-invoice-date create-input">
                   <LocalizationProvider dateAdapter={AdapterDayjs}>
                     <DatePicker
-                      label='Payment Date'
+                      label="Payment Date"
                       value={formValues.payment_date}
-                      inputFormat='DD/MM/YYYY'
+                      inputFormat="DD/MM/YYYY"
                       onChange={(newValue) =>
                         this.updateFormValue(newValue, "payment_date")
                       }
@@ -475,15 +479,15 @@ class SaleViewPage extends React.Component {
                     />
                   </LocalizationProvider>
                 </Grid>
-                <Grid item xs={4} className='create-input'>
+                <Grid item xs={4} className="create-input">
                   <TextField
-                    label='Amount'
-                    variant='outlined'
+                    label="Amount"
+                    variant="outlined"
                     fullWidth
                     value={formValues.amount}
                     InputProps={{
                       startAdornment: (
-                        <InputAdornment position='start'>₹</InputAdornment>
+                        <InputAdornment position="start">₹</InputAdornment>
                       ),
                     }}
                     error={formErros.amount}
@@ -493,30 +497,31 @@ class SaleViewPage extends React.Component {
                   />
                 </Grid>
 
-                <Grid item xs={4} className='create-input'>
+                <Grid item xs={4} className="create-input">
                   <FormControl fullWidth error={formErros.payment_mode}>
                     <InputLabel>Payment Mode</InputLabel>
                     <Select
-                      className='input-inner'
+                      className="input-inner"
                       value={formValues.payment_mode}
                       fullWidth
-                      label='Payment Mode'
+                      label="Payment Mode"
                       onChange={(event) =>
                         this.updateFormValue(event.target.value, "payment_mode")
-                      }>
-                      <MenuItem value=''></MenuItem>
-                      <MenuItem value='cash'>Cash</MenuItem>
-                      <MenuItem value='cheque'>Cheque</MenuItem>
-                      <MenuItem value='imps_neft'>BANKING/RTGS/NEFT</MenuItem>
-                      <MenuItem value='online'>UPI/PhonePe/Gpay</MenuItem>
+                      }
+                    >
+                      <MenuItem value=""></MenuItem>
+                      <MenuItem value="cash">Cash</MenuItem>
+                      <MenuItem value="cheque">Cheque</MenuItem>
+                      <MenuItem value="imps_neft">BANKING/RTGS/NEFT</MenuItem>
+                      <MenuItem value="online">UPI/PhonePe/Gpay</MenuItem>
                     </Select>
                   </FormControl>
                 </Grid>
                 {formValues.payment_mode == "cheque" ? (
-                  <Grid item xs={4} className='create-input'>
+                  <Grid item xs={4} className="create-input">
                     <TextField
-                      label='Cheque No'
-                      variant='outlined'
+                      label="Cheque No"
+                      variant="outlined"
                       fullWidth
                       value={formValues.cheque_no}
                       onChange={(event) =>
@@ -527,10 +532,10 @@ class SaleViewPage extends React.Component {
                 ) : null}
                 {formValues.payment_mode == "imps_neft" ||
                 formValues.payment_mode == "upi" ? (
-                  <Grid item xs={4} className='create-input'>
+                  <Grid item xs={4} className="create-input">
                     <TextField
-                      label='Transaction #'
-                      variant='outlined'
+                      label="Transaction #"
+                      variant="outlined"
                       fullWidth
                       value={formValues.txn_id}
                       onChange={(event) =>
@@ -539,11 +544,11 @@ class SaleViewPage extends React.Component {
                     />
                   </Grid>
                 ) : null}
-                <Grid item xs={4} className='create-input'>
+                <Grid item xs={4} className="create-input">
                   <TextareaAutosize
-                    className='description'
+                    className="description"
                     minRows={1}
-                    placeholder='Notes'
+                    placeholder="Notes"
                     style={{ width: "100%", height: "51px" }}
                     value={formValues.notes}
                     onChange={(event) =>
@@ -551,12 +556,12 @@ class SaleViewPage extends React.Component {
                     }
                   />
                 </Grid>
-                <Grid item xs={4} className='p-invoice-date create-input'>
+                <Grid item xs={4} className="p-invoice-date create-input">
                   <LocalizationProvider dateAdapter={AdapterDayjs}>
                     <DatePicker
-                      label='Due Date'
+                      label="Due Date"
                       value={formValues.due_date}
-                      inputFormat='DD/MM/YYYY'
+                      inputFormat="DD/MM/YYYY"
                       onChange={(newValue) =>
                         this.updateFormValue(newValue, "due_date")
                       }
@@ -571,15 +576,16 @@ class SaleViewPage extends React.Component {
                   </LocalizationProvider>
                 </Grid>
                 <Grid item xs={12}>
-                  <Stack spacing={1} direction='row' justifyContent='flex-end'>
+                  <Stack spacing={1} direction="row" justifyContent="flex-end">
                     <Button
-                      variant='contained'
-                      type='button'
+                      variant="contained"
+                      type="button"
                       disabled={this.state.processing}
-                      onClick={this.handleSubmit}>
+                      onClick={this.handleSubmit}
+                    >
                       {this.state.processing ? "Processing" : "Submit"}
                     </Button>
-                    <Button variant='outlined' onClick={this.handleDialogClose}>
+                    <Button variant="outlined" onClick={this.handleDialogClose}>
                       Cancel
                     </Button>
                   </Stack>
@@ -612,13 +618,13 @@ const mapDispatchToProps = (dispatch) => {
         paymentStore,
         paymentList,
       },
-      dispatch
+      dispatch,
     ),
   };
 };
 
 export default withSnackbar(
-  withRouter(connect(mapStateToProps, mapDispatchToProps)(SaleViewPage))
+  withRouter(connect(mapStateToProps, mapDispatchToProps)(SaleViewPage)),
 );
 
 function Row(props) {
@@ -630,13 +636,14 @@ function Row(props) {
       <TableRow sx={{ "& > *": { borderBottom: "unset" } }}>
         <TableCell>
           <IconButton
-            aria-label='expand row'
-            size='small'
-            onClick={() => setOpen(!open)}>
+            aria-label="expand row"
+            size="small"
+            onClick={() => setOpen(!open)}
+          >
             {open ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
           </IconButton>
         </TableCell>
-        <TableCell component='th' scope='row'>
+        <TableCell component="th" scope="row">
           {row.product_name}
         </TableCell>
         <TableCell>{row.category_name}</TableCell>
@@ -649,17 +656,18 @@ function Row(props) {
         <TableCell>{row.tax}</TableCell>
         <TableCell>{row.total}</TableCell>
       </TableRow>
-      <TableRow className='table-inner-row'>
+      <TableRow className="table-inner-row">
         <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={11}>
-          <Collapse in={open} timeout='auto' unmountOnExit>
+          <Collapse in={open} timeout="auto" unmountOnExit>
             <Box sx={{ margin: 1 }}>
               <Typography
-                variant='h6'
+                variant="h6"
                 gutterBottom
-                component='div'></Typography>
-              <Table size='medium' aria-label='sales'>
+                component="div"
+              ></Typography>
+              <Table size="medium" aria-label="sales">
                 <TableHead>
-                  <TableRow className='pur-details-inner-table'>
+                  <TableRow className="pur-details-inner-table">
                     <TableCell>Material Name</TableCell>
                     <TableCell>Purity</TableCell>
                     <TableCell>Quantity</TableCell>
@@ -669,10 +677,10 @@ function Row(props) {
                     <TableCell>Amount</TableCell>
                   </TableRow>
                 </TableHead>
-                <TableBody className='pur-details-table-body'>
+                <TableBody className="pur-details-table-body">
                   {row.materials.map((item, i) => (
                     <TableRow key={i}>
-                      <TableCell component='th' scope='row'>
+                      <TableCell component="th" scope="row">
                         {item.material_name}
                       </TableCell>
                       <TableCell>{item.purity_name}</TableCell>
