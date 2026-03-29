@@ -7,7 +7,6 @@ import MainCard from 'ui-component/cards/MainCard';
 import withRouter from 'src/helpers/withRouter';
 import { saleProducts } from 'actions/superadmin/sales.actions';
 import { subCategoryList } from 'actions/superadmin/subCategory.actions';
-import { adminList } from 'actions/superadmin/admin.actions';
 import DataTable from 'src/utils/DataTable';
 import { withSnackbar } from 'notistack';
 import { categoryList } from 'actions/superadmin/category.actions';
@@ -22,7 +21,6 @@ class SaleProductsPage extends Component {
       items: [],
       sale_by_list: [],
       price_by_categories: [],
-      adminList: this.props.adminList,
       categories: this.props.categories,
       sub_categories: this.props.sub_categories,
       queryParams: {
@@ -89,7 +87,7 @@ class SaleProductsPage extends Component {
       {
         name: 'sale_by_name',
         display_name: 'Sale By'
-      }
+      },
     ];
 
     this.tableActions = [
@@ -105,7 +103,6 @@ class SaleProductsPage extends Component {
   componentDidMount() {
     this.loadListData();
     this.props.actions.categoryList({ all: 1 });
-    this.props.actions.adminList({ all: 1 });
   }
 
   static getDerivedStateFromProps(props, state) {
@@ -116,44 +113,17 @@ class SaleProductsPage extends Component {
     if (props.categories !== state.categories) {
       update.categories = props.categories;
     }
-    if (props.adminList !== state.adminList) {
-      update.adminList = props.adminList;
-    }
     if (props.sub_categories !== state.sub_categories) {
       update.sub_categories = props.sub_categories;
     }
     return update;
   }
 
-  isOwnValue = (value) => {
-    return value === true || value === 1 || value === '1' || value === 'yes' || value === 'Yes' || value === 'true';
-  }
-
-  getAdminDisplayName = (item) => {
-    if (!item) {
-      return '';
-    }
-    const baseName = item.name || item.company_name || item.sale_by_name || '';
-    if (!baseName) {
-      return this.isOwnValue(item.own) ? 'Own Admin' : 'Other Admin';
-    }
-    return `${baseName} (${this.isOwnValue(item.own) ? 'Own Admin' : 'Other Admin'})`;
-  }
-
-  enhanceSaleRow = (item) => {
-    const adminMatch = (this.state.adminList || []).find((admin) => String(admin.id) === String(item.sale_by));
-    return {
-      ...item,
-      sale_by_name: adminMatch ? this.getAdminDisplayName(adminMatch) : item.sale_by_name
-    };
-  }
-
   loadListData = () => {
     saleProducts(this.state.queryParams)
       .then(res => {
         if (res.data.success) {
-          const items = res.data.data.items.map((item) => this.enhanceSaleRow(item));
-          let saleByList = items.map((sale) => ({
+          let saleByList = res.data.data.items.map((sale) => ({
             id: sale.sale_by,
             name: sale.sale_by_name
           }));
@@ -166,7 +136,7 @@ class SaleProductsPage extends Component {
           },[]);
 
           this.setState({
-            items: items,
+            items: res.data.data.items,
             sale_by_list: saleByList,
             price_by_categories: res.data.data.categories
           })
@@ -336,7 +306,6 @@ class SaleProductsPage extends Component {
 }
 
 const mapStateToProps = (state) => ({
-  adminList: state.superadmin.admin.items,
   categories: state.superadmin.category.items,
   sub_categories: state.superadmin.subCategory.items,
   auth: state.auth
@@ -346,7 +315,6 @@ const mapDispatchToProps = dispatch => {
   return {
     dispatch,
     actions: bindActionCreators({
-      adminList,
       categoryList,
       subCategoryList
     }, dispatch)

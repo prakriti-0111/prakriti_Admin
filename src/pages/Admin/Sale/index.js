@@ -8,7 +8,7 @@ import MainCard from 'ui-component/cards/MainCard';
 import withRouter from 'src/helpers/withRouter';
 import { salesList, salesDelete, salesDownloadInvoice } from 'actions/admin/sales.actions';
 import DataTable from 'src/utils/DataTable';
-import {ADMIN_RESET_SALES} from '../../../actionTypes/admin/sales.types';
+import {ADMIN_RESET_SALES} from '../../actionTypes/admin/sales.types';
 import { withSnackbar } from 'notistack';
 import { distributorList } from 'actions/admin/distributor.actions';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';

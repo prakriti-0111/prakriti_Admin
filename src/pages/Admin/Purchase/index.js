@@ -9,10 +9,9 @@ import MainCard from 'ui-component/cards/MainCard';
 import withRouter from 'src/helpers/withRouter';
 import { purchaseList, purchaseDelete } from 'actions/admin/purchase.actions';
 import DataTable from 'src/utils/DataTable';
-import {ADMIN_RESET_PURCHASE} from '../../../actionTypes/admin/purchase.types';
+import {ADMIN_RESET_PURCHASE} from '../../actionTypes/admin/purchase.types';
 import { withSnackbar } from 'notistack';
 import { supplierList } from 'actions/admin/supplier.actions';
-import { adminList } from 'actions/superadmin/admin.actions';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
@@ -38,8 +37,7 @@ class PurchasePage extends Component {
         date_to: null,
         status: ""
       },
-      supplierList: this.props.supplierList,
-      adminList: this.props.adminList
+      supplierList: this.props.supplierList
     }
 
     this.columns = [
@@ -128,7 +126,6 @@ class PurchasePage extends Component {
   componentDidMount(){
     this.loadListData();
     this.props.actions.supplierList({all: 1})
-    this.props.actions.adminList({all: 1})
   }
 
   static getDerivedStateFromProps(props, state){
@@ -154,30 +151,8 @@ class PurchasePage extends Component {
     if(props.supplierList !== state.supplierList){
       update.supplierList = props.supplierList;
     }
-    if(props.adminList !== state.adminList){
-      update.adminList = props.adminList;
-    }
 
     return update;
-  }
-
-  getPurchasePartyOptions = () => {
-    const supplierOptions = (this.state.supplierList || []).map((item) => ({
-      ...item,
-      display_name: item.name
-    }));
-    const adminOptions = (this.state.adminList || []).map((item) => ({
-      ...item,
-      display_name: item.name
-        ? `${item.name} (${this.isOwnValue(item.own) ? 'Own Admin' : 'Other Admin'})`
-        : (this.isOwnValue(item.own) ? 'Own Admin' : 'Other Admin')
-    }));
-
-    return supplierOptions.concat(adminOptions);
-  }
-
-  isOwnValue = (value) => {
-    return value === true || value === 1 || value === '1' || value === 'yes' || value === 'Yes' || value === 'true';
   }
 
   loadListData = () => {
@@ -240,7 +215,6 @@ class PurchasePage extends Component {
   }
 
   render() {
-    const purchasePartyOptions = this.getPurchasePartyOptions();
     
     return (
       <MainCard title="Purchase List" secondary={<Button variant="contained" onClick={() => this.props.navigate('create') }>Add</Button>} >
@@ -258,8 +232,8 @@ class PurchasePage extends Component {
                 >
                   <MenuItem value="">All</MenuItem>
                   {
-                    purchasePartyOptions.map((item, index) => (
-                      <MenuItem value={item.id} key={index}>{item.display_name}</MenuItem>
+                    this.state.supplierList.map((item, index) => (
+                      <MenuItem value={item.id} key={index}>{item.name}</MenuItem>
                     ))
                   }
                 </Select>
@@ -341,8 +315,7 @@ const mapStateToProps = (state) => ({
   actionCalled: state.admin.purchase.actionCalled,
   deleteSuccess: state.admin.purchase.deleteSuccess,
   successMessage: state.admin.purchase.successMessage,
-  supplierList: state.admin.supplier.items,
-  adminList: state.superadmin.admin.items
+  supplierList: state.admin.supplier.items
 });
 
 const mapDispatchToProps = dispatch => {
@@ -351,8 +324,7 @@ const mapDispatchToProps = dispatch => {
     actions: bindActionCreators({
       purchaseList,
       purchaseDelete,
-      supplierList,
-      adminList
+      supplierList
     }, dispatch)
   }
 };

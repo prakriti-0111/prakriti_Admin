@@ -67,7 +67,6 @@ import {
 } from "actions/superadmin/purchase.actions";
 import { employeeList } from "actions/superadmin/employee.actions";
 import { supplierList } from "actions/superadmin/supplier.actions";
-import { adminList } from "actions/superadmin/admin.actions";
 import { productList } from "actions/superadmin/product.actions";
 import { unitList } from "actions/superadmin/unit.actions";
 import { checkCertificateNo } from "actions/superadmin/stocks.actions";
@@ -138,7 +137,6 @@ class PurchaseForm extends React.Component {
       isCreateFrom: !formData,
       isReturnForm: this.props.isReturnForm,
       supplierList: this.props.supplierList,
-      adminList: this.props.adminList,
       productList: this.props.productList,
       prePurchaseItems: this.props.prePurchaseItems,
       workerList: this.props.workerList,
@@ -242,7 +240,6 @@ class PurchaseForm extends React.Component {
     this.props.actions.productList({ all: 1, purity_price: 1 });
     this.props.actions.categoryList({ all: 1 });
     this.props.actions.supplierList({ all: 1 });
-    this.props.actions.adminList({ all: 1 });
     this.props.actions.employeeList({ all: 1, role_id: 10 });
     this.props.actions.unitList({ all: 1 });
     this.props.actions.materialList({ all: 1 });
@@ -673,9 +670,6 @@ class PurchaseForm extends React.Component {
     if (props.supplierList !== state.supplierList) {
       update.supplierList = props.supplierList;
     }
-    if (props.adminList !== state.adminList) {
-      update.adminList = props.adminList;
-    }
     if (props.productList !== state.productList) {
       update.productList = props.productList;
     }
@@ -851,7 +845,7 @@ class PurchaseForm extends React.Component {
 
   handleSupplierChange = (event) => {
     this.updateFormValues(event.target.value, "supplier_id");
-    let m = _.filter(this.getPurchasePartyOptions(), { id: event.target.value });
+    let m = _.filter(this.state.supplierList, { id: event.target.value });
     let supplier_gst_no = "",
       advance_amount = 0;
     if (m.length) {
@@ -879,34 +873,6 @@ class PurchaseForm extends React.Component {
 
   handleDefaultChange = (event, key) => {
     this.updateFormValues(event.target.value, key);
-  };
-
-  isOwnValue = (value) => {
-    return (
-      value === true ||
-      value === 1 ||
-      value === "1" ||
-      value === "yes" ||
-      value === "Yes" ||
-      value === "true"
-    );
-  };
-
-  getPurchasePartyOptions = () => {
-    const supplierOptions = (this.state.supplierList || []).map((item) => ({
-      ...item,
-      display_name: item.name,
-    }));
-    const adminOptions = (this.state.adminList || [])
-      .filter((item) => !this.isOwnValue(item.own))
-      .map((item) => ({
-        ...item,
-        display_name: item.name
-          ? `${item.name} (Other Admin)`
-          : "Other Admin",
-      }));
-
-    return supplierOptions.concat(adminOptions);
   };
 
   updateFormValues = (val, key) => {
@@ -2100,7 +2066,7 @@ class PurchaseForm extends React.Component {
 
   getSupplierDetails = () => {
     if (!isEmpty(this.state.formValues.supplier_id)) {
-      let m = _.filter(this.getPurchasePartyOptions(), {
+      let m = _.filter(this.state.supplierList, {
         id: this.state.formValues.supplier_id,
       });
       if (m.length) {
@@ -2567,8 +2533,6 @@ class PurchaseForm extends React.Component {
       });
     }
 
-    const purchasePartyOptions = this.getPurchasePartyOptions();
-
     return (
       <Box sx={{ flexGrow: 1, m: 0.5 }} className="ratn-dialog-inner">
         {return_sale_data ? (
@@ -2631,10 +2595,10 @@ class PurchaseForm extends React.Component {
                   }
                 >
                   <MenuItem value=""></MenuItem>
-                  {purchasePartyOptions.map((item, index) => {
+                  {this.state.supplierList.map((item, index) => {
                     return (
                       <MenuItem value={item.id} key={index}>
-                        {item.display_name}{" "}
+                        {item.name}{" "}
                       </MenuItem>
                     );
                   })}
@@ -5443,7 +5407,6 @@ class PurchaseForm extends React.Component {
 
 const mapStateToProps = (state) => ({
   supplierList: state.superadmin.supplier.items,
-  adminList: state.superadmin.admin.items,
   productList: state.superadmin.product.items,
   materialList: state.superadmin.material.items,
   workerList: state.superadmin.employee.items,
@@ -5468,7 +5431,6 @@ const mapDispatchToProps = (dispatch) => ({
       purchaseStore,
       purchaseUpdate,
       supplierList,
-      adminList,
       productList,
       employeeList,
       unitList,

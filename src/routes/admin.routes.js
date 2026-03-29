@@ -110,11 +110,11 @@ const StocksPage =Loadable(lazy(() => import('../pages/SuperAdmin/Stocks')));
 const StocksViewPage = Loadable(lazy(() => import('../pages/SuperAdmin/Stocks/View')));
 
 //purchase
-const PurchasePage = Loadable(lazy(() => import('../pages/Admin/Purchase')));
-const PurchaseCreatePage = Loadable(lazy(() => import('../pages/Admin/Purchase/Create')));
-const PurchaseEditPage = Loadable(lazy(() => import('../pages/Admin/Purchase/Edit')));
+const PurchasePage = Loadable(lazy(() => import('../pages/SuperAdmin/Purchase')));
+const PurchaseCreatePage = Loadable(lazy(() => import('../pages/SuperAdmin/Purchase/Create')));
+const PurchaseEditPage = Loadable(lazy(() => import('../pages/SuperAdmin/Purchase/Edit')));
 //const PurchaseReturnPage = Loadable(lazy(() => import('../pages/SuperAdmin/Purchase/Return')));
-const PurchaseViewPage = Loadable(lazy(() => import('../pages/Admin/Purchase/View')));
+const PurchaseViewPage = Loadable(lazy(() => import('../pages/SuperAdmin/Purchase/View')));
 const PurchaseDownloadViewPage = Loadable(lazy(() => import('../pages/SuperAdmin/Purchase/DownloadView')));
 const PurchaseProductsPage = Loadable(lazy(() => import('../pages/SuperAdmin/Purchase/PurchaseProducts')));
 
@@ -123,10 +123,10 @@ const LoanPage = Loadable(lazy(() => import('../pages/SuperAdmin/Loans')));
 const LoanViewPage = Loadable(lazy(() => import('../pages/SuperAdmin/Loans/View')));
 
 //sales
-const SalePage = Loadable(lazy(() => import('../pages/Admin/Sale')));
-const SaleCreatePage = Loadable(lazy(() => import('../pages/Admin/Sale/Create')));
-const SaleViewPage = Loadable(lazy(() => import('../pages/Admin/Sale/View')));
-const SaleEditPage = Loadable(lazy(() => import('../pages/Admin/Sale/Edit')));
+const SalePage = Loadable(lazy(() => import('../pages/SuperAdmin/Sale')));
+const SaleCreatePage = Loadable(lazy(() => import('../pages/SuperAdmin/Sale/Create')));
+const SaleViewPage = Loadable(lazy(() => import('../pages/SuperAdmin/Sale/View')));
+const SaleEditPage = Loadable(lazy(() => import('../pages/SuperAdmin/Sale/Edit')));
 const SaleDownloadViewPage = Loadable(lazy(() => import('../pages/SuperAdmin/Sale/DownloadView')));
 const SaleProductsPage = Loadable(lazy(() => import('../pages/SuperAdmin/Sale/SaleProducts')));
 

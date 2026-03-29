@@ -44,7 +44,7 @@ import DialogContentText from "@mui/material/DialogContentText";
 import DialogTitle from "@mui/material/DialogTitle";
 import { isEmpty } from "src/helpers/helper";
 import { paymentStore, paymentList } from "actions/admin/payment.actions";
-import { ADMIN_RESET_PAYMENT } from "../../../actionTypes/admin/payment.types";
+import { ADMIN_RESET_PAYMENT } from "../../actionTypes/admin/payment.types";
 
 class SaleViewPage extends React.Component {
   constructor(props) {
