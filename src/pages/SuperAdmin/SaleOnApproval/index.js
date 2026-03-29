@@ -72,115 +72,117 @@ class SaleOnApprovePage extends Component {
     this.isAdmin = isAdmin();
     this.isSalesExecutive = isSalesExecutive();
 
-    this.columns = this.isAdmin ? [
-      {
-        name: "user_company_name",
-        display_name: "Company Name",
-      },
-      {
-        name: "invoice_number",
-        display_name: "Invoice Number",
-      },
-      {
-        name: "invoice_date",
-        display_name: "Invoice Date",
-      },
-      {
-        name: "total_amount",
-        display_name: "Total Amount",
-      },
-      {
-        name: "due_amount_display",
-        display_name: "Due Amount",
-      },
-      {
-        name: "due_date",
-        display_name: "Due Date",
-      },
-      {
-        name: "sale_by_name",
-        display_name: "Sale By",
-      },
-      {
-        name: "approve_status",
-        display_name: "Status",
-        show_tag: true,
-        color_conditions: [
+    this.columns = this.isAdmin
+      ? [
           {
-            key: "approve_status",
-            value: "Pending",
-            color: "primary",
+            name: "user_company_name",
+            display_name: "Company Name",
           },
           {
-            key: "approve_status",
-            value: "Transfer To Sale",
-            color: "success",
+            name: "invoice_number",
+            display_name: "Invoice Number",
           },
           {
-            key: "approve_status",
-            value: "Accepted",
-            color: "success",
+            name: "invoice_date",
+            display_name: "Invoice Date",
           },
           {
-            key: "approve_status",
-            value: "Declined",
-            color: "error",
-          },
-        ],
-      },
-    ] : [
-      {
-        name: "user_company_name",
-        display_name: "Company Name",
-      },
-      {
-        name: "invoice_number",
-        display_name: "Invoice Number",
-      },
-      {
-        name: "invoice_date",
-        display_name: "Invoice Date",
-      },
-      {
-        name: "total_amount",
-        display_name: "Total Amount",
-      },
-      {
-        name: "due_amount_display",
-        display_name: "Due Amount",
-      },
-      {
-        name: "due_date",
-        display_name: "Due Date",
-      },
-      {
-        name: "approve_status",
-        display_name: "Status",
-        show_tag: true,
-        color_conditions: [
-          {
-            key: "approve_status",
-            value: "Pending",
-            color: "primary",
+            name: "total_amount",
+            display_name: "Total Amount",
           },
           {
-            key: "approve_status",
-            value: "Transfer To Sale",
-            color: "success",
+            name: "due_amount_display",
+            display_name: "Due Amount",
           },
           {
-            key: "approve_status",
-            value: "Accepted",
-            color: "success",
+            name: "due_date",
+            display_name: "Due Date",
           },
           {
-            key: "approve_status",
-            value: "Declined",
-            color: "error",
+            name: "sale_by_name",
+            display_name: "Sale By",
           },
-        ],
-      },
-    ];
+          {
+            name: "approve_status",
+            display_name: "Status",
+            show_tag: true,
+            color_conditions: [
+              {
+                key: "approve_status",
+                value: "Pending",
+                color: "primary",
+              },
+              {
+                key: "approve_status",
+                value: "Transfer To Sale",
+                color: "success",
+              },
+              {
+                key: "approve_status",
+                value: "Accepted",
+                color: "success",
+              },
+              {
+                key: "approve_status",
+                value: "Declined",
+                color: "error",
+              },
+            ],
+          },
+        ]
+      : [
+          {
+            name: "user_company_name",
+            display_name: "Company Name",
+          },
+          {
+            name: "invoice_number",
+            display_name: "Invoice Number",
+          },
+          {
+            name: "invoice_date",
+            display_name: "Invoice Date",
+          },
+          {
+            name: "total_amount",
+            display_name: "Total Amount",
+          },
+          {
+            name: "due_amount_display",
+            display_name: "Due Amount",
+          },
+          {
+            name: "due_date",
+            display_name: "Due Date",
+          },
+          {
+            name: "approve_status",
+            display_name: "Status",
+            show_tag: true,
+            color_conditions: [
+              {
+                key: "approve_status",
+                value: "Pending",
+                color: "primary",
+              },
+              {
+                key: "approve_status",
+                value: "Transfer To Sale",
+                color: "success",
+              },
+              {
+                key: "approve_status",
+                value: "Accepted",
+                color: "success",
+              },
+              {
+                key: "approve_status",
+                value: "Declined",
+                color: "error",
+              },
+            ],
+          },
+        ];
   }
 
   componentDidMount() {
@@ -246,8 +248,8 @@ class SaleOnApprovePage extends Component {
   };
 
   handleDownloadView = (row) => {
-    this.props.navigate('download-view/' + row.id);
-  }
+    this.props.navigate("download-view/" + row.id);
+  };
 
   handleDownload = async (row) => {
     let response = await salesDownloadInvoice(row.id);
@@ -282,7 +284,7 @@ class SaleOnApprovePage extends Component {
       },
       () => {
         this.loadListData();
-      }
+      },
     );
   };
 
@@ -470,14 +472,18 @@ class SaleOnApprovePage extends Component {
                 show: hasPermission(
                   this.state.permissions,
                   "sale_on_approval",
-                  "view"
+                  "view",
                 ),
               },
               {
-                label: 'Download',
+                label: "Download",
                 onClick: this.handleDownloadView,
-                color: 'primary',
-                show: hasPermission(this.state.permissions, 'sale_on_approval', 'view')
+                color: "primary",
+                show: hasPermission(
+                  this.state.permissions,
+                  "sale_on_approval",
+                  "view",
+                ),
               },
             ]}
           />
@@ -512,11 +518,11 @@ const mapDispatchToProps = (dispatch) => {
         distributorList,
         salesExecutiveList,
       },
-      dispatch
+      dispatch,
     ),
   };
 };
 
 export default withSnackbar(
-  withRouter(connect(mapStateToProps, mapDispatchToProps)(SaleOnApprovePage))
+  withRouter(connect(mapStateToProps, mapDispatchToProps)(SaleOnApprovePage)),
 );
