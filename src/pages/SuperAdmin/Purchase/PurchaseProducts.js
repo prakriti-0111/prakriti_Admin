@@ -6,6 +6,8 @@ import { gridSpacing } from 'store/constant';
 import MainCard from 'ui-component/cards/MainCard';
 import withRouter from 'src/helpers/withRouter';
 import { purchaseProducts } from 'actions/superadmin/purchase.actions';
+import { supplierList } from 'actions/superadmin/supplier.actions';
+import { adminList } from 'actions/superadmin/admin.actions';
 import DataTable from 'src/utils/DataTable';
 import { withSnackbar } from 'notistack';
 import { categoryList } from 'actions/superadmin/category.actions';
@@ -19,6 +21,8 @@ class PurchaseProductsPage extends Component {
     this.state = {
       items: [],
       price_by_categories: [],
+      supplierList: this.props.supplierList,
+      adminList: this.props.adminList,
       categories: this.props.categories,
       queryParams: {
         page: 1,
@@ -81,6 +85,10 @@ class PurchaseProductsPage extends Component {
       {
         name: 'mrp_display',
         display_name: 'Price'
+      },
+      {
+        name: 'purchase_party_name',
+        display_name: 'Purchase From'
       }
     ];
 
@@ -97,6 +105,8 @@ class PurchaseProductsPage extends Component {
   componentDidMount() {
     this.loadListData();
     this.props.actions.categoryList({ all: 1 });
+    this.props.actions.supplierList({ all: 1 });
+    this.props.actions.adminList({ all: 1 });
   }
 
   static getDerivedStateFromProps(props, state) {
@@ -107,15 +117,77 @@ class PurchaseProductsPage extends Component {
     if (props.categories !== state.categories) {
       update.categories = props.categories;
     }
+    if (props.supplierList !== state.supplierList) {
+      update.supplierList = props.supplierList;
+    }
+    if (props.adminList !== state.adminList) {
+      update.adminList = props.adminList;
+    }
     return update;
+  }
+
+  isOwnValue = (value) => {
+    return value === true || value === 1 || value === '1' || value === 'yes' || value === 'Yes' || value === 'true';
+  }
+
+  normalizeValue = (value) => {
+    return value === null || value === undefined ? '' : String(value).trim().toLowerCase();
+  }
+
+  getAdminDisplayName = (item) => {
+    if (!item) {
+      return '';
+    }
+    const baseName = item.name || item.company_name || '';
+    if (!baseName) {
+      return this.isOwnValue(item.own) ? 'Own Admin' : 'Other Admin';
+    }
+    return `${baseName} (${this.isOwnValue(item.own) ? 'Own Admin' : 'Other Admin'})`;
+  }
+
+  getPurchasePartyMeta = (item) => {
+    const rowId = this.normalizeValue(item.supplier_id);
+    const rowName = this.normalizeValue(item.supplier_name || item.purchase_from_name || item.user_name);
+
+    const adminMatch = (this.state.adminList || []).find((admin) => {
+      const adminId = this.normalizeValue(admin.id);
+      const adminName = this.normalizeValue(admin.name);
+      const adminCompany = this.normalizeValue(admin.company_name);
+      return (rowId && adminId && rowId === adminId) || (rowName && (rowName === adminName || rowName === adminCompany));
+    });
+    if (adminMatch) {
+      return {
+        party_name: this.getAdminDisplayName(adminMatch)
+      };
+    }
+
+    const supplierMatch = (this.state.supplierList || []).find((supplier) => {
+      const supplierId = this.normalizeValue(supplier.id);
+      const supplierName = this.normalizeValue(supplier.name);
+      const supplierCompany = this.normalizeValue(supplier.company_name);
+      return (rowId && supplierId && rowId === supplierId) || (rowName && (rowName === supplierName || rowName === supplierCompany));
+    });
+
+    return {
+      party_name: item.supplier_name || item.purchase_from_name || (supplierMatch ? supplierMatch.name : '')
+    };
+  }
+
+  enhancePurchaseRow = (item) => {
+    const purchasePartyMeta = this.getPurchasePartyMeta(item);
+    return {
+      ...item,
+      purchase_party_name: purchasePartyMeta.party_name
+    };
   }
 
   loadListData = () => {
     purchaseProducts(this.state.queryParams)
       .then(res => {
         if (res.data.success) {
+          const items = res.data.data.items.map((item) => this.enhancePurchaseRow(item));
           this.setState({
-            items: res.data.data.items,
+            items: items,
             price_by_categories: res.data.data.categories
           })
         }
@@ -238,6 +310,8 @@ class PurchaseProductsPage extends Component {
 }
 
 const mapStateToProps = (state) => ({
+  supplierList: state.superadmin.supplier.items,
+  adminList: state.superadmin.admin.items,
   categories: state.superadmin.category.items,
   auth: state.auth
 });
@@ -246,6 +320,8 @@ const mapDispatchToProps = dispatch => {
   return {
     dispatch,
     actions: bindActionCreators({
+      supplierList,
+      adminList,
       categoryList
     }, dispatch)
   }

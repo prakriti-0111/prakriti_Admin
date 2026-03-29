@@ -51,7 +51,7 @@ import {
   paymentList,
   paymentGetWalletBalance,
 } from "actions/admin/payment.actions";
-import { ADMIN_RESET_PAYMENT } from "../../actionTypes/admin/payment.types";
+import { ADMIN_RESET_PAYMENT } from "../../../actionTypes/admin/payment.types";
 import {
   getRoleName,
   getUserDashboardRoute,

@@ -47,6 +47,23 @@ class AdminPage extends Component {
           display_name: 'City'
         },
         {
+          name: 'admin_type',
+          display_name: 'Admin Type',
+          show_tag: true,
+          color_conditions: [
+            {
+              key: 'admin_type',
+              value: 'Own',
+              color: 'success'
+            },
+            {
+              key: 'admin_type',
+              value: 'Other',
+              color: 'warning'
+            }
+          ]
+        },
+        {
           name: 'total_amount_display',
           display_name: 'Total Amount',
           className: "amount_column",
@@ -89,6 +106,23 @@ class AdminPage extends Component {
         {
           name: 'city',
           display_name: 'City'
+        },
+        {
+          name: 'admin_type',
+          display_name: 'Admin Type',
+          show_tag: true,
+          color_conditions: [
+            {
+              key: 'admin_type',
+              value: 'Own',
+              color: 'success'
+            },
+            {
+              key: 'admin_type',
+              value: 'Other',
+              color: 'warning'
+            }
+          ]
         },
         {
           name: 'total_stock',
@@ -219,7 +253,15 @@ class AdminPage extends Component {
     })
   }
 
+  isOwnValue = (value) => {
+    return value === true || value === 1 || value === '1' || value === 'yes' || value === 'Yes' || value === 'true';
+  }
+
   render() {  //console.log(this.state.states)
+    const tableRows = (this.state.items || []).map((item) => ({
+      ...item,
+      admin_type: this.isOwnValue(item.own) ? 'Own' : 'Other'
+    }));
 
     return (
       <>
@@ -289,7 +331,7 @@ class AdminPage extends Component {
           <Grid container spacing={gridSpacing}>
             <DataTable
               columns={this.columns}
-              rows={this.state.items}
+              rows={tableRows}
               page={this.state.queryParams.page}
               limit={this.state.queryParams.limit}
               total={this.state.total}

@@ -7,6 +7,7 @@ import { calculateProductPrice, convertUnitToGram, displayAmount, isEmpty, calcu
 import { bindActionCreators } from 'redux';
 import { purchaseStore, purchaseUpdate, purchaseNewInvoiceNumber, purchaseReturn } from 'actions/admin/purchase.actions';
 import { supplierList } from 'actions/admin/supplier.actions';
+import { adminList } from 'actions/superadmin/admin.actions';
 import { productList } from 'actions/superadmin/product.actions';
 import { unitList } from 'actions/superadmin/unit.actions';
 import { checkCertificateNo } from 'actions/superadmin/stocks.actions';
@@ -55,6 +56,7 @@ class PurchaseForm extends React.Component {
             formData: formData,
             isCreateFrom: !formData,
             supplierList: this.props.supplierList,
+            adminList: this.props.adminList,
             productList: this.props.productList,
             unitList: this.props.unitList,
             categoryList: this.props.categoryList,
@@ -136,6 +138,7 @@ class PurchaseForm extends React.Component {
         this.props.actions.productList({ all: 1 });
         this.props.actions.categoryList({ all: 1 });
         this.props.actions.supplierList({ all: 1 });
+        this.props.actions.adminList({ all: 1 });
         this.props.actions.unitList({ all: 1 });
         if (this.state.formData) {
             this.initializeFormData();
@@ -156,6 +159,9 @@ class PurchaseForm extends React.Component {
 
         if (props.supplierList !== state.supplierList) {
             update.supplierList = props.supplierList;
+        }
+        if (props.adminList !== state.adminList) {
+            update.adminList = props.adminList;
         }
         if (props.productList !== state.productList) {
             update.productList = props.productList;
@@ -273,7 +279,7 @@ class PurchaseForm extends React.Component {
 
     handleSupplierChange = (event) => {
         this.updateFormValues(event.target.value, 'supplier_id');
-        let m = _.filter(this.state.supplierList, { id: event.target.value });
+        let m = _.filter(this.getPurchasePartyOptions(), { id: event.target.value });
         let supplier_gst_no = '';
         if (m.length) {
             supplier_gst_no = m[0].gst;
@@ -287,6 +293,25 @@ class PurchaseForm extends React.Component {
 
     handleDefaultChange = (event, key) => {
         this.updateFormValues(event.target.value, key);
+    }
+
+    getPurchasePartyOptions = () => {
+        const supplierOptions = (this.state.supplierList || []).map((item) => ({
+            ...item,
+            display_name: item.name
+        }));
+        const adminOptions = (this.state.adminList || []).map((item) => ({
+            ...item,
+            display_name: item.name
+                ? `${item.name} (${this.isOwnValue(item.own) ? 'Own Admin' : 'Other Admin'})`
+                : (this.isOwnValue(item.own) ? 'Own Admin' : 'Other Admin')
+        }));
+
+        return supplierOptions.concat(adminOptions);
+    }
+
+    isOwnValue = (value) => {
+        return value === true || value === 1 || value === '1' || value === 'yes' || value === 'Yes' || value === 'true';
     }
 
     updateFormValues = (val, key) => {
@@ -789,8 +814,7 @@ class PurchaseForm extends React.Component {
 
     getSupplierDetails = () => {
         if (!isEmpty(this.state.formValues.supplier_id)) {
-            console.log('this.state.supplierList', this.state.supplierList)
-            let m = _.filter(this.state.supplierList, { id: this.state.formValues.supplier_id });
+            let m = _.filter(this.getPurchasePartyOptions(), { id: this.state.formValues.supplier_id });
             if (m.length) {
                 this.setState({
                     supplier_details: {
@@ -1026,7 +1050,7 @@ class PurchaseForm extends React.Component {
     render() {
         const { formValues, formErros, productFormValues, productFormErros, materialFormErros, submitting, actionProductIndex } = this.state;
         const actionProduct = formValues.products.length ? formValues.products[actionProductIndex] : null;
-        console.log('actionProduct', actionProduct)
+        const purchasePartyOptions = this.getPurchasePartyOptions();
         return (
             <Box sx={{ flexGrow: 1, m: 0.5 }} className='ratn-dialog-inner'>
                 <Grid container spacing={2} className='tax-input loans_view p_view'>
@@ -1046,8 +1070,8 @@ class PurchaseForm extends React.Component {
                             >
                                 <MenuItem value=""></MenuItem>
                                 {
-                                    this.state.supplierList.map((item, index) => {
-                                        return <MenuItem value={item.id} key={index}>{item.name} </MenuItem>
+                                    purchasePartyOptions.map((item, index) => {
+                                        return <MenuItem value={item.id} key={index}>{item.display_name}</MenuItem>
                                     })
                                 }
                             </Select>
@@ -2541,6 +2565,7 @@ class PurchaseForm extends React.Component {
 
 const mapStateToProps = (state) => ({
     supplierList: state.admin.supplier.items,
+    adminList: state.superadmin.admin.items,
     productList: state.superadmin.product.items,
     unitList: state.superadmin.unit.items,
     actionCalled: state.admin.purchase.actionCalled,
@@ -2559,6 +2584,7 @@ const mapDispatchToProps = dispatch => ({
         purchaseStore,
         purchaseUpdate,
         supplierList,
+        adminList,
         productList,
         unitList,
         categoryList,
