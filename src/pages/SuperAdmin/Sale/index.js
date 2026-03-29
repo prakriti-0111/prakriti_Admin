@@ -1,27 +1,46 @@
-import { React, Component } from 'react';
-import { matchRoutes, useLocation } from "react-router-dom"
-import { connect } from 'react-redux';
-import {TextField, MenuItem, Link, Box, FormControl, InputLabel, Select, Grid, Button } from '@mui/material';
-import { bindActionCreators } from 'redux';
-import { gridSpacing } from 'store/constant';
-import MainCard from 'ui-component/cards/MainCard';
-import withRouter from 'src/helpers/withRouter';
-import { salesList, salesDelete, salesDownloadInvoice } from 'actions/superadmin/sales.actions';
-import DataTable from 'src/utils/DataTable';
-import {SUPERADMIN_RESET_SALES} from '../../../actionTypes/superadmin/sales.types';
-import { withSnackbar } from 'notistack';
-import { adminList } from 'actions/superadmin/admin.actions';
-import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
-import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { DatePicker } from '@mui/x-date-pickers/DatePicker';
-import moment from 'moment';
-import {isSuperAdmin, isDistributor, isAdmin, isSalesExecutive, hasPermission} from 'src/helpers/helper';
-import { retailerList } from 'actions/superadmin/retailer.actions';
-import { distributorList } from 'actions/superadmin/distributor.actions';
-import { salesExecutiveList } from 'actions/superadmin/salesExecutive.actions';
+import { React, Component } from "react";
+import { matchRoutes, useLocation } from "react-router-dom";
+import { connect } from "react-redux";
+import {
+  TextField,
+  MenuItem,
+  Link,
+  Box,
+  FormControl,
+  InputLabel,
+  Select,
+  Grid,
+  Button,
+} from "@mui/material";
+import { bindActionCreators } from "redux";
+import { gridSpacing } from "store/constant";
+import MainCard from "ui-component/cards/MainCard";
+import withRouter from "src/helpers/withRouter";
+import {
+  salesList,
+  salesDelete,
+  salesDownloadInvoice,
+} from "actions/superadmin/sales.actions";
+import DataTable from "src/utils/DataTable";
+import { SUPERADMIN_RESET_SALES } from "../../../actionTypes/superadmin/sales.types";
+import { withSnackbar } from "notistack";
+import { adminList } from "actions/superadmin/admin.actions";
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
+import { DatePicker } from "@mui/x-date-pickers/DatePicker";
+import moment from "moment";
+import {
+  isSuperAdmin,
+  isDistributor,
+  isAdmin,
+  isSalesExecutive,
+  hasPermission,
+} from "src/helpers/helper";
+import { retailerList } from "actions/superadmin/retailer.actions";
+import { distributorList } from "actions/superadmin/distributor.actions";
+import { salesExecutiveList } from "actions/superadmin/salesExecutive.actions";
 
 class SalePage extends Component {
-
   constructor(props) {
     super(props);
 
@@ -34,18 +53,18 @@ class SalePage extends Component {
       queryParams: {
         page: 1,
         limit: 50,
-        user_id: '',
-        search: '',
+        user_id: "",
+        search: "",
         date_from: null,
         date_to: null,
-        status: ''
+        status: "",
       },
       adminList: this.props.adminList,
       retailerList: this.props.retailerList,
       distributorList: this.props.distributorList,
       salesExecutiveList: this.props.salesExecutiveList,
-      permissions: this.props.permissions
-    }
+      permissions: this.props.permissions,
+    };
 
     this.isSuperAdmin = isSuperAdmin();
     this.isDistributor = isDistributor();
@@ -54,89 +73,89 @@ class SalePage extends Component {
 
     this.columns = [
       {
-        name: 'user_company_name',
-        display_name: 'Company Name'
+        name: "user_company_name",
+        display_name: "Company Name",
       },
       {
-        name: 'invoice_number',
-        display_name: 'Invoice Number'
+        name: "invoice_number",
+        display_name: "Invoice Number",
       },
       {
-        name: 'invoice_date',
-        display_name: 'Invoice Date'
+        name: "invoice_date",
+        display_name: "Invoice Date",
       },
       {
-        name: 'bill_amount',
-        display_name: 'Bill Amount'
+        name: "bill_amount",
+        display_name: "Bill Amount",
       },
       {
-        name: 'due_amount_display',
-        display_name: 'Due Amount'
+        name: "due_amount_display",
+        display_name: "Due Amount",
       },
       {
-        name: 'due_date',
-        display_name: 'Due Date'
+        name: "due_date",
+        display_name: "Due Date",
       },
       {
-        name: 'approve_status',
-        display_name: 'Status',
+        name: "approve_status",
+        display_name: "Status",
         show_tag: true,
         color_conditions: [
           {
             key: "approve_status",
             value: "Pending",
-            color: "primary"
+            color: "primary",
           },
           {
             key: "approve_status",
             value: "Accepted",
-            color: "success"
+            color: "success",
           },
           {
             key: "approve_status",
             value: "Declined",
-            color: "error"
-          }
-        ]
-      }
+            color: "error",
+          },
+        ],
+      },
     ];
-    
   }
 
-  componentDidMount(){
+  componentDidMount() {
     this.loadListData();
-    if(this.isSuperAdmin){
+    if (this.isSuperAdmin) {
       this.props.actions.adminList({ all: 1 });
-    }else if(this.isAdmin){
+    } else if (this.isAdmin) {
+      this.props.actions.adminList({ all: 1 });
       this.props.actions.distributorList({ all: 1 });
-    }else if(this.isDistributor){
+    } else if (this.isDistributor) {
       this.props.actions.retailerList({ all: 1 });
-    }else if(this.isSalesExecutive){
+    } else if (this.isSalesExecutive) {
       this.props.actions.retailerList({ all: 1 });
     }
   }
 
-  static getDerivedStateFromProps(props, state){
+  static getDerivedStateFromProps(props, state) {
     let update = {};
-    if(props.items !== state.items){
+    if (props.items !== state.items) {
       update.items = props.items;
     }
 
-    if(props.total !== state.total){
+    if (props.total !== state.total) {
       update.total = props.total;
     }
 
-    if(props.actionCalled !== state.actionCalled){
+    if (props.actionCalled !== state.actionCalled) {
       update.actionCalled = props.actionCalled;
     }
 
-    if(props.deleteSuccess !== state.deleteSuccess){
+    if (props.deleteSuccess !== state.deleteSuccess) {
       update.deleteSuccess = props.deleteSuccess;
     }
-    if(props.successMessage !== state.successMessage){
+    if (props.successMessage !== state.successMessage) {
       update.successMessage = props.successMessage;
     }
-    if(props.adminList !== state.adminList){
+    if (props.adminList !== state.adminList) {
       update.adminList = props.adminList;
     }
     if (props.distributorList !== state.distributorList) {
@@ -153,24 +172,24 @@ class SalePage extends Component {
   }
 
   loadListData = () => {
-    let data = {...this.state.queryParams};
-    if(data.date_from){
-        data.date_from = moment(data.date_from.toString()).format('YYYY-MM-DD')
+    let data = { ...this.state.queryParams };
+    if (data.date_from) {
+      data.date_from = moment(data.date_from.toString()).format("YYYY-MM-DD");
     }
-    if(data.date_to){
-        data.date_to = moment(data.date_to.toString()).format('YYYY-MM-DD')
+    if (data.date_to) {
+      data.date_to = moment(data.date_to.toString()).format("YYYY-MM-DD");
     }
     this.props.actions.salesList(data);
-  }
+  };
 
   handleDownloadView = (row) => {
-    this.props.navigate('download-view/' + row.id);
-  }
+    this.props.navigate("download-view/" + row.id);
+  };
 
   handleDownload = async (row) => {
     let response = await salesDownloadInvoice(row.id);
-    if(response.data.success){
-      window.open(response.data.data.url, '_blank').focus();
+    if (response.data.success) {
+      window.open(response.data.data.url, "_blank").focus();
 
       /*var xhr = new XMLHttpRequest();
       xhr.responseType = 'blob';
@@ -188,42 +207,46 @@ class SalePage extends Component {
       xhr.open('GET', response.data.data.url);
       xhr.send();*/
     }
-  }
+  };
 
   handlePagination = (page) => {
-    this.setState({
-      queryParams: {
-        ...this.state.queryParams,
-        page: page
-      }
-    }, () => {
-      this.loadListData();
-    })
-    
-  }
+    this.setState(
+      {
+        queryParams: {
+          ...this.state.queryParams,
+          page: page,
+        },
+      },
+      () => {
+        this.loadListData();
+      },
+    );
+  };
 
   handleEdit = (row) => {
-    this.props.navigate('edit/' + row.id);
-  }
+    this.props.navigate("edit/" + row.id);
+  };
 
   handleView = (row) => {
-    this.props.navigate('view/' + row.id);
-  }
-  
+    this.props.navigate("view/" + row.id);
+  };
+
   handleReturn = (row) => {
-    this.props.navigate('edit/' + row.id);
-  }
+    this.props.navigate("edit/" + row.id);
+  };
 
   handleDelete = (row) => {
     this.props.actions.salesDelete(row.id);
-  }
+  };
 
-  componentDidUpdate(previousProps, previousState){
-    if(this.state.deleteSuccess){
+  componentDidUpdate(previousProps, previousState) {
+    if (this.state.deleteSuccess) {
       const { dispatch } = this.props;
-      this.props.enqueueSnackbar(this.state.successMessage, {variant: 'success'});
+      this.props.enqueueSnackbar(this.state.successMessage, {
+        variant: "success",
+      });
       dispatch({
-        type: SUPERADMIN_RESET_SALES
+        type: SUPERADMIN_RESET_SALES,
       });
       this.handlePagination(1);
     }
@@ -233,95 +256,120 @@ class SalePage extends Component {
     this.setState({
       queryParams: {
         ...this.state.queryParams,
-        [key]: value
-      }
-    })
-  }
+        [key]: value,
+      },
+    });
+  };
 
   handleSearch = () => {
     this.loadListData();
-  }
+  };
 
   getUserList = () => {
     let userList = [];
-    if(this.isSuperAdmin){
-        userList = this.state.adminList;
-    }else if(this.isAdmin){
-        userList = this.state.distributorList;
-    }else if(this.isDistributor){
+    if (this.isSuperAdmin) {
+      userList = this.state.adminList;
+    } else if (this.isAdmin) {
+      userList = this.state.adminList.concat(this.state.distributorList);
+    } else if (this.isDistributor) {
       userList = this.state.retailerList;
-    }else if(this.isSalesExecutive){
+    } else if (this.isSalesExecutive) {
       userList = this.state.retailerList;
     }
     return userList;
-  }
+  };
 
   render() {
     let userList = this.getUserList();
-    let userLabel = '';
-    if(this.isSuperAdmin){
-      userLabel = 'Admin';
-    }else if(this.isAdmin){
-      userLabel = 'Distributor';
-    }else if(this.isDistributor){
-      userLabel = 'Retailer';
-    }else if(this.isSalesExecutive){
-      userLabel = 'Retailer';
+    let userLabel = "";
+    if (this.isSuperAdmin) {
+      userLabel = "Admin";
+    } else if (this.isAdmin) {
+      userLabel = "Admin / Distributor";
+    } else if (this.isDistributor) {
+      userLabel = "Retailer";
+    } else if (this.isSalesExecutive) {
+      userLabel = "Retailer";
     }
-    
+
     return (
-      <MainCard title={"Sales List"} secondary={hasPermission(this.state.permissions, 'sales', 'add') ? <Button variant="contained" onClick={() => this.props.navigate('create') }>Add</Button> : null} >
-        <Box sx={{ flexGrow: 1, m: 0.5 }} className='ratn-dialog-inner'>
-          <Grid container spacing={2} columnSpacing={{ xs: 1, sm: 2, md: 2 }} className='tax-input loans_view p_view'>
-            <Grid item xs={6} md={2} className='create-input'>
+      <MainCard
+        title={"Sales List"}
+        secondary={
+          hasPermission(this.state.permissions, "sales", "add") ? (
+            <Button
+              variant="contained"
+              onClick={() => this.props.navigate("create")}
+            >
+              Add
+            </Button>
+          ) : null
+        }
+      >
+        <Box sx={{ flexGrow: 1, m: 0.5 }} className="ratn-dialog-inner">
+          <Grid
+            container
+            spacing={2}
+            columnSpacing={{ xs: 1, sm: 2, md: 2 }}
+            className="tax-input loans_view p_view"
+          >
+            <Grid item xs={6} md={2} className="create-input">
               <FormControl fullWidth>
                 <InputLabel>{userLabel}</InputLabel>
                 <Select
                   value={this.state.queryParams.user_id}
                   label={userLabel}
-                  onChange={(e) => this.handleSearchChange(e.target.value, 'user_id')}
-                  className='input-inner'
+                  onChange={(e) =>
+                    this.handleSearchChange(e.target.value, "user_id")
+                  }
+                  className="input-inner"
                   defaultValue=""
                 >
                   <MenuItem value="">All</MenuItem>
-                  {
-                    userList.map((item, index) => (
-                      <MenuItem value={item.id} key={index}>{item.company_name}</MenuItem>
-                    ))
-                  }
+                  {userList.map((item, index) => (
+                    <MenuItem value={item.id} key={index}>
+                      {item.company_name}
+                    </MenuItem>
+                  ))}
                 </Select>
               </FormControl>
             </Grid>
             <Grid item xs={6} md={2}>
               <LocalizationProvider dateAdapter={AdapterDayjs}>
-                  <DatePicker
-                      label="Date From"
-                      inputFormat="DD/MM/YYYY"
-                      value={this.state.queryParams.date_from}
-                      onChange={(newValue) => this.handleSearchChange(newValue, 'date_from')}
-                      renderInput={(params) => <TextField fullWidth {...params} />}
-                  />
+                <DatePicker
+                  label="Date From"
+                  inputFormat="DD/MM/YYYY"
+                  value={this.state.queryParams.date_from}
+                  onChange={(newValue) =>
+                    this.handleSearchChange(newValue, "date_from")
+                  }
+                  renderInput={(params) => <TextField fullWidth {...params} />}
+                />
               </LocalizationProvider>
             </Grid>
             <Grid item xs={6} md={2}>
-                <LocalizationProvider dateAdapter={AdapterDayjs}>
-                    <DatePicker
-                        label="Date To"
-                        inputFormat="DD/MM/YYYY"
-                        value={this.state.queryParams.date_to}
-                        onChange={(newValue) => this.handleSearchChange(newValue, 'date_to')}
-                        renderInput={(params) => <TextField fullWidth {...params} />}
-                    />
-                </LocalizationProvider>
+              <LocalizationProvider dateAdapter={AdapterDayjs}>
+                <DatePicker
+                  label="Date To"
+                  inputFormat="DD/MM/YYYY"
+                  value={this.state.queryParams.date_to}
+                  onChange={(newValue) =>
+                    this.handleSearchChange(newValue, "date_to")
+                  }
+                  renderInput={(params) => <TextField fullWidth {...params} />}
+                />
+              </LocalizationProvider>
             </Grid>
-            <Grid item xs={6} md={2} className='create-input'>
+            <Grid item xs={6} md={2} className="create-input">
               <FormControl fullWidth>
                 <InputLabel>Status</InputLabel>
                 <Select
                   value={this.state.queryParams.status}
                   label="Status"
-                  onChange={(e) => this.handleSearchChange(e.target.value, 'status')}
-                  className='input-inner'
+                  onChange={(e) =>
+                    this.handleSearchChange(e.target.value, "status")
+                  }
+                  className="input-inner"
                   defaultValue=""
                 >
                   <MenuItem value="">All</MenuItem>
@@ -331,23 +379,36 @@ class SalePage extends Component {
                 </Select>
               </FormControl>
             </Grid>
-            <Grid item xs={6} md={2} className='create-input'>
+            <Grid item xs={6} md={2} className="create-input">
               <FormControl fullWidth>
                 <TextField
                   label="Search"
                   variant="outlined"
                   value={this.state.queryParams.search}
-                  onChange={(e) => this.handleSearchChange(e.target.value, 'search')}
+                  onChange={(e) =>
+                    this.handleSearchChange(e.target.value, "search")
+                  }
                 />
               </FormControl>
             </Grid>
-            <Grid item xs={6} md={2} className='create-input order-input button-right'>
-              <Button variant="contained" className='search-btn' onClick={this.handleSearch}>Search</Button>
+            <Grid
+              item
+              xs={6}
+              md={2}
+              className="create-input order-input button-right"
+            >
+              <Button
+                variant="contained"
+                className="search-btn"
+                onClick={this.handleSearch}
+              >
+                Search
+              </Button>
             </Grid>
           </Grid>
         </Box>
         <Grid container spacing={gridSpacing}>
-          <DataTable 
+          <DataTable
             columns={this.columns}
             rows={this.state.items}
             page={this.state.queryParams.page}
@@ -356,22 +417,26 @@ class SalePage extends Component {
             handlePagination={this.handlePagination}
             actions={[
               {
-                label: 'Return',
+                label: "Return",
                 onClick: this.handleReturn,
-                color: 'primary',
+                color: "primary",
                 conditions: [
                   {
                     key: "approve_status",
-                    value: "Accepted"
-                  }
+                    value: "Accepted",
+                  },
                 ],
-                show: this.isSuperAdmin || this.isAdmin || this.isDistributor || this.isSalesExecutive
+                show:
+                  this.isSuperAdmin ||
+                  this.isAdmin ||
+                  this.isDistributor ||
+                  this.isSalesExecutive,
               },
               {
-                label: 'View',
+                label: "View",
                 onClick: this.handleView,
-                color: 'primary',
-                show: hasPermission(this.state.permissions, 'sales', 'view')
+                color: "primary",
+                show: hasPermission(this.state.permissions, "sales", "view"),
               },
               /*{
                 label: 'Delete',
@@ -380,10 +445,10 @@ class SalePage extends Component {
                 color: 'error'
               },*/
               {
-                label: 'Download',
+                label: "Download",
                 onClick: this.handleDownloadView,
-                color: 'primary',
-                show: hasPermission(this.state.permissions, 'sales', 'view')
+                color: "primary",
+                show: hasPermission(this.state.permissions, "sales", "view"),
               },
               /* {
                 label: 'Download',
@@ -409,25 +474,26 @@ const mapStateToProps = (state) => ({
   adminList: state.superadmin.admin.items,
   retailerList: state.superadmin.retailer.items,
   salesExecutiveList: state.superadmin.salesExecutive.items,
-  permissions: state.employee.permissions.permissions
+  permissions: state.employee.permissions.permissions,
 });
 
-const mapDispatchToProps = dispatch => {
+const mapDispatchToProps = (dispatch) => {
   return {
     dispatch,
-    actions: bindActionCreators({
-      salesList,
-      salesDelete,
-      adminList,
-      retailerList,
-      distributorList,
-      salesExecutiveList
-    }, dispatch)
-  }
+    actions: bindActionCreators(
+      {
+        salesList,
+        salesDelete,
+        adminList,
+        retailerList,
+        distributorList,
+        salesExecutiveList,
+      },
+      dispatch,
+    ),
+  };
 };
 
-
-
-export default withSnackbar(withRouter(connect(mapStateToProps, mapDispatchToProps)(SalePage)));
-
-
+export default withSnackbar(
+  withRouter(connect(mapStateToProps, mapDispatchToProps)(SalePage)),
+);
