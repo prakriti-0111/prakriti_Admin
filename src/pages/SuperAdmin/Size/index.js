@@ -147,7 +147,7 @@ class SizePage extends Component {
       },
       () => {
         this.loadListData();
-      }
+      },
     );
   };
 
@@ -215,7 +215,7 @@ class SizePage extends Component {
             this.setState({
               submitSuccess: false,
             });
-          }
+          },
         );
       } else if (this.state.editSuccess) {
         this.props.enqueueSnackbar(this.state.successMessage, {
@@ -239,7 +239,7 @@ class SizePage extends Component {
             this.setState({
               submitSuccess: false,
             });
-          }
+          },
         );
       } else if (this.state.deleteSuccess) {
         this.props.enqueueSnackbar(this.state.successMessage, {
@@ -270,7 +270,7 @@ class SizePage extends Component {
         this.setState({
           submitSuccess: false,
         });
-      }
+      },
     );
   };
 
@@ -293,7 +293,7 @@ class SizePage extends Component {
       },
       () => {
         this.loadListData();
-      }
+      },
     );
   };
 
@@ -311,7 +311,7 @@ class SizePage extends Component {
       },
       () => {
         this.loadListData();
-      }
+      },
     );
   };
 
@@ -326,7 +326,7 @@ class SizePage extends Component {
       },
       () => {
         this.loadListData();
-      }
+      },
     );
   };
 
@@ -380,7 +380,7 @@ class SizePage extends Component {
                 />
               </div>
             ) : null}
-        {/*<Box sx={{ flexGrow: 1, m: 0.5 }} className='ratn-dialog-inner'>
+            {/*<Box sx={{ flexGrow: 1, m: 0.5 }} className='ratn-dialog-inner'>
           <Grid container spacing={2} className='tax-input loans_view p_view'>
             <Grid item xs={3} className='create-input'>
               <FormControl fullWidth>
@@ -407,8 +407,8 @@ class SizePage extends Component {
             </Grid>
           </Grid>
         </Box>*/}
-        {/* {console.log("----------------itens",this.props.subCategoryList.length==1?this.props.subCategoryList[0].name:this.props)} */}
-        {/* {!this.props?.Sub_Cat ? ( */}
+            {/* {console.log("----------------itens",this.props.subCategoryList.length==1?this.props.subCategoryList[0].name:this.props)} */}
+            {/* {!this.props?.Sub_Cat ? ( */}
             {this.state.items.length > 0 ? (
               <>
                 <Grid container spacing={gridSpacing} className="abc">
@@ -427,7 +427,7 @@ class SizePage extends Component {
                         show: hasPermission(
                           this.state.permissions,
                           "size",
-                          "edit"
+                          "edit",
                         ),
                       },
                       {
@@ -438,7 +438,7 @@ class SizePage extends Component {
                         show: hasPermission(
                           this.state.permissions,
                           "size",
-                          "delete"
+                          "delete",
                         ),
                       },
                     ]}
@@ -489,10 +489,10 @@ const mapDispatchToProps = (dispatch) => ({
   dispatch,
   actions: bindActionCreators(
     { sizeList, sizeCreate, sizeUpdate, sizeDelete, subCategoryList },
-    dispatch
+    dispatch,
   ),
 });
 
 export default withSnackbar(
-  withRouter(connect(mapStateToProps, mapDispatchToProps)(SizePage))
+  withRouter(connect(mapStateToProps, mapDispatchToProps)(SizePage)),
 );

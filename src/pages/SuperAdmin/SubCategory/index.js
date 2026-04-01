@@ -169,7 +169,7 @@ class SubCategoryPage extends Component {
       },
       () => {
         this.loadListData();
-      }
+      },
     );
   };
 
@@ -235,7 +235,7 @@ class SubCategoryPage extends Component {
             this.setState({
               submitSuccess: false,
             });
-          }
+          },
         );
       } else if (this.state.editSuccess) {
         this.props.enqueueSnackbar(this.state.successMessage, {
@@ -257,7 +257,7 @@ class SubCategoryPage extends Component {
             this.setState({
               submitSuccess: false,
             });
-          }
+          },
         );
       } else if (this.state.deleteSuccess) {
         this.props.enqueueSnackbar(this.state.successMessage, {
@@ -289,7 +289,7 @@ class SubCategoryPage extends Component {
       },
       () => {
         this.loadListData();
-      }
+      },
     );
   };
 
@@ -305,15 +305,12 @@ class SubCategoryPage extends Component {
       },
       () => {
         this.loadListData();
-      }
+      },
     );
   };
 
   render() {
-    console.log(
-      "this is sub-categories props form ",
-      this.state?.queryParams,
-    );
+    console.log("this is sub-categories props form ", this.state?.queryParams);
 
     return (
       <MainCard title="Sub Category">
@@ -351,7 +348,7 @@ class SubCategoryPage extends Component {
                 show: hasPermission(
                   this.state.permissions,
                   "sub_category",
-                  "edit"
+                  "edit",
                 ),
               },
               {
@@ -362,7 +359,7 @@ class SubCategoryPage extends Component {
                 show: hasPermission(
                   this.state.permissions,
                   "sub_category",
-                  "edit"
+                  "edit",
                 ),
               },
             ]}
@@ -417,10 +414,10 @@ const mapDispatchToProps = (dispatch) => ({
       subCategoryDelete,
       categoryList,
     },
-    dispatch
+    dispatch,
   ),
 });
 
 export default withSnackbar(
-  withRouter(connect(mapStateToProps, mapDispatchToProps)(SubCategoryPage))
+  withRouter(connect(mapStateToProps, mapDispatchToProps)(SubCategoryPage)),
 );
