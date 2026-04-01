@@ -330,6 +330,7 @@ class SubCategoryPage extends Component {
             />
             <Size
               Sub_Cat={true}
+              showSizeSection={!!this.state?.queryParams?.category_id}
               sub_category_name={this.state?.queryParams?.search}
             />
           </div>

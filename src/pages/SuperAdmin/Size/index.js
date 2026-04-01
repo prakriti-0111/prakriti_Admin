@@ -64,6 +64,7 @@ class SizePage extends Component {
       errorMessage: this.props.errorMessage,
       subCategoryList: this.props.subCategoryList,
       submitSuccess: false,
+      isSectionExpanded: false,
     };
     this.columns = [
       {
@@ -331,34 +332,54 @@ class SizePage extends Component {
 
   render() {
     console.log("size--------------", this.state);
+    const canOpenSection = !this.props.Sub_Cat || !!this.props.showSizeSection;
     let size_type = "";
     return (
-      <MainCard
-        title={`Size | ${
-          this.state.queryParams.sub_category_id
-            ? this.state.items.reverse().map((item) => {
-                let data = item.name.split(" ");
-                size_type = data[1];
-                return `${data[0]}`;
-              })
-            : "No Size"
-        } ${size_type ? size_type : ""}`}
-      >
-        {hasPermission(this.state.permissions, "size", "edit") ? (
-          <div className="tax-input p_view loans_view">
-            <SizeForm
-              onSubmit={this.submit}
-              formData={this.state.editRow}
-              handleCancel={this.handleCancel}
-              subcategories={this.state.subCategoryList}
-              nameChange={this.nameChange}
-              subCategoryChange={this.subCategoryChange}
-              // {console.log(this.props.sub_category_name)}
-              sub_category_name={this.props.sub_category_name}
-              submitSuccess={this.state.submitSuccess}
-            />
-          </div>
-        ) : null}
+      <MainCard>
+        <Accordion
+          expanded={canOpenSection && this.state.isSectionExpanded}
+          onChange={(event, expanded) => {
+            if (canOpenSection) {
+              this.setState({ isSectionExpanded: expanded });
+            }
+          }}
+          disabled={!canOpenSection}
+          elevation={0}
+          sx={{ mt: 1.5 }}
+        >
+          <AccordionSummary
+            expandIcon={<ExpandMoreIcon />}
+            aria-controls="size-section-content"
+            id="size-section-header"
+          >
+            <Typography variant="h3">
+              {`Size | ${
+                this.state.queryParams.sub_category_id
+                  ? [...this.state.items].reverse().map((item) => {
+                      let data = item.name.split(" ");
+                      size_type = data[1];
+                      return `${data[0]}`;
+                    })
+                  : "No of Size"
+              } ${size_type ? size_type : ""}`}
+            </Typography>
+          </AccordionSummary>
+          <AccordionDetails>
+            {hasPermission(this.state.permissions, "size", "edit") ? (
+              <div className="tax-input p_view loans_view">
+                <SizeForm
+                  onSubmit={this.submit}
+                  formData={this.state.editRow}
+                  handleCancel={this.handleCancel}
+                  subcategories={this.state.subCategoryList}
+                  nameChange={this.nameChange}
+                  subCategoryChange={this.subCategoryChange}
+                  // {console.log(this.props.sub_category_name)}
+                  sub_category_name={this.props.sub_category_name}
+                  submitSuccess={this.state.submitSuccess}
+                />
+              </div>
+            ) : null}
         {/*<Box sx={{ flexGrow: 1, m: 0.5 }} className='ratn-dialog-inner'>
           <Grid container spacing={2} className='tax-input loans_view p_view'>
             <Grid item xs={3} className='create-input'>
@@ -388,43 +409,45 @@ class SizePage extends Component {
         </Box>*/}
         {/* {console.log("----------------itens",this.props.subCategoryList.length==1?this.props.subCategoryList[0].name:this.props)} */}
         {/* {!this.props?.Sub_Cat ? ( */}
-        {this.state.items.length > 0 ? (
-          <>
-            <Grid container spacing={gridSpacing} className="abc">
-              <DataTable
-                columns={this.columns}
-                rows={this.state.items}
-                page={this.state.queryParams.page}
-                limit={this.state.queryParams.limit}
-                total={this.state.total}
-                handlePagination={this.handlePagination}
-                actions={[
-                  {
-                    label: "Edit",
-                    onClick: this.handleEdit,
-                    color: "primary",
-                    show: hasPermission(
-                      this.state.permissions,
-                      "size",
-                      "edit"
-                    ),
-                  },
-                  {
-                    label: "Delete",
-                    onClick: this.handleDelete,
-                    isDelete: true,
-                    color: "error",
-                    show: hasPermission(
-                      this.state.permissions,
-                      "size",
-                      "delete"
-                    ),
-                  },
-                ]}
-              />
-            </Grid>
-          </>
-        ) : null}
+            {this.state.items.length > 0 ? (
+              <>
+                <Grid container spacing={gridSpacing} className="abc">
+                  <DataTable
+                    columns={this.columns}
+                    rows={this.state.items}
+                    page={this.state.queryParams.page}
+                    limit={this.state.queryParams.limit}
+                    total={this.state.total}
+                    handlePagination={this.handlePagination}
+                    actions={[
+                      {
+                        label: "Edit",
+                        onClick: this.handleEdit,
+                        color: "primary",
+                        show: hasPermission(
+                          this.state.permissions,
+                          "size",
+                          "edit"
+                        ),
+                      },
+                      {
+                        label: "Delete",
+                        onClick: this.handleDelete,
+                        isDelete: true,
+                        color: "error",
+                        show: hasPermission(
+                          this.state.permissions,
+                          "size",
+                          "delete"
+                        ),
+                      },
+                    ]}
+                  />
+                </Grid>
+              </>
+            ) : null}
+          </AccordionDetails>
+        </Accordion>
 
         <Dialog
           className="ratn-dialog-wrapper"
