@@ -44,16 +44,26 @@ import Dialog from "@mui/material/Dialog";
 import DialogContent from "@mui/material/DialogContent";
 import DialogContentText from "@mui/material/DialogContentText";
 import DialogTitle from "@mui/material/DialogTitle";
-import { isEmpty, displayAmount } from "src/helpers/helper";
+import {
+  isEmpty,
+  displayAmount,
+  isAdmin,
+  getAuthData,
+  getUserDashboardRoute,
+} from "src/helpers/helper";
 import {
   paymentStore,
   paymentGetWalletBalance,
 } from "actions/superadmin/payment.actions";
 import { SUPERADMIN_RESET_PAYMENT } from "../../../actionTypes/superadmin/payment.types";
 import {
-  salesList,
-  salesDownloadInvoice,
+  salesList as superAdminSalesList,
+  salesDownloadInvoice as superAdminSalesDownloadInvoice,
 } from "actions/superadmin/sales.actions";
+import {
+  salesList as adminSalesList,
+  salesDownloadInvoice as adminSalesDownloadInvoice,
+} from "actions/admin/sales.actions";
 import FileDownloadIcon from "@mui/icons-material/FileDownload";
 import { adminFetch } from "actions/superadmin/admin.actions";
 import SearchIcon from "@mui/icons-material/Search";
@@ -69,6 +79,8 @@ import { categoryList } from "actions/superadmin/category.actions";
 class AdminViewPage extends React.Component {
   constructor(props) {
     super(props);
+
+    this.isAdminUser = isAdmin();
 
     this.state = {
       item: this.props.item,
@@ -149,7 +161,12 @@ class AdminViewPage extends React.Component {
   loadSalesData = () => {
     let data = { ...this.state.queryParams };
     data.user_id = this.props.params.id;
-    this.props.actions.salesList(data);
+    data.is_own_sale = 1;
+    if (this.isAdminUser) {
+      this.props.actions.adminSalesList(data);
+    } else {
+      this.props.actions.superAdminSalesList(data);
+    }
   };
 
   loadStockData = () => {
@@ -256,7 +273,7 @@ class AdminViewPage extends React.Component {
       },
       () => {
         this.loadSalesData();
-      }
+      },
     );
   };
 
@@ -271,16 +288,19 @@ class AdminViewPage extends React.Component {
       },
       () => {
         this.loadStockData();
-      }
+      },
     );
   };
 
   handleInvoiceView = (row) => {
-    this.props.navigate("/super-admin/sales/view/" + row.id);
+    const routePrefix = getUserDashboardRoute(getAuthData("role_name", true));
+    this.props.navigate(routePrefix + "/sales/view/" + row.id);
   };
 
   handleInvoiceDownload = async (row) => {
-    let response = await salesDownloadInvoice(row.id);
+    let response = this.isAdminUser
+      ? await adminSalesDownloadInvoice(row.id)
+      : await superAdminSalesDownloadInvoice(row.id);
     if (response.data.success) {
       window.open(response.data.data.url, "_blank").focus();
     }
@@ -295,10 +315,8 @@ class AdminViewPage extends React.Component {
   };
 
   handleInvoiceDownloadView = (row) => {
-    this.props.navigate(
-        "/super-admin/sales/download-view/" +
-        row.id
-    );
+    const routePrefix = getUserDashboardRoute(getAuthData("role_name", true));
+    this.props.navigate(routePrefix + "/sales/download-view/" + row.id);
   };
 
   handlePayNow = () => {
@@ -401,7 +419,7 @@ class AdminViewPage extends React.Component {
       },
       () => {
         this.loadSalesData();
-      }
+      },
     );
   };
 
@@ -449,45 +467,48 @@ class AdminViewPage extends React.Component {
       },
       () => {
         this.handleStockSearch();
-      }
+      },
     );
   };
 
   handleInvoiceTransactionLedger = () => {
+    const routePrefix = getUserDashboardRoute(getAuthData("role_name", true));
     this.props.navigate(
-        "/super-admin/admins/invoice-transaction-ledger/" +
-        this.props.params.id
+      routePrefix +
+        "/admins/invoice-transaction-ledger/" +
+        this.props.params.id,
     );
-  }
+  };
 
   render() {
     const admin = this.state.item;
     const { formValues, formErros } = this.state;
     const totalPage = Math.ceil(
-      this.state.total / this.state.queryParams.limit
+      this.state.total / this.state.queryParams.limit,
     );
 
     return (
       <MainCard
-        title='Admin Details'
+        title="Admin Details"
         secondary={
-          <Button variant='contained' onClick={() => this.props.navigate(-1)}>
+          <Button variant="contained" onClick={() => this.props.navigate(-1)}>
             Back
           </Button>
-        }>
+        }
+      >
         {!admin ? (
-          <Grid container justifyContent='center'>
-            <CircularProgress size='30px' />
+          <Grid container justifyContent="center">
+            <CircularProgress size="30px" />
           </Grid>
         ) : (
           <>
-            <Box sx={{ flexGrow: 1, m: 0.5 }} className='ratn-dialog-wrapper'>
-              <div autoComplete='off' className='ratn-dialog-inner'>
-                <Grid container spacing={2} className='loans_view p_view'>
-                  <Grid item xs={12} md={6} className='create-input'>
+            <Box sx={{ flexGrow: 1, m: 0.5 }} className="ratn-dialog-wrapper">
+              <div autoComplete="off" className="ratn-dialog-inner">
+                <Grid container spacing={2} className="loans_view p_view">
+                  <Grid item xs={12} md={6} className="create-input">
                     <TextField
-                      label='Company Name'
-                      variant='outlined'
+                      label="Company Name"
+                      variant="outlined"
                       fullWidth
                       value={admin.company_name}
                       disabled
@@ -496,10 +517,10 @@ class AdminViewPage extends React.Component {
                       }}
                     />
                   </Grid>
-                  <Grid item xs={12} md={2} className='create-input'>
+                  <Grid item xs={12} md={2} className="create-input">
                     <TextField
-                      label='Owner Name'
-                      variant='outlined'
+                      label="Owner Name"
+                      variant="outlined"
                       fullWidth
                       value={admin.name}
                       disabled
@@ -508,10 +529,10 @@ class AdminViewPage extends React.Component {
                       }}
                     />
                   </Grid>
-                  <Grid item xs={12} md={2} className='create-input'>
+                  <Grid item xs={12} md={2} className="create-input">
                     <TextField
-                      label='GST Number'
-                      variant='outlined'
+                      label="GST Number"
+                      variant="outlined"
                       fullWidth
                       value={admin.gst}
                       disabled
@@ -520,10 +541,10 @@ class AdminViewPage extends React.Component {
                       }}
                     />
                   </Grid>
-                  <Grid item xs={12} md={2} className='create-input'>
+                  <Grid item xs={12} md={2} className="create-input">
                     <TextField
-                      label='City'
-                      variant='outlined'
+                      label="City"
+                      variant="outlined"
                       fullWidth
                       value={admin.city}
                       disabled
@@ -532,91 +553,91 @@ class AdminViewPage extends React.Component {
                       }}
                     />
                   </Grid>
-                  <Grid item xs={12} md={2} className='create-input'>
+                  <Grid item xs={12} md={2} className="create-input">
                     <TextField
-                      label='Total Amount'
-                      variant='outlined'
+                      label="Total Amount"
+                      variant="outlined"
                       fullWidth
                       value={admin.total_amount}
                       disabled
                       InputProps={{
                         startAdornment: (
-                          <InputAdornment position='start'>₹</InputAdornment>
+                          <InputAdornment position="start">₹</InputAdornment>
                         ),
                         className: "non_disable_text",
                       }}
                     />
                   </Grid>
-                  <Grid item xs={12} md={2} className='create-input'>
+                  <Grid item xs={12} md={2} className="create-input">
                     <TextField
-                      label='Total Payable'
-                      variant='outlined'
+                      label="Total Payable"
+                      variant="outlined"
                       fullWidth
                       value={admin.total_payable_amount}
                       disabled
                       InputProps={{
                         startAdornment: (
-                          <InputAdornment position='start'>₹</InputAdornment>
+                          <InputAdornment position="start">₹</InputAdornment>
                         ),
                         className: "non_disable_text",
                       }}
                     />
                   </Grid>
-                  <Grid item xs={12} md={2} className='create-input'>
+                  <Grid item xs={12} md={2} className="create-input">
                     <TextField
-                      label='Total Return'
-                      variant='outlined'
+                      label="Total Return"
+                      variant="outlined"
                       fullWidth
                       value={admin.total_return}
                       disabled
                       InputProps={{
                         startAdornment: (
-                          <InputAdornment position='start'>₹</InputAdornment>
+                          <InputAdornment position="start">₹</InputAdornment>
                         ),
                         className: "non_disable_text",
                       }}
                     />
                   </Grid>
-                  <Grid item xs={12} md={2} className='create-input'>
+                  <Grid item xs={12} md={2} className="create-input">
                     <TextField
-                      label='Total Paid'
-                      variant='outlined'
+                      label="Total Paid"
+                      variant="outlined"
                       fullWidth
                       value={admin.paid_amount}
                       disabled
                       InputProps={{
                         startAdornment: (
-                          <InputAdornment position='start'>₹</InputAdornment>
+                          <InputAdornment position="start">₹</InputAdornment>
                         ),
                         className: "non_disable_text",
                       }}
                     />
                   </Grid>
-                  <Grid item xs={12} md={2} className='create-input'>
+                  <Grid item xs={12} md={2} className="create-input">
                     <TextField
-                      label='Total Dues'
-                      variant='outlined'
+                      label="Total Dues"
+                      variant="outlined"
                       fullWidth
                       value={admin.due_amount}
                       disabled
                       InputProps={{
                         startAdornment: (
-                          <InputAdornment position='start'>₹</InputAdornment>
+                          <InputAdornment position="start">₹</InputAdornment>
                         ),
                         className: "non_disable_text",
                       }}
                     />
                   </Grid>
-                  <Grid item xs={12} md={2} className='create-input'>
+                  <Grid item xs={12} md={2} className="create-input">
                     <TextField
-                      label='Advance'
-                      variant='outlined'
+                      label="Advance"
+                      variant="outlined"
                       fullWidth
                       value={admin.advance_amount}
                       disabled
                       InputProps={{
                         startAdornment: (
-                          <InputAdornment position='start'>₹</InputAdornment>
+                          <InputAdornment position="start">₹</InputAdornment>
                         ),
                         className: "non_disable_text",
                       }}
@@ -629,8 +650,9 @@ class AdminViewPage extends React.Component {
               <>
                 {this.state.price_by_categories.length ? (
                   <Card
-                    className='dashboard_card'
-                    style={{ marginBottom: "4px" }}>
+                    className="dashboard_card"
+                    style={{ marginBottom: "4px" }}
+                  >
                     {this.state.price_by_categories.map((item, key) => (
                       <CardContent
                         className={`dashboard_card_content bg-color-1`}
@@ -639,37 +661,41 @@ class AdminViewPage extends React.Component {
                           justifyContent: "space-between",
                         }}
                         key={key}
-                        onClick={() => this.handleCardClick(item.category_id)}>
+                        onClick={() => this.handleCardClick(item.category_id)}
+                      >
                         <Typography
                           sx={{ fontSize: 14, margin: 0 }}
-                          color='text.secondary'
+                          color="text.secondary"
                           gutterBottom
-                          component='span'>
+                          component="span"
+                        >
                           <h1>{item.category_name}</h1>
                           <h2>{displayAmount(item.total_amount)}</h2>
                           <h3>{item.quantity} Piece(s)</h3>
                         </Typography>
-                        <div className='card-icon'>{/* <DiamondIcon /> */}</div>
+                        <div className="card-icon">{/* <DiamondIcon /> */}</div>
                       </CardContent>
                     ))}
                   </Card>
                 ) : null}
-                <Box sx={{ flexGrow: 1, m: 0.5 }} className='ratn-dialog-inner'>
+                <Box sx={{ flexGrow: 1, m: 0.5 }} className="ratn-dialog-inner">
                   <Grid
                     container
                     spacing={2}
-                    className='tax-input loans_view p_view'
-                    columnSpacing={{ xs: 1, sm: 2, md: 2 }}>
-                    <Grid item xs={6} md={3} className='create-input'>
+                    className="tax-input loans_view p_view"
+                    columnSpacing={{ xs: 1, sm: 2, md: 2 }}
+                  >
+                    <Grid item xs={6} md={3} className="create-input">
                       <FormControl fullWidth>
                         <InputLabel>Category</InputLabel>
                         <Select
                           value={this.state.stockQueryParams.category_id}
-                          label='Category'
+                          label="Category"
                           onChange={this.handleCategoryChange}
-                          className='input-inner'
-                          defaultValue=''>
-                          <MenuItem value=''>All</MenuItem>
+                          className="input-inner"
+                          defaultValue=""
+                        >
+                          <MenuItem value="">All</MenuItem>
                           {this.state.categories.map((item, index) => (
                             <MenuItem value={item.id} key={index}>
                               {item.name}
@@ -678,16 +704,17 @@ class AdminViewPage extends React.Component {
                         </Select>
                       </FormControl>
                     </Grid>
-                    <Grid item xs={6} md={3} className='create-input'>
+                    <Grid item xs={6} md={3} className="create-input">
                       <FormControl fullWidth>
                         <InputLabel>Sub Category</InputLabel>
                         <Select
                           value={this.state.stockQueryParams.sub_category_id}
-                          label='Sub Category'
+                          label="Sub Category"
                           onChange={this.handleSubCategoryChange}
-                          className='input-inner'
-                          defaultValue=''>
-                          <MenuItem value=''>All</MenuItem>
+                          className="input-inner"
+                          defaultValue=""
+                        >
+                          <MenuItem value="">All</MenuItem>
                           {this.state.sub_categories.map((item, index) => (
                             <MenuItem value={item.id} key={index}>
                               {item.name}
@@ -696,11 +723,11 @@ class AdminViewPage extends React.Component {
                         </Select>
                       </FormControl>
                     </Grid>
-                    <Grid item xs={6} md={3} className='create-input'>
+                    <Grid item xs={6} md={3} className="create-input">
                       <FormControl fullWidth>
                         <TextField
-                          label='Search'
-                          variant='outlined'
+                          label="Search"
+                          variant="outlined"
                           value={this.state.stockQueryParams.search}
                           onChange={this.handleSearchChange}
                         />
@@ -710,11 +737,13 @@ class AdminViewPage extends React.Component {
                       item
                       xs={6}
                       md={3}
-                      className='create-input order-input button-right'>
+                      className="create-input order-input button-right"
+                    >
                       <Button
-                        variant='contained'
-                        className='search-btn'
-                        onClick={this.handleStockSearch}>
+                        variant="contained"
+                        className="search-btn"
+                        onClick={this.handleStockSearch}
+                      >
                         Search
                       </Button>
                     </Grid>
@@ -723,7 +752,8 @@ class AdminViewPage extends React.Component {
                 <Grid
                   container
                   spacing={gridSpacing}
-                  className='orders-sale-button'>
+                  className="orders-sale-button"
+                >
                   <DataTable
                     columns={[
                       {
@@ -790,11 +820,12 @@ class AdminViewPage extends React.Component {
               <Grid
                 container
                 spacing={gridSpacing}
-                className='details-header ratn-pur-wrapper loans_view'>
-                <Grid item xs={12} className='p-add-product create-input'>
+                className="details-header ratn-pur-wrapper loans_view"
+              >
+                <Grid item xs={12} className="p-add-product create-input">
                   <div>
-                    <Grid container spacing={2} className='loans_view p_view'>
-                      <Grid item xs={12} md={6} className='create-input'>
+                    <Grid container spacing={2} className="loans_view p_view">
+                      <Grid item xs={12} md={6} className="create-input">
                         <FormControl fullWidth>
                           <OutlinedInput
                             value={this.state.queryParams.search}
@@ -807,10 +838,11 @@ class AdminViewPage extends React.Component {
                               })
                             }
                             endAdornment={
-                              <InputAdornment position='end'>
+                              <InputAdornment position="end">
                                 <IconButton
                                   onClick={this.handleSearch}
-                                  edge='end'>
+                                  edge="end"
+                                >
                                   <SearchIcon />
                                 </IconButton>
                               </InputAdornment>
@@ -819,36 +851,46 @@ class AdminViewPage extends React.Component {
                           />
                         </FormControl>
                       </Grid>
-                      <Grid
-                        item
-                        xs={4}
-                        md={2}
-                        className='create-input button-right'>
-                        <Button
-                          variant='contained'
-                          className='add-button'
-                          onClick={() => this.handlePayNow()}>
-                          Pay
-                        </Button>
-                      </Grid>
-                      {!admin.own && <Grid
-                        item
-                        xs={4}
-                        md={2}
-                        className='create-input button-right'>
-                        <Button
-                          variant='contained'
-                          className='add-button'
-                          onClick={() => this.handleInvoiceTransactionLedger()}>
-                          Ledger
-                        </Button>
-                      </Grid>}
+                      {!this.isAdminUser && (
+                        <Grid
+                          item
+                          xs={4}
+                          md={2}
+                          className="create-input button-right"
+                        >
+                          <Button
+                            variant="contained"
+                            className="add-button"
+                            onClick={() => this.handlePayNow()}
+                          >
+                            Pay
+                          </Button>
+                        </Grid>
+                      )}
+                      {!admin.own && !this.isAdminUser && (
+                        <Grid
+                          item
+                          xs={4}
+                          md={2}
+                          className="create-input button-right"
+                        >
+                          <Button
+                            variant="contained"
+                            className="add-button"
+                            onClick={() =>
+                              this.handleInvoiceTransactionLedger()
+                            }
+                          >
+                            Ledger
+                          </Button>
+                        </Grid>
+                      )}
                     </Grid>
                   </div>
                   <TableContainer component={Paper}>
-                    <div className='ratn-table-purchase-wrapper'>
-                      <Table aria-label='collapsible table'>
-                        <TableHead className='ratn-table-header'>
+                    <div className="ratn-table-purchase-wrapper">
+                      <Table aria-label="collapsible table">
+                        <TableHead className="ratn-table-header">
                           <TableRow>
                             {/*<TableCell />*/}
                             <TableCell>#</TableCell>
@@ -874,6 +916,7 @@ class AdminViewPage extends React.Component {
                               /* downloadAction={this.handleInvoiceDownload} */
                               payAction={this.handleInvoicePay}
                               downloadAction={this.handleInvoiceDownloadView}
+                              allowPay={!this.isAdminUser}
                             />
                           ))}
                         </TableBody>
@@ -881,8 +924,9 @@ class AdminViewPage extends React.Component {
                       {this.state.total > 0 ? (
                         <Grid
                           container
-                          alignItems='right'
-                          className='ratn-table-footer'>
+                          alignItems="right"
+                          className="ratn-table-footer"
+                        >
                           <Grid item>
                             <Pagination
                               count={totalPage}
@@ -989,11 +1033,12 @@ class AdminViewPage extends React.Component {
         )}
 
         <Dialog
-          className='ratn-dialog-wrapper'
+          className="ratn-dialog-wrapper"
           open={this.state.openDialog}
           onClose={this.handleDialogClose}
           fullWidth
-          maxWidth='md'>
+          maxWidth="md"
+        >
           <DialogTitle>
             Pay Now{" "}
             {this.state.pay_by_invoice
@@ -1004,21 +1049,22 @@ class AdminViewPage extends React.Component {
             <DialogContentText></DialogContentText>
             <Box sx={{ flexGrow: 1, m: 0.5 }}>
               <Grid container spacing={2}>
-                <Grid item xs={12} md={3} className='create-input'>
+                <Grid item xs={12} md={3} className="create-input">
                   <FormControl fullWidth>
                     <InputLabel>Payment Type</InputLabel>
                     <Select
-                      className='input-inner'
+                      className="input-inner"
                       value={formValues.payment_type}
                       fullWidth
-                      label='Payment Type'
+                      label="Payment Type"
                       onChange={(event) =>
                         this.updateFormValue(event.target.value, "payment_type")
-                      }>
+                      }
+                    >
                       {!this.state.pay_by_invoice ? (
-                        <MenuItem value='advance'>Advance</MenuItem>
+                        <MenuItem value="advance">Advance</MenuItem>
                       ) : null}
-                      <MenuItem value='invoice'>Invoice</MenuItem>
+                      <MenuItem value="invoice">Invoice</MenuItem>
                     </Select>
                   </FormControl>
                 </Grid>
@@ -1026,12 +1072,13 @@ class AdminViewPage extends React.Component {
                   item
                   xs={12}
                   md={3}
-                  className='p-invoice-date create-input'>
+                  className="p-invoice-date create-input"
+                >
                   <LocalizationProvider dateAdapter={AdapterDayjs}>
                     <DatePicker
-                      label='Payment Date'
+                      label="Payment Date"
                       value={formValues.payment_date}
-                      inputFormat='DD/MM/YYYY'
+                      inputFormat="DD/MM/YYYY"
                       onChange={(newValue) =>
                         this.updateFormValue(newValue, "payment_date")
                       }
@@ -1045,15 +1092,15 @@ class AdminViewPage extends React.Component {
                     />
                   </LocalizationProvider>
                 </Grid>
-                <Grid item xs={12} md={3} className='create-input'>
+                <Grid item xs={12} md={3} className="create-input">
                   <TextField
-                    label='Amount'
-                    variant='outlined'
+                    label="Amount"
+                    variant="outlined"
                     fullWidth
                     value={formValues.amount}
                     InputProps={{
                       startAdornment: (
-                        <InputAdornment position='start'>₹</InputAdornment>
+                        <InputAdornment position="start">₹</InputAdornment>
                       ),
                     }}
                     error={formErros.amount}
@@ -1063,30 +1110,31 @@ class AdminViewPage extends React.Component {
                   />
                 </Grid>
 
-                <Grid item xs={12} md={3} className='create-input'>
+                <Grid item xs={12} md={3} className="create-input">
                   <FormControl fullWidth error={formErros.payment_mode}>
                     <InputLabel>Payment Mode</InputLabel>
                     <Select
-                      className='input-inner'
+                      className="input-inner"
                       value={formValues.payment_mode}
                       fullWidth
-                      label='Payment Mode'
+                      label="Payment Mode"
                       onChange={(event) =>
                         this.updateFormValue(event.target.value, "payment_mode")
-                      }>
-                      <MenuItem value=''></MenuItem>
-                      <MenuItem value='cash'>Cash</MenuItem>
-                      <MenuItem value='cheque'>Cheque</MenuItem>
-                      <MenuItem value='imps_neft'>BANKING/RTGS/NEFT</MenuItem>
-                      <MenuItem value='online'>UPI/PhonePe/Gpay</MenuItem>
+                      }
+                    >
+                      <MenuItem value=""></MenuItem>
+                      <MenuItem value="cash">Cash</MenuItem>
+                      <MenuItem value="cheque">Cheque</MenuItem>
+                      <MenuItem value="imps_neft">BANKING/RTGS/NEFT</MenuItem>
+                      <MenuItem value="online">UPI/PhonePe/Gpay</MenuItem>
                     </Select>
                   </FormControl>
                 </Grid>
                 {formValues.payment_mode == "cheque" ? (
-                  <Grid item xs={6} className='create-input'>
+                  <Grid item xs={6} className="create-input">
                     <TextField
-                      label='Cheque No'
-                      variant='outlined'
+                      label="Cheque No"
+                      variant="outlined"
                       fullWidth
                       value={formValues.cheque_no}
                       onChange={(event) =>
@@ -1097,10 +1145,10 @@ class AdminViewPage extends React.Component {
                 ) : null}
                 {formValues.payment_mode == "imps_neft" ||
                 formValues.payment_mode == "upi" ? (
-                  <Grid item xs={6} className='create-input'>
+                  <Grid item xs={6} className="create-input">
                     <TextField
-                      label='Transaction #'
-                      variant='outlined'
+                      label="Transaction #"
+                      variant="outlined"
                       fullWidth
                       value={formValues.txn_id}
                       onChange={(event) =>
@@ -1109,11 +1157,11 @@ class AdminViewPage extends React.Component {
                     />
                   </Grid>
                 ) : null}
-                <Grid item xs={6} className='create-input'>
+                <Grid item xs={6} className="create-input">
                   <TextareaAutosize
-                    className='description'
+                    className="description"
                     minRows={1}
-                    placeholder='Notes'
+                    placeholder="Notes"
                     style={{ width: "100%", height: "51px" }}
                     value={formValues.notes}
                     onChange={(event) =>
@@ -1122,15 +1170,16 @@ class AdminViewPage extends React.Component {
                   />
                 </Grid>
                 <Grid item xs={12}>
-                  <Stack spacing={1} direction='row' justifyContent='flex-end'>
+                  <Stack spacing={1} direction="row" justifyContent="flex-end">
                     <Button
-                      variant='contained'
-                      type='button'
+                      variant="contained"
+                      type="button"
                       disabled={this.state.processing}
-                      onClick={this.handleSubmit}>
+                      onClick={this.handleSubmit}
+                    >
                       {this.state.processing ? "Processing" : "Submit"}
                     </Button>
-                    <Button variant='outlined' onClick={this.handleDialogClose}>
+                    <Button variant="outlined" onClick={this.handleDialogClose}>
                       Cancel
                     </Button>
                   </Stack>
@@ -1146,8 +1195,8 @@ class AdminViewPage extends React.Component {
 
 const mapStateToProps = (state) => ({
   item: state.superadmin.admin.item,
-  sales: state.superadmin.sales.items,
-  total: state.superadmin.sales.total,
+  sales: isAdmin() ? state.admin.sales.items : state.superadmin.sales.items,
+  total: isAdmin() ? state.admin.sales.total : state.superadmin.sales.total,
   actionCalled: state.superadmin.payment.actionCalled,
   createSuccess: state.superadmin.payment.createSuccess,
   successMessage: state.superadmin.payment.successMessage,
@@ -1164,23 +1213,32 @@ const mapDispatchToProps = (dispatch) => ({
     {
       adminFetch,
       paymentStore,
-      salesList,
+      superAdminSalesList,
+      adminSalesList,
       getNotifiactions,
       stocksList,
       categoryList,
       subCategoryList,
     },
-    dispatch
+    dispatch,
   ),
 });
 
 export default withSnackbar(
-  withRouter(connect(mapStateToProps, mapDispatchToProps)(AdminViewPage))
+  withRouter(connect(mapStateToProps, mapDispatchToProps)(AdminViewPage)),
 );
 
 function Row(props) {
-  const { row, page, limit, index, viewAction, downloadAction, payAction } =
-    props;
+  const {
+    row,
+    page,
+    limit,
+    index,
+    viewAction,
+    downloadAction,
+    payAction,
+    allowPay,
+  } = props;
   const [open, setOpen] = React.useState(false);
 
   const getSerialNo = () => {
@@ -1200,7 +1258,7 @@ function Row(props) {
   return (
     <React.Fragment>
       <TableRow sx={{ "& > *": { borderBottom: "unset" } }}>
-        <TableCell scope='row'>{getSerialNo()}</TableCell>
+        <TableCell scope="row">{getSerialNo()}</TableCell>
         <TableCell>{row.invoice_date}</TableCell>
         <TableCell>{row.invoice_number}</TableCell>
         <TableCell>{row.total_payable}</TableCell>
@@ -1210,41 +1268,47 @@ function Row(props) {
         <TableCell sx={{ color: getStatusColor(row.approve_status) }}>
           <b>{row.approve_status}</b>
         </TableCell>
-        <TableCell className='action_btn'>
+        <TableCell className="action_btn">
           <Stack
             spacing={1}
-            direction='row'
+            direction="row"
             justifyContent={"left"}
-            alignItems={"left"}>
+            alignItems={"left"}
+          >
             <Button
-              variant='contained'
-              color='primary'
-              onClick={() => viewAction(row)}>
+              variant="contained"
+              color="primary"
+              onClick={() => viewAction(row)}
+            >
               <RemoveRedEyeIcon />
             </Button>
             <Button
-              variant='contained'
-              color='primary'
-              onClick={() => downloadAction(row)}>
+              variant="contained"
+              color="primary"
+              onClick={() => downloadAction(row)}
+            >
               <FileDownloadIcon />
             </Button>
-            <Button
-              variant='contained'
-              color='primary'
-              onClick={() => payAction(row)}
-              ref={(node) => {
-                if (node) {
-                  node.style.setProperty(
-                    "backgroundColor",
-                    "#357a38",
-                    "important"
-                  );
-                  node.style.setProperty("width", "40px", "important");
-                  node.style.setProperty("fontSize", "12px", "important");
-                }
-              }}>
-              Pay
-            </Button>
+            {allowPay && (
+              <Button
+                variant="contained"
+                color="primary"
+                onClick={() => payAction(row)}
+                ref={(node) => {
+                  if (node) {
+                    node.style.setProperty(
+                      "backgroundColor",
+                      "#357a38",
+                      "important",
+                    );
+                    node.style.setProperty("width", "40px", "important");
+                    node.style.setProperty("fontSize", "12px", "important");
+                  }
+                }}
+              >
+                Pay
+              </Button>
+            )}
           </Stack>
         </TableCell>
       </TableRow>
