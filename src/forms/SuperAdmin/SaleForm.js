@@ -5,111 +5,64 @@ import { connect } from "react-redux";
 import { Field, reduxForm } from "redux-form/immutable";
 
 import {
-
   Box,
-
   TextField,
-
   Button,
-
   Grid,
-
   Link,
-
   TextareaAutosize,
-
   Stack,
-
   Select,
-
   MenuItem,
-
   InputLabel,
-
   FormControl,
-
   FormControlLabel,
-
   Checkbox,
-
   FormHelperText,
-
   Autocomplete,
-
   FormLabel,
-
   ImageList,
-
   ImageListItem,
-
   InputAdornment,
-
   IconButton,
-
   RadioGroup,
-
   Radio,
-
   Collapse,
-
   Alert,
-
   CircularProgress,
-
 } from "@mui/material";
 
 import { ContactPageSharp } from "@mui/icons-material";
 
 import {
-
   calculateAdminProductPrice,
-
   priceFormat,
-
   getValuesFromKey,
-
   isEmpty,
-
   toBase64,
-
   calculateGST,
-
   displayAmount,
-
   weightFormat,
-
   isSuperAdmin,
-
   isDistributor,
-
   isAdmin,
-
   isSalesExecutive,
   validateNumber,
-  validateInteger
-
+  validateInteger,
 } from "src/helpers/helper";
 
 import { bindActionCreators } from "redux";
 
 import {
-
   salesStore,
-
   salesUpdate,
-
   salesViewRaw,
-
   saleReturn,
-
 } from "actions/superadmin/sales.actions";
 
 import {
-
   stocksProductList,
-
   stocksProducDetails,
-
 } from "actions/superadmin/stocks.actions";
 
 import { getProfile } from "actions/superadmin/profile.actions";
@@ -199,13 +152,9 @@ import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
 
 import {
-
   cartDelete,
-
   cartListRaw,
-
   cartList,
-
 } from "actions/superadmin/cart.actions";
 
 import { retailerList } from "actions/superadmin/retailer.actions";
@@ -217,13 +166,9 @@ import { salesExecutiveList } from "actions/superadmin/salesExecutive.actions";
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 
 import {
-
   getRoleName,
-
   getUserDashboardRoute,
-
   convertGramToUnit,
-
 } from "src/helpers/helper";
 
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
@@ -240,7 +185,7 @@ import { supplierList } from "actions/superadmin/supplier.actions";
 
 import { getNotifiactions } from "actions/superadmin/notification.actions";
 
-import { reportChargeFetchRaw } from 'actions/superadmin/reportCharge.actions';
+import { reportChargeFetchRaw } from "actions/superadmin/reportCharge.actions";
 
 import QrCodeScanner from "@mui/icons-material/QrCodeScanner";
 
@@ -252,20 +197,13 @@ import jsQR from "jsqr";
 
 import Modal from "@mui/material/Modal";
 
-
-
 class SaleForm extends React.Component {
-
   constructor(props) {
-
     super(props);
-
-
 
     let formData = "formData" in this.props ? this.props.formData : null;
 
     this.state = {
-
       auth: this.props.auth,
 
       formData: formData,
@@ -318,7 +256,6 @@ class SaleForm extends React.Component {
       report_charge: null,
 
       formValues: {
-
         user_id: "",
 
         invoice_number: "",
@@ -380,11 +317,9 @@ class SaleForm extends React.Component {
         total_report_charge_tax_amount: 0,
 
         total_report_charge_amount_after_tax: 0,
-
       },
 
       formErros: {
-
         user_id: false,
 
         invoice_number: false,
@@ -404,7 +339,6 @@ class SaleForm extends React.Component {
         discount: false,
 
         sub_total: false,
-
       },
 
       deleteDialogOpen: false,
@@ -438,7 +372,6 @@ class SaleForm extends React.Component {
       unique_materials: [],
 
       admin_details: {
-
         name: "",
 
         mobile: "",
@@ -450,7 +383,6 @@ class SaleForm extends React.Component {
         city: "",
 
         pincode: "",
-
       },
 
       isAssign: false,
@@ -513,7 +445,7 @@ class SaleForm extends React.Component {
 
       isMobile: window.innerWidth < 600, // adjust breakpoint as needed
 
-      globalCertificateNo: '',
+      globalCertificateNo: "",
 
       qrScannerOpen: false,
 
@@ -526,10 +458,7 @@ class SaleForm extends React.Component {
       lastNotFoundCert: null,
 
       qrScanNotified: false,
-
     };
-
-
 
     this.isSuperAdmin = isSuperAdmin();
 
@@ -539,154 +468,111 @@ class SaleForm extends React.Component {
 
     this.isSalesExecutive = isSalesExecutive();
 
-
-
     this.imageFileRef = React.createRef();
 
-
-
     this.columns = [
-
       {
-
         name: "image",
 
         display_name: "Image",
 
         isImage: true,
-
       },
 
       {
-
         name: "product_name",
 
         display_name: "Product Name",
-
       },
 
       {
-
         name: "certificate_no",
 
         display_name: "Certificate No",
 
         width: "120px",
-
       },
 
       {
-
         name: "total_weight_display",
 
         display_name: "Total Wt.",
 
         width: "90px",
-
       },
 
       {
-
         name: "stock_material_display",
 
         display_name: "Materials Name",
 
         width: "165px",
-
       },
 
       {
-
         name: "weight_display",
 
         display_name: "Qty",
-
       },
 
       {
-
         name: "unit_display",
 
         display_name: "Unit",
-
       },
 
       {
-
         name: "product_code",
 
         display_name: "P Code",
-
       },
 
       {
-
         name: "size_name",
 
         display_name: "Size",
-
       },
 
       {
-
         name: "quantity",
 
         display_name: "Quantity",
-
       },
 
       {
-
         name: "rate",
 
         display_name: "Price",
-
       },
-
     ];
 
-
-
     this.debouncedFetchData = _.debounce(this.fetchData, 500);
-
   }
 
-
-
   updateIsMobile = () => {
-
     this.setState({ isMobile: window.innerWidth < 600 });
-
   };
 
-
-
   async componentDidMount() {
-
     if (this.isSuperAdmin) {
-
       this.props.actions.adminList({ all: 1 });
 
       this.props.actions.employeeList({ role_id: 9 });
-
     } else if (this.isAdmin) {
+      this.props.actions.adminList({ all: 1 });
 
       this.props.actions.distributorList({ all: 1 });
 
       this.props.actions.salesExecutiveList({ all: 1, role_id: 4 });
 
       this.props.actions.supplierList({ all: 1, page: 1 });
-
     } else if (this.isDistributor) {
-
       this.props.actions.retailerList({ all: 1 });
 
       this.props.actions.salesExecutiveList({ all: 1, role_id: 4 });
 
       this.props.actions.supplierList({ all: 1, page: 1 });
-
     } else if (this.isSalesExecutive) {
-
       this.props.actions.adminList({ all: 1 });
 
       this.props.actions.retailerList({ all: 1 });
@@ -694,7 +580,6 @@ class SaleForm extends React.Component {
       this.props.actions.distributorList({ all: 1 });
 
       this.props.actions.salesExecutiveList({ all: 1, role_id: 4 });
-
     }
 
     this.props.actions.categoryList({ all: 1 });
@@ -702,117 +587,73 @@ class SaleForm extends React.Component {
     this.props.dispatch({ type: SUPERADMIN_GET_ORDERS, payload: null });
 
     if (this.state.order_id) {
-
       this.props.actions.orderView(this.state.order_id);
-
     }
 
     await this.loadReportCharge();
 
     if (this.state.formData) {
-
       this.initializeFormData();
-
-    } else {  
-
+    } else {
       await this.loadCart();
 
       //await this.loadSaleOnApproval();
-
     }
-
-
 
     await this.loadProfile();
 
-    
-
     window.addEventListener("resize", this.updateIsMobile);
-
   }
-
-
 
   componentWillUnmount() {
-
     window.removeEventListener("resize", this.updateIsMobile);
-
   }
 
-
-
   loadProfile = async () => {
-
     let res = await getProfile();
 
     if (res.data.success) {
-
       this.setState({
-
         profile: res.data.data,
-
       });
-
     }
-
   };
 
-
-
   initializeFormData = () => {
-
     let formValues = { ...this.state.formValues, ...this.state.formData };
 
     let return_products = [],
-
       discount_per_product = 0,
-
       total_products = 0;
 
     for (let i = 0; i < formValues.products.length; i++) {
-
       return_products.push({
-
         id: formValues.products[i].id,
 
         is_return: false,
-
       });
 
       if (formValues.products[i].product_type == "material") {
-
         //total_products = priceFormat(total_products + parseFloat(formValues.products[i].materials[0].weight));
 
         total_products += parseFloat(
-
-          formValues.products[i].materials[0].quantity
-
+          formValues.products[i].materials[0].quantity,
         );
-
       } else {
-
         total_products++;
-
       }
-
     }
 
     if (parseFloat(formValues.discount) > 0) {
-
       console.log("total_products", total_products);
 
       discount_per_product = priceFormat(
-
-        parseFloat(formValues.discount) / total_products
-
+        parseFloat(formValues.discount) / total_products,
       );
-
     }
 
     this.setState(
-
       {
-
         formValues: formValues,
 
         unique_materials: [],
@@ -822,43 +663,32 @@ class SaleForm extends React.Component {
         return_products: return_products,
 
         discount_per_product: discount_per_product,
-
       },
 
       () => {
-
         this.handleCalculateMainPrice();
 
         setTimeout(() => {
-
           this.setAdminDetails();
-
         }, 1000);
-
-      }
-
+      },
     );
-
   };
 
-
-
   loadSaleOnApproval = async () => {
-
     if (!isEmpty(this.props.query.get("sale_on_approval"))) {
-
       let res = await salesViewRaw(this.props.query.get("sale_on_approval"));
 
       if (res.data.success) {
+        let saleOnApprovalData = res.data.data || {};
+
+        let userDetails = saleOnApprovalData.user_details || {};
 
         //setTimeout(() => {
 
         this.setState(
-
           {
-
             formValues: {
-
               ...this.state.formValues,
 
               /* paid_amount: res.data.data.paid_amount
@@ -868,114 +698,100 @@ class SaleForm extends React.Component {
                 : "", */
 
               already_paid_amount: res.data.data.paid_amount
-
                 ? res.data.data.paid_amount
-
                 : 0,
 
-              user_id: res.data.data.user_id,
-
+              user_id: saleOnApprovalData.user_id,
             },
-            loadSaleOnApprovalApiCall: true
+            admin_details: {
+              ...this.state.admin_details,
 
+              company_name: !isEmpty(userDetails.company_name)
+                ? userDetails.company_name
+                : "",
+
+              name: !isEmpty(userDetails.name) ? userDetails.name : "",
+
+              mobile: !isEmpty(userDetails.mobile) ? userDetails.mobile : "",
+
+              gst: !isEmpty(userDetails.gst) ? userDetails.gst : "",
+
+              city: !isEmpty(userDetails.city) ? userDetails.city : "",
+
+              address: !isEmpty(userDetails.address) ? userDetails.address : "",
+
+              pincode: !isEmpty(userDetails.pincode) ? userDetails.pincode : "",
+            },
+            loadSaleOnApprovalApiCall: true,
           },
 
           () => {
-
             this.handleCalculateMainPrice();
 
             setTimeout(() => {
-              
-              this.handleAdminChange("", res.data.data.user_id);
-
+              this.handleAdminChange("", saleOnApprovalData.user_id);
             }, 1000);
-
-          }
-
+          },
         );
 
         //}, 3000);
-
       }
-
     }
-
   };
 
-
-
   loadReportCharge = async () => {
-
     let response = await reportChargeFetchRaw();
 
     console.log("response : ", response);
 
     if (response.data.success) {
-
       let reportCharge = response.data.data.items;
 
       console.log("reportCharge : ", reportCharge);
 
-      this.setState({
+      this.setState(
+        {
+          ...this.state,
 
-        ...this.state,
-
-        report_charge: reportCharge[0]
-
-      }, () => {
-        console.log("========================== after report charge setState ==========================");
-        this.calculateProductPrice();
-      });
-
+          report_charge: reportCharge[0],
+        },
+        () => {
+          console.log(
+            "========================== after report charge setState ==========================",
+          );
+          this.calculateProductPrice();
+        },
+      );
     }
-
-  }
-
-
+  };
 
   loadCart = async () => {
-
     let response = await cartListRaw({
-
       from_order_price: this.props.query.get("from_order_price"),
 
       order_id: this.props.query.get("order_id"),
-
     });
 
     if (response.data.success) {
-
       let cartList = response.data.data.items;
 
       let products = [];
 
       let unique_materials = [];
 
-
-
       let report_qty = 0;
 
       let material_total_by_unit = [];
 
       for (let i = 0; i < cartList.length; i++) {
-
         let cart = cartList[i];
 
-
-
         for (let item of cart.materials) {
-
           //let m_unit_name = item.unit_name.toLowerCase();
 
           if (typeof material_total_by_unit[item.material_id] === "undefined") {
-
             material_total_by_unit[item.material_id] = 0.0;
-
-            
-
           }
-
-
 
           // if (item.purity_id == 4 || item.purity_id == 18) {
 
@@ -987,38 +803,27 @@ class SaleForm extends React.Component {
 
           // } else {
 
-            material_total_by_unit[item.material_id] += parseFloat(item.weight);
+          material_total_by_unit[item.material_id] += parseFloat(item.weight);
 
           //}
-
         }
-
       }
 
-
-
       for (let i = 0; i < cartList.length; i++) {
-
         let cart = cartList[i];
 
         let materials = [];
 
-          //quantity = 1;
+        //quantity = 1;
 
         /* for those product with certificate no */
 
-        if(!isEmpty(cart.certificate_no)){
-
+        if (!isEmpty(cart.certificate_no)) {
           report_qty += 1;
-
         }
 
-
-
         for (let item of cart.materials) {
-
           materials.push({
-
             id: item.id,
 
             material_id: item.material_id,
@@ -1056,27 +861,18 @@ class SaleForm extends React.Component {
             org_rate: item.rate,
 
             org_discount_percent: item.discount_percent,
-
           });
-
-
 
           let m_unit_name = item.unit_name.toLowerCase();
 
-
-
           let index = _.findIndex(
-
             unique_materials,
 
-            (p) => p.material_id == item.material_id
-
+            (p) => p.material_id == item.material_id,
           );
 
           if (index == -1 && item.max_discount_percent > 0) {
-
             unique_materials.push({
-
               material_id: item.material_id,
 
               material_name: item.material_name,
@@ -1090,23 +886,17 @@ class SaleForm extends React.Component {
               unit: m_unit_name,
 
               ["total_" + item.material_id]:
-
                 material_total_by_unit[item.material_id],
-
             });
-
           }
-
         }
 
         let result2 = calculateGST(
-
           cart.tax_info,
 
           parseFloat(cart.total_amount),
 
-          this.state.user_gst_no
-
+          this.state.user_gst_no,
         );
 
         let cgst_tax = result2 ? result2.cgst : 0;
@@ -1118,19 +908,14 @@ class SaleForm extends React.Component {
         let total_tax = priceFormat(cgst_tax + sgst_tax + igst_tax);
 
         let total = priceFormat(
-
-          cart.total_amount + cgst_tax + sgst_tax + igst_tax
-
+          cart.total_amount + cgst_tax + sgst_tax + igst_tax,
         );
 
         if (cart.product_type == "material") {
-
           quantity = materials[0].quantity;
-
         }
 
         products.push({
-
           id: cart.id,
 
           product_id: cart.product_id,
@@ -1152,7 +937,6 @@ class SaleForm extends React.Component {
           making_charge_discount_percent: cart.making_charge_discount_percent,
 
           max_making_charge_discount_percent:
-
             cart.max_making_charge_discount_percent,
 
           making_charge_discount_amount: cart.making_charge_discount_amount,
@@ -1192,12 +976,8 @@ class SaleForm extends React.Component {
           quantity: cart.quantity,
 
           order_product_id: cart.order_product_id,
-
         });
-
       }
-
-
 
       /* report charge calculation */
 
@@ -1207,19 +987,18 @@ class SaleForm extends React.Component {
 
       let total_report_charge_amount_after_tax = 0;
 
-      if(!this.state.isAssign){
+      if (!this.state.isAssign) {
+        total_report_charge_amount =
+          report_qty * parseFloat(this.state.report_charge.amount);
 
-        total_report_charge_amount = report_qty * parseFloat(this.state.report_charge.amount);
+        total_report_charge_tax_amount =
+          (total_report_charge_amount *
+            parseFloat(this.state.report_charge.tax)) /
+          100;
 
-        total_report_charge_tax_amount = total_report_charge_amount * parseFloat(this.state.report_charge.tax)/100;
-
-        total_report_charge_amount_after_tax = total_report_charge_amount + total_report_charge_tax_amount;
-
-      } 
-
-      
-
-
+        total_report_charge_amount_after_tax =
+          total_report_charge_amount + total_report_charge_tax_amount;
+      }
 
       let formValues = this.state.formValues;
 
@@ -1229,371 +1008,281 @@ class SaleForm extends React.Component {
 
       formValues.report_qty = report_qty;
 
-      formValues.report_charge_amount = parseFloat(this.state.report_charge.amount);
+      formValues.report_charge_amount = parseFloat(
+        this.state.report_charge.amount,
+      );
 
       formValues.total_report_charge_amount = total_report_charge_amount;
 
-      formValues.total_report_charge_tax_amount = total_report_charge_tax_amount;
+      formValues.total_report_charge_tax_amount =
+        total_report_charge_tax_amount;
 
-      formValues.total_report_charge_amount_after_tax = total_report_charge_amount_after_tax;
-
-
+      formValues.total_report_charge_amount_after_tax =
+        total_report_charge_amount_after_tax;
 
       this.setState(
-
         {
-
           formValues: formValues,
 
           unique_materials: unique_materials,
-
         },
 
         () => {
           this.calculateProductPrice();
-        }
-
+        },
       );
-
     }
-
   };
 
-
-
   static getDerivedStateFromProps(props, state) {
-
     let update = {};
 
-
-
     if (props.adminList !== state.adminList) {
-
       update.adminList = props.adminList;
       update.adminListApiCall = true;
-
     }
 
     if (props.productList !== state.productList) {
-
       update.productList = props.productList;
-
     }
 
     if (props.actionCalled !== state.actionCalled) {
-
       update.actionCalled = props.actionCalled;
-
     }
 
     if (props.createSuccess !== state.createSuccess) {
-
       update.createSuccess = props.createSuccess;
-
     }
 
     if (props.editSuccess !== state.editSuccess) {
-
       update.editSuccess = props.editSuccess;
-
     }
 
     if (props.successMessage !== state.successMessage) {
-
       update.successMessage = props.successMessage;
-
     }
 
     if (props.errorMessage !== state.errorMessage) {
-
       update.errorMessage = props.errorMessage;
-
     }
 
     if (props.productPriceInfo !== state.productPriceInfo) {
-
       update.productPriceInfo = props.productPriceInfo;
-
     }
 
     if (props.stockProductList !== state.stockProductList) {
-
       update.stockProductList = props.stockProductList;
-
     }
 
     if (props.stockProductDetails !== state.stockProductDetails) {
-
       update.stockProductDetails = props.stockProductDetails;
-
     }
 
     if (props.categoryList !== state.categoryList) {
-
       update.categoryList = props.categoryList;
-
     }
 
     if (props.subCategoryList !== state.subCategoryList) {
-
       update.subCategoryList = props.subCategoryList;
-
     }
 
     if (props.order !== state.order) {
-
       update.order = props.order;
-
     }
 
     if (props.distributorList !== state.distributorList) {
-
       update.distributorList = props.distributorList;
       update.distributorListApiCall = true;
-
     }
 
     if (props.retailerList !== state.retailerList) {
-
       update.retailerList = props.retailerList;
       update.retailerListApiCall = true;
     }
 
     if (props.salesExecutiveList !== state.salesExecutiveList) {
-
       update.salesExecutiveList = props.salesExecutiveList;
       update.salesExecutiveListApiCall = true;
     }
 
     if (props.auth !== state.auth) {
-
       update.auth = props.auth;
-
     }
 
     if (props.employeeList !== state.employeeList) {
-
       update.employeeList = props.employeeList;
       update.employeeListApiCall = true;
     }
 
     if (props.formData !== state.formData) {
-
       update.formData = props.formData;
-
     }
 
     if (props.supplierList !== state.supplierList) {
-
       update.supplierList = props.supplierList;
       update.supplierListApiCall = true;
     }
 
     return update;
-
   }
 
-
-
   async componentDidUpdate(prevProps, prevState) {
-
     if (this.props.formData != prevProps.formData) {
-
       this.initializeFormData();
-
-    } else { 
+    } else {
       let canLoadSaleOnApproval = false;
 
       if (this.isSuperAdmin) {
-        if(this.state.adminList.length > 0 && this.state.employeeList.length > 0){
+        if (
+          this.state.adminList.length > 0 &&
+          this.state.employeeList.length > 0
+        ) {
           canLoadSaleOnApproval = true;
         }
       } else if (this.isAdmin) {
-        if(this.state.distributorList.length > 0 && this.state.salesExecutiveList.length > 0 && this.state.supplierList.length > 0){
+        if (
+          this.state.distributorList.length > 0 &&
+          this.state.salesExecutiveList.length > 0 &&
+          this.state.supplierList.length > 0
+        ) {
           canLoadSaleOnApproval = true;
         }
       } else if (this.isDistributor) {
-        if(this.state.retailerList.length > 0 && this.state.salesExecutiveList.length > 0 && this.state.supplierList.length > 0){
+        if (
+          this.state.retailerList.length > 0 &&
+          this.state.salesExecutiveList.length > 0 &&
+          this.state.supplierList.length > 0
+        ) {
           canLoadSaleOnApproval = true;
         }
       } else if (this.isSalesExecutive) {
-        console.log("this.state.adminListApiCall : ",this.state.adminListApiCall," this.state.retailerListApiCall : ", this.state.retailerListApiCall, " this.state.distributorListApiCall : ",this.state.distributorListApiCall," this.state.salesExecutiveListApiCall : ", this.state.salesExecutiveListApiCall);
+        console.log(
+          "this.state.adminListApiCall : ",
+          this.state.adminListApiCall,
+          " this.state.retailerListApiCall : ",
+          this.state.retailerListApiCall,
+          " this.state.distributorListApiCall : ",
+          this.state.distributorListApiCall,
+          " this.state.salesExecutiveListApiCall : ",
+          this.state.salesExecutiveListApiCall,
+        );
         //alert("componentDidUpdate");
-        
-        if(this.state.adminListApiCall && this.state.retailerListApiCall && this.state.distributorListApiCall && this.state.salesExecutiveListApiCall){
+
+        if (
+          this.state.adminListApiCall &&
+          this.state.retailerListApiCall &&
+          this.state.distributorListApiCall &&
+          this.state.salesExecutiveListApiCall
+        ) {
           canLoadSaleOnApproval = true;
         }
       }
 
-      if(canLoadSaleOnApproval){
+      if (canLoadSaleOnApproval) {
         //alert("loadSaleOnApproval");
-        if (!isEmpty(this.props.query.get("sale_on_approval")) && !this.state.loadSaleOnApprovalApiCall) {
-
+        if (
+          !isEmpty(this.props.query.get("sale_on_approval")) &&
+          !this.state.loadSaleOnApprovalApiCall
+        ) {
           await this.loadSaleOnApproval();
-
         }
       }
-
     }
 
-
-
     if (this.state.actionCalled) {
-
       if (this.state.isCreateFrom) {
-
         if (this.state.createSuccess) {
-
           this.props.actions.cartList();
 
           this.props.enqueueSnackbar(this.state.successMessage, {
-
             variant: "success",
-
           });
 
           this.props.dispatch({
-
             type: SUPERADMIN_RESET_SALES,
-
           });
 
           this.props.actions.getNotifiactions();
 
           if (this.state.isAssign) {
-
             this.props.navigate(
-
-              getUserDashboardRoute(getRoleName(this.state.auth)) + "/transfer"
-
+              getUserDashboardRoute(getRoleName(this.state.auth)) + "/transfer",
             );
-
           } else if (this.state.isOnApprove) {
-
             this.props.navigate(
-
               getUserDashboardRoute(getRoleName(this.state.auth)) +
-
-                "/sale-on-approve"
-
+                "/sale-on-approve",
             );
-
           } else {
-
             this.props.navigate(
-
-              getUserDashboardRoute(getRoleName(this.state.auth)) + "/sales"
-
+              getUserDashboardRoute(getRoleName(this.state.auth)) + "/sales",
             );
-
           }
-
         } else {
-
           this.setState({
-
             submitting: false,
 
             approval_processing: false,
 
             processing: false,
-
           });
 
           this.props.enqueueSnackbar(this.state.errorMessage, {
-
             variant: "error",
-
           });
 
           this.props.dispatch({
-
             type: SUPERADMIN_RESET_SALES,
-
           });
-
         }
-
       } else {
-
         if (this.state.editSuccess) {
-
           this.props.enqueueSnackbar(this.state.successMessage, {
-
             variant: "success",
-
           });
 
           this.props.dispatch({
-
             type: SUPERADMIN_RESET_SALES,
-
           });
 
           if (this.state.isAssign) {
-
             this.props.navigate(
-
-              getUserDashboardRoute(getRoleName(this.state.auth)) + "/transfer"
-
+              getUserDashboardRoute(getRoleName(this.state.auth)) + "/transfer",
             );
-
           } else {
-
             this.props.navigate(
-
-              getUserDashboardRoute(getRoleName(this.state.auth)) + "/sales"
-
+              getUserDashboardRoute(getRoleName(this.state.auth)) + "/sales",
             );
-
           }
-
         } else {
-
           this.setState({
-
             submitting: false,
 
             approval_processing: false,
 
             processing: false,
-
           });
 
           this.props.enqueueSnackbar(this.state.errorMessage, {
-
             variant: "error",
-
           });
 
           this.props.dispatch({
-
             type: SUPERADMIN_RESET_SALES,
-
           });
-
         }
-
       }
-
     }
 
-
-
     if (prevProps.order != this.props.order && this.props.order) {
-
       this.setState({
-
         formValues: {
-
           ...this.state.formValues,
 
           user_id: this.props.order.user_details.id,
-
         },
 
         admin_details: {
-
           ...this.state.admin_details,
 
           name: this.props.order.user_details.name,
@@ -1609,21 +1298,13 @@ class SaleForm extends React.Component {
           address: this.props.order.user_details.address,
 
           pincode: this.props.order.user_details.pincode,
-
         },
-
       });
 
-
-
       setTimeout(() => {
-
         this.setState(
-
           {
-
             formValues: {
-
               ...this.state.formValues,
 
               //user_id: this.props.order.user_details.id,
@@ -1631,212 +1312,151 @@ class SaleForm extends React.Component {
               //paid_amount: this.props.order.paid_amount,
 
               //payment_mode: this.state.order.payment_mode
-
             },
-
           },
 
           () => {
-
             let advance_amount = null;
 
             if (
-
               this.props.order.is_customer &&
-
               this.props.order.paid_amount > 0
-
             ) {
-
               advance_amount = this.props.order.paid_amount;
-
             }
 
             this.handleAdminChange(
-
               "",
 
               this.props.order.user_details.id,
 
-              advance_amount
-
+              advance_amount,
             );
 
             //this.handleCalculateMainPrice();
-
-          }
-
+          },
         );
-
       }, 1000);
-
     }
-
   }
 
-
-
   handleAddNewProduct = () => {
-
     if (isEmpty(this.state.formValues.user_id)) {
-
       this.props.enqueueSnackbar("Please select admin for tax calculate.", {
-
         variant: "error",
-
       });
 
       return;
-
     }
 
-
-
     this.setState({
-
       productDialog: true,
 
       ...this.getDefaultProductFormData(),
-
     });
-
   };
 
-
-
   handleAdminChange = (event, val, advnc_amt) => {
-
     this.updateFormValues(val, "user_id");
 
     let userList = this.getUserList();
     console.log("userList : ", userList);
-    let m = _.filter(userList, { id: val });
+    let selectedUser = this.getUserById(userList, val);
+    let isSelectedAdmin = !!_.find(
+      this.state.adminList,
+      (item) => String(item.id) === String(val),
+    );
 
     let user_gst_no = "",
-
       advance_amount = 0;
-    console.log("m : ", m);
-    if (m.length) {
-
-      user_gst_no = m[0].gst;
+    console.log("selectedUser : ", selectedUser);
+    if (selectedUser) {
+      user_gst_no = selectedUser.gst;
 
       if (
-
         /*(this.isSalesExecutive || this.isSalesExecutive) &&*/ !this.state
-
           .isAssign
-
       ) {
-
-        advance_amount = m[0].advance_amount;
-
+        advance_amount = selectedUser.advance_amount;
       }
-
     }
 
     if (advnc_amt !== null && advnc_amt !== undefined && advnc_amt >= 0) {
-
       advance_amount = advnc_amt;
-
     }
-    
+
     this.setState(
-
       {
-
         user_gst_no: user_gst_no,
 
         formValues: {
-
           ...this.state.formValues,
 
           advance_amount: advance_amount,
-
         },
-
       },
 
       () => {
-
         if (
-
           (this.isSuperAdmin || this.isAdmin || this.isDistributor) &&
-
-          /* (this.isAdmin && this.state.profile && this.state.profile.own) */ m.length &&
-
-          m[0].own
-
+          /* (this.isAdmin && this.state.profile && this.state.profile.own) */ selectedUser &&
+          selectedUser.own &&
+          !(this.isAdmin && isSelectedAdmin)
         ) {
-
           this.handleTransfer(val);
-
         } else {
-
           this.handleCalculateMainPrice();
-
         }
 
         this.setAdminDetails();
-
-      }
-
+      },
     );
-
   };
 
-
-
   setAdminDetails = () => {
-
     if (!isEmpty(this.state.formValues.user_id)) {
-
       let userList = this.getUserList();
 
-      let m = _.filter(userList, { id: this.state.formValues.user_id });
+      let selectedUser = this.getUserById(
+        userList,
+        this.state.formValues.user_id,
+      );
 
-      if (m.length) {
-
+      if (selectedUser) {
         this.setState({
-
           admin_details: {
-
             ...this.state.admin_details,
 
-            name: !isEmpty(m[0].name) ? m[0].name : "",
+            name: !isEmpty(selectedUser.name) ? selectedUser.name : "",
 
-            company_name: !isEmpty(m[0].company_name) ? m[0].company_name : "",
+            company_name: !isEmpty(selectedUser.company_name)
+              ? selectedUser.company_name
+              : "",
 
-            mobile: !isEmpty(m[0].mobile) ? m[0].mobile : "",
+            mobile: !isEmpty(selectedUser.mobile) ? selectedUser.mobile : "",
 
-            city: !isEmpty(m[0].city) ? m[0].city : "",
+            city: !isEmpty(selectedUser.city) ? selectedUser.city : "",
 
-            gst: !isEmpty(m[0].gst) ? m[0].gst : "",
+            gst: !isEmpty(selectedUser.gst) ? selectedUser.gst : "",
 
-            address: !isEmpty(m[0].address) ? m[0].address : "",
+            address: !isEmpty(selectedUser.address) ? selectedUser.address : "",
 
-            pincode: !isEmpty(m[0].pincode) ? m[0].pincode : "",
-
+            pincode: !isEmpty(selectedUser.pincode) ? selectedUser.pincode : "",
           },
-
         });
-
       }
-
     }
 
     return "";
-
   };
-
-
 
   handleDefaultChange = (event, key) => {
-    console.log("handleDefaultChange => event.target.value", event.target.value);
+    console.log(
+      "handleDefaultChange => event.target.value",
+      event.target.value,
+    );
     this.updateFormValues(event.target.value, key);
-
   };
-
-
 
   updateFormValues = (val, key) => {
     console.log("updateFormValues => val, key", val, key);
@@ -1846,102 +1466,65 @@ class SaleForm extends React.Component {
     }; */
 
     let formValues = this.state.formValues;
-    
-    if(key == "report_charge_amount"){
+
+    if (key == "report_charge_amount") {
       console.log("isEmpty(val) : ", isEmpty(val), "isNaN(val):", isNaN(val));
-      formValues[key] = isEmpty(val) || isNaN(val)?0:val;
+      formValues[key] = isEmpty(val) || isNaN(val) ? 0 : val;
     } else {
       formValues[key] = val;
     }
-    
+
     console.log("updateFormValues => formValues", formValues);
 
     this.setState(
-
       {
-
         formValues: formValues,
-
       },
 
       () => {
-
         //this.handleCalculateMainPrice();
 
         this.calculateProductPrice();
-
-      }
-
+      },
     );
-
   };
 
-
-
   handleProductChange = (event, val) => {
-
     this.updateProductFormValues(event.target.value, "product_id");
 
     this.props.actions.stocksProducDetails({ product_id: event.target.value });
-
   };
-
-
 
   handleProductFormDefaultChange = (event, key) => {
-
     this.updateProductFormValues(event.target.value, key);
-
   };
 
-
-
   handleProductFormStockChange = (event) => {
-
     let val =
-
       event.target.value == undefined
-
         ? event.target.parentNode.value
-
         : event.target.value;
 
     this.updateProductFormValues(val, "stock_id");
-
   };
-
-
 
   handleSizeChange = (event, val) => {
-
     this.updateProductFormValues(event.target.value, "size_id");
-
   };
 
-
-
   handleCategoryChange = (event) => {
-
     this.updateProductFormValues(event.target.value, "category_id");
 
     if (isEmpty(event.target.value)) {
-
       this.props.dispatch({
-
         type: RESET_SUB_CATEGORY_LIST,
-
       });
-
     } else {
-
       this.props.actions.subCategoryList({
-
         all: 1,
 
         category_id: event.target.value,
-
       });
-
     }
 
     this.updateProductFormValues("", "sub_category_id");
@@ -1949,39 +1532,25 @@ class SaleForm extends React.Component {
     this.updateProductFormValues("", "product_id");
 
     this.props.dispatch({
-
       type: GET_STOCK_PRODUCT_DETAILS_RESET,
-
     });
-
   };
 
-
-
   handleSubCategoryChange = (event) => {
-
     this.updateProductFormValues(event.target.value, "sub_category_id");
 
     this.props.actions.stocksProductList({
-
       sub_category_id: event.target.value,
-
     });
 
     this.updateProductFormValues("", "product_id");
 
     this.props.dispatch({
-
       type: GET_STOCK_PRODUCT_DETAILS_RESET,
-
     });
-
   };
 
-
-
   updateProductFormValues = (val, key) => {
-
     let productFormValues = this.state.productFormValues;
 
     let sizeList = this.state.sizeList;
@@ -1990,10 +1559,7 @@ class SaleForm extends React.Component {
 
     productFormValues[key] = val;
 
-
-
     if (key == "product_id") {
-
       this.props.actions.materialPriceProductPriceInfo(val ? val : 0);
 
       let m = _.filter(this.state.stockProductList, { id: val });
@@ -2047,29 +1613,20 @@ class SaleForm extends React.Component {
       //productFormValues.size_id = 0;
 
       //sizeList = m[0].sizes;
-
     } else if (key == "size_id") {
-
       //let m = _.filter(this.state.sizeList, {id: val});
-
       //productFormValues.size_name = m[0].name;
-
     } else if (key == "stock_id") {
-
       let stock = _.filter(this.state.stockProductDetails, function (s) {
-
         return s.stock_id == val;
-
       });
 
       let materials = [];
 
       for (let item of stock[0].materials) {
-
         //let purities = getValuesFromKey(item.purities, 'name')
 
         materials.push({
-
           id: 0,
 
           material_id: item.material_id,
@@ -2091,17 +1648,13 @@ class SaleForm extends React.Component {
           amount: 0,
 
           rate: 0,
-
         });
 
         materialFormErros.push({
-
           weight: false,
 
           quantity: false,
-
         });
-
       }
 
       productFormValues.materials = materials;
@@ -2111,37 +1664,24 @@ class SaleForm extends React.Component {
       productFormValues.size_name = stock[0].size_name;
 
       productFormValues.certificate_no = stock[0].certificate_no;
-
     }
 
-
-
     this.setState(
-
       {
-
         productFormValues: productFormValues,
 
         sizeList: sizeList,
 
         materialFormErros: materialFormErros,
-
       },
 
       () => {
-
         this.calculateProductPrice();
-
-      }
-
+      },
     );
-
   };
 
-
-
   calculateProductPrice = () => {
-
     /*if (this.state.productPriceInfo) {
 
             let productFormValues = this.state.productFormValues;
@@ -2191,7 +1731,7 @@ class SaleForm extends React.Component {
     //new code
 
     let formValues = this.state.formValues;
-    console.log("calculateProductPrice => formValues", formValues);   
+    console.log("calculateProductPrice => formValues", formValues);
 
     let products = formValues.products;
 
@@ -2200,165 +1740,104 @@ class SaleForm extends React.Component {
     let report_qty = 0;
 
     for (let x = 0; x < products.length; x++) {
-
       let total_price = 0,
-
         total_price_with_discount = 0,
-
         making_charge = 0,
-
         total_discount = 0,
-
         total_quantity = 0,
-        
-        quantity = !isEmpty(products[x].quantity)?products[x].quantity:1;
+        quantity = !isEmpty(products[x].quantity) ? products[x].quantity : 1;
 
       for (let i = 0; i < products[x].materials.length; i++) {
-
         let per_gram_price = products[x].materials[i].per_gram_price;
 
         let discount_percent = products[x].materials[i].discount_percent
-
           ? parseFloat(products[x].materials[i].discount_percent)
-
           : 0;
 
         discount_percent = !isAssign ? discount_percent : 0;
 
         let disPerGramPrice = priceFormat(
-
           parseFloat(per_gram_price) -
-
-            parseFloat((per_gram_price * parseFloat(discount_percent)) / 100)
-
+            parseFloat((per_gram_price * parseFloat(discount_percent)) / 100),
         );
 
         let thisPrice = priceFormat(
-
           parseFloat(per_gram_price) *
-
-            parseFloat(products[x].materials[i].total_gram)
-
+            parseFloat(products[x].materials[i].total_gram),
         );
 
         total_price += thisPrice;
 
         total_price_with_discount += priceFormat(
-
           parseFloat(disPerGramPrice) *
-
-            parseFloat(products[x].materials[i].total_gram)
-
+            parseFloat(products[x].materials[i].total_gram),
         );
 
         products[x].materials[i].amount = thisPrice;
 
         products[x].materials[i].discount_amount = priceFormat(
-
           thisPrice -
-
             priceFormat(
-
               parseFloat(disPerGramPrice) *
-
-                parseFloat(products[x].materials[i].total_gram)
-
-            )
-
+                parseFloat(products[x].materials[i].total_gram),
+            ),
         );
 
         //products[x].materials[i].discount_percent = parseFloat(products[x].materials[i].discount_percent);
 
         total_quantity += products[x].materials[i].quantity
-
           ? parseInt(products[x].materials[i].quantity)
-
           : 0;
 
         total_discount += priceFormat(
-
           thisPrice -
-
             priceFormat(
-
               parseFloat(disPerGramPrice) *
-
-                parseFloat(products[x].materials[i].total_gram)
-
-            )
-
+                parseFloat(products[x].materials[i].total_gram),
+            ),
         ); //parseFloat(products[x].materials[i].rate * discount_percent / 100);
-
       }
-
-
 
       /* for those product with certificate no */
 
-      if(!isEmpty(products[x].certificate_no)){
-
+      if (!isEmpty(products[x].certificate_no)) {
         report_qty += 1;
-
       }
 
       let isMaterial = products[x].product_type == "material" ? true : false;
 
       if (products[x].sub_cat_making_charge_type == "per_piece") {
-
         making_charge = priceFormat(
-
-          parseFloat(products[x].sub_cat_making_charge)
-
+          parseFloat(products[x].sub_cat_making_charge),
         );
-
       } else if (products[x].sub_cat_making_charge_type == "per_gram") {
-
         making_charge = priceFormat(
-
           parseFloat(products[x].total_weight) *
-
-            parseFloat(parseFloat(products[x].sub_cat_making_charge))
-
+            parseFloat(parseFloat(products[x].sub_cat_making_charge)),
         );
-
       }
 
-
-
       let discount_amount = !isAssign
-
         ? priceFormat(
-
             (making_charge *
-
               parseFloat(products[x].making_charge_discount_percent)) /
-
-              100
-
+              100,
           )
-
         : 0;
 
       let total_making_charge = priceFormat(making_charge - discount_amount);
 
       total_discount += discount_amount;
 
-
-
       let result2 = !isAssign
-
         ? calculateGST(
-
             products[x].tax_info,
 
             parseFloat(total_price_with_discount) +
-
               parseFloat(total_making_charge),
 
-            this.state.user_gst_no
-
+            this.state.user_gst_no,
           )
-
         : null;
 
       let cgst_tax = result2 ? result2.cgst : 0;
@@ -2370,23 +1849,17 @@ class SaleForm extends React.Component {
       let total_tax = priceFormat(cgst_tax + sgst_tax + igst_tax);
 
       let total_amount = priceFormat(
-
-        total_making_charge + total_price_with_discount
-
+        total_making_charge + total_price_with_discount,
       );
 
       let total = priceFormat(total_amount + cgst_tax + sgst_tax + igst_tax);
-
-
 
       products[x].making_charge_discount_amount = discount_amount;
 
       products[x].total_discount = priceFormat(total_discount);
 
       products[x].sub_price = priceFormat(
-
-        (parseFloat(total_price) + parseFloat(making_charge))
-
+        parseFloat(total_price) + parseFloat(making_charge),
       );
 
       products[x].making_charge = priceFormat(making_charge);
@@ -2400,10 +1873,7 @@ class SaleForm extends React.Component {
       products[x].sgst_tax = priceFormat(sgst_tax);
 
       products[x].igst_tax = priceFormat(igst_tax);
-
     }
-
-
 
     /* report charge calculation */
     let report_charge_amount = 0;
@@ -2414,24 +1884,36 @@ class SaleForm extends React.Component {
 
     let total_report_charge_amount_after_tax = 0;
 
-    if(!this.state.isCreateFrom){
+    if (!this.state.isCreateFrom) {
       //formValues.report_charge_amount = this.state.report_charge.amount;
-      formValues.report_charge_amount = parseFloat(this.state.formValues.report_charge || 0);
-      report_charge_amount = parseFloat(this.state.formValues.report_charge || 0); 
+      formValues.report_charge_amount = parseFloat(
+        this.state.formValues.report_charge || 0,
+      );
+      report_charge_amount = parseFloat(
+        this.state.formValues.report_charge || 0,
+      );
     } else {
-      formValues.report_charge_amount = parseFloat(this.state.formValues.report_charge_amount); // coming from loadCart function
-      report_charge_amount = this.state.formValues.report_charge_amount != ""?parseFloat(this.state.formValues.report_charge_amount):0;
+      formValues.report_charge_amount = parseFloat(
+        this.state.formValues.report_charge_amount,
+      ); // coming from loadCart function
+      report_charge_amount =
+        this.state.formValues.report_charge_amount != ""
+          ? parseFloat(this.state.formValues.report_charge_amount)
+          : 0;
     }
 
-    if(!this.state.isAssign){
+    if (!this.state.isAssign) {
+      total_report_charge_amount =
+        report_qty * parseFloat(report_charge_amount);
 
-      total_report_charge_amount = report_qty * parseFloat(report_charge_amount);
+      total_report_charge_tax_amount =
+        (total_report_charge_amount *
+          parseFloat(this.state.report_charge.tax)) /
+        100;
 
-      total_report_charge_tax_amount = total_report_charge_amount * parseFloat(this.state.report_charge.tax)/100;
-
-      total_report_charge_amount_after_tax = total_report_charge_amount + total_report_charge_tax_amount;
-
-    } 
+      total_report_charge_amount_after_tax =
+        total_report_charge_amount + total_report_charge_tax_amount;
+    }
 
     console.log("report_qty : ", report_qty);
 
@@ -2439,48 +1921,41 @@ class SaleForm extends React.Component {
 
     console.log("total_report_charge_amount : ", total_report_charge_amount);
 
-    console.log("total_report_charge_tax_amount : ", total_report_charge_tax_amount);   
+    console.log(
+      "total_report_charge_tax_amount : ",
+      total_report_charge_tax_amount,
+    );
 
-    console.log("total_report_charge_amount_after_tax : ", total_report_charge_amount_after_tax);
+    console.log(
+      "total_report_charge_amount_after_tax : ",
+      total_report_charge_amount_after_tax,
+    );
 
     formValues.products = products;
 
     formValues.report_qty = report_qty;
-    
-    
 
     formValues.total_report_charge_amount = total_report_charge_amount;
 
     formValues.total_report_charge_tax_amount = total_report_charge_tax_amount;
 
-    formValues.total_report_charge_amount_after_tax = total_report_charge_amount_after_tax;
+    formValues.total_report_charge_amount_after_tax =
+      total_report_charge_amount_after_tax;
 
     this.setState(
-
       {
-
         formValues: formValues,
-
       },
 
       () => {
-
         this.handleCalculateMainPrice();
-
-      }
-
+      },
     );
-
   };
 
-
-
   getDefaultProductFormData = () => {
-
     return {
-
       productFormValues: {
-
         id: 0,
 
         product_id: "",
@@ -2522,11 +1997,9 @@ class SaleForm extends React.Component {
         tax_info: null,
 
         total_tax: 0,
-
       },
 
       productFormErros: {
-
         product_id: false,
 
         certificate_no: false,
@@ -2536,19 +2009,13 @@ class SaleForm extends React.Component {
         category_id: false,
 
         sub_category_id: false,
-
       },
 
       materialFormErros: [],
-
     };
-
   };
 
-
-
   handleMaterialFormChange = (event, index, key) => {
-
     let productFormValues = this.state.productFormValues;
 
     let materials = productFormValues.materials;
@@ -2558,41 +2025,25 @@ class SaleForm extends React.Component {
     productFormValues.materials = materials;
 
     this.setState(
-
       {
-
         productFormValues: productFormValues,
-
       },
 
       () => {
-
         this.calculateProductPrice();
-
-      }
-
+      },
     );
-
   };
 
-
-
   handleProductDialogClose = (event, reason) => {
-
     if (reason && reason == "backdropClick") return;
 
     this.setState({
-
       productDialog: false,
-
     });
-
   };
 
-
-
   getTotalWeightByProduct = (index) => {
-
     let formValues = this.state.formValues;
 
     let products = formValues.products;
@@ -2600,37 +2051,24 @@ class SaleForm extends React.Component {
     let totalWeight = 0;
 
     for (let item of products[index].materials) {
-
       totalWeight += item.weight ? parseFloat(item.weight) : 0;
-
     }
 
     return totalWeight;
-
   };
 
-
-
   handleProductDelete = (index) => {
-
     this.setState({
-
       deletingIndex: index,
 
       deleteDialogOpen: true,
-
     });
-
   };
 
-
-
   handleProductSubmit = () => {
-
     let hasErr = this.productFormValidate();
 
     if (!hasErr) {
-
       let formValues = { ...this.state.formValues };
 
       let _data = { ...this.state.productFormValues };
@@ -2638,15 +2076,12 @@ class SaleForm extends React.Component {
       formValues.products.push(_data);
 
       this.setState(
-
         {
-
           formValues: formValues,
 
           //productDialog: false,
 
           productFormValues: {
-
             ...this.state.productFormValues,
 
             size_id: "",
@@ -2678,27 +2113,17 @@ class SaleForm extends React.Component {
             tax_info: null,
 
             total_tax: 0,
-
           },
-
         },
 
         () => {
-
           this.handleCalculateMainPrice();
-
-        }
-
+        },
       );
-
     }
-
   };
 
-
-
   calculatePrice = () => {
-
     /*let formValues = this.state.formValues;
 
         let sub_total = 0, total_amount = 0;
@@ -2732,61 +2157,39 @@ class SaleForm extends React.Component {
             formValues: formValues
 
         })*/
-
   };
 
-
-
   handleCalculateMainPrice = () => {
-
     let formValues = this.state.formValues;
 
     let product_discount = 0,
-
       total_tag_price = 0;
 
     let taxable_amount = 0,
-
       cgst_tax = 0,
-
       sgst_tax = 0,
-
       igst_tax = 0,
-
       total_amount = 0,
-
       discount = 0,
-
       total_payable = 0,
-
       paid_amount = 0,
-
       due_amount = 0;
 
     for (let i = 0; i < formValues.products.length; i++) {
-
       taxable_amount +=
-
         parseFloat(formValues.products[i].total) -
-
         parseFloat(formValues.products[i].total_tax);
 
       cgst_tax += formValues.products[i].cgst_tax
-
         ? parseFloat(formValues.products[i].cgst_tax)
-
         : 0;
 
       sgst_tax += formValues.products[i].sgst_tax
-
         ? parseFloat(formValues.products[i].sgst_tax)
-
         : 0;
 
       igst_tax += formValues.products[i].igst_tax
-
         ? parseFloat(formValues.products[i].igst_tax)
-
         : 0;
 
       total_amount += parseFloat(formValues.products[i].total);
@@ -2794,44 +2197,36 @@ class SaleForm extends React.Component {
       product_discount += parseFloat(formValues.products[i].total_discount);
 
       total_tag_price += parseFloat(formValues.products[i].sub_price);
-
     }
 
-
-
-    if(!this.state.isAssign){
-
+    if (!this.state.isAssign) {
       /* add report charge to taxable_amount */
 
       console.log("before taxable_amount : ", taxable_amount);
 
       taxable_amount += parseFloat(formValues.total_report_charge_amount);
 
-      total_amount += parseFloat(formValues.total_report_charge_amount_after_tax);
+      total_amount += parseFloat(
+        formValues.total_report_charge_amount_after_tax,
+      );
 
       total_tag_price += parseFloat(formValues.total_report_charge_amount);
 
-      console.log("formValues.total_report_charge_amount : ", formValues.total_report_charge_amount);
+      console.log(
+        "formValues.total_report_charge_amount : ",
+        formValues.total_report_charge_amount,
+      );
 
       console.log("taxable_amount : ", taxable_amount);
 
-
-
-      if(cgst_tax > 0 && sgst_tax > 0){
-
+      if (cgst_tax > 0 && sgst_tax > 0) {
         cgst_tax += parseFloat(formValues.total_report_charge_tax_amount) / 2;
 
         sgst_tax += parseFloat(formValues.total_report_charge_tax_amount) / 2;
-
       } else {
-
         igst_tax += parseFloat(formValues.total_report_charge_tax_amount);
-
       }
-
     }
-
-
 
     taxable_amount = priceFormat(taxable_amount, true);
 
@@ -2844,54 +2239,38 @@ class SaleForm extends React.Component {
     total_amount = priceFormat(total_amount, true);
 
     if (!isEmpty(formValues.discount)) {
-
       discount = parseFloat(formValues.discount);
-
     }
 
-    if(!isEmpty(this.props.query.get("sale_on_approval"))){
-      total_payable = priceFormat(total_amount - discount - formValues.already_paid_amount, true);
+    if (!isEmpty(this.props.query.get("sale_on_approval"))) {
+      total_payable = priceFormat(
+        total_amount - discount - formValues.already_paid_amount,
+        true,
+      );
     } else {
       total_payable = priceFormat(total_amount - discount, true);
     }
 
     if (!isEmpty(formValues.paid_amount)) {
-
       paid_amount = parseFloat(formValues.paid_amount);
-
     }
 
-
-
     let advance_amount = formValues.advance_amount
-
       ? parseFloat(formValues.advance_amount)
-
       : 0;
 
     if (this.state.isCreateFrom) {
-
       due_amount = priceFormat(total_payable - paid_amount, true);
-
     } else {
-
       due_amount = parseFloat(this.state.formValues.due_amount);
-
     }
 
     if (formValues.pay_from_advance) {
-
       due_amount =
-
         advance_amount > due_amount
-
           ? 0
-
           : priceFormat(due_amount - advance_amount, true);
-
     }
-
-    
 
     formValues.taxable_amount = taxable_amount;
 
@@ -2906,9 +2285,7 @@ class SaleForm extends React.Component {
     formValues.total_amount = total_amount;
 
     formValues.total_payable = this.state.isCreateFrom
-
       ? total_payable
-
       : formValues.total_payable;
 
     formValues.due_amount = due_amount;
@@ -2918,17 +2295,11 @@ class SaleForm extends React.Component {
     formValues.total_tag_price = priceFormat(total_tag_price);
 
     this.setState({
-
       formValues: formValues,
-
     });
-
   };
 
-
-
   productFormValidate = () => {
-
     let productFormValues = this.state.productFormValues;
 
     let productFormErros = this.state.productFormErros;
@@ -2938,97 +2309,63 @@ class SaleForm extends React.Component {
     let hasErr = false;
 
     if (isEmpty(productFormValues.product_id)) {
-
       productFormErros.product_id = true;
 
       hasErr = true;
-
     } else {
-
       productFormErros.product_id = false;
-
     }
 
     if (productFormValues.product_type != "material") {
-
       if (!productFormValues.stock_id) {
-
         //this.props.enqueueSnackbar('Please select stock', {variant: 'error'});
-
         //hasErr = true;
-
       }
-
     } else {
-
       productFormErros.certificate_no = false;
 
       productFormErros.size_id = false;
-
     }
 
-
-
     if (!productFormValues.materials.length) {
-
       this.props.enqueueSnackbar("Please select stock", { variant: "error" });
 
       hasErr = true;
-
     }
 
     for (let i = 0; i < productFormValues.materials.length; i++) {
-
       if (isEmpty(productFormValues.materials[i].weight)) {
-
         materialFormErros[i].weight = true;
 
         hasErr = true;
-
       } else {
-
         materialFormErros[i].weight = false;
-
       }
 
       if (isEmpty(productFormValues.materials[i].quantity)) {
-
         materialFormErros[i].quantity = true;
 
         hasErr = true;
-
       } else {
-
         materialFormErros[i].quantity = false;
-
       }
-
     }
 
     this.setState({
-
       productFormErros: productFormErros,
 
       materialFormErros: materialFormErros,
-
     });
 
     return hasErr;
-
   };
 
-
-
   handleDialogClose = () => {
-
     this.setState({
-
       deleteDialogOpen: false,
 
       deletingIndex: 0,
-
     });
-
   };
 
   handlePayNowForReturnDialogClose = () => {
@@ -3041,108 +2378,82 @@ class SaleForm extends React.Component {
     this.setState({
       returnChargeApplyDialogOpen: false,
     });
-  }
-
-  returnDialogClose = () => {
-
-    this.setState({
-
-      returnDialogOpen: false,
-
-    });
-
   };
 
-
+  returnDialogClose = () => {
+    this.setState({
+      returnDialogOpen: false,
+    });
+  };
 
   handleDeleteConfirm = async () => {
-
     let products = this.state.formValues.products;
 
     let response = await cartDelete(
-
       products[this.state.deletingIndex].id,
 
-      true
-
+      true,
     );
 
     if (response.data.success) {
+      if (
+        !this.lastRemovedCert ||
+        this.lastRemovedCert !==
+          products[this.state.deletingIndex].certificate_no
+      ) {
+        this.lastRemovedCert =
+          products[this.state.deletingIndex].certificate_no;
 
-      if (!this.lastRemovedCert || this.lastRemovedCert !== products[this.state.deletingIndex].certificate_no) {
+        this.props.enqueueSnackbar(response.data.message, {
+          variant: "success",
+        });
 
-        this.lastRemovedCert = products[this.state.deletingIndex].certificate_no;
-
-        this.props.enqueueSnackbar(response.data.message, { variant: "success" });
-
-        setTimeout(() => { this.lastRemovedCert = null; }, 1000);
-
+        setTimeout(() => {
+          this.lastRemovedCert = null;
+        }, 1000);
       }
 
       this.loadCart();
 
       this.props.actions.cartList();
-
     } else {
-
       this.props.enqueueSnackbar(response.data.message, { variant: "error" });
-
     }
 
     this.setState(
-
       {
-
         deleteDialogOpen: false,
-
       },
 
       () => {
-
         this.handleCalculateMainPrice();
-
-      }
-
+      },
     );
-
   };
 
-
-
   handleSubmit = async (isApproval, e) => {
-
     let formValues = this.state.formValues;
 
     let hasErr = this.formValidate(isApproval);
 
     if (hasErr) {
-
       e.target.disabled = false;
 
       return false;
-
     }
 
-
-
     if (formValues.products.length == 0) {
-
       this.props.enqueueSnackbar("Please add at least one product", {
-
         variant: "error",
-
       });
 
       e.target.disabled = false;
 
       return false;
-
     }
 
     if (!hasErr && formValues.products.length) {
-
       this.setState({
-
         submitting: true,
 
         isOnApprove: isApproval,
@@ -3150,41 +2461,28 @@ class SaleForm extends React.Component {
         approval_processing: isApproval ? true : false,
 
         processing: !isApproval ? true : false,
-
       });
 
       let data = {
-
         ...this.state.formValues,
 
         on_approval: isApproval,
 
         on_approval_id: this.props.query.get("sale_on_approval"),
-
       };
-
-
 
       data.order_id = this.state.order ? this.state.order.id : 0;
 
       data.order_from_customer = this.state.order
-
         ? this.state.order.is_customer
-
         : false;
 
       if (
-
         this.state.order &&
-
         "is_retailer" in this.state.order &&
-
         this.state.order.is_retailer
-
       ) {
-
         data.order_from_customer = true;
-
       }
 
       /*if(priceFormat(data.total_payable - data.due_amount) != data.paid_amount){
@@ -3199,26 +2497,15 @@ class SaleForm extends React.Component {
 
       console.log("sales ------- admin code ", data);
 
-
-
       if (this.state.isCreateFrom) {
-
         this.props.actions.salesStore(data);
-
       } else {
-
         this.props.actions.salesUpdate(this.state.formData.id, data);
-
       }
-
     }
-
   };
 
-
-
   formValidate = (isApproval) => {
-
     let formErros = this.state.formErros;
 
     let formValues = this.state.formValues;
@@ -3226,27 +2513,19 @@ class SaleForm extends React.Component {
     let hasErr = false;
 
     if (isEmpty(formValues.user_id)) {
-
       formErros.user_id = true;
 
       hasErr = true;
-
     } else {
-
       formErros.user_id = false;
-
     }
 
     if (isEmpty(formValues.invoice_date)) {
-
       formErros.invoice_date = true;
 
       hasErr = true;
-
     } else {
-
       formErros.invoice_date = false;
-
     }
 
     /*if (isEmpty(formValues.paid_amount)) {
@@ -3262,123 +2541,75 @@ class SaleForm extends React.Component {
         }*/
 
     if (parseFloat(formValues.due_amount) > 0) {
-
       if (!this.state.isAssign && isEmpty(formValues.due_date)) {
-
         formErros.due_date = true;
 
         hasErr = true;
-
       } else {
-
         formErros.due_date = false;
-
       }
 
       if (
-
         !this.state.isAssign &&
-
         isEmpty(formValues.settlement_date) &&
-
         !isApproval
-
       ) {
-
         formErros.settlement_date = true;
 
         hasErr = true;
-
       } else {
-
         formErros.settlement_date = false;
-
       }
-
     }
 
     if (
-
       !isEmpty(formValues.total_payable) &&
-
       !isEmpty(formValues.paid_amount)
-
     ) {
-
       if (
-
         parseFloat(formValues.paid_amount) >
-
         parseFloat(formValues.total_payable)
-
       ) {
-
         hasErr = true;
 
         this.props.enqueueSnackbar(
-
           "Paid amount must be less than or equal to payable amount.",
 
-          { variant: "error" }
-
+          { variant: "error" },
         );
-
       }
-
     }
 
     this.setState({
-
       formErros: formErros,
-
     });
 
     return hasErr;
-
   };
 
-
-
   checkIfStockAdded = (id) => {
-
     let stock = _.filter(this.state.formValues.products, function (s) {
-
       return s.stock_id == id;
-
     });
 
     return stock.length;
-
   };
 
-
-
   checkIfAllStockAdded = () => {
-
     let x = true;
 
     for (let i = 0; i < this.state.stockProductDetails.length; i++) {
-
       if (!this.checkIfStockAdded(this.state.stockProductDetails[i].stock_id)) {
-
         x = false;
 
         break;
-
       }
-
     }
 
-
-
     return x;
-
   };
 
-
-
   handleMaterialDisc = (event, productKey, materialKey) => {
-
     let formValues = this.state.formValues;
 
     let { value, max } = event.target;
@@ -3386,215 +2617,130 @@ class SaleForm extends React.Component {
     /* check if super admin then no need of max check for discont */
 
     if (!this.isSuperAdmin) {
-
       if (value != "") {
-
         value = Math.max(Number(0), Math.min(Number(max), Number(value)));
-
       }
-
     } else {
-
       if (value != "") {
-
         value = Math.max(Number(0), Math.min(Number(100), Number(value)));
-
       }
-
     }
 
-
-
     formValues.products[productKey].materials[materialKey].discount_percent =
-
       value;
 
     this.setState(
-
       {
-
         formValues: formValues,
-
       },
 
       () => {
-
         this.calculateProductPrice();
-
-      }
-
+      },
     );
-
   };
 
-
-
   handleMakingDiscount = (event, productKey) => {
-
     let formValues = this.state.formValues;
 
     let { value, max } = event.target;
 
     if (value != "") {
-
       value = Math.max(Number(0), Math.min(Number(max), Number(value)));
-
     }
 
     formValues.products[productKey].making_charge_discount_percent = value;
 
     this.setState(
-
       {
-
         formValues: formValues,
-
       },
 
       () => {
-
         this.calculateProductPrice();
-
-      }
-
+      },
     );
-
   };
 
-
-
   handleCommonDis = (event, index) => {
-
     let unique_materials = this.state.unique_materials;
 
     let { value, max } = event.target;
 
-
-
     if (unique_materials[index].disc_type == "discount") {
-
       if (!this.isSuperAdmin) {
-
         if (value != "") {
-
           value = Math.max(Number(0), Math.min(Number(max), Number(value)));
-
         }
-
       } else {
-
         if (value != "") {
-
           value = Math.max(Number(0), Math.min(Number(100), Number(value)));
-
         }
-
       }
-
     }
-
-
 
     unique_materials[index].amount = value;
 
     this.setState(
-
       {
-
         unique_materials: unique_materials,
-
       },
 
       () => {
-
         let formValues = this.state.formValues;
 
         console.log("unique_materials[index] : ", unique_materials[index]);
 
         for (let i = 0; i < formValues.products.length; i++) {
-
           for (let x = 0; x < formValues.products[i].materials.length; x++) {
-
             console.log(
-
               "formValues.products[i].materials[x]: ",
 
-              formValues.products[i].materials[x]
-
+              formValues.products[i].materials[x],
             );
 
             if (
-
               unique_materials[index].material_id ==
-
               formValues.products[i].materials[x].material_id
-
             ) {
-
               if (unique_materials[index].disc_type == "discount") {
-
                 formValues.products[i].materials[x].discount_percent = value;
 
                 formValues.products[i].materials[x].rate =
-
                   formValues.products[i].materials[x].org_rate;
 
                 formValues.products[i].materials[x].per_gram_price =
-
                   formValues.products[i].materials[x].org_per_gram_price;
-
               } else {
-
                 formValues.products[i].materials[x].rate = value;
 
                 formValues.products[i].materials[x].per_gram_price =
-
                   convertGramToUnit(
-
                     formValues.products[i].materials[x].unit_name,
 
-                    value
-
+                    value,
                   );
 
                 formValues.products[i].materials[x].discount_percent = 0.0;
-
               }
-
             }
-
           }
-
         }
 
-
-
         this.setState(
-
           {
-
             formValues: formValues,
-
           },
 
           () => {
-
             this.calculateProductPrice();
-
-          }
-
+          },
         );
-
-      }
-
+      },
     );
-
   };
 
-
-
   handleDiscountType = (event, index) => {
-
     let unique_materials = this.state.unique_materials;
 
     let { value, max } = event.target;
@@ -3603,96 +2749,56 @@ class SaleForm extends React.Component {
 
     unique_materials[index].amount = 0.0;
 
-
-
     this.setState(
-
       {
-
         unique_materials: unique_materials,
-
       },
 
       () => {
-
         let formValues = this.state.formValues;
 
         //console.log("unique_materials[index] : ", unique_materials[index]);
 
         for (let i = 0; i < formValues.products.length; i++) {
-
           for (let x = 0; x < formValues.products[i].materials.length; x++) {
-
             if (
-
               unique_materials[index].material_id ==
-
               formValues.products[i].materials[x].material_id
-
             ) {
-
               //Object.keys(document.querySelectorAll(".unique_materials .custom_input")).map((itm) => document.querySelectorAll(".unique_materials .custom_input")[itm].value = 0.00);
 
               if (value == "discount") {
-
                 formValues.products[i].materials[x].discount_percent =
-
                   formValues.products[i].materials[x].org_discount_percent;
-
               } else {
-
                 formValues.products[i].materials[x].discount_percent = 0.0;
-
               }
 
-
-
               formValues.products[i].materials[x].rate =
-
                 formValues.products[i].materials[x].org_rate;
 
               formValues.products[i].materials[x].per_gram_price =
-
                 formValues.products[i].materials[x].org_per_gram_price;
-
             }
-
           }
-
         }
 
-
-
         this.setState(
-
           {
-
             formValues: formValues,
-
           },
 
           () => {
-
             this.calculateProductPrice();
-
-          }
-
+          },
         );
-
-      }
-
+      },
     );
-
   };
 
-
-
   handleCommonMakingDis = (event) => {
-
     this.setState({
-
       common_making_discount: event.target.value,
-
     });
 
     let formValues = this.state.formValues;
@@ -3700,312 +2806,219 @@ class SaleForm extends React.Component {
     let vl = event.target.value;
 
     for (let i = 0; i < formValues.products.length; i++) {
-
       if (!vl) {
-
         formValues.products[i].making_charge_discount_percent = "";
-
       } else {
-
         if (formValues.products[i].max_making_charge_discount_percent > 0) {
-
           formValues.products[i].making_charge_discount_percent =
-
             formValues.products[i].max_making_charge_discount_percent >=
-
             parseFloat(vl)
-
               ? vl
-
               : formValues.products[i].max_making_charge_discount_percent;
-
         }
-
       }
-
     }
 
     this.setState(
-
       {
-
         formValues: formValues,
-
       },
 
       () => {
-
         this.calculateProductPrice();
-
-      }
-
+      },
     );
-
   };
 
-
-
   getUserList = () => {
-
     let userList = [];
 
     if (this.isSuperAdmin) {
-
       if (this.state.isAssign) {
-
         userList = this.state.employeeList;
 
         let ownAdmins = [];
 
         for (let i = 0; i < this.state.adminList.length; i++) {
-
           if (this.state.adminList[i].own) {
-
             ownAdmins.push(this.state.adminList[i]);
-
           }
-
         }
 
         userList = userList.concat(ownAdmins);
 
         userList = this.state.salesExecutiveList.concat(userList);
-
       } else {
-
         userList = this.state.adminList;
-
       }
-
     } else if (this.isAdmin) {
-
       if (this.state.isAssign) {
-
         let ownDistri = [];
 
         if (this.state.profile && this.state.profile.own) {
-
           for (let i = 0; i < this.state.distributorList.length; i++) {
-
             if (this.state.distributorList[i].own) {
-
               ownDistri.push(this.state.distributorList[i]);
-
             }
-
           }
 
           for (let i = 0; i < this.state.supplierList.length; i++) {
-
             if (this.state.supplierList[i].own) {
-
               ownDistri.push(this.state.supplierList[i]);
-
             }
-
           }
-
         }
 
         userList = ownDistri;
 
         userList = this.state.salesExecutiveList.concat(userList);
-
       } else {
+        let loggedInUserId =
+          this.state.auth && this.state.auth.user
+            ? this.state.auth.user.id
+            : null;
 
-        userList = this.state.distributorList;
+        let adminList = this.state.adminList;
 
+        if (loggedInUserId !== null && loggedInUserId !== undefined) {
+          adminList = _.filter(
+            this.state.adminList,
+            (item) => String(item.id) !== String(loggedInUserId),
+          );
+        }
+
+        userList = adminList.concat(this.state.distributorList);
       }
-
     } else if (this.isDistributor) {
-
       if (this.state.isAssign) {
-
         let suppList = [];
 
         //if (this.state.profile && this.state.profile.own) {
 
         for (let i = 0; i < this.state.supplierList.length; i++) {
-
           //if (this.state.supplierList[i].own) {
 
           suppList.push(this.state.supplierList[i]);
 
           //}
-
         }
 
         //}
 
         userList = this.state.salesExecutiveList.concat(suppList);
-
       } else {
-
         userList = this.state.retailerList;
-
       }
-
     } else if (this.isSalesExecutive) {
-
       if (this.state.isAssign) {
-
         userList = this.state.distributorList.concat(
-
-          this.state.salesExecutiveList
-
+          this.state.salesExecutiveList,
         );
 
         userList = this.state.adminList.concat(userList);
-
       } else {
-
         userList = this.state.retailerList;
-
       }
-
     }
 
     return userList;
-
   };
 
+  getUserById = (userList, userId) => {
+    if (isEmpty(userId)) {
+      return null;
+    }
 
+    return (
+      _.find(userList, (user) => String(user.id) === String(userId)) || null
+    );
+  };
 
   handleTransfer = (user_id) => {
-
     let invoice_number = this.state.formValues.invoice_number;
 
     if (invoice_number) {
-
       invoice_number = invoice_number.replace("-S-", "-T-");
-
     }
 
     user_id = user_id === undefined ? "" : user_id;
 
     this.setState(
-
       {
-
         isAssign: true,
 
         formValues: {
-
           ...this.state.formValues,
 
           user_id: user_id,
 
           invoice_number,
-
         },
-
       },
 
       () => {
-
         this.calculateProductPrice();
-
-      }
-
+      },
     );
-
   };
 
-
-
   handleBackAssign = () => {
-
     let invoice_number = this.state.formValues.invoice_number;
 
     if (invoice_number) {
-
       invoice_number = invoice_number.replace("-T-", "-S-");
-
     }
 
     this.setState(
-
       {
-
         isAssign: false,
 
         formValues: {
-
           ...this.state.formValues,
 
           user_id: "",
 
           invoice_number: invoice_number,
-
         },
-
       },
 
       () => {
-
         this.calculateProductPrice();
-
-      }
-
+      },
     );
-
   };
 
-
-
   onChangeImage = (e) => {
-
     this.updateFormValues(e.target.files[0], "image_file");
 
     if (this.imageFileRef) {
-
       this.imageFileRef.current.value = null;
-
     }
-
   };
-
-
 
   getImageSrc = (item) => {
-
     return URL.createObjectURL(item);
-
   };
-
-
 
   deleteImage = () => {
-
     this.updateFormValues(null, "image_file");
-
   };
 
-
-
   haveMakingComonDis = () => {
-
     const { formValues, isAssign } = this.state;
 
     let haveDis = false;
 
     for (let item of formValues.products) {
-
       if (item.max_making_charge_discount_percent > 0 && !isAssign) {
-
         haveDis = true;
 
         break;
-
       }
-
     }
 
     return haveDis;
-
   };
-
-
 
   handleCheckBox = (e, index) => {
     //alert("hi");
@@ -4018,148 +3031,107 @@ class SaleForm extends React.Component {
     let hasReturn = this.hasReturn();
 
     if (e.target.checked && hasReturn.will_return_charge_apply) {
-
       for (let i = 0; i < return_products.length; i++) {
-
         if (return_products[i].is_return == true) {
-
           let returnP = _.filter(this.state.formValues.products, function (s) {
-
             return s.id == return_products[i].id;
-
           });
 
           if (returnP.length) {
-
             if (returnP[0].category_id != product.category_id) {
-
               return this.props.enqueueSnackbar(
-
                 "You can't return different category product in one invoice.",
 
-                { variant: "error" }
-
+                { variant: "error" },
               );
-
             }
-
           }
-
         }
-
       }
-
     }
 
-
-
     if (product.product_type == "material") {
-
       this.setState({
-
         materialReturnDialog: true,
 
         actionProductIndex: index,
-
       });
 
       return;
-
     }
 
     return_products[index].is_return = e.target.checked;
 
     this.setState(
-
       {
-
         return_products: return_products,
-
       },
 
       () => {
-
         this.calculateReturnAmount();
-
-      }
-
+      },
     );
-
   };
 
-
-
   handleReturn = () => {
-
-    const {total_charge_for_return, formValues, return_from_wallet} = this.state;
+    const { total_charge_for_return, formValues, return_from_wallet } =
+      this.state;
 
     let res = this.hasReturn();
 
     if (!res.isReturn) {
-
       return this.props.enqueueSnackbar("Please select return product.", {
-
         variant: "error",
-
       });
-
     }
 
     if (
-
-      parseFloat(formValues.due_amount) == 0 
+      parseFloat(formValues.due_amount) == 0
 
       //&& parseFloat(formValues.total_payable) == parseFloat(formValues.paid_amount)
-
     ) {
       //return_from_wallet = formValues.paid_amount;
       this.setState({
-
         returnChargeApplyDialogOpen: true,
-
       });
-    } else if(formValues.due_amount == 0 && total_charge_for_return > 0 && total_charge_for_return > formValues.paid_amount){
+    } else if (
+      formValues.due_amount == 0 &&
+      total_charge_for_return > 0 &&
+      total_charge_for_return > formValues.paid_amount
+    ) {
       //return_from_wallet = total_charge_for_return;
-      console.log("Customer need to pay : ", priceFormat(total_charge_for_return-formValues.paid_amount).toFixed(2));
+      console.log(
+        "Customer need to pay : ",
+        priceFormat(total_charge_for_return - formValues.paid_amount).toFixed(
+          2,
+        ),
+      );
       this.setState({
         payNowForReturnDialogOpen: true,
       });
     } else {
       this.setState({
-
         returnDialogOpen: true,
 
         payment_type: res.will_return_charge_apply ? "return" : "advance",
-
       });
     }
-
   };
 
-
-
   handleReturnConfirm = async () => {
-
     this.setState({
-
       submitting: true,
-
     });
 
     let result = this.hasReturn();
 
     if (!result.isReturn) {
-
       return this.props.enqueueSnackbar("Please select return product.", {
-
         variant: "error",
-
       });
-
     }
 
     console.log("return payload : ", {
-
       return_products: this.state.return_products,
 
       return_data: this.state.formValues,
@@ -4176,13 +3148,11 @@ class SaleForm extends React.Component {
 
       return_payment_mode: this.state.return_payment_mode,
 
-      return_amount_from_wallet: parseFloat(this.state.return_from_wallet)
-
+      return_amount_from_wallet: parseFloat(this.state.return_from_wallet),
     });
-    //return false;  
+    //return false;
 
     let res = await saleReturn(this.state.formData.id, {
-
       return_products: this.state.return_products,
 
       return_data: this.state.formValues,
@@ -4199,7 +3169,7 @@ class SaleForm extends React.Component {
 
       return_payment_mode: this.state.return_payment_mode,
 
-      return_amount_from_wallet: parseFloat(this.state.return_from_wallet)
+      return_amount_from_wallet: parseFloat(this.state.return_from_wallet),
 
       /* return_amount_from_wallet: priceFormat(
 
@@ -4208,53 +3178,34 @@ class SaleForm extends React.Component {
           parseFloat(this.state.formValues.due_amount)
 
       ), */
-
     });
 
     if (res.data.success) {
-
       this.props.enqueueSnackbar(res.data.message, { variant: "success" });
 
       this.props.actions.getNotifiactions();
 
       this.props.navigate(
-
-        getUserDashboardRoute(getRoleName(this.state.auth)) + "/sales"
-
+        getUserDashboardRoute(getRoleName(this.state.auth)) + "/sales",
       );
-
     } else {
-
       this.setState({
-
         submitting: false,
-
       });
 
       this.props.enqueueSnackbar(res.data.message, { variant: "error" });
-
     }
-
   };
 
-
-
   handleReturnDialogClose = (event, reason) => {
-
     if (reason && reason == "backdropClick") return;
 
     this.setState({
-
       materialReturnDialog: false,
-
     });
-
   };
 
-
-
   handleCancelReturn = () => {
-
     let { formValues, actionProductIndex, return_products } = this.state;
 
     formValues.products[actionProductIndex].materials[0].return_weight = 0;
@@ -4264,21 +3215,15 @@ class SaleForm extends React.Component {
     return_products[actionProductIndex].is_return = false;
 
     this.setState({
-
       return_products: return_products,
 
       formValues: formValues,
 
       materialReturnDialog: false,
-
     });
-
   };
 
-
-
   handleReturnMaterialSubmit = () => {
-
     let { formValues, actionProductIndex } = this.state;
 
     const actionProduct = formValues.products[actionProductIndex];
@@ -4286,199 +3231,124 @@ class SaleForm extends React.Component {
     let err = false;
 
     if (
-
       !actionProduct.materials[0].return_weight ||
-
       parseFloat(actionProduct.materials[0].return_weight) >
-
         parseFloat(actionProduct.materials[0].avl_weight)
-
     ) {
-
       err = true;
 
       this.setState({
-
         return_weight_error: true,
-
       });
 
       if (
-
         parseFloat(actionProduct.materials[0].return_weight) >
-
         parseFloat(actionProduct.materials[0].avl_weight)
-
       ) {
-
         this.props.enqueueSnackbar(
-
           "Weight can't be more than available weight.",
 
-          { variant: "error" }
-
+          { variant: "error" },
         );
-
       }
-
     } else {
-
       this.setState({
-
         return_weight_error: false,
-
       });
-
     }
 
     if (
-
       !actionProduct.materials[0].return_qty ||
-
       parseFloat(actionProduct.materials[0].return_qty) >
-
         parseFloat(actionProduct.materials[0].avl_qty)
-
     ) {
-
       err = true;
 
       this.setState({
-
         return_qty_error: true,
-
       });
 
       if (
-
         parseFloat(actionProduct.materials[0].return_qty) >
-
         parseFloat(actionProduct.materials[0].avl_qty)
-
       ) {
-
         this.props.enqueueSnackbar(
-
           "Quantity can't be more than available quantity.",
 
-          { variant: "error" }
-
+          { variant: "error" },
         );
-
       }
-
     } else {
-
       this.setState({
-
         return_qty_error: false,
-
       });
-
     }
 
     if (!err) {
-
       let return_products = this.state.return_products;
 
       return_products[actionProductIndex].is_return = true;
 
       this.setState(
-
         {
-
           materialReturnDialog: false,
 
           return_products: return_products,
-
         },
 
         () => {
-
           this.calculateReturnAmount();
-
-        }
-
+        },
       );
-
     }
-
   };
 
-
-
   calculateReturnAmount = () => {
-
     let { formValues, actionProductIndex, discount_per_product } = this.state;
 
     let return_products = this.state.return_products;
 
     let return_amount = 0,
-      
       return_charge = 0,
-
       hasCertifiedProduct = 0,
-
       return_report_charge = 0,
-
       return_tax_charge = 0,
-
       applicable_discount = 0,
-
       total_charge_for_return = 0,
       product_amount_without_report_charge = 0,
       product_amount = 0;
 
     for (let i = 0; i < return_products.length; i++) {
-
       if (return_products[i].is_return) {
-
         if (formValues.products[i].product_type == "material") {
-
           let discount = priceFormat(
-
             (parseFloat(formValues.products[i].materials[0].rate) *
-
               parseFloat(
-
-                formValues.products[i].materials[0].discount_percent
-
+                formValues.products[i].materials[0].discount_percent,
               )) /
-
-              100
-
+              100,
           );
 
           let rate = priceFormat(
-
-            parseFloat(formValues.products[i].materials[0].rate) - discount
-
+            parseFloat(formValues.products[i].materials[0].rate) - discount,
           );
 
           let thisAmt = priceFormat(
-
-            parseFloat(formValues.products[i].materials[0].return_weight) * rate
-
+            parseFloat(formValues.products[i].materials[0].return_weight) *
+              rate,
           );
 
           //thisAmt = priceFormat(thisAmt - (parseFloat(formValues.products[i].materials[0].return_weight) * discount_per_product));
 
           thisAmt = priceFormat(
-
             thisAmt -
-
               parseFloat(formValues.products[i].materials[0].return_qty) *
-
-                discount_per_product
-
+                discount_per_product,
           );
 
           let tax = priceFormat(
-
             parseFloat(formValues.products[i].total_tax) /
-
-              parseFloat(formValues.products[i].materials[0].return_qty)
-
+              parseFloat(formValues.products[i].materials[0].return_qty),
           );
 
           console.log(thisAmt, tax, discount_per_product);
@@ -4486,24 +3356,17 @@ class SaleForm extends React.Component {
           thisAmt = priceFormat(thisAmt + tax);
 
           let thisReturnCharge = formValues.have_return_charge
-
             ? parseFloat(formValues.products[i].return_charge_percent) > 0
-
               ? priceFormat(
-
                   (thisAmt *
-
                     parseFloat(formValues.products[i].return_charge_percent)) /
-
-                    100
-
+                    100,
                 )
-
               : 0
-
             : 0;
 
-          let returnAmount_val = thisAmt - thisReturnCharge - tax - discount_per_product;
+          let returnAmount_val =
+            thisAmt - thisReturnCharge - tax - discount_per_product;
 
           formValues.products[i].return_amount = returnAmount_val;
 
@@ -4526,43 +3389,34 @@ class SaleForm extends React.Component {
           product_amount_without_report_charge += thisAmt;
 
           total_charge_for_return += thisReturnCharge + tax;
-
         } else {
-
           let thisAmt = parseFloat(formValues.products[i].total);
           console.log("thisAmt before discount_per_product: ", thisAmt);
           //console.log("discount_per_product: ", discount_per_product);
           //thisAmt = priceFormat(thisAmt - discount_per_product);
           //console.log("thisAmt after discount_per_product: ", thisAmt);
           let thisReturnCharge = formValues.have_return_charge
-
             ? parseFloat(formValues.products[i].return_charge_percent) > 0
-
               ? (thisAmt *
-
                   parseFloat(formValues.products[i].return_charge_percent)) /
-
                 100
-
               : 0
-
             : 0;
           console.log("thisReturnCharge: ", thisReturnCharge);
 
           let product = _.filter(this.state.formValues.products, {
-
             id: return_products[i].id,
-
           });
           console.log("product : ", product);
-          if(product.length > 0 && !isEmpty(product[0].certificate_no)){
+          if (product.length > 0 && !isEmpty(product[0].certificate_no)) {
             console.log("product.certificate_no : ", product[0].certificate_no);
             hasCertifiedProduct += 1;
           }
 
           let taxCharge = parseFloat(formValues.products[i].total_tax);
 
-          let returnAmount_val = thisAmt - thisReturnCharge - taxCharge - discount_per_product;
+          let returnAmount_val =
+            thisAmt - thisReturnCharge - taxCharge - discount_per_product;
           console.log("return_amount: ", returnAmount_val);
 
           formValues.products[i].return_amount = returnAmount_val;
@@ -4584,11 +3438,8 @@ class SaleForm extends React.Component {
           product_amount_without_report_charge += thisAmt;
 
           total_charge_for_return += thisReturnCharge + taxCharge;
-
         }
-
       }
-
     }
 
     let returnDis = 0;
@@ -4597,7 +3448,7 @@ class SaleForm extends React.Component {
 
     returnDis = priceFormat(applicable_discount, true); //parseFloat(formValues.discount);
 
-    if(hasCertifiedProduct > 0){
+    if (hasCertifiedProduct > 0) {
       //return_report_charge = priceFormat(formValues.total_report_charge_amount_after_tax).toFixed(2);
       //return_amount = return_amount - return_report_charge;
 
@@ -4610,20 +3461,23 @@ class SaleForm extends React.Component {
 
       let total_report_charge_amount_after_tax = 0;
 
-      
       //formValues.report_charge_amount = parseFloat(this.state.formValues.report_charge || 0);
-      report_charge_amount = parseFloat(this.state.formValues.report_charge || 0); 
-      
+      report_charge_amount = parseFloat(
+        this.state.formValues.report_charge || 0,
+      );
 
-      if(!this.state.isAssign){
+      if (!this.state.isAssign) {
+        total_report_charge_amount =
+          this.state.formValues.report_qty * parseFloat(report_charge_amount);
 
-        total_report_charge_amount = this.state.formValues.report_qty * parseFloat(report_charge_amount);
+        total_report_charge_tax_amount =
+          (total_report_charge_amount *
+            parseFloat(this.state.formValues.report_tax_percentage)) /
+          100;
 
-        total_report_charge_tax_amount = total_report_charge_amount * parseFloat(this.state.formValues.report_tax_percentage)/100;
-
-        total_report_charge_amount_after_tax = total_report_charge_amount + total_report_charge_tax_amount;
-
-      } 
+        total_report_charge_amount_after_tax =
+          total_report_charge_amount + total_report_charge_tax_amount;
+      }
 
       console.log("report_qty : ", this.state.formValues.report_qty);
 
@@ -4631,84 +3485,75 @@ class SaleForm extends React.Component {
 
       console.log("total_report_charge_amount : ", total_report_charge_amount);
 
-      console.log("total_report_charge_tax_amount : ", total_report_charge_tax_amount);   
+      console.log(
+        "total_report_charge_tax_amount : ",
+        total_report_charge_tax_amount,
+      );
 
-      console.log("total_report_charge_amount_after_tax : ", total_report_charge_amount_after_tax);
-
-      
+      console.log(
+        "total_report_charge_amount_after_tax : ",
+        total_report_charge_amount_after_tax,
+      );
 
       formValues.report_charge_amount = report_charge_amount;
-      
+
       formValues.total_report_charge_amount = total_report_charge_amount;
 
-      formValues.total_report_charge_tax_amount = total_report_charge_tax_amount;
+      formValues.total_report_charge_tax_amount =
+        total_report_charge_tax_amount;
 
-      formValues.total_report_charge_amount_after_tax = total_report_charge_amount_after_tax;
+      formValues.total_report_charge_amount_after_tax =
+        total_report_charge_amount_after_tax;
 
-      return_report_charge = priceFormat(total_report_charge_amount_after_tax).toFixed(2);
+      return_report_charge = priceFormat(
+        total_report_charge_amount_after_tax,
+      ).toFixed(2);
 
       /* per product */
-      let return_report_charge_per_product = return_report_charge/this.state.formValues.report_qty;
+      let return_report_charge_per_product =
+        return_report_charge / this.state.formValues.report_qty;
 
-      return_report_charge = return_report_charge_per_product * hasCertifiedProduct;
+      return_report_charge =
+        return_report_charge_per_product * hasCertifiedProduct;
 
       return_amount = return_amount - return_report_charge;
 
       total_charge_for_return += return_report_charge;
 
       /* if due amount exists then report change will be added with product amount */
-      if(formValues.due_amount > 0){
+      if (formValues.due_amount > 0) {
         product_amount += return_report_charge;
       }
     }
 
     let didNotReturned = 0,
-
       totalReturnP = 0;
 
     for (let i = 0; i < this.state.return_products.length; i++) {
-
       let product = _.filter(this.state.formValues.products, {
-
         id: this.state.return_products[i].id,
-
       });
 
       if (product.length && product[0].is_return == true) {
-
         continue;
-
       }
 
       if (this.state.return_products[i].is_return) {
-
         totalReturnP++;
-
       } else {
-
         didNotReturned++;
-
       }
-
     }
 
     /* return to wallet calculation */
     let return_from_wallet = 0;
 
     if (
-
       parseFloat(formValues.due_amount) == 0
 
       // && parseFloat(formValues.total_payable) == parseFloat(formValues.paid_amount)
-
     ) {
-
-      
-
-
-
       if (totalReturnP == 1 && didNotReturned == 0) {
-
         /* return_from_wallet = parseFloat(formValues.paid_amount);
 
         return_from_wallet = priceFormat(
@@ -4716,17 +3561,11 @@ class SaleForm extends React.Component {
           return_from_wallet - this.state.return_amount
 
         ); */
-
         //return_from_wallet = priceFormat(this.state.return_amount);
-
       } else if (totalReturnP == 1 && didNotReturned > 0) {
-
         //return_from_wallet = priceFormat(parseFloat(this.state.return_amount));
-
       }
-
     } else {
-
       /* if (
 
         this.state.formValues.due_amount &&
@@ -4753,7 +3592,6 @@ class SaleForm extends React.Component {
       } */
 
       if (totalReturnP == 1 && didNotReturned == 0) {
-
         /* return_from_wallet = parseFloat(formValues.paid_amount);
 
         return_from_wallet = priceFormat(
@@ -4761,19 +3599,15 @@ class SaleForm extends React.Component {
           return_from_wallet - this.state.return_amount
 
         ); */
-
         //return_from_wallet = paid_amount;
-
       } else if (totalReturnP == 1 && didNotReturned > 0) {
-
         //return_from_wallet = priceFormat(parseFloat(this.state.return_amount));
-
       }
 
-      if(didNotReturned == 0){
+      if (didNotReturned == 0) {
         /* now return amount from wallet to the user */
         //if(total_charge_for_return > 0 && total_charge_for_return < formValues.paid_amount){
-          return_from_wallet = priceFormat(formValues.paid_amount).toFixed(2);
+        return_from_wallet = priceFormat(formValues.paid_amount).toFixed(2);
         //}
       }
     }
@@ -4786,19 +3620,21 @@ class SaleForm extends React.Component {
     //}
 
     console.log({
-
       return_amount: priceFormat(return_amount, true),
 
       product_amount: priceFormat(product_amount, true),
 
-      product_amount_without_report_charge: priceFormat(product_amount_without_report_charge, true),
+      product_amount_without_report_charge: priceFormat(
+        product_amount_without_report_charge,
+        true,
+      ),
 
       return_charge: priceFormat(return_charge, true),
 
       return_report_charge: priceFormat(return_report_charge, true),
 
       return_tax_charge: priceFormat(return_tax_charge, true),
-      
+
       hasCertifiedProduct,
 
       formValues: formValues,
@@ -4807,17 +3643,18 @@ class SaleForm extends React.Component {
 
       total_charge_for_return: priceFormat(total_charge_for_return, true),
 
-      return_from_wallet: priceFormat(return_from_wallet, true)
-
+      return_from_wallet: priceFormat(return_from_wallet, true),
     });
 
     this.setState({
-
       return_amount: priceFormat(return_amount, true),
 
       product_amount: priceFormat(product_amount, true),
 
-      product_amount_without_report_charge: priceFormat(product_amount_without_report_charge, true),
+      product_amount_without_report_charge: priceFormat(
+        product_amount_without_report_charge,
+        true,
+      ),
 
       return_charge: priceFormat(return_charge, true),
 
@@ -4831,142 +3668,87 @@ class SaleForm extends React.Component {
 
       return_discount: returnDis,
 
-      return_from_wallet: priceFormat(return_from_wallet, true)
-
+      return_from_wallet: priceFormat(return_from_wallet, true),
     });
-
   };
 
-
-
   handleReturnMaterial = (val, key) => {
-
     let { formValues, actionProductIndex } = this.state;
 
     formValues.products[actionProductIndex].materials[0][key] = val;
 
     this.setState({
-
       formValues: formValues,
-
     });
-
   };
 
-
-
   hasReturn = () => {
-
     let isReturn = 0,
-
       will_return_charge_apply = false;
 
     for (let i = 0; i < this.state.return_products.length; i++) {
-
       let product = _.filter(this.state.formValues.products, {
-
         id: this.state.return_products[i].id,
-
       });
 
       if (product.length && product[0].is_return == true) {
-
         continue;
-
       }
 
       if (this.state.return_products[i].is_return) {
-
         isReturn++;
-
       }
-
-
 
       if (product[0].return_charge_percent > 0) {
-
         will_return_charge_apply = true;
-
       }
-
     }
 
     return {
-
       isReturn: isReturn,
 
       will_return_charge_apply: will_return_charge_apply,
-
     };
-
   };
 
-
-
   setOpen = (id) => {
-
     let view_open = this.state.view_open;
 
     view_open[id] = !this.checkOpen(id);
 
     this.setState({
-
       view_open: view_open,
-
     });
-
   };
 
-
-
   checkOpen = (id) => {
-
     let view_open = this.state.view_open;
 
     return id in view_open && view_open[id] ? true : false;
-
   };
 
-
-
   handleAdvance = (e) => {
-
     this.setState(
-
       {
-
         formValues: {
-
           ...this.state.formValues,
 
           pay_from_advance: e.target.checked,
-
         },
-
       },
 
       () => {
-
         this.handleCalculateMainPrice();
-
-      }
-
+      },
     );
-
   };
 
-
-
   handleOpenQRScanner = () => {
-
     this.setState({ qrScannerOpen: true, qrScannerError: null }, () => {
-
       setTimeout(() => {
-
         const qrReaderElement = document.getElementById("qr-reader");
 
         if (qrReaderElement) {
-
           const video = document.createElement("video");
 
           video.setAttribute("playsinline", "true");
@@ -4977,7 +3759,9 @@ class SaleForm extends React.Component {
 
           const canvas = document.createElement("canvas");
 
-          const canvasContext = canvas.getContext("2d", { willReadFrequently: true });
+          const canvasContext = canvas.getContext("2d", {
+            willReadFrequently: true,
+          });
 
           const boundary = document.createElement("div");
 
@@ -5011,7 +3795,17 @@ class SaleForm extends React.Component {
 
           qrReaderElement.appendChild(boundary);
 
-          const scannerState = { video, canvas, canvasContext, boundary, animationFrameId: null, stream: null, active: true, lastScanTime: 0, scanInterval: 100 };
+          const scannerState = {
+            video,
+            canvas,
+            canvasContext,
+            boundary,
+            animationFrameId: null,
+            stream: null,
+            active: true,
+            lastScanTime: 0,
+            scanInterval: 100,
+          };
 
           this.setState({ qrScanner: scannerState });
 
@@ -5020,338 +3814,294 @@ class SaleForm extends React.Component {
           let barcodeDetector = null;
 
           try {
-
             if (hasBarcodeDetector) {
-
-              barcodeDetector = new BarcodeDetector({ formats: ["qr_code", "aztec", "data_matrix", "pdf417"] });
-
+              barcodeDetector = new BarcodeDetector({
+                formats: ["qr_code", "aztec", "data_matrix", "pdf417"],
+              });
             }
-
           } catch (error) {}
 
-          navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" }, audio: false }).then((stream) => {
+          navigator.mediaDevices
+            .getUserMedia({
+              video: { facingMode: "environment" },
+              audio: false,
+            })
+            .then((stream) => {
+              scannerState.stream = stream;
 
-            scannerState.stream = stream;
+              video.srcObject = stream;
 
-            video.srcObject = stream;
+              video.play();
 
-            video.play();
+              video.onloadedmetadata = () => {
+                canvas.width = video.videoWidth;
 
-            video.onloadedmetadata = () => {
+                canvas.height = video.videoHeight;
 
-              canvas.width = video.videoWidth;
+                const getBoundaryRect = () => {
+                  const videoRect = video.getBoundingClientRect();
 
-              canvas.height = video.videoHeight;
+                  const boundaryRect = boundary.getBoundingClientRect();
 
-              const getBoundaryRect = () => {
+                  const boundaryRatio = {
+                    x: boundaryRect.width / videoRect.width,
 
-                const videoRect = video.getBoundingClientRect();
+                    y: boundaryRect.height / videoRect.height,
 
-                const boundaryRect = boundary.getBoundingClientRect();
+                    left:
+                      (boundaryRect.left - videoRect.left) / videoRect.width,
 
-                const boundaryRatio = {
+                    top: (boundaryRect.top - videoRect.top) / videoRect.height,
+                  };
 
-                  x: boundaryRect.width / videoRect.width,
+                  return {
+                    x: Math.floor(canvas.width * boundaryRatio.left),
 
-                  y: boundaryRect.height / videoRect.height,
+                    y: Math.floor(canvas.height * boundaryRatio.top),
 
-                  left: (boundaryRect.left - videoRect.left) / videoRect.width,
+                    width: Math.floor(canvas.width * boundaryRatio.x),
 
-                  top: (boundaryRect.top - videoRect.top) / videoRect.height,
-
+                    height: Math.floor(canvas.height * boundaryRatio.y),
+                  };
                 };
 
-                return {
+                const scanQRCode = () => {
+                  if (!scannerState.active) return;
 
-                  x: Math.floor(canvas.width * boundaryRatio.left),
+                  const now = Date.now();
 
-                  y: Math.floor(canvas.height * boundaryRatio.top),
+                  if (
+                    now - scannerState.lastScanTime >=
+                    scannerState.scanInterval
+                  ) {
+                    scannerState.lastScanTime = now;
 
-                  width: Math.floor(canvas.width * boundaryRatio.x),
+                    canvasContext.drawImage(
+                      video,
+                      0,
+                      0,
+                      canvas.width,
+                      canvas.height,
+                    );
 
-                  height: Math.floor(canvas.height * boundaryRatio.y),
+                    const boundaryRect = getBoundaryRect();
 
+                    const imageData = canvasContext.getImageData(
+                      boundaryRect.x,
+                      boundaryRect.y,
+                      boundaryRect.width,
+                      boundaryRect.height,
+                    );
+
+                    if (hasBarcodeDetector && barcodeDetector) {
+                      try {
+                        barcodeDetector
+                          .detect(imageData)
+                          .then((barcodes) => {
+                            if (barcodes.length > 0) {
+                              const decodedText = barcodes[0].rawValue;
+
+                              this.handleQRCodeSuccess(decodedText);
+                            }
+                          })
+                          .catch(() => {
+                            scanWithJsQR(imageData);
+                          });
+                      } catch (error) {
+                        scanWithJsQR(imageData);
+                      }
+                    } else {
+                      scanWithJsQR(imageData);
+                    }
+                  }
+
+                  scannerState.animationFrameId =
+                    requestAnimationFrame(scanQRCode);
                 };
 
+                const scanWithJsQR = (imageData) => {
+                  try {
+                    const code = jsQR(
+                      imageData.data,
+                      imageData.width,
+                      imageData.height,
+                      { inversionAttempts: "dontInvert" },
+                    );
+
+                    if (code) {
+                      this.handleQRCodeSuccess(code.data);
+                    }
+                  } catch (error) {}
+                };
+
+                scanQRCode();
               };
-
-              const scanQRCode = () => {
-
-                if (!scannerState.active) return;
-
-                const now = Date.now();
-
-                if (now - scannerState.lastScanTime >= scannerState.scanInterval) {
-
-                  scannerState.lastScanTime = now;
-
-                  canvasContext.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-                  const boundaryRect = getBoundaryRect();
-
-                  const imageData = canvasContext.getImageData(boundaryRect.x, boundaryRect.y, boundaryRect.width, boundaryRect.height);
-
-                  if (hasBarcodeDetector && barcodeDetector) {
-
-                    try {
-
-                      barcodeDetector.detect(imageData).then((barcodes) => {
-
-                        if (barcodes.length > 0) {
-
-                          const decodedText = barcodes[0].rawValue;
-
-                          this.handleQRCodeSuccess(decodedText);
-
-                        }
-
-                      }).catch(() => { scanWithJsQR(imageData); });
-
-                    } catch (error) { scanWithJsQR(imageData); }
-
-                  } else {
-
-                    scanWithJsQR(imageData);
-
-                  }
-
-                }
-
-                scannerState.animationFrameId = requestAnimationFrame(scanQRCode);
-
-              };
-
-              const scanWithJsQR = (imageData) => {
-
-                try {
-
-                  const code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: "dontInvert" });
-
-                  if (code) {
-
-                    this.handleQRCodeSuccess(code.data);
-
-                  }
-
-                } catch (error) {}
-
-              };
-
-              scanQRCode();
-
-            };
-
-          }).catch((err) => {
-
-            this.setState({ qrScannerError: "Failed to access camera. Please check permissions and try again." });
-
-          });
-
+            })
+            .catch((err) => {
+              this.setState({
+                qrScannerError:
+                  "Failed to access camera. Please check permissions and try again.",
+              });
+            });
         } else {
-
-          this.setState({ qrScannerOpen: false, qrScannerError: "QR scanner initialization failed. Please try again." });
-
+          this.setState({
+            qrScannerOpen: false,
+            qrScannerError:
+              "QR scanner initialization failed. Please try again.",
+          });
         }
-
       }, 300);
-
     });
-
   };
-
-
 
   handleCloseQRScanner = () => {
-
     if (this.state.qrScanner) {
-
       const scannerState = this.state.qrScanner;
 
       scannerState.active = false;
 
       if (scannerState.animationFrameId) {
-
         cancelAnimationFrame(scannerState.animationFrameId);
-
       }
 
       if (scannerState.stream) {
-
         scannerState.stream.getTracks().forEach((track) => track.stop());
-
       }
 
       if (scannerState.video && scannerState.video.srcObject) {
-
         scannerState.video.srcObject = null;
-
       }
 
       if (scannerState.boundary && scannerState.boundary.parentNode) {
-
         scannerState.boundary.parentNode.removeChild(scannerState.boundary);
-
       }
 
-      this.setState({ qrScannerOpen: false, qrScanner: null, qrScannerError: null });
-
+      this.setState({
+        qrScannerOpen: false,
+        qrScanner: null,
+        qrScannerError: null,
+      });
     } else {
-
       this.setState({ qrScannerOpen: false, qrScannerError: null });
-
     }
-
   };
-
-
 
   handleRetryQRScanner = () => {
-
     if (this.state.qrScanner) {
-
       const scannerState = this.state.qrScanner;
 
       scannerState.active = false;
 
       if (scannerState.animationFrameId) {
-
         cancelAnimationFrame(scannerState.animationFrameId);
-
       }
 
       if (scannerState.stream) {
-
         scannerState.stream.getTracks().forEach((track) => track.stop());
-
       }
 
       if (scannerState.video && scannerState.video.srcObject) {
-
         scannerState.video.srcObject = null;
-
       }
 
       if (scannerState.boundary && scannerState.boundary.parentNode) {
-
         scannerState.boundary.parentNode.removeChild(scannerState.boundary);
-
       }
 
-      this.setState({ qrScannerError: null, qrScanner: null }, () => { this.handleOpenQRScanner(); });
-
+      this.setState({ qrScannerError: null, qrScanner: null }, () => {
+        this.handleOpenQRScanner();
+      });
     } else {
-
       this.handleOpenQRScanner();
-
     }
-
   };
 
-
-
   handleQRCodeSuccess = async (decodedText) => {
-
     // Debounce QR code scanned notification
 
     if (!this.qrScanNotified) {
-
       this.qrScanNotified = true;
 
       if (this.props.enqueueSnackbar) {
-
-        this.props.enqueueSnackbar("QR code scanned successfully!", { variant: "success", autoHideDuration: 3000 });
-
+        this.props.enqueueSnackbar("QR code scanned successfully!", {
+          variant: "success",
+          autoHideDuration: 3000,
+        });
       }
 
-      setTimeout(() => { this.qrScanNotified = false; }, 1000);
-
+      setTimeout(() => {
+        this.qrScanNotified = false;
+      }, 1000);
     }
 
     if (typeof decodedText === "string" && decodedText.startsWith("http")) {
-
       await this.fetchData(decodedText); // Wait for extraction and removal
-
     } else {
-
       this.handleCertificateInput(decodedText, true);
-
     }
 
     this.handleCloseQRScanner();
-
   };
 
-
-
   handleCertificateInput = (certificate_no, clearInput = false) => {
-
     // If it's a URL, always try to extract the certificate number first
 
-    if (typeof certificate_no === 'string' && certificate_no.startsWith('http')) {
-
+    if (
+      typeof certificate_no === "string" &&
+      certificate_no.startsWith("http")
+    ) {
       this.fetchData(certificate_no);
 
       return;
-
     }
 
     this.handleDeleteByCertificateNo(certificate_no);
-
   };
 
-
-
   fetchData = async (url) => {
-
     if (url.includes("igi.org")) {
-
       try {
-
         const pdfData = await extractPdfData(url);
 
-        const certificateNo = pdfData.text.report_number && pdfData.text.report_number.trim() !== "" ? pdfData.text.report_number : pdfData.text.summary_number;
+        const certificateNo =
+          pdfData.text.report_number && pdfData.text.report_number.trim() !== ""
+            ? pdfData.text.report_number
+            : pdfData.text.summary_number;
 
         if (certificateNo) {
-
           this.setState({ globalCertificateNo: certificateNo }, () => {
-
             this.handleCertificateInput(certificateNo, true);
-
           });
-
         } else {
-
           if (this.props.enqueueSnackbar) {
-
-            this.props.enqueueSnackbar("Certificate number not found in IGI PDF.", { variant: "warning" });
-
+            this.props.enqueueSnackbar(
+              "Certificate number not found in IGI PDF.",
+              { variant: "warning" },
+            );
           }
-
         }
 
         return;
-
       } catch (error) {
-
         console.error("Error extracting PDF data:", error);
 
         if (this.props.enqueueSnackbar) {
-
-          this.props.enqueueSnackbar("Failed to extract certificate number from PDF.", { variant: "error" });
-
+          this.props.enqueueSnackbar(
+            "Failed to extract certificate number from PDF.",
+            { variant: "error" },
+          );
         }
 
         return;
-
       }
-
     } else if (url.includes("iigl.org/verify-report/")) {
-
       try {
-
         // Fetch the page and extract the summary number from the HTML
 
-        const response = await fetch(url, { method: "GET", redirect: "follow" });
+        const response = await fetch(url, {
+          method: "GET",
+          redirect: "follow",
+        });
 
         const result = await response.text();
 
@@ -5363,39 +4113,37 @@ class SaleForm extends React.Component {
 
         const searchedForElement = doc.querySelector("b");
 
-        const searchedForText = searchedForElement ? searchedForElement.textContent : "";
+        const searchedForText = searchedForElement
+          ? searchedForElement.textContent
+          : "";
 
-        if (searchedForText && !searchedForText.startsWith('http')) {
-
+        if (searchedForText && !searchedForText.startsWith("http")) {
           this.setState({ globalCertificateNo: searchedForText }, () => {
-
             this.handleCertificateInput(searchedForText, true);
-
           });
 
           return;
-
         }
 
         // fallback: show warning if not found
 
         if (this.props.enqueueSnackbar) {
-
-          this.props.enqueueSnackbar("Certificate number not found in IIGL page.", { variant: "warning" });
-
+          this.props.enqueueSnackbar(
+            "Certificate number not found in IIGL page.",
+            { variant: "warning" },
+          );
         }
-
       } catch (e) {}
 
       return;
-
     } else {
-
       // Try to fetch and parse the page for a certificate number (like PurchaseForm.js)
 
       try {
-
-        const response = await fetch(url, { method: "GET", redirect: "follow" });
+        const response = await fetch(url, {
+          method: "GET",
+          redirect: "follow",
+        });
 
         const result = await response.text();
 
@@ -5407,136 +4155,114 @@ class SaleForm extends React.Component {
 
         const searchedForElement = doc.querySelector("b");
 
-        const searchedForText = searchedForElement ? searchedForElement.textContent : "";
+        const searchedForText = searchedForElement
+          ? searchedForElement.textContent
+          : "";
 
-        if (searchedForText && !searchedForText.startsWith('http')) {
-
+        if (searchedForText && !searchedForText.startsWith("http")) {
           this.setState({ globalCertificateNo: searchedForText }, () => {
-
             this.handleCertificateInput(searchedForText, true);
-
           });
 
           return;
-
         }
-
       } catch (error) {
-
         // fallback to warning below
-
       }
-
     }
 
     // fallback: only use the url as certificate_no if it's not a URL
 
-    if (typeof url === 'string' && !url.startsWith('http')) {
-
+    if (typeof url === "string" && !url.startsWith("http")) {
       this.setState({ globalCertificateNo: url }, () => {
-
         this.handleCertificateInput(url, true);
-
       });
-
     } else {
-
       if (this.props.enqueueSnackbar) {
-
-        this.props.enqueueSnackbar("Invalid certificate number or unsupported URL.", { variant: "warning" });
-
+        this.props.enqueueSnackbar(
+          "Invalid certificate number or unsupported URL.",
+          { variant: "warning" },
+        );
       }
-
     }
-
   };
-
-
 
   // Delete product by certificate number using the same logic as the action button
 
   handleDeleteByCertificateNo = async (certificate_no) => {
-
     let formValues = { ...this.state.formValues };
 
-    let idx = formValues.products.findIndex(p => p.certificate_no === certificate_no);
+    let idx = formValues.products.findIndex(
+      (p) => p.certificate_no === certificate_no,
+    );
 
     if (idx !== -1) {
-
       let product = formValues.products[idx];
 
       let response = await cartDelete(product.id, true);
 
       if (response.data.success) {
-
         if (!this.lastRemovedCert || this.lastRemovedCert !== certificate_no) {
-
           this.lastRemovedCert = certificate_no;
 
-          this.props.enqueueSnackbar(response.data.message, { variant: "success" });
+          this.props.enqueueSnackbar(response.data.message, {
+            variant: "success",
+          });
 
-          setTimeout(() => { this.lastRemovedCert = null; }, 1000);
-
+          setTimeout(() => {
+            this.lastRemovedCert = null;
+          }, 1000);
         }
 
         this.loadCart();
 
         this.props.actions.cartList();
-
       } else {
-
         this.props.enqueueSnackbar(response.data.message, { variant: "error" });
-
       }
 
-      this.setState({
+      this.setState(
+        {
+          deleteDialogOpen: false,
 
-        deleteDialogOpen: false,
-
-        globalCertificateNo: null
-
-      }, () => {
-
-        this.handleCalculateMainPrice();
-
-      });
-
+          globalCertificateNo: null,
+        },
+        () => {
+          this.handleCalculateMainPrice();
+        },
+      );
     } else {
+      this.setState(
+        {
+          globalCertificateNo: null,
+        },
+        () => {
+          this.handleCalculateMainPrice();
 
-      this.setState({
+          if (
+            !this.lastNotFoundCert ||
+            this.lastNotFoundCert !== certificate_no
+          ) {
+            this.lastNotFoundCert = certificate_no;
 
-        globalCertificateNo: null
+            if (this.props.enqueueSnackbar) {
+              this.props.enqueueSnackbar(
+                `Certificate #${certificate_no} not found in list.`,
+                { variant: "warning" },
+              );
+            }
 
-      }, () => {
-
-        this.handleCalculateMainPrice();
-
-        if (!this.lastNotFoundCert || this.lastNotFoundCert !== certificate_no) {
-
-          this.lastNotFoundCert = certificate_no;
-
-          if (this.props.enqueueSnackbar) {
-
-            this.props.enqueueSnackbar(`Certificate #${certificate_no} not found in list.`, { variant: "warning" });
-
+            setTimeout(() => {
+              this.lastNotFoundCert = null;
+            }, 1000);
           }
-
-          setTimeout(() => { this.lastNotFoundCert = null; }, 1000);
-
-        }
-
-      });
-
+        },
+      );
     }
-
   };
 
-
-
   render() {
-
     const {
-
       report_charge,
 
       formValues,
@@ -5561,11 +4287,8 @@ class SaleForm extends React.Component {
 
       return_from_wallet,
 
-      total_charge_for_return
-
+      total_charge_for_return,
     } = this.state;
-
-
 
     console.log("this is the state of salefprm ", this.state);
 
@@ -5573,12 +4296,8 @@ class SaleForm extends React.Component {
 
     console.log("formValues : ", formValues);
 
-
-
     const actionProduct = formValues.products.length
-
       ? formValues.products[actionProductIndex]
-
       : null;
 
     let userList = this.getUserList();
@@ -5586,19 +4305,16 @@ class SaleForm extends React.Component {
     let userIdColumnXs = 1;
 
     if (this.state.isAssign) {
-
       userIdColumnXs = formValues.user_id ? 2 : 4;
-
     } else {
-
       userIdColumnXs = formValues.user_id ? 4 : 6;
-
     }
 
     let user = formValues.user_id
-
-      ? _.filter(userList, { id: formValues.user_id })
-
+      ? _.filter(
+          userList,
+          (item) => String(item.id) === String(formValues.user_id),
+        )
       : [];
 
     let userIdValue = user.length ? user[0] : null;
@@ -5608,8 +4324,6 @@ class SaleForm extends React.Component {
     let will_return_charge_apply = hasReturn.will_return_charge_apply;
 
     let isReturn = hasReturn.isReturn;
-
-
 
     /* let return_from_wallet = 0;
 
@@ -5722,103 +4436,61 @@ class SaleForm extends React.Component {
     console.log("formValues.user_id : ", formValues.user_id);
 
     return (
-
       <Box
-
         sx={{ flexGrow: 1, m: 0.5 }}
-
-        className='ratn-dialog-inner sale_create_page'>
-
+        className="ratn-dialog-inner sale_create_page"
+      >
         <Grid
-
           container
-
           spacing={2}
-
           columnSpacing={{ xs: 1, sm: 2, md: 2 }}
-
-          className='tax-input loans_view p_view'>
-
+          className="tax-input loans_view p_view"
+        >
           {order ? (
-
-            <Grid item xs={12} md={12} className='create-input'>
-
-              <Accordion className='rtn_accordion'>
-
+            <Grid item xs={12} md={12} className="create-input">
+              <Accordion className="rtn_accordion">
                 <AccordionSummary
-
                   expandIcon={<ExpandMoreIcon />}
-
-                  aria-controls='panel1a-content'
-
-                  id='panel1a-header'>
-
+                  aria-controls="panel1a-content"
+                  id="panel1a-header"
+                >
                   <Typography>
-
                     Order # {order.order_no} | {order.order_from} |{" "}
-
                     {order.order_date}
-
                   </Typography>
-
                 </AccordionSummary>
 
                 <AccordionDetails>
-
                   <DataTable
-
                     columns={this.columns}
-
                     rows={order.products}
-
                     page={1}
-
                     limit={order.products.length}
-
                     total={order.products.length}
-
                     havePagination={false}
-
                   />
-
                 </AccordionDetails>
-
               </Accordion>
-
             </Grid>
-
           ) : null}
 
           <Grid container spacing={2} columnSpacing={{ xs: 1, sm: 2, md: 2 }}>
-
             {this.state.isAssign ? (
-
-              <Grid item xs={12} md={2} className='create-input'>
-
+              <Grid item xs={12} md={2} className="create-input">
                 <FormControl fullWidth>
-
                   <Button
-
-                    variant='contained'
-
-                    size='small'
-
+                    variant="contained"
+                    size="small"
                     onClick={this.handleBackAssign}
-
-                    startIcon={<ArrowBackIcon />}>
-
+                    startIcon={<ArrowBackIcon />}
+                  >
                     Back
-
                   </Button>
-
                 </FormControl>
-
               </Grid>
-
             ) : null}
 
-            <Grid item md={userIdColumnXs} xs={6} className='create-input'>
-
+            <Grid item md={userIdColumnXs} xs={6} className="create-input">
               {/*<FormControl fullWidth error={formErros.user_id}>
 
                                 <InputLabel>{this.state.isAssign ? "Transfer To" : "Company Name"}</InputLabel>
@@ -5853,869 +4525,500 @@ class SaleForm extends React.Component {
 
                             </FormControl>*/}
 
-
-
               <FormControl fullWidth error={formErros.user_id}>
-
                 {order && order.is_customer ? (
-
                   <TextField
-
-                    label='Name'
-
-                    variant='outlined'
-
+                    label="Name"
+                    variant="outlined"
                     fullWidth
-
                     value={order.user_details.name}
-
                     disabled
-
                     inputProps={{ className: "non_disable_text" }}
-
                   />
-
                 ) : (
-
                   <Autocomplete
-
-                    className='autocomplete-selectbox'
-
+                    className="autocomplete-selectbox"
                     fullWidth
-
                     options={userList}
-
                     value={userIdValue}
-
                     autoHighlight
-
                     getOptionLabel={(option) =>
-
                       this.state.isAssign ? option.name : option.company_name
-
                     }
-
                     renderOption={(props, option) => (
-
                       <li {...props} key={option.id}>
-
                         {" "}
-
                         {this.state.isAssign
-
                           ? option.name +
-
                             " - " +
-
                             (option.user_name.search("RVE") != -1
-
                               ? "SE "
-
                               : "") +
-
                             (option.user_name.search("RVA") != -1
-
                               ? "Admin "
-
                               : "") +
-
                             (option.user_name.search("RVD") != -1
-
                               ? "Distributor"
-
                               : "") +
-
                             (option.user_name.search("RVR") != -1
-
                               ? "Retailer"
-
                               : "")
-
                           : option.company_name + "( " + option.city + " )"}
-
                       </li>
-
                     )}
-
                     renderInput={(params) => (
-
                       <TextField
-
                         style={{ margin: "auto" }}
-
                         {...params}
-
                         label={
-
                           this.state.isAssign ? "Transfer To" : "Company Name"
-
                         }
-
                         inputProps={{
-
                           ...params.inputProps,
 
                           autoComplete: "new-password",
-
                         }}
-
                         fullWidth
-
                         error={formErros.user_id}
-
-                        className='non_disable_text'
-
+                        className="non_disable_text"
                       />
-
                     )}
-
                     onChange={(event, newValue) => {
-
                       this.handleAdminChange(
-
                         event,
 
-                        newValue ? newValue.id : ""
-
+                        newValue ? newValue.id : "",
                       );
-
                     }}
-
                     disabled={
-
-                      !this.state.isCreateFrom ||
-
-                      (!isEmpty(this.props.query.get("sale_on_approval"))
-
-                        ? true
-
-                        : false) ||
-
-                      (order ? true : false)
-
+                      !this.state.isCreateFrom || (order ? true : false)
                     }
-
                   />
-
                 )}
-
               </FormControl>
-
             </Grid>
 
-
-
-            
-
-            
-
-            {isMobile ? <>
-
-              <Grid item xs={6} md={userIdColumnXs} className='create-input'>
-
-                <TextField
-
-                  label='Contact Number'
-
-                  variant='outlined'
-
-                  fullWidth
-
-                  value={this.state.admin_details.mobile}
-
-                  disabled
-
-                  inputProps={{ className: "non_disable_text" }}
-
-                  onInput={(e) => validateInteger(e)}
-
-                />
-
-              </Grid>
-
-              <Grid item xs={6} md={userIdColumnXs} className={`create-input ${formValues.user_id ? 'create-input-responsive' : ''}`}>
-
-                <Accordion >
-
-                  <AccordionSummary
-
-                    expandIcon={<ExpandMoreIcon />}
-
-                    aria-controls='panel1a-content'
-
-                    id='panel1a-header'>
-
-                    <Typography
-
-                      style={{
-
-                        color: "#1e2746",
-
-                        width: "100%",
-
-                        textAlign: "right",
-
-                      }}
-
-                    >
-
-                      See more
-
-                    </Typography>
-
-                  </AccordionSummary>
-
-                  <AccordionDetails className="see-more-details-sec">
-
-                    
-
-                    {formValues.user_id ? (
-
-                      <>
-
-                        <Grid item xs={6} md={2} className='create-input'>
-
-                          <TextField
-
-                            label='Owner Name'
-
-                            variant='outlined'
-
-                            fullWidth
-
-                            value={this.state.admin_details.name}
-
-                            disabled
-
-                            inputProps={{ className: "non_disable_text" }}
-
-                          />
-
-                        </Grid>
-
-                        <Grid item xs={6} md={2} className='create-input'>
-
-                          <TextField
-
-                            label='City'
-
-                            variant='outlined'
-
-                            fullWidth
-
-                            value={this.state.admin_details.city}
-
-                            disabled
-
-                            inputProps={{ className: "non_disable_text" }}
-
-                          />
-
-                        </Grid>
-
-                        <Grid item xs={6} md={2} className='create-input'>
-
-                          <TextField
-
-                            label='Pincode'
-
-                            variant='outlined'
-
-                            fullWidth
-
-                            value={this.state.admin_details.pincode}
-
-                            disabled
-
-                            inputProps={{ className: "non_disable_text" }}
-
-                            onInput={(e) => validateInteger(e)}
-
-                          />
-
-                        </Grid>
-
-                      </>
-
-                    ) : null}
-
-
-
-                    {!formValues.user_id ? (<>
-
-                      <Grid item xs={6} md={3} className='create-input'>
-
-                        <TextField
-
-                          label='Invoice Number'
-
-                          variant='outlined'
-
-                          fullWidth
-
-                          value={formValues.invoice_number}
-
-                          onChange={(event) =>
-
-                            this.handleDefaultChange(event, "invoice_number")
-
-                          }
-
-                          disabled={!this.state.isCreateFrom}
-
-                          className='non_disable_text'
-
-                        />
-
-                      </Grid>
-
-                      <Grid
-
-                        item
-
-                        xs={!formValues.user_id ? 6 : 6}
-
-                        md={!formValues.user_id ? 3 : 2}
-
-                        className='create-input p-invoice-date'>
-
-                        <LocalizationProvider dateAdapter={AdapterDayjs}>
-
-                          <DatePicker
-
-                            label='Invoice Date'
-
-                            value={formValues.invoice_date}
-
-                            inputFormat='DD/MM/YYYY'
-
-                            disabled={!this.state.isCreateFrom}
-
-                            onChange={(newValue) =>
-
-                              this.updateFormValues(newValue, "invoice_date")
-
-                            }
-
-                            renderInput={(params) => (
-
-                              <TextField
-
-                                fullWidth
-
-                                {...params}
-
-                                error={formErros.invoice_date}
-
-                                className='non_disable_text'
-
-                              />
-
-                            )}
-
-                          />
-
-                        </LocalizationProvider>
-
-                      </Grid></>
-
-                    ) : null}
-
-                    
-
-                    {formValues.user_id ? (
-
-                      <>
-
-                        <Grid item xs={6} md={8} className='create-input'>
-
-                          <TextField
-
-                            label='Full Address'
-
-                            variant='outlined'
-
-                            fullWidth
-
-                            value={this.state.admin_details.address}
-
-                            disabled
-
-                            inputProps={{ className: "non_disable_text" }}
-
-                          />
-
-                        </Grid>
-
-                        <Grid item xs={6} md={2} className='create-input'>
-
-                          <TextField
-
-                            label='GST Number'
-
-                            variant='outlined'
-
-                            fullWidth
-
-                            value={this.state.admin_details.gst}
-
-                            disabled
-
-                            inputProps={{ className: "non_disable_text" }}
-
-                          />
-
-                        </Grid>
-
-                        <Grid item xs={6} md={2} className='create-input'>
-
-                          <TextField
-
-                            label='Invoice Number'
-
-                            variant='outlined'
-
-                            fullWidth
-
-                            value={formValues.invoice_number}
-
-                            onChange={(event) =>
-
-                              this.handleDefaultChange(event, "invoice_number")
-
-                            }
-
-                            className='non_disable_text'
-
-                            disabled={!this.state.isCreateFrom}
-
-                          />
-
-                        </Grid>
-
-                        {/* Certificate No. Remove/Scan input for main product list */}
-
-                        <Grid item xs={12} md={4} className='create-input'>
-
-                          <TextField
-
-                            label="Remove Product by Certificate Number"
-
-                            variant="outlined"
-
-                            fullWidth
-
-                            value={this.state.globalCertificateNo || ''}
-
-                            onChange={e => {
-
-                              this.setState({ globalCertificateNo: e.target.value });
-
-                              if (e.target.value.startsWith('http')) {
-
-                                this.debouncedFetchData(e.target.value);
-
-                              }
-
-                            }}
-
-                            onKeyDown={e => {
-
-                              if (e.key === 'Enter') {
-
-                                if (this.state.globalCertificateNo.startsWith('http')) {
-
-                                  this.fetchData(this.state.globalCertificateNo);
-
-                                } else {
-
-                                  this.handleCertificateInput(this.state.globalCertificateNo, true);
-
-                                }
-
-                              }
-
-                            }}
-
-                            InputProps={{
-
-                              endAdornment: (
-
-                                <InputAdornment position="end">
-
-                                  <Button
-
-                                    variant=""
-
-                                    className="add-button purchase_add_p"
-
-                                    color="primary"
-
-                                    onClick={this.handleOpenQRScanner}
-
-                                    style={{ width: "40px", height: "40px" }}
-
-                                  >
-
-                                    <QrCodeScanner sx={{ color: "#1976d2" }} />
-
-                                  </Button>
-
-                                </InputAdornment>
-
-                              ),
-
-                            }}
-
-                            placeholder="Scan or enter certificate number or verification URL to remove product"
-
-                          />
-
-                        </Grid>
-
-                      </>
-
-                    ) : null}
-
-                    
-
-                  </AccordionDetails>
-
-                </Accordion>
-
-              
-
-              </Grid>
-
-              </> : 
-
+            {isMobile ? (
               <>
+                <Grid item xs={6} md={userIdColumnXs} className="create-input">
+                  <TextField
+                    label="Contact Number"
+                    variant="outlined"
+                    fullWidth
+                    value={this.state.admin_details.mobile}
+                    disabled
+                    inputProps={{ className: "non_disable_text" }}
+                    onInput={(e) => validateInteger(e)}
+                  />
+                </Grid>
 
+                <Grid
+                  item
+                  xs={6}
+                  md={userIdColumnXs}
+                  className={`create-input ${formValues.user_id ? "create-input-responsive" : ""}`}
+                >
+                  <Accordion>
+                    <AccordionSummary
+                      expandIcon={<ExpandMoreIcon />}
+                      aria-controls="panel1a-content"
+                      id="panel1a-header"
+                    >
+                      <Typography
+                        style={{
+                          color: "#1e2746",
+
+                          width: "100%",
+
+                          textAlign: "right",
+                        }}
+                      >
+                        See more
+                      </Typography>
+                    </AccordionSummary>
+
+                    <AccordionDetails className="see-more-details-sec">
+                      {formValues.user_id ? (
+                        <>
+                          <Grid item xs={6} md={2} className="create-input">
+                            <TextField
+                              label="Owner Name"
+                              variant="outlined"
+                              fullWidth
+                              value={this.state.admin_details.name}
+                              disabled
+                              inputProps={{ className: "non_disable_text" }}
+                            />
+                          </Grid>
+
+                          <Grid item xs={6} md={2} className="create-input">
+                            <TextField
+                              label="City"
+                              variant="outlined"
+                              fullWidth
+                              value={this.state.admin_details.city}
+                              disabled
+                              inputProps={{ className: "non_disable_text" }}
+                            />
+                          </Grid>
+
+                          <Grid item xs={6} md={2} className="create-input">
+                            <TextField
+                              label="Pincode"
+                              variant="outlined"
+                              fullWidth
+                              value={this.state.admin_details.pincode}
+                              disabled
+                              inputProps={{ className: "non_disable_text" }}
+                              onInput={(e) => validateInteger(e)}
+                            />
+                          </Grid>
+                        </>
+                      ) : null}
+
+                      {!formValues.user_id ? (
+                        <>
+                          <Grid item xs={6} md={3} className="create-input">
+                            <TextField
+                              label="Invoice Number"
+                              variant="outlined"
+                              fullWidth
+                              value={formValues.invoice_number}
+                              onChange={(event) =>
+                                this.handleDefaultChange(
+                                  event,
+                                  "invoice_number",
+                                )
+                              }
+                              disabled={!this.state.isCreateFrom}
+                              className="non_disable_text"
+                            />
+                          </Grid>
+
+                          <Grid
+                            item
+                            xs={!formValues.user_id ? 6 : 6}
+                            md={!formValues.user_id ? 3 : 2}
+                            className="create-input p-invoice-date"
+                          >
+                            <LocalizationProvider dateAdapter={AdapterDayjs}>
+                              <DatePicker
+                                label="Invoice Date"
+                                value={formValues.invoice_date}
+                                inputFormat="DD/MM/YYYY"
+                                disabled={!this.state.isCreateFrom}
+                                onChange={(newValue) =>
+                                  this.updateFormValues(
+                                    newValue,
+                                    "invoice_date",
+                                  )
+                                }
+                                renderInput={(params) => (
+                                  <TextField
+                                    fullWidth
+                                    {...params}
+                                    error={formErros.invoice_date}
+                                    className="non_disable_text"
+                                  />
+                                )}
+                              />
+                            </LocalizationProvider>
+                          </Grid>
+                        </>
+                      ) : null}
+
+                      {formValues.user_id ? (
+                        <>
+                          <Grid item xs={6} md={8} className="create-input">
+                            <TextField
+                              label="Full Address"
+                              variant="outlined"
+                              fullWidth
+                              value={this.state.admin_details.address}
+                              disabled
+                              inputProps={{ className: "non_disable_text" }}
+                            />
+                          </Grid>
+
+                          <Grid item xs={6} md={2} className="create-input">
+                            <TextField
+                              label="GST Number"
+                              variant="outlined"
+                              fullWidth
+                              value={this.state.admin_details.gst}
+                              disabled
+                              inputProps={{ className: "non_disable_text" }}
+                            />
+                          </Grid>
+
+                          <Grid item xs={6} md={2} className="create-input">
+                            <TextField
+                              label="Invoice Number"
+                              variant="outlined"
+                              fullWidth
+                              value={formValues.invoice_number}
+                              onChange={(event) =>
+                                this.handleDefaultChange(
+                                  event,
+                                  "invoice_number",
+                                )
+                              }
+                              className="non_disable_text"
+                              disabled={!this.state.isCreateFrom}
+                            />
+                          </Grid>
+
+                          {/* Certificate No. Remove/Scan input for main product list */}
+
+                          <Grid item xs={12} md={4} className="create-input">
+                            <TextField
+                              label="Remove Product by Certificate Number"
+                              variant="outlined"
+                              fullWidth
+                              value={this.state.globalCertificateNo || ""}
+                              onChange={(e) => {
+                                this.setState({
+                                  globalCertificateNo: e.target.value,
+                                });
+
+                                if (e.target.value.startsWith("http")) {
+                                  this.debouncedFetchData(e.target.value);
+                                }
+                              }}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") {
+                                  if (
+                                    this.state.globalCertificateNo.startsWith(
+                                      "http",
+                                    )
+                                  ) {
+                                    this.fetchData(
+                                      this.state.globalCertificateNo,
+                                    );
+                                  } else {
+                                    this.handleCertificateInput(
+                                      this.state.globalCertificateNo,
+                                      true,
+                                    );
+                                  }
+                                }
+                              }}
+                              InputProps={{
+                                endAdornment: (
+                                  <InputAdornment position="end">
+                                    <IconButton
+                                      color="primary"
+                                      onClick={this.handleOpenQRScanner}
+                                      edge="end"
+                                      size="small"
+                                      sx={{ p: 0.5 }}
+                                    >
+                                      <QrCodeScanner
+                                        sx={{ color: "#1976d2" }}
+                                        fontSize="small"
+                                      />
+                                    </IconButton>
+                                  </InputAdornment>
+                                ),
+                              }}
+                              placeholder="Scan or enter certificate number or verification URL to remove product"
+                            />
+                          </Grid>
+                        </>
+                      ) : null}
+                    </AccordionDetails>
+                  </Accordion>
+                </Grid>
+              </>
+            ) : (
+              <>
                 {formValues.user_id ? (
-
                   <>
-
-                    <Grid item xs={6} md={2} className='create-input'>
-
+                    <Grid item xs={6} md={2} className="create-input">
                       <TextField
-
-                        label='Owner Name'
-
-                        variant='outlined'
-
+                        label="Owner Name"
+                        variant="outlined"
                         fullWidth
-
                         value={this.state.admin_details.name}
-
                         disabled
-
                         inputProps={{ className: "non_disable_text" }}
-
                       />
-
                     </Grid>
 
-                    <Grid item xs={6} md={2} className='create-input'>
-
+                    <Grid item xs={6} md={2} className="create-input">
                       <TextField
-
-                        label='Contact Number'
-
-                        variant='outlined'
-
+                        label="Contact Number"
+                        variant="outlined"
                         fullWidth
-
                         value={this.state.admin_details.mobile}
-
                         disabled
-
                         inputProps={{ className: "non_disable_text" }}
-
                         onInput={(e) => validateInteger(e)}
-
                       />
-
                     </Grid>
 
-                    <Grid item xs={6} md={2} className='create-input'>
-
+                    <Grid item xs={6} md={2} className="create-input">
                       <TextField
-
-                        label='City'
-
-                        variant='outlined'
-
+                        label="City"
+                        variant="outlined"
                         fullWidth
-
                         value={this.state.admin_details.city}
-
                         disabled
-
                         inputProps={{ className: "non_disable_text" }}
-
                       />
-
                     </Grid>
 
-                    <Grid item xs={6} md={2} className='create-input'>
-
+                    <Grid item xs={6} md={2} className="create-input">
                       <TextField
-
-                        label='Pincode'
-
-                        variant='outlined'
-
+                        label="Pincode"
+                        variant="outlined"
                         fullWidth
-
                         value={this.state.admin_details.pincode}
-
                         disabled
-
                         inputProps={{ className: "non_disable_text" }}
                         onInput={(e) => validateInteger(e)}
-
                       />
-
                     </Grid>
-
                   </>
-
                 ) : null}
-
-
 
                 {!formValues.user_id ? (
-
-                  <Grid item xs={6} md={3} className='create-input'>
-
+                  <Grid item xs={6} md={3} className="create-input">
                     <TextField
-
-                      label='Invoice Number'
-
-                      variant='outlined'
-
+                      label="Invoice Number"
+                      variant="outlined"
                       fullWidth
-
                       value={formValues.invoice_number}
-
                       onChange={(event) =>
-
                         this.handleDefaultChange(event, "invoice_number")
-
                       }
-
                       disabled={!this.state.isCreateFrom}
-
-                      className='non_disable_text'
-
+                      className="non_disable_text"
                     />
-
                   </Grid>
-
                 ) : null}
 
-                
-
                 {formValues.user_id ? (
-
                   <>
-
-                    <Grid item xs={12} md={8} className='create-input'>
-
+                    <Grid item xs={12} md={8} className="create-input">
                       <TextField
-
-                        label='Full Address'
-
-                        variant='outlined'
-
+                        label="Full Address"
+                        variant="outlined"
                         fullWidth
-
                         value={this.state.admin_details.address}
-
                         disabled
-
                         inputProps={{ className: "non_disable_text" }}
-
                       />
-
                     </Grid>
 
-                    <Grid item xs={6} md={2} className='create-input'>
-
+                    <Grid item xs={6} md={2} className="create-input">
                       <TextField
-
-                        label='GST Number'
-
-                        variant='outlined'
-
+                        label="GST Number"
+                        variant="outlined"
                         fullWidth
-
                         value={this.state.admin_details.gst}
-
                         disabled
-
                         inputProps={{ className: "non_disable_text" }}
-
                       />
-
                     </Grid>
 
-                    <Grid item xs={6} md={2} className='create-input'>
-
+                    <Grid item xs={6} md={2} className="create-input">
                       <TextField
-
-                        label='Invoice Number'
-
-                        variant='outlined'
-
+                        label="Invoice Number"
+                        variant="outlined"
                         fullWidth
-
                         value={formValues.invoice_number}
-
                         onChange={(event) =>
-
                           this.handleDefaultChange(event, "invoice_number")
-
                         }
-
-                        className='non_disable_text'
-
+                        className="non_disable_text"
                         disabled={!this.state.isCreateFrom}
-
                       />
-
                     </Grid>
 
                     {/* Certificate No. Remove/Scan input for main product list */}
 
-                    <Grid item xs={12} md={4} className='create-input'>
-
+                    <Grid item xs={12} md={4} className="create-input">
                       <TextField
-
                         label="Remove Product by Certificate Number"
-
                         variant="outlined"
-
                         fullWidth
+                        value={this.state.globalCertificateNo || ""}
+                        onChange={(e) => {
+                          this.setState({
+                            globalCertificateNo: e.target.value,
+                          });
 
-                        value={this.state.globalCertificateNo || ''}
-
-                        onChange={e => {
-
-                          this.setState({ globalCertificateNo: e.target.value });
-
-                          if (e.target.value.startsWith('http')) {
-
+                          if (e.target.value.startsWith("http")) {
                             this.debouncedFetchData(e.target.value);
-
                           }
-
                         }}
-
-                        onKeyDown={e => {
-
-                          if (e.key === 'Enter') {
-
-                            if (this.state.globalCertificateNo.startsWith('http')) {
-
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            if (
+                              this.state.globalCertificateNo.startsWith("http")
+                            ) {
                               this.fetchData(this.state.globalCertificateNo);
-
                             } else {
-
-                              this.handleCertificateInput(this.state.globalCertificateNo, true);
-
+                              this.handleCertificateInput(
+                                this.state.globalCertificateNo,
+                                true,
+                              );
                             }
-
                           }
-
                         }}
-
                         InputProps={{
-
                           endAdornment: (
-
                             <InputAdornment position="end">
-
-                              <Button
-
-                                variant=""
-
-                                className="add-button purchase_add_p"
-
+                              <IconButton
                                 color="primary"
-
                                 onClick={this.handleOpenQRScanner}
-
-                                style={{ width: "40px", height: "40px" }}
-
+                                edge="end"
+                                size="small"
+                                sx={{ p: 0.5 }}
                               >
-
-                                <QrCodeScanner sx={{ color: "#1976d2" }} />
-
-                              </Button>
-
+                                <QrCodeScanner
+                                  sx={{ color: "#1976d2" }}
+                                  fontSize="small"
+                                />
+                              </IconButton>
                             </InputAdornment>
-
                           ),
-
                         }}
-
                         placeholder="Scan or enter certificate number or verification URL to remove product"
-
                       />
-
                     </Grid>
-
                   </>
-
                 ) : null}
-
-              </>}
-
+              </>
+            )}
           </Grid>
-
         </Grid>
 
         <Grid
-
           container
-
           spacing={2}
-
           columnSpacing={{ xs: 1, sm: 2, md: 2 }}
-
-          className='tax-input loans_view'>
-
+          className="tax-input loans_view"
+        >
           <Grid
-
             item
-
             xs={12}
-
             md={12}
-
-            className=' create-input p-add-product border-radius-0'>
-
+            className=" create-input p-add-product border-radius-0"
+          >
             {/*<h3 className='p_heading_list'>Product List <Button variant="contained" className='add-button' onClick={() => this.handleAddNewProduct()}>Add Product</Button></h3>*/}
 
             <TableContainer component={Paper}>
-
               <Table
-
                 sx={{ minWidth: 650 }}
-
-                aria-label='simple table'
-
-                className='ratn-table-product-wrapper sale_form_table'>
-
-                <TableHead className='ratn-table-header p_view'>
-
+                aria-label="simple table"
+                className="ratn-table-product-wrapper sale_form_table"
+              >
+                <TableHead className="ratn-table-header p_view">
                   <TableRow>
-
                     {!this.state.isCreateFrom ? (
-
                       <TableCell sx={{ width: "30px" }}></TableCell>
-
                     ) : null}
 
                     <TableCell sx={{ width: 15 }}>#</TableCell>
@@ -6739,101 +5042,63 @@ class SaleForm extends React.Component {
                     <TableCell sx={{ width: "40px" }}>Total</TableCell>
 
                     {this.state.isCreateFrom ? (
-
                       <TableCell sx={{ width: "20px" }}>Actions</TableCell>
-
                     ) : null}
-
                   </TableRow>
-
                 </TableHead>
 
                 <TableBody>
-
                   {formValues.products.map((item, index) => {
-
                     let getUnit = item.materials.filter(
-
-                      (itm) => itm.purity_id == 4 || itm.purity_id == 18
-
+                      (itm) => itm.purity_id == 4 || itm.purity_id == 18,
                     );
 
                     let productWeightUnitName =
-
                       getUnit.length > 0 ? getUnit[0].unit_name : "";
 
-
-
                     return (
-
                       <React.Fragment key={index}>
-
-                        <TableRow className='product_details'>
-
+                        <TableRow className="product_details">
                           {!this.state.isCreateFrom ? (
-
                             <TableCell>
-
                               {!item.is_return ? (
-
                                 <Checkbox
-
                                   onChange={(e) =>
-
                                     this.handleCheckBox(e, index)
-
                                   }
-
                                   checked={
-
                                     this.state.return_products[index].is_return
-
                                   }
-
                                 />
-
                               ) : null}
-
-
 
                               {!item.is_return &&
-
                               item.product_type == "material" &&
-
                               item.materials[0].return_weight ? (
-
                                 <IconButton
-
-                                  aria-label='expand row'
-
-                                  size='small'
-
-                                  onClick={() => this.setOpen(item.id)}>
-
+                                  aria-label="expand row"
+                                  size="small"
+                                  onClick={() => this.setOpen(item.id)}
+                                >
                                   {this.checkOpen(item.id) ? (
-
                                     <KeyboardArrowUpIcon />
-
                                   ) : (
-
                                     <KeyboardArrowDownIcon />
-
                                   )}
-
                                 </IconButton>
-
                               ) : null}
-
                             </TableCell>
-
                           ) : null}
 
                           <TableCell>{index + 1}</TableCell>
 
                           <TableCell>
-
-                            {item.product_name} X {item.quantity?item.quantity:(item.certificate_no?1:item.materials[0].avl_qty)}
-
+                            {item.product_name} X{" "}
+                            {item.quantity
+                              ? item.quantity
+                              : item.certificate_no
+                                ? 1
+                                : item.materials[0].avl_qty}
                           </TableCell>
 
                           <TableCell>{item.size_name}</TableCell>
@@ -6841,235 +5106,137 @@ class SaleForm extends React.Component {
                           <TableCell>{item.certificate_no}</TableCell>
 
                           <TableCell colSpan={2}>
-
                             {item.total_weight} {"Wt"}
-
                           </TableCell>
 
                           <TableCell></TableCell>
-
-                          
-
                         </TableRow>
 
-                        <TableRow className='material_details'>
-
+                        <TableRow className="material_details">
                           <TableCell></TableCell>
 
                           {!this.state.isCreateFrom ? (
-
                             <>
-
                               <TableCell></TableCell>
-
                             </>
-
                           ) : null}
 
                           <TableCell colSpan={2}>
-
                             {item.materials.map((m, key) => (
-
                               <div
-
-                                className='products-data-container'
-
-                                key={key}>
-
-                                <div className='products-data-row'>
-
+                                className="products-data-container"
+                                key={key}
+                              >
+                                <div className="products-data-row">
                                   <div
-
-                                    className='products-data'
-
+                                    className="products-data"
                                     key={key}
-
-                                    style={{ position: "relative" }}>
-
+                                    style={{ position: "relative" }}
+                                  >
                                     {m.material_name} &nbsp;({m.purity}) &nbsp;
-
                                     {m.weight} &nbsp;{m.unit_name} &nbsp; x
-
                                     &nbsp; {m.rate}{" "}
-
                                   </div>
 
-                                  <div className='products-amount'>
-
+                                  <div className="products-amount">
                                     {" "}
-
                                     = &nbsp; &nbsp;{m.amount}
-
                                   </div>
-
                                 </div>
-
                               </div>
-
                             ))}
-
                           </TableCell>
 
                           <TableCell>
-
                             {item.materials.map((m, key) => (
-
-                              <div className='sale-discount-wrapper' key={key}>
-
+                              <div className="sale-discount-wrapper" key={key}>
                                 <>
-
                                   {m.max_discount_percent > 0 &&
-
                                   !this.state.isAssign ? (
-
                                     <>
-
                                       Dis@{" "}
-
-                                      <div className='sale-discount'>
-
+                                      <div className="sale-discount">
                                         <input
-
-                                          type='text'
-
+                                          type="text"
                                           value={m.discount_percent}
-
                                           onChange={(event) =>
-
                                             this.handleMaterialDisc(
-
                                               event,
 
                                               index,
 
-                                              key
-
+                                              key,
                                             )
-
                                           }
-
-                                          className='custom_input'
-
+                                          className="custom_input"
                                           max={m.max_discount_percent}
-
                                           disabled={isReturn ? "disabled" : ""}
-
                                         />
 
-                                        <div className='sale-discount-inner'>
-
+                                        <div className="sale-discount-inner">
                                           {" "}
-
                                           %
-
                                         </div>
-
                                       </div>{" "}
-
                                       {m.mrp}
-
                                     </>
-
                                   ) : (
-
                                     " - "
-
                                   )}
-
                                 </>
-
                               </div>
-
                             ))}
-
                           </TableCell>
 
                           <TableCell>
-
                             {item.materials.map((m, key) => (
-
                               <p key={key}>
-
                                 {priceFormat(m.amount - m.discount_amount)}
-
                               </p>
-
                             ))}
-
                           </TableCell>
 
                           <TableCell>
-
                             {item.making_charge}
 
                             {item.max_making_charge_discount_percent > 0 &&
-
                             !this.state.isAssign ? (
-
                               <>
-
                                 @{" "}
-
                                 <span style={{ position: "relative" }}>
-
                                   <input
-
-                                    type='text'
-
+                                    type="text"
                                     value={item.making_charge_discount_percent}
-
                                     onChange={(event) =>
-
                                       this.handleMakingDiscount(event, index)
-
                                     }
-
-                                    className='custom_input'
-
+                                    className="custom_input"
                                     max={
-
                                       item.max_making_charge_discount_percent
-
                                     }
-
                                     disabled={isReturn ? "disabled" : ""}
-
                                   />
 
                                   <span
-
                                     style={{
-
                                       position: "absolute",
 
                                       right: "1px",
 
                                       top: "0px",
-
-                                    }}>
-
+                                    }}
+                                  >
                                     {" "}
-
                                     %
-
                                   </span>
-
                                 </span>{" "}
-
                                 &nbsp;
-
                                 {priceFormat(
-
                                   item.making_charge -
-
-                                    item.making_charge_discount_amount
-
+                                    item.making_charge_discount_amount,
                                 )}
-
                               </>
-
                             ) : null}
-
                           </TableCell>
 
                           <TableCell>{item.sub_price}</TableCell>
@@ -7081,15 +5248,10 @@ class SaleForm extends React.Component {
                           <TableCell>{item.total}</TableCell>
 
                           {this.state.isCreateFrom ? (
-
                             <TableCell
-
-                              
-
-                              className='action_column'
-
-                              style={{ textAlign: "center" }}>
-
+                              className="action_column"
+                              style={{ textAlign: "center" }}
+                            >
                               {/*<IconButton className='del-icon' color="error" component="label"  onClick={() => this.handleProductDelete(index)}>
 
                                                               <CloseIcon />
@@ -7097,122 +5259,73 @@ class SaleForm extends React.Component {
                                                               </IconButton> */}
 
                               <Button
-
-                                variant='contained'
-
-                                className='sale-cross-icon'
-
-                                onClick={() => this.handleProductDelete(index)}>
-
+                                variant="contained"
+                                className="sale-cross-icon"
+                                onClick={() => this.handleProductDelete(index)}
+                              >
                                 {" "}
-
                                 X{" "}
-
                               </Button>
-
                             </TableCell>
-
                           ) : null}
-
                         </TableRow>
 
                         {!this.state.isCreateFrom &&
-
                         item.materials.length == 1 &&
-
                         this.checkOpen(item.id) ? (
-
-                          <TableRow className='table-inner-row'>
-
+                          <TableRow className="table-inner-row">
                             <TableCell
-
                               style={{ paddingBottom: 0, paddingTop: 0 }}
-
-                              colSpan={12}>
-
+                              colSpan={12}
+                            >
                               <Collapse
-
                                 in={this.checkOpen(item.id)}
-
-                                timeout='auto'
-
-                                unmountOnExit>
-
+                                timeout="auto"
+                                unmountOnExit
+                              >
                                 <Box sx={{ margin: 1 }}>
-
                                   <Typography
-
-                                    variant='h6'
-
+                                    variant="h6"
                                     gutterBottom
+                                    component="div"
+                                  ></Typography>
 
-                                    component='div'></Typography>
-
-                                  <Table size='medium' aria-label='purchases'>
-
+                                  <Table size="medium" aria-label="purchases">
                                     <TableHead>
-
-                                      <TableRow className='pur-details-inner-table'>
-
+                                      <TableRow className="pur-details-inner-table">
                                         <TableCell>Quantity</TableCell>
 
                                         <TableCell>Weight</TableCell>
 
                                         <TableCell>Unit</TableCell>
-
                                       </TableRow>
-
                                     </TableHead>
 
-                                    <TableBody className='pur-details-table-body'>
-
+                                    <TableBody className="pur-details-table-body">
                                       <TableRow>
-
-                                        <TableCell scope='row'>
-
+                                        <TableCell scope="row">
                                           {item.materials[0].return_qty}
-
                                         </TableCell>
 
                                         <TableCell>
-
                                           {" "}
-
                                           {item.materials[0].return_weight}
-
                                         </TableCell>
 
                                         <TableCell>
-
                                           {item.materials[0].unit_name}
-
                                         </TableCell>
-
                                       </TableRow>
-
                                     </TableBody>
-
                                   </Table>
-
                                 </Box>
-
                               </Collapse>
-
                             </TableCell>
-
                           </TableRow>
-
                         ) : null}
-
                       </React.Fragment>
-
                     );
-
                   })}
-
-                  
-
-
 
                   {/*{
 
@@ -7359,55 +5472,34 @@ class SaleForm extends React.Component {
                                         ))
 
                                     }*/}
-
                 </TableBody>
-
               </Table>
-
             </TableContainer>
-
           </Grid>
 
-
-
           <div
-
-            class='modal fade'
-
-            id='noteModal'
-
-            tabindex='-1'
-
-            aria-labelledby='exampleModalLabel'
-
-            aria-hidden='true'>
-
-            <div class='modal-dialog modal-dialog-centered'>
-
-              <div class='modal-content'>
-
-                <div class='modal-header'>
-
-                  <h1 class='modal-title fs-5' id='exampleModalLabel'>
-
+            class="modal fade"
+            id="noteModal"
+            tabindex="-1"
+            aria-labelledby="exampleModalLabel"
+            aria-hidden="true"
+          >
+            <div class="modal-dialog modal-dialog-centered">
+              <div class="modal-content">
+                <div class="modal-header">
+                  <h1 class="modal-title fs-5" id="exampleModalLabel">
                     sales Notes
-
                   </h1>
 
                   <button
-
-                    type='button'
-
-                    class='btn-close'
-
-                    data-bs-dismiss='modal'
-
-                    aria-label='Close'></button>
-
+                    type="button"
+                    class="btn-close"
+                    data-bs-dismiss="modal"
+                    aria-label="Close"
+                  ></button>
                 </div>
 
-                <div class='modal-body'>
-
+                <div class="modal-body">
                   {/* <Grid
 
                     item
@@ -7439,121 +5531,96 @@ class SaleForm extends React.Component {
                   </Grid> */}
 
                   <textarea
-
-                    class='form-control'
-
-                    placeholder='Leave a comment here'
-
-                    id='floatingTextarea2'
-
+                    class="form-control"
+                    placeholder="Leave a comment here"
+                    id="floatingTextarea2"
                     style={{ height: "100px" }}
-
                     value={formValues.notes}
-
                     onChange={(event) =>
-
                       this.handleDefaultChange(event, "notes")
-
-                    }></textarea>
+                    }
+                  ></textarea>
 
                   {/* <label for="floatingTextarea2">Comments</label> */}
-
                 </div>
-
               </div>
-
             </div>
-
           </div>
 
-          {report_charge && formValues.report_qty > 0 && !this.state.isAssign && formValues.user_id && <Grid
+          {report_charge &&
+            formValues.report_qty > 0 &&
+            !this.state.isAssign &&
+            formValues.user_id && (
+              <Grid
+                item
+                xs={12}
+                md={12}
+                className="materialContainerGrid create-input p-add-product border-radius-0"
+              >
+                <TableContainer component={Paper}>
+                  <Table
+                    sx={{ minWidth: 650 }}
+                    aria-label="simple table"
+                    className="ratn-table-product-wrapper sale_form_table"
+                  >
+                    <TableHead className="product_details p_view">
+                      <TableRow>
+                        {!this.state.isCreateFrom ? (
+                          <TableCell sx={{ width: "30px" }}></TableCell>
+                        ) : null}
 
-            item
+                        <TableCell sx={{ width: 15 }}></TableCell>
 
-            xs={12}
+                        {/* <TableCell sx={{ width: 80 }}>Sub Total</TableCell> */}
 
-            md={12}
+                        <TableCell sx={{ width: 130 }}>Report Charge</TableCell>
 
-            className='materialContainerGrid create-input p-add-product border-radius-0'>
+                        <TableCell sx={{ width: 40 }}>Total Charge</TableCell>
 
-              <TableContainer component={Paper}>
+                        <TableCell sx={{ width: 90 }}>Tax(%)</TableCell>
 
-                <Table
+                        <TableCell sx={{ width: 40 }}>Total Tax</TableCell>
 
-                  sx={{ minWidth: 650 }}
+                        <TableCell sx={{ width: 40 }}>Total Charge</TableCell>
 
-                  aria-label='simple table'
+                        {/* <TableCell sx={{ width: 40 }}>Total</TableCell> */}
+                      </TableRow>
+                    </TableHead>
 
-                  className='ratn-table-product-wrapper sale_form_table'>
+                    <TableBody>
+                      <TableRow className="">
+                        <TableCell className=" "></TableCell>
 
-                  <TableHead className='product_details p_view'>
-
-                    <TableRow>
-
-                      {!this.state.isCreateFrom ? (
-
-                        <TableCell sx={{ width: "30px" }}></TableCell>
-
-                      ) : null}
-
-                      <TableCell sx={{ width: 15 }}></TableCell>
-
-                      {/* <TableCell sx={{ width: 80 }}>Sub Total</TableCell> */}
-
-                      <TableCell sx={{ width: 130 }}>Report Charge</TableCell>
-
-                      <TableCell sx={{ width: 40 }}>Total Charge</TableCell>
-
-                      <TableCell sx={{ width: 90 }}>Tax(%)</TableCell>
-
-                      <TableCell sx={{ width: 40 }}>Total Tax</TableCell>
-
-                      <TableCell sx={{ width: 40 }}>Total Charge</TableCell>
-
-                      {/* <TableCell sx={{ width: 40 }}>Total</TableCell> */}
-
-                    </TableRow>
-
-                  </TableHead>
-
-                  <TableBody>
-
-                    <TableRow
-
-                      className=""
-
-                    >
-
-                      <TableCell className=' '></TableCell>
-
-                      {/* <TableCell >
+                        {/* <TableCell >
 
                         {`${parseFloat(formValues.total_tag_price - formValues.total_report_charge_amount_after_tax).toFixed(2)}`}
 
                       </TableCell> */}
 
-                      <TableCell style={{display: "flex", gap:"5px", alignItems: "center"}}>
+                        <TableCell
+                          style={{
+                            display: "flex",
+                            gap: "5px",
+                            alignItems: "center",
+                          }}
+                        >
+                          <span>{`${formValues.report_qty} pics x `}</span>
 
-                        <span>{`${formValues.report_qty} pics x `}</span>
-
-                        <div className='sale-discount'> {/* ${priceFormat(report_charge.amount).toFixed(2)} =  */}
-
+                          <div className="sale-discount">
+                            {" "}
+                            {/* ${priceFormat(report_charge.amount).toFixed(2)} =  */}
                             <input
-
-                              type='text'
-
+                              type="text"
                               value={formValues.report_charge_amount}
                               disabled={isReturn ? true : false}
                               onChange={(event) =>
-
-                                this.handleDefaultChange(event, "report_charge_amount")
-
+                                this.handleDefaultChange(
+                                  event,
+                                  "report_charge_amount",
+                                )
                               }
-
-                              className='custom_input'
-
+                              className="custom_input"
                             />
-
                             {/* <div className='sale-discount-inner'>
 
                               {" "}
@@ -7561,202 +5628,148 @@ class SaleForm extends React.Component {
                               %
 
                             </div> */}
+                          </div>
 
-                        </div>
+                          <span>{` = `}</span>
+                        </TableCell>
 
-                        <span>{` = `}</span>
+                        <TableCell className=" align-items-center">
+                          {priceFormat(
+                            formValues.total_report_charge_amount,
+                          ).toFixed(2)}
+                        </TableCell>
 
-                      </TableCell>
-
-                      <TableCell className=' align-items-center'>
-
-                        {priceFormat(formValues.total_report_charge_amount).toFixed(2)}
-
-                      </TableCell>
-
-                      <TableCell className=' align-items-center'>
-
-                        
-
+                        <TableCell className=" align-items-center">
                           {`${priceFormat(report_charge.tax).toFixed(2)}%`}
+                        </TableCell>
 
-                        
+                        <TableCell className=" align-items-center">
+                          {priceFormat(
+                            formValues.total_report_charge_tax_amount,
+                          ).toFixed(2)}
+                        </TableCell>
 
-                      </TableCell>
+                        <TableCell className=" align-items-center">
+                          {priceFormat(
+                            formValues.total_report_charge_amount_after_tax,
+                          ).toFixed(2)}
+                        </TableCell>
 
-                      <TableCell className=' align-items-center'>
-
-                        {priceFormat(formValues.total_report_charge_tax_amount).toFixed(2)}
-
-                      </TableCell>
-
-                      <TableCell className=" align-items-center">
-
-                        {priceFormat(formValues.total_report_charge_amount_after_tax).toFixed(2)}
-
-                      </TableCell>
-
-                      {/* <TableCell className=" align-items-center">
+                        {/* <TableCell className=" align-items-center">
 
                         {priceFormat(formValues.total_tag_price).toFixed(2)}
 
                       </TableCell> */}
-
-                    </TableRow>
-
-                  </TableBody>
-
-                </Table>
-
-              </TableContainer>
-
-            </Grid>}
+                      </TableRow>
+                    </TableBody>
+                  </Table>
+                </TableContainer>
+              </Grid>
+            )}
 
           <Grid
-
             item
-
             xs={12}
-
             md={12}
-
-            className='materialContainerGrid create-input p-add-product border-radius-0'>
-
-          {!this.state.isAssign ? (
-
-            <>
-
-            <TableContainer component={Paper}>
-
-              <Table
-
-                sx={{ minWidth: 650 }}
-
-                aria-label='simple table'
-
-                className='materialContainer'>
-
-              <TableRow
-
-                sx={{
-
-                  width: "100%",
-
-                  display: "flex",
-
-                  flexDirection: { xs: "column", sm: "row" },
-
-                  justifyContent: { xs: "flex-start", sm: "flex-start" },
-
-                  gap: { xs: 0, sm: 0 },
-
-                }}
-
-              >
-
-                <TableCell className=' mob-hide'></TableCell>
-
-                <TableCell className="materialDiscSec" colSpan='3'>
-
-                  <div className='unique-wrapper d-flex align-items-center'>
-
-                    {/*  */}
-
-                    <div className=' d-flex align-items-center '>
-
-                      {this.state.unique_materials.map((item, index) => (
-
-                        <React.Fragment key={index}>
-
-                          <div className='unique_materials ms-3'>
-
-                            <p
-
-                              className='mb-2'
-
-                              style={{ fontSize: "smaller", color: "#000000" }}>
-
-                              {item.material_name} (
-
-                              {item.unit.toLowerCase() != "gm"?item["total_" + item.material_id].toFixed(2):item["total_" + item.material_id].toFixed(3)}{" "}
-
-                              {item.unit})
-
-                            </p>
-
-                            <span style={{ position: "relative" }}>
-
-                              <input
-
-                                type='text'
-
-                                value={item.amount}
-
-                                onChange={(event) =>
-
-                                  this.handleCommonDis(event, index)
-
-                                }
-
-                                className='custom_input'
-
-                                style={{
-
-                                  width: "100%",
-
-                                  height: "40px",
-
-                                  padding: "5px 8px",
-
-                                }}
-
-                                max={item.max_discount}
-
-                              />
-
-                              <span
-
-                                style={{
-
-                                  position: "absolute",
-
-                                  right: "5px",
-
-                                  top: "0px",
-
-                                }}>
-
-                                {" "}
-
-                                <select
-
-                                  onChange={(event) =>
-
-                                    this.handleDiscountType(event, index)
-
-                                  }>
-
-                                  <option value='discount'>Discount %</option>
-
-                                  <option value='rate'>Flat rate</option>
-
-                                </select>
-
-                              </span>
-
-                            </span>
-
+            className="materialContainerGrid create-input p-add-product border-radius-0"
+          >
+            {!this.state.isAssign ? (
+              <>
+                <TableContainer component={Paper}>
+                  <Table
+                    sx={{ minWidth: 650 }}
+                    aria-label="simple table"
+                    className="materialContainer"
+                  >
+                    <TableRow
+                      sx={{
+                        width: "100%",
+
+                        display: "flex",
+
+                        flexDirection: { xs: "column", sm: "row" },
+
+                        justifyContent: { xs: "flex-start", sm: "flex-start" },
+
+                        gap: { xs: 0, sm: 0 },
+                      }}
+                    >
+                      <TableCell className=" mob-hide"></TableCell>
+
+                      <TableCell className="materialDiscSec" colSpan="3">
+                        <div className="unique-wrapper d-flex align-items-center">
+                          {/*  */}
+
+                          <div className=" d-flex align-items-center ">
+                            {this.state.unique_materials.map((item, index) => (
+                              <React.Fragment key={index}>
+                                <div className="unique_materials ms-3">
+                                  <p
+                                    className="mb-2"
+                                    style={{
+                                      fontSize: "smaller",
+                                      color: "#000000",
+                                    }}
+                                  >
+                                    {item.material_name} (
+                                    {item.unit.toLowerCase() != "gm"
+                                      ? item[
+                                          "total_" + item.material_id
+                                        ].toFixed(2)
+                                      : item[
+                                          "total_" + item.material_id
+                                        ].toFixed(3)}{" "}
+                                    {item.unit})
+                                  </p>
+
+                                  <span style={{ position: "relative" }}>
+                                    <input
+                                      type="text"
+                                      value={item.amount}
+                                      onChange={(event) =>
+                                        this.handleCommonDis(event, index)
+                                      }
+                                      className="custom_input"
+                                      style={{
+                                        width: "100%",
+
+                                        height: "40px",
+
+                                        padding: "5px 8px",
+                                      }}
+                                      max={item.max_discount}
+                                    />
+
+                                    <span
+                                      style={{
+                                        position: "absolute",
+
+                                        right: "5px",
+
+                                        top: "0px",
+                                      }}
+                                    >
+                                      {" "}
+                                      <select
+                                        onChange={(event) =>
+                                          this.handleDiscountType(event, index)
+                                        }
+                                      >
+                                        <option value="discount">
+                                          Discount %
+                                        </option>
+
+                                        <option value="rate">Flat rate</option>
+                                      </select>
+                                    </span>
+                                  </span>
+                                </div>
+                              </React.Fragment>
+                            ))}
                           </div>
+                        </div>
 
-                        </React.Fragment>
-
-                      ))}
-
-                    </div>
-
-                  </div>
-
-                  {/**
+                        {/**
 
                                                  *  <TextField
 
@@ -7783,265 +5796,172 @@ class SaleForm extends React.Component {
                                                         />
 
                                                 */}
+                      </TableCell>
 
-                </TableCell>
+                      <TableCell
+                        className="makingDiscSec"
+                        sx={{ verticalAlign: "top" }}
+                      >
+                        {this.haveMakingComonDis() ? (
+                          <>
+                            <div class="unique_materials ms-3">
+                              <p
+                                className="mb-2"
+                                style={{
+                                  fontSize: "smaller",
+                                  color: "#000000",
+                                }}
+                              >
+                                Making Disc
+                              </p>
 
-                <TableCell className="makingDiscSec" sx={{ verticalAlign: "top" }}>
+                              <span style={{ position: "relative" }}>
+                                <input
+                                  type="text"
+                                  value={this.state.common_making_discount}
+                                  onChange={(event) =>
+                                    this.handleCommonMakingDis(event)
+                                  }
+                                  className="custom_input"
+                                  style={{
+                                    width: "90%",
 
-                  {this.haveMakingComonDis() ? (
+                                    height: "40px",
 
-                    <>
+                                    padding: "5px 8px",
+                                  }}
+                                  disabled={isReturn ? "disabled" : ""}
+                                />
 
-                    <div class="unique_materials ms-3" >
+                                <span
+                                  style={{
+                                    position: "absolute",
 
-                      <p
+                                    right: "5px",
 
-                        className='mb-2'
+                                    top: "0px",
+                                  }}
+                                >
+                                  {" "}
+                                  %
+                                </span>
+                              </span>
+                            </div>
+                          </>
+                        ) : null}
+                      </TableCell>
 
-                        style={{ fontSize: "smaller", color: "#000000" }}>
-
-                        Making Disc
-
-                      </p>
-
-                      <span style={{ position: "relative" }}>
-
-                        <input
-
-                          type='text'
-
-                          value={this.state.common_making_discount}
-
-                          onChange={(event) =>
-
-                            this.handleCommonMakingDis(event)
-
-                          }
-
-                          className='custom_input'
-
-                          style={{
-
-                            width: "90%",
-
-                            height: "40px",
-
-                            padding: "5px 8px",
-
-                          }}
-
-                          disabled={isReturn ? "disabled" : ""}
-
-                        />
-
-                        <span
-
-                          style={{
-
-                            position: "absolute",
-
-                            right: "5px",
-
-                            top: "0px",
-
-                          }}>
-
+                      <TableCell className=" align-items-center mob-hide">
+                        <b className="price-cal ">
                           {" "}
+                          {/*  */}
+                          <span>Price</span>
+                          <br />
+                          {priceFormat(formValues.total_tag_price)}
+                        </b>
+                      </TableCell>
 
-                          %
+                      <TableCell className=" align-items-center mob-hide">
+                        <b className="price-cal ">
+                          {" "}
+                          {/*  */}
+                          <span>Dist</span>
+                          <br />
+                          {priceFormat(formValues.product_discount)}
+                        </b>
+                      </TableCell>
 
-                        </span>
+                      <TableCell className=" align-items-center mob-hide">
+                        <b className="price-cal ">
+                          {" "}
+                          {/*  */}
+                          <span>Tax</span>
+                          <br />
+                          {priceFormat(formValues.total_tax)}
+                        </b>
+                      </TableCell>
 
-                      </span>
+                      <TableCell className=" align-items-center mob-hide">
+                        <b className="price-cal">
+                          Total
+                          <br />
+                          {formValues.total_amount}
+                        </b>
+                      </TableCell>
 
-                    </div>
-
-                    </>
-
-                  ) : null}
-
-                </TableCell>
-
-                
-
-                <TableCell className=' align-items-center mob-hide'>
-
-                  <b className='price-cal '> {/*  */}
-
-                    <span>Price</span>
-
-                    <br />
-
-                    {priceFormat(formValues.total_tag_price)}
-
-                  </b>
-
-                </TableCell>
-
-                <TableCell className=' align-items-center mob-hide'>
-
-                  <b className='price-cal '> {/*  */}
-
-                    <span>Dist</span>
-
-                    <br />
-
-                    {priceFormat(formValues.product_discount)}
-
-                  </b>
-
-                </TableCell>
-
-                <TableCell className=' align-items-center mob-hide'>
-
-                  <b className='price-cal '> {/*  */}
-
-                    <span>Tax</span>
-
-                    <br />
-
-                    {priceFormat(formValues.total_tax)}
-
-                  </b>
-
-                </TableCell>
-
-                <TableCell className=" align-items-center mob-hide">
-
-                  <b className="price-cal">
-
-                    Total
-
-                    <br />
-
-                    {formValues.total_amount}
-
-                  </b>
-
-                </TableCell>
-
-                <TableCell className=' align-items-center mob-hide'>
-
-                  <div className="sticky-note"><i
-
-                    class='bi bi-pencil-square fs-4 '
-
-                    data-bs-toggle='modal'
-
-                    data-bs-target='#noteModal'></i></div>
-
-                </TableCell>
-
-              </TableRow>
-
-              </Table>
-
-            </TableContainer>
-
-            </>
-
-          ) : null}
-
+                      <TableCell className=" align-items-center mob-hide">
+                        <div className="sticky-note">
+                          <i
+                            class="bi bi-pencil-square fs-4 "
+                            data-bs-toggle="modal"
+                            data-bs-target="#noteModal"
+                          ></i>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  </Table>
+                </TableContainer>
+              </>
+            ) : null}
           </Grid>
 
           <Grid item xs={12} md={8} style={{}}>
-
             <Grid
-
               container
-
               spacing={2}
-
-              className='mob_responsive_purchase_input'>
-
-              <ul className='sale_total'>
-
+              className="mob_responsive_purchase_input"
+            >
+              <ul className="sale_total">
                 <li>
-
                   Price <span>{priceFormat(formValues.total_tag_price)}</span>
-
                 </li>
 
                 <li>
-
                   Dist <span>{priceFormat(formValues.product_discount)}</span>
-
                 </li>
 
                 <li>
-
                   Tax <span>{displayAmount(formValues.total_tax)}</span>
-
                 </li>
 
                 <li>
-
                   T.Amount <span>{displayAmount(formValues.total_amount)}</span>
-
                 </li>
-
               </ul>
-
             </Grid>
-
           </Grid>
 
           {!this.state.formValues.user_id ? (
-
             <Grid item xs={12} md={8} style={{}}>
-
               <Grid
-
                 container
-
                 spacing={2}
-
                 columnSpacing={{ xs: 1, sm: 2, md: 2 }}
-
-                className='mob_responsive_purchase_input'>
-
+                className="mob_responsive_purchase_input"
+              >
                 {(this.isSalesExecutive ||
-
                   this.isDistributor ||
-
                   this.isSuperAdmin ||
-
                   this.isAdmin) &&
-
                 !this.state.isAssign &&
-
                 !formValues.user_id &&
-
                 this.state.isCreateFrom &&
-
                 isEmpty(this.props.query.get("sale_on_approval")) ? (
-
                   <Grid
-
                     item
-
                     xs={12}
-
-                    className='create-input button-right  '
-
-                    style={{ paddingTop: "0px", paddingBottom: "7px" }}>
-
+                    className="create-input button-right  "
+                    style={{ paddingTop: "0px", paddingBottom: "7px" }}
+                  >
                     <Button
-
-                      variant='contained'
-
-                      size='small'
-
-                      className='d-flex m-auto'
-
-                      onClick={this.handleTransfer}>
-
+                      variant="contained"
+                      size="small"
+                      className="d-flex m-auto"
+                      onClick={this.handleTransfer}
+                    >
                       Transfer
-
                     </Button>
-
                   </Grid>
-
                 ) : null}
 
                 {/* <Grid item xs={12} md={12} className='create-input' style={{ paddingTop: '0px' }}>
@@ -8065,47 +5985,28 @@ class SaleForm extends React.Component {
                             </Grid> */}
 
                 {this.props.query.get("all_added") == 0 ? (
-
-                  <Grid item xs={12} md={12} className='create-input'>
-
-                    <Alert variant='filled' severity='error'>
-
+                  <Grid item xs={12} md={12} className="create-input">
+                    <Alert variant="filled" severity="error">
                       You doesn't have enough stock.
-
                     </Alert>
-
                   </Grid>
-
                 ) : null}
 
                 {(this.isSalesExecutive || this.isDistributor) &&
-
                 this.state.isAssign ? (
-
                   <>
-
                     {formValues.image_file ? (
-
                       <Grid
-
                         item
-
                         xs={12}
-
                         md={2}
-
-                        className='create-input'
-
-                        style={{ position: "relative" }}>
-
+                        className="create-input"
+                        style={{ position: "relative" }}
+                      >
                         <DeleteIcon
-
                           onClick={this.deleteImage}
-
-                          className='image_delete'
-
+                          className="image_delete"
                           style={{
-
                             position: "absolute",
 
                             right: 0,
@@ -8113,107 +6014,62 @@ class SaleForm extends React.Component {
                             color: "#ff0000",
 
                             cursor: "pointer",
-
                           }}
-
                         />
 
                         <img
-
                           src={this.getImageSrc(formValues.image_file)}
-
-                          id='logo-img'
-
+                          id="logo-img"
                           style={{ height: "100px", width: "100px" }}
-
                         />
-
                       </Grid>
-
                     ) : (
-
-                      <Grid item xs={12} md={2} className='create-input'>
-
+                      <Grid item xs={12} md={2} className="create-input">
                         <img
-
                           src={noImage}
-
-                          id='logo-img1'
-
+                          id="logo-img1"
                           style={{ height: "100px", width: "100px" }}
-
                         />
-
                       </Grid>
-
                     )}
 
-                    <Grid item xs={12} md={4} className='create-input'>
-
+                    <Grid item xs={12} md={4} className="create-input">
                       <Button
-
-                        variant='contained'
-
-                        className='image-button'
-
-                        component='label'
-
-                        endIcon={<CloudUploadIcon />}>
-
+                        variant="contained"
+                        className="image-button"
+                        component="label"
+                        endIcon={<CloudUploadIcon />}
+                      >
                         Image
-
                         <input
-
-                          name='main_image'
-
+                          name="main_image"
                           hidden
-
-                          accept='image/*'
-
-                          type='file'
-
+                          accept="image/*"
+                          type="file"
                           onChange={(e) => this.onChangeImage(e)}
-
                           ref={this.imageFileRef}
-
                         />
-
                       </Button>
-
                     </Grid>
-
                   </>
-
                 ) : null}
-
               </Grid>
-
             </Grid>
-
           ) : null}
 
           {!this.state.isAssign && formValues.user_id ? (
-
             <Grid
-
               item
-
               xs={12}
-
               md={4}
-
-              style={{ paddingRight: "16px", paddingTop: "8px" }}>
-
+              style={{ paddingRight: "16px", paddingTop: "8px" }}
+            >
               <Grid
-
                 container
-
                 spacing={2}
-
                 columnSpacing={{ xs: 1, sm: 2, md: 2 }}
-
-                className='mob_responsive_purchase_input_table'>
-
+                className="mob_responsive_purchase_input_table"
+              >
                 {/*<Grid item xs={12}>
 
                                     <TextField
@@ -8239,1777 +6095,1028 @@ class SaleForm extends React.Component {
                                 </Grid>*/}
 
                 {!isReturn ? (
-
                   <>
-
-                    <Grid item xs={12} className='pt-5'>
-
+                    <Grid item xs={12} className="pt-5">
                       <Grid
-
                         container
-
                         spacing={2}
-
                         columnSpacing={{ xs: 1, sm: 2, md: 2 }}
-
-                        className='display_center justify-content-end'>
-
-                        <Grid item xs={4} md={6} className='text-right pt-0'>
-
-                          <span className='tax-text'> Sub Total </span>
-
+                        className="display_center justify-content-end"
+                      >
+                        <Grid item xs={4} md={6} className="text-right pt-0">
+                          <span className="tax-text"> Sub Total </span>
                         </Grid>
 
-                        <Grid item xs={5} md={6} className='pt-0'>
-
+                        <Grid item xs={5} md={6} className="pt-0">
                           <TextField
-
-                            className='ft-amount'
-
+                            className="ft-amount"
                             fullWidth
-
                             value={priceFormat(
-
-                              formValues.taxable_amount
-
+                              formValues.taxable_amount,
                             ).toFixed(2)}
-
                             disabled
-
                             InputProps={{
-
                               startAdornment: (
-
-                                <InputAdornment position='start'>
-
+                                <InputAdornment position="start">
                                   ₹
-
                                 </InputAdornment>
-
                               ),
 
                               className: "non_disable_text",
-
                             }}
-
                           />
-
                         </Grid>
-
                       </Grid>
-
                     </Grid>
 
-
-
                     {formValues.cgst_tax > 0 ? (
-
-                      <Grid item xs={12} md={12} className='pt-5'>
-
+                      <Grid item xs={12} md={12} className="pt-5">
                         <Grid
-
                           container
-
                           columnSpacing={{ xs: 1, sm: 2, md: 2 }}
-
                           spacing={2}
-
-                          className='display_center justify-content-end'>
-
-                          <Grid item xs={4} md={6} className='text-right pt-0'>
-
-                            <span className='tax-text'>CGST Amount</span>
-
+                          className="display_center justify-content-end"
+                        >
+                          <Grid item xs={4} md={6} className="text-right pt-0">
+                            <span className="tax-text">CGST Amount</span>
                           </Grid>
 
-                          <Grid item xs={5} md={6} className='pt-0'>
-
+                          <Grid item xs={5} md={6} className="pt-0">
                             <TextField
-
-                              label='CGST'
-
-                              variant='outlined'
-
+                              label="CGST"
+                              variant="outlined"
                               fullWidth
-
                               value={formValues.cgst_tax}
-
                               disabled
-
                               InputProps={{
-
                                 startAdornment: (
-
-                                  <InputAdornment position='start'>
-
+                                  <InputAdornment position="start">
                                     ₹
-
                                   </InputAdornment>
-
                                 ),
 
                                 className: "non_disable_text",
-
                               }}
-
                             />
-
                           </Grid>
-
                         </Grid>
-
                       </Grid>
-
                     ) : null}
 
                     {formValues.sgst_tax > 0 ? (
-
-                      <Grid item xs={12} md={12} className='pt-5'>
-
+                      <Grid item xs={12} md={12} className="pt-5">
                         <Grid
-
                           container
-
                           spacing={2}
-
                           columnSpacing={{ xs: 1, sm: 2, md: 2 }}
-
-                          className='display_center justify-content-end'>
-
-                          <Grid item xs={4} md={6} className='text-right pt-0'>
-
-                            <span className='tax-text'>SGST Amount</span>
-
+                          className="display_center justify-content-end"
+                        >
+                          <Grid item xs={4} md={6} className="text-right pt-0">
+                            <span className="tax-text">SGST Amount</span>
                           </Grid>
 
-                          <Grid item xs={5} md={6} className='pt-0'>
-
+                          <Grid item xs={5} md={6} className="pt-0">
                             <TextField
-
                               fullWidth
-
                               value={formValues.sgst_tax}
-
                               disabled
-
                               InputProps={{
-
                                 startAdornment: (
-
-                                  <InputAdornment position='start'>
-
+                                  <InputAdornment position="start">
                                     ₹
-
                                   </InputAdornment>
-
                                 ),
 
                                 className: "non_disable_text",
-
                               }}
-
                             />
-
                           </Grid>
-
                         </Grid>
-
                       </Grid>
-
                     ) : null}
-
-
 
                     {formValues.igst_tax > 0 ? (
-
                       <Grid item xs={12} style={{ paddingTop: "0" }}>
-
                         <Grid
-
                           container
-
                           spacing={2}
-
                           columnSpacing={{ xs: 1, sm: 2, md: 2 }}
-
-                          className='display_center justify-content-end'>
-
-                          <Grid item xs={4} md={6} className='text-right pt-0'>
-
-                            <span className='tax-text'>IGST Amount</span>
-
+                          className="display_center justify-content-end"
+                        >
+                          <Grid item xs={4} md={6} className="text-right pt-0">
+                            <span className="tax-text">IGST Amount</span>
                           </Grid>
 
-                          <Grid item xs={5} md={6} className='pt-0'>
-
+                          <Grid item xs={5} md={6} className="pt-0">
                             <TextField
-
-                              className='ft-amount'
-
+                              className="ft-amount"
                               fullWidth
-
                               value={formValues.igst_tax}
-
                               disabled
-
                               InputProps={{
-
                                 startAdornment: (
-
-                                  <InputAdornment position='start'>
-
+                                  <InputAdornment position="start">
                                     ₹
-
                                   </InputAdornment>
-
                                 ),
 
                                 className: "non_disable_text",
-
                               }}
-
                             />
-
                           </Grid>
-
                         </Grid>
-
                       </Grid>
-
                     ) : null}
 
-                    <Grid item xs={12} className='pt-5'>
-
+                    <Grid item xs={12} className="pt-5">
                       <Grid
-
                         container
-
                         spacing={2}
-
                         columnSpacing={{ xs: 1, sm: 2, md: 2 }}
-
-                        className='display_center justify-content-end'>
-
-                        <Grid item xs={4} md={6} className='text-right pt-0'>
-
-                          <span className='tax-text'>Total Amount</span>
-
+                        className="display_center justify-content-end"
+                      >
+                        <Grid item xs={4} md={6} className="text-right pt-0">
+                          <span className="tax-text">Total Amount</span>
                         </Grid>
 
-                        <Grid item xs={5} md={6} className='pt-0'>
-
+                        <Grid item xs={5} md={6} className="pt-0">
                           <TextField
-
-                            className='ft-amount'
-
+                            className="ft-amount"
                             fullWidth
-
                             value={formValues.total_amount}
-
                             disabled
-
                             InputProps={{
-
                               startAdornment: (
-
-                                <InputAdornment position='start'>
-
+                                <InputAdornment position="start">
                                   ₹
-
                                 </InputAdornment>
-
                               ),
 
                               className: "non_disable_text",
-
                             }}
-
                           />
-
                         </Grid>
-
                       </Grid>
-
                     </Grid>
 
-                    {!isEmpty(this.props.query.get("sale_on_approval")) && 
-                      <Grid item xs={12} className='pt-5'>
-
+                    {!isEmpty(this.props.query.get("sale_on_approval")) && (
+                      <Grid item xs={12} className="pt-5">
                         <Grid
-
                           container
-
                           spacing={2}
-
                           columnSpacing={{ xs: 1, sm: 2, md: 2 }}
-
-                          className='display_center justify-content-end'>
-
-                          <Grid item xs={4} md={6} className='text-right pt-0'>
-
-                            <span className='tax-text'>Already Paid Amount</span>
-
+                          className="display_center justify-content-end"
+                        >
+                          <Grid item xs={4} md={6} className="text-right pt-0">
+                            <span className="tax-text">
+                              Already Paid Amount
+                            </span>
                           </Grid>
 
-                          <Grid item xs={5} md={6} className='pt-0'>
-
+                          <Grid item xs={5} md={6} className="pt-0">
                             <TextField
-
-                              className='ft-amount'
-
+                              className="ft-amount"
                               fullWidth
-
                               value={formValues.already_paid_amount}
-
                               disabled
-
                               InputProps={{
-
                                 startAdornment: (
-
-                                  <InputAdornment position='start'>
-
+                                  <InputAdornment position="start">
                                     ₹
-
                                   </InputAdornment>
-
                                 ),
 
                                 className: "non_disable_text",
-
                               }}
-
                             />
-
                           </Grid>
-
                         </Grid>
-
                       </Grid>
-                    }
+                    )}
 
-
-                    <Grid item xs={12} className='pt-5'>
-
+                    <Grid item xs={12} className="pt-5">
                       <Grid
-
                         container
-
                         spacing={2}
-
                         columnSpacing={{ xs: 1, sm: 2, md: 2 }}
-
-                        className='display_center justify-content-end'>
-
-                        <Grid item xs={4} md={6} className='text-right pt-0'>
-
-                          <span className='tax-text'> Cash Discount </span>
-
+                        className="display_center justify-content-end"
+                      >
+                        <Grid item xs={4} md={6} className="text-right pt-0">
+                          <span className="tax-text"> Cash Discount </span>
                         </Grid>
 
-                        <Grid item xs={5} md={6} className='pt-0'>
-
+                        <Grid item xs={5} md={6} className="pt-0">
                           <TextField
-
-                            className='ft-amount'
-
+                            className="ft-amount"
                             fullWidth
-
                             value={formValues.discount}
-
                             onChange={(event) =>
-
                               this.handleDefaultChange(event, "discount")
-
                             }
-
                             onInput={(e) => validateNumber(e)}
-
                             InputProps={{
-
                               startAdornment: (
-
-                                <InputAdornment position='start'>
-
+                                <InputAdornment position="start">
                                   ₹
-
                                 </InputAdornment>
-
                               ),
-
                             }}
-
                           />
-
                         </Grid>
-
                       </Grid>
-
                     </Grid>
 
-
-
                     {formValues.advance_amount > 0 ? (
-
-                      <Grid item xs={12} className='pt-5'>
-
+                      <Grid item xs={12} className="pt-5">
                         <Grid
-
                           container
-
                           spacing={2}
-
                           columnSpacing={{ xs: 1, sm: 2, md: 2 }}
-
-                          className='display_center justify-content-end'>
-
-                          <Grid item xs={4} md={6} className='text-right pt-0'>
-
-                            <span className='tax-text'> Advance Amount </span>
-
+                          className="display_center justify-content-end"
+                        >
+                          <Grid item xs={4} md={6} className="text-right pt-0">
+                            <span className="tax-text"> Advance Amount </span>
                           </Grid>
 
-                          <Grid item xs={5} md={6} className='pt-0'>
-
+                          <Grid item xs={5} md={6} className="pt-0">
                             <TextField
-
-                              className='ft-amount'
-
+                              className="ft-amount"
                               fullWidth
-
                               value={formValues.advance_amount}
-
                               onInput={(e) => validateNumber(e)}
-
                               InputProps={{
-
                                 startAdornment: (
-
-                                  <InputAdornment position='start'>
-
+                                  <InputAdornment position="start">
                                     ₹
-
                                   </InputAdornment>
-
                                 ),
 
                                 className: "non_disable_text",
 
                                 endAdornment: (
-
                                   <Checkbox
-
                                     checked={formValues.pay_from_advance}
-
                                     onChange={this.handleAdvance}
-
                                   />
-
                                 ),
 
                                 disabled: true,
-
                               }}
-
                             />
-
                           </Grid>
-
                         </Grid>
-
                       </Grid>
-
                     ) : null}
 
-
-
-                    <Grid item xs={12} className='pt-5'>
-
+                    <Grid item xs={12} className="pt-5">
                       <Grid
-
                         container
-
                         spacing={2}
-
                         columnSpacing={{ xs: 1, sm: 2, md: 2 }}
-
-                        className='display_center justify-content-end'>
-
-                        <Grid item xs={4} md={6} className='text-right pt-0'>
-
-                          <span className='tax-text'>Total Payable</span>
-
+                        className="display_center justify-content-end"
+                      >
+                        <Grid item xs={4} md={6} className="text-right pt-0">
+                          <span className="tax-text">Total Payable</span>
                         </Grid>
 
-                        <Grid item xs={5} md={6} className='pt-0'>
-
+                        <Grid item xs={5} md={6} className="pt-0">
                           <TextField
-
-                            className='ft-amount'
-
+                            className="ft-amount"
                             fullWidth
-
                             value={formValues.total_payable}
-
                             disabled
-
                             InputProps={{
-
                               startAdornment: (
-
-                                <InputAdornment position='start'>
-
+                                <InputAdornment position="start">
                                   ₹
-
                                 </InputAdornment>
-
                               ),
 
                               className: "non_disable_text",
-
                             }}
-
                           />
-
                         </Grid>
-
                       </Grid>
-
                     </Grid>
-
                   </>
-
                 ) : (
-
                   <>
-
-                    <Grid item xs={12} md={12} className='pt-5'>
-
+                    <Grid item xs={12} md={12} className="pt-5">
                       <Grid
-
                         container
-
                         spacing={2}
-
-                        className='display_center justify-content-end'>
-
-                        <Grid item xs={4} md={6} className='text-right pt-0'>
-
+                        className="display_center justify-content-end"
+                      >
+                        <Grid item xs={4} md={6} className="text-right pt-0">
                           Return Product Amt
-
                         </Grid>
 
-                        <Grid item xs={5} md={6} className='pt-0'>
-
+                        <Grid item xs={5} md={6} className="pt-0">
                           <TextField
-
-                            className='ft-amount'
-
+                            className="ft-amount"
                             fullWidth
-
-                            value={this.state.product_amount_without_report_charge}
-
+                            value={
+                              this.state.product_amount_without_report_charge
+                            }
                             disabled
-
                             InputProps={{
-
                               startAdornment: (
-
-                                <InputAdornment position='start'>
-
+                                <InputAdornment position="start">
                                   ₹
-
                                 </InputAdornment>
-
                               ),
 
                               className: "non_disable_text",
-
                             }}
-
                           />
-
                         </Grid>
-
                       </Grid>
-
                     </Grid>
 
-                    {formValues.due_amount == 0 && this.state.return_discount > 0 ? (
-
-                      <Grid item xs={12} md={12} className='pt-5'>
-
+                    {formValues.due_amount == 0 &&
+                    this.state.return_discount > 0 ? (
+                      <Grid item xs={12} md={12} className="pt-5">
                         <Grid
-
                           container
-
                           spacing={2}
-
-                          className='display_center justify-content-end'>
-
-                          <Grid item xs={4} md={6} className='text-right pt-0'>
-
+                          className="display_center justify-content-end"
+                        >
+                          <Grid item xs={4} md={6} className="text-right pt-0">
                             Discount
-
                           </Grid>
 
-                          <Grid item xs={5} md={6} className='pt-0'>
-
+                          <Grid item xs={5} md={6} className="pt-0">
                             <TextField
-
-                              className='ft-amount'
-
+                              className="ft-amount"
                               fullWidth
-
                               value={this.state.return_discount}
-
                               disabled
-
                               InputProps={{
-
                                 startAdornment: (
-
-                                  <InputAdornment position='start'>
-
+                                  <InputAdornment position="start">
                                     ₹
-
                                   </InputAdornment>
-
                                 ),
 
                                 className: "non_disable_text",
-
                               }}
-
                             />
-
                           </Grid>
-
                         </Grid>
-
                       </Grid>
-
                     ) : null}
 
-                    {formValues.due_amount == 0 && formValues.have_return_charge ? (
-
-                      <Grid item xs={12} md={12} className='pt-5'>
-
+                    {formValues.due_amount == 0 &&
+                    formValues.have_return_charge ? (
+                      <Grid item xs={12} md={12} className="pt-5">
                         <Grid
-
                           container
-
                           spacing={2}
-
-                          className='display_center justify-content-end'>
-
-                          <Grid item xs={4} md={6} className='text-right pt-0'>
-
+                          className="display_center justify-content-end"
+                        >
+                          <Grid item xs={4} md={6} className="text-right pt-0">
                             Return Charge
-
                           </Grid>
 
-                          <Grid item xs={5} md={6} className='pt-0'>
-
+                          <Grid item xs={5} md={6} className="pt-0">
                             <TextField
-
-                              className='ft-amount'
-
+                              className="ft-amount"
                               fullWidth
-
                               value={this.state.return_charge}
-
                               disabled
-
                               InputProps={{
-
                                 startAdornment: (
-
-                                  <InputAdornment position='start'>
-
+                                  <InputAdornment position="start">
                                     ₹
-
                                   </InputAdornment>
-
                                 ),
 
                                 className: "non_disable_text",
-
                               }}
-
                             />
-
                           </Grid>
-
                         </Grid>
-
                       </Grid>
-
                     ) : null}
 
                     {this.state.return_report_charge > 0 ? (
-                    <Grid item xs={12} md={12} className='pt-5'>
-
-                      <Grid
-
-                        container
-
-                        spacing={2}
-
-                        className='display_center justify-content-end'>
-
-                        <Grid item xs={4} md={6} className='text-right pt-0'>
-
-                          <b>Report Charge</b>
-
-                        </Grid>
-
-                        <Grid item xs={5} md={6} className='pt-0'>
-
-                          <TextField
-
-                            className='ft-amount'
-
-                            fullWidth
-
-                            value={this.state.return_report_charge}
-
-                            disabled
-
-                            InputProps={{
-
-                              startAdornment: (
-
-                                <InputAdornment position='start'>
-
-                                  ₹
-
-                                </InputAdornment>
-
-                              ),
-
-                              className: "non_disable_text",
-
-                            }}
-
-                          />
-
-                        </Grid>
-
-                      </Grid>
-
-                    </Grid>):null}
-
-                    {formValues.due_amount == 0 && this.state.return_tax_charge > 0 ? (
-                    <Grid item xs={12} md={12} className='pt-5'>
-
-                      <Grid
-
-                        container
-
-                        spacing={2}
-
-                        className='display_center justify-content-end'>
-
-                        <Grid item xs={4} md={6} className='text-right pt-0'>
-
-                          <b>Tax Charge</b>
-
-                        </Grid>
-
-                        <Grid item xs={5} md={6} className='pt-0'>
-
-                          <TextField
-
-                            className='ft-amount'
-
-                            fullWidth
-
-                            value={this.state.return_tax_charge}
-
-                            disabled
-
-                            InputProps={{
-
-                              startAdornment: (
-
-                                <InputAdornment position='start'>
-
-                                  ₹
-
-                                </InputAdornment>
-
-                              ),
-
-                              className: "non_disable_text",
-
-                            }}
-
-                          />
-
-                        </Grid>
-
-                      </Grid>
-
-                    </Grid>) : null}
-
-                    {formValues.products.length == 1 ? (
-
-                      <Grid item xs={12} className='pt-5'>
-
+                      <Grid item xs={12} md={12} className="pt-5">
                         <Grid
-
                           container
-
                           spacing={2}
-
-                          columnSpacing={{ xs: 1, sm: 2, md: 2 }}
-
-                          className='display_center justify-content-end'>
-
-                          <Grid item xs={4} md={6} className='text-right pt-0'>
-
-                            <span className='tax-text'> Cash Discount </span>
-
+                          className="display_center justify-content-end"
+                        >
+                          <Grid item xs={4} md={6} className="text-right pt-0">
+                            <b>Report Charge</b>
                           </Grid>
 
-                          <Grid item xs={5} md={6} className='pt-0'>
-
+                          <Grid item xs={5} md={6} className="pt-0">
                             <TextField
-
-                              className='ft-amount'
-
+                              className="ft-amount"
                               fullWidth
-
-                              value={formValues.discount}
-
-                              onInput={(e) => validateNumber(e)}
-
-                              onChange={(event) =>
-
-                                this.handleDefaultChange(event, "discount")
-
-                              }
-
+                              value={this.state.return_report_charge}
+                              disabled
                               InputProps={{
-
                                 startAdornment: (
-
-                                  <InputAdornment position='start'>
-
+                                  <InputAdornment position="start">
                                     ₹
-
                                   </InputAdornment>
-
                                 ),
 
+                                className: "non_disable_text",
                               }}
-
-                              disabled
-
                             />
-
                           </Grid>
-
                         </Grid>
-
                       </Grid>
-
                     ) : null}
 
-                    {formValues.due_amount == 0 && this.state.return_amount > 0 ? (
-                    <Grid item xs={12} md={12} className='pt-5'>
+                    {formValues.due_amount == 0 &&
+                    this.state.return_tax_charge > 0 ? (
+                      <Grid item xs={12} md={12} className="pt-5">
+                        <Grid
+                          container
+                          spacing={2}
+                          className="display_center justify-content-end"
+                        >
+                          <Grid item xs={4} md={6} className="text-right pt-0">
+                            <b>Tax Charge</b>
+                          </Grid>
 
-                      <Grid
+                          <Grid item xs={5} md={6} className="pt-0">
+                            <TextField
+                              className="ft-amount"
+                              fullWidth
+                              value={this.state.return_tax_charge}
+                              disabled
+                              InputProps={{
+                                startAdornment: (
+                                  <InputAdornment position="start">
+                                    ₹
+                                  </InputAdornment>
+                                ),
 
-                        container
-
-                        spacing={2}
-
-                        className='display_center justify-content-end'>
-
-                        <Grid item xs={4} md={6} className='text-right pt-0'>
-
-                          <b>Return Amount</b>
-
+                                className: "non_disable_text",
+                              }}
+                            />
+                          </Grid>
                         </Grid>
-
-                        <Grid item xs={5} md={6} className='pt-0'>
-
-                          <TextField
-
-                            className='ft-amount'
-
-                            fullWidth
-
-                            value={this.state.return_amount}
-
-                            onInput={(e) => validateNumber(e)}
-
-                            onChange={(e) =>
-
-                              this.setState({ return_amount: e.target.value })
-
-                            }
-
-                            InputProps={{
-
-                              startAdornment: (
-
-                                <InputAdornment position='start'>
-
-                                  ₹
-
-                                </InputAdornment>
-
-                              ),
-
-                              className: "non_disable_text",
-
-                            }}
-
-                          />
-
-                        </Grid>
-
                       </Grid>
+                    ) : null}
 
-                    </Grid>): null}
+                    {formValues.products.length == 1 ? (
+                      <Grid item xs={12} className="pt-5">
+                        <Grid
+                          container
+                          spacing={2}
+                          columnSpacing={{ xs: 1, sm: 2, md: 2 }}
+                          className="display_center justify-content-end"
+                        >
+                          <Grid item xs={4} md={6} className="text-right pt-0">
+                            <span className="tax-text"> Cash Discount </span>
+                          </Grid>
 
+                          <Grid item xs={5} md={6} className="pt-0">
+                            <TextField
+                              className="ft-amount"
+                              fullWidth
+                              value={formValues.discount}
+                              onInput={(e) => validateNumber(e)}
+                              onChange={(event) =>
+                                this.handleDefaultChange(event, "discount")
+                              }
+                              InputProps={{
+                                startAdornment: (
+                                  <InputAdornment position="start">
+                                    ₹
+                                  </InputAdornment>
+                                ),
+                              }}
+                              disabled
+                            />
+                          </Grid>
+                        </Grid>
+                      </Grid>
+                    ) : null}
+
+                    {formValues.due_amount == 0 &&
+                    this.state.return_amount > 0 ? (
+                      <Grid item xs={12} md={12} className="pt-5">
+                        <Grid
+                          container
+                          spacing={2}
+                          className="display_center justify-content-end"
+                        >
+                          <Grid item xs={4} md={6} className="text-right pt-0">
+                            <b>Return Amount</b>
+                          </Grid>
+
+                          <Grid item xs={5} md={6} className="pt-0">
+                            <TextField
+                              className="ft-amount"
+                              fullWidth
+                              value={this.state.return_amount}
+                              onInput={(e) => validateNumber(e)}
+                              onChange={(e) =>
+                                this.setState({ return_amount: e.target.value })
+                              }
+                              InputProps={{
+                                startAdornment: (
+                                  <InputAdornment position="start">
+                                    ₹
+                                  </InputAdornment>
+                                ),
+
+                                className: "non_disable_text",
+                              }}
+                            />
+                          </Grid>
+                        </Grid>
+                      </Grid>
+                    ) : null}
                   </>
-
                 )}
 
-
-
                 {!isReturn ? (
-
-                  <Grid item xs={12} className='pt-5'>
-
+                  <Grid item xs={12} className="pt-5">
                     <Grid
-
                       container
-
                       spacing={2}
-
                       columnSpacing={{ xs: 1, sm: 2, md: 2 }}
-
-                      className='display_center justify-content-end'>
-
-                      <Grid item xs={4} md={6} className='text-right pt-0'>
-
-                        <span className='tax-text'> Payment Mode </span>
-
+                      className="display_center justify-content-end"
+                    >
+                      <Grid item xs={4} md={6} className="text-right pt-0">
+                        <span className="tax-text"> Payment Mode </span>
                       </Grid>
 
-                      <Grid item xs={5} md={6} className='pt-0'>
-
-                        <FormControl fullWidth className='ft-amount'>
-
+                      <Grid item xs={5} md={6} className="pt-0">
+                        <FormControl fullWidth className="ft-amount">
                           <Select
-
-                            className='input-inner'
-
+                            className="input-inner"
                             value={formValues.payment_mode}
-
                             fullWidth
-
                             onChange={(event) =>
-
                               this.handleDefaultChange(event, "payment_mode")
+                            }
+                          >
+                            <MenuItem value="cash">Cash</MenuItem>
 
-                            }>
+                            <MenuItem value="cheque">Cheque</MenuItem>
 
-                            <MenuItem value='cash'>Cash</MenuItem>
+                            <MenuItem value="imps_neft">
+                              BANKING/RTGS/NEFT
+                            </MenuItem>
 
-                            <MenuItem value='cheque'>Cheque</MenuItem>
-
-                            <MenuItem value='imps_neft'>BANKING/RTGS/NEFT</MenuItem>
-
-                            <MenuItem value='online'>UPI/PhonePe/Gpay</MenuItem>
-
+                            <MenuItem value="online">UPI/PhonePe/Gpay</MenuItem>
                           </Select>
-
                         </FormControl>
-
                       </Grid>
-
                     </Grid>
-
                   </Grid>
-
                 ) : null}
 
                 {formValues.payment_mode == "imps_neft" ||
-
                 formValues.payment_mode == "upi" ? (
-
-                  <Grid item xs={12} className='pt-5'>
-
+                  <Grid item xs={12} className="pt-5">
                     <Grid
-
                       container
-
                       spacing={2}
-
                       columnSpacing={{ xs: 1, sm: 2, md: 2 }}
-
-                      className='display_center justify-content-end'>
-
-                      <Grid item xs={4} md={6} className='text-right pt-0'>
-
-                        <span className='tax-text'> Transaction No </span>
-
+                      className="display_center justify-content-end"
+                    >
+                      <Grid item xs={4} md={6} className="text-right pt-0">
+                        <span className="tax-text"> Transaction No </span>
                       </Grid>
 
-                      <Grid item xs={5} md={6} className='pt-0'>
-
+                      <Grid item xs={5} md={6} className="pt-0">
                         <TextField
-
-                          className='ft-amount'
-
+                          className="ft-amount"
                           fullWidth
-
                           value={formValues.transaction_no}
-
                           onChange={(event) =>
-
                             this.handleDefaultChange(event, "transaction_no")
-
                           }
-
                         />
-
                       </Grid>
-
                     </Grid>
-
                   </Grid>
-
                 ) : null}
 
                 {formValues.payment_mode == "cheque" ? (
-
-                  <Grid item xs={12} className='pt-5'>
-
+                  <Grid item xs={12} className="pt-5">
                     <Grid
-
                       container
-
                       spacing={2}
-
                       columnSpacing={{ xs: 1, sm: 2, md: 2 }}
-
-                      className='display_center justify-content-end'>
-
-                      <Grid item xs={4} md={6} className='text-right pt-0'>
-
-                        <span className='tax-text'> Cheque No </span>
-
+                      className="display_center justify-content-end"
+                    >
+                      <Grid item xs={4} md={6} className="text-right pt-0">
+                        <span className="tax-text"> Cheque No </span>
                       </Grid>
 
-                      <Grid item xs={5} md={6} className='pt-0'>
-
+                      <Grid item xs={5} md={6} className="pt-0">
                         <TextField
-
-                          className='ft-amount'
-
+                          className="ft-amount"
                           fullWidth
-
                           value={formValues.cheque_no}
-
                           onChange={(event) =>
-
                             this.handleDefaultChange(event, "cheque_no")
-
                           }
-
                         />
-
                       </Grid>
-
                     </Grid>
-
                   </Grid>
-
                 ) : null}
 
                 {!isReturn ? (
-
                   <>
-
-                    <Grid item xs={12} className='pt-5'>
-
+                    <Grid item xs={12} className="pt-5">
                       <Grid
-
                         container
-
                         spacing={2}
-
                         columnSpacing={{ xs: 1, sm: 2, md: 2 }}
-
-                        className='display_center justify-content-end'>
-
-                        <Grid item xs={4} md={6} className='text-right pt-0'>
-
-                          <span className='tax-text'> Pay Now </span>
-
+                        className="display_center justify-content-end"
+                      >
+                        <Grid item xs={4} md={6} className="text-right pt-0">
+                          <span className="tax-text"> Pay Now </span>
                         </Grid>
 
-                        <Grid item xs={5} md={6} className='pt-0'>
-
+                        <Grid item xs={5} md={6} className="pt-0">
                           <TextField
-
-                            className='ft-amount'
-
+                            className="ft-amount"
                             fullWidth
-
                             value={formValues.paid_amount}
-
                             onInput={(e) => validateNumber(e)}
-
                             onChange={(event) =>
-
                               this.handleDefaultChange(event, "paid_amount")
-
                             }
-
                             error={formErros.paid_amount}
-
                             InputProps={{
-
                               startAdornment: (
-
-                                <InputAdornment position='start'>
-
+                                <InputAdornment position="start">
                                   ₹
-
                                 </InputAdornment>
-
                               ),
-
                             }}
-
                           />
-
                         </Grid>
-
                       </Grid>
-
                     </Grid>
 
-                    <Grid item xs={12} className='pt-5'>
-
+                    <Grid item xs={12} className="pt-5">
                       <Grid
-
                         container
-
                         spacing={2}
-
                         columnSpacing={{ xs: 1, sm: 2, md: 2 }}
-
-                        className='display_center justify-content-end'>
-
-                        <Grid item xs={4} md={6} className='text-right pt-0'>
-
-                          <span className='tax-text'> Due Amount </span>
-
+                        className="display_center justify-content-end"
+                      >
+                        <Grid item xs={4} md={6} className="text-right pt-0">
+                          <span className="tax-text"> Due Amount </span>
                         </Grid>
 
-                        <Grid item xs={5} md={6} className='pt-0'>
-
+                        <Grid item xs={5} md={6} className="pt-0">
                           <TextField
-
-                            className='ft-amount'
-
+                            className="ft-amount"
                             fullWidth
-
                             value={priceFormat(formValues.due_amount).toFixed(
-
-                              2
-
+                              2,
                             )}
-
                             disabled
-
                             InputProps={{
-
                               startAdornment: (
-
-                                <InputAdornment position='start'>
-
+                                <InputAdornment position="start">
                                   ₹
-
                                 </InputAdornment>
-
                               ),
 
                               className: "non_disable_text",
-
                             }}
-
                           />
-
                         </Grid>
-
                       </Grid>
-
                     </Grid>
 
                     {parseFloat(formValues.due_amount) > 0 ? (
-
                       <>
-
                         <Grid
-
                           item
-
                           xs={12}
-
-                          className='p-invoice-date create-input pt-5'>
-
+                          className="p-invoice-date create-input pt-5"
+                        >
                           <Grid
-
                             container
-
                             spacing={2}
-
                             columnSpacing={{ xs: 1, sm: 2, md: 2 }}
-
-                            className='display_center justify-content-end'>
-
+                            className="display_center justify-content-end"
+                          >
                             <Grid
-
                               item
-
                               xs={4}
-
                               md={6}
-
-                              className='text-right pt-0'>
-
-                              <span className='tax-text'> Due Date </span>
-
+                              className="text-right pt-0"
+                            >
+                              <span className="tax-text"> Due Date </span>
                             </Grid>
 
-                            <Grid item xs={5} md={6} className='pt-0'>
-
+                            <Grid item xs={5} md={6} className="pt-0">
                               <LocalizationProvider dateAdapter={AdapterDayjs}>
-
                                 <DatePicker
-
                                   value={formValues.due_date}
-
                                   fullWidth
-
-                                  className='ft-amount'
-
-                                  inputFormat='DD/MM/YYYY'
-
+                                  className="ft-amount"
+                                  inputFormat="DD/MM/YYYY"
                                   onChange={(newValue) =>
-
                                     this.updateFormValues(newValue, "due_date")
-
                                   }
-
                                   renderInput={(params) => (
-
                                     <TextField
-
                                       fullWidth
-
                                       {...params}
-
                                       error={formErros.due_date}
-
                                     />
-
                                   )}
-
                                 />
-
                               </LocalizationProvider>
-
                             </Grid>
-
                           </Grid>
-
                         </Grid>
 
                         <Grid
-
                           item
-
                           xs={12}
-
-                          className='p-invoice-date create-input pt-5'>
-
+                          className="p-invoice-date create-input pt-5"
+                        >
                           <Grid
-
                             container
-
                             spacing={2}
-
                             columnSpacing={{ xs: 1, sm: 2, md: 2 }}
-
-                            className='display_center justify-content-end'>
-
+                            className="display_center justify-content-end"
+                          >
                             <Grid
-
                               item
-
                               xs={4}
-
                               md={6}
-
-                              className='text-right pt-0'>
-
-                              <span className='tax-text'>
-
+                              className="text-right pt-0"
+                            >
+                              <span className="tax-text">
                                 {" "}
-
                                 Settlement Date{" "}
-
                               </span>
-
                             </Grid>
 
-                            <Grid item xs={5} md={6} className='pt-0'>
-
+                            <Grid item xs={5} md={6} className="pt-0">
                               <LocalizationProvider dateAdapter={AdapterDayjs}>
-
                                 <DatePicker
-
-                                  className='ft-amount'
-
+                                  className="ft-amount"
                                   value={formValues.settlement_date}
-
                                   fullWidth
-
-                                  inputFormat='DD/MM/YYYY'
-
+                                  inputFormat="DD/MM/YYYY"
                                   onChange={(newValue) =>
-
                                     this.updateFormValues(
-
                                       newValue,
 
-                                      "settlement_date"
-
+                                      "settlement_date",
                                     )
-
                                   }
-
                                   renderInput={(params) => (
-
                                     <TextField
-
                                       fullWidth
-
                                       {...params}
-
                                       error={formErros.settlement_date}
-
                                     />
-
                                   )}
-
                                 />
-
                               </LocalizationProvider>
-
                             </Grid>
-
                           </Grid>
-
                         </Grid>
-
                       </>
-
                     ) : null}
-
                   </>
-
                 ) : (
-
                   <Grid
-
                     item
-
                     xs={12}
-
                     md={12}
-
-                    className='p-invoice-date create-input pt-5'>
-
+                    className="p-invoice-date create-input pt-5"
+                  >
                     <Grid
-
                       container
-
                       spacing={2}
-
-                      className='display_center justify-content-end'>
-
-                      <Grid item xs={4} md={6} className='text-right pt-0'>
-
+                      className="display_center justify-content-end"
+                    >
+                      <Grid item xs={4} md={6} className="text-right pt-0">
                         Return Date
-
                       </Grid>
 
-                      <Grid item xs={5} md={6} className='pt-0'>
-
+                      <Grid item xs={5} md={6} className="pt-0">
                         <LocalizationProvider dateAdapter={AdapterDayjs}>
-
                           <DatePicker
-
-                            className='ft-amount'
-
+                            className="ft-amount"
                             value={this.state.return_date}
-
                             fullWidth
-
-                            inputFormat='DD/MM/YYYY'
-
+                            inputFormat="DD/MM/YYYY"
                             onChange={(newValue) =>
-
                               this.setState({ return_date: newValue })
-
                             }
-
                             renderInput={(params) => (
-
                               <TextField fullWidth {...params} />
-
                             )}
-
                           />
-
                         </LocalizationProvider>
-
                       </Grid>
-
                     </Grid>
-
                   </Grid>
-
                 )}
-
               </Grid>
-
             </Grid>
-
           ) : null}
 
-
-
           {formValues.user_id ? (
-
             <Grid
-
               item
-
               xs={this.state.isAssign ? 12 : 12}
-
-              md={this.state.isAssign ? 4 : 12}>
-
+              md={this.state.isAssign ? 4 : 12}
+            >
               {!submitting ? (
-
                 <Stack
-
                   spacing={1}
-
-                  direction='row'
-
-                  className='ratn-footer-buttons'
-
-                  justifyContent='flex-end'
-
-                  style={{ paddingRight: "16px", paddingBottom: "16px" }}>
-
+                  direction="row"
+                  className="ratn-footer-buttons"
+                  justifyContent="flex-end"
+                  style={{ paddingRight: "16px", paddingBottom: "16px" }}
+                >
                   {isEmpty(this.props.query.get("sale_on_approval")) &&
-
                   !this.state.order_id &&
-
                   !this.state.isAssign &&
-
                   this.state.isCreateFrom ? (
-
                     <LoadingButton
-
-                      className='conf-button'
-
-                      variant='contained'
-
-                      type='button'
-
+                      className="conf-button"
+                      variant="contained"
+                      type="button"
                       loading={submitting}
-
                       disabled={submitting}
-
                       onClick={(e) => {
-
                         e.target.disabled = true;
 
                         this.handleSubmit(true, e);
-
-                      }}>
-
+                      }}
+                    >
                       On Approval
-
                     </LoadingButton>
-
                   ) : null}
 
                   {this.state.isCreateFrom ? (
-
                     <LoadingButton
-
-                      className='conf-button'
-
-                      variant='contained'
-
-                      type='button'
-
+                      className="conf-button"
+                      variant="contained"
+                      type="button"
                       loading={submitting}
-
                       disabled={submitting}
-
                       onClick={(e) => {
-
                         e.target.disabled = true;
 
                         this.handleSubmit(false, e);
-
-                      }}>
-
+                      }}
+                    >
                       {this.state.isAssign ? "Transfer " : "Sale Now"}
-
                     </LoadingButton>
-
                   ) : (
-
                     <>
-
                       {this.state.return_products.length ? (
-
                         <Button
-
-                          variant='outlined'
-
-                          type='button'
-
-                          className='conf-button'
-
-                          onClick={this.handleReturn}>
-
+                          variant="outlined"
+                          type="button"
+                          className="conf-button"
+                          onClick={this.handleReturn}
+                        >
                           Return
-
                         </Button>
-
                       ) : null}
-
                     </>
-
                   )}
 
                   {
-
                     <Button
-
-                      variant='outlined'
-
-                      className='close-button'
-
-                      onClick={() => this.props.navigate(-1)}>
-
+                      variant="outlined"
+                      className="close-button"
+                      onClick={() => this.props.navigate(-1)}
+                    >
                       Cancel
-
                     </Button>
-
                   }
-
                 </Stack>
-
               ) : (
-
                 <Stack
-
                   spacing={1}
-
-                  direction='row'
-
-                  className='ratn-footer-buttons'
-
-                  justifyContent='flex-end'
-
-                  style={{ paddingRight: "16px", paddingBottom: "16px" }}>
-
-                  <CircularProgress size='30px' />
-
+                  direction="row"
+                  className="ratn-footer-buttons"
+                  justifyContent="flex-end"
+                  style={{ paddingRight: "16px", paddingBottom: "16px" }}
+                >
+                  <CircularProgress size="30px" />
                 </Stack>
-
               )}
-
             </Grid>
-
-          ) : (!isEmpty(this.props.query.get("sale_on_approval"))?<Stack
-
-                  spacing={1}
-
-                  direction='row'
-
-                  className='ratn-footer-buttons'
-
-                  justifyContent='flex-end'
-
-                  style={{ paddingRight: "16px", paddingBottom: "16px" }}>
-
-                  <CircularProgress size='30px' />
-
-                </Stack>:null)}
-
+          ) : !isEmpty(this.props.query.get("sale_on_approval")) ? (
+            <Stack
+              spacing={1}
+              direction="row"
+              className="ratn-footer-buttons"
+              justifyContent="flex-end"
+              style={{ paddingRight: "16px", paddingBottom: "16px" }}
+            >
+              <CircularProgress size="30px" />
+            </Stack>
+          ) : null}
         </Grid>
 
-
-
         <Dialog
-
           open={this.state.productDialog}
-
           onClose={this.handleProductDialogClose}
-
           fullWidth
-
-          maxWidth='lg'
-
-          className='ratn-dialog-wrapper'>
-
+          maxWidth="lg"
+          className="ratn-dialog-wrapper"
+        >
           <DialogTitle>Add Product</DialogTitle>
 
           <DialogContent>
-
             <DialogContentText></DialogContentText>
 
             <Box sx={{ flexGrow: 1, m: 0.5 }}>
-
               <Grid
-
                 container
-
                 spacing={2}
-
-                columnSpacing={{ xs: 1, sm: 2, md: 2 }}>
-
+                columnSpacing={{ xs: 1, sm: 2, md: 2 }}
+              >
                 <Grid item xs={12} md={3}>
-
                   <FormControl fullWidth error={productFormErros.category_id}>
-
                     <InputLabel>Category</InputLabel>
 
                     <Select
-
                       value={productFormValues.category_id}
-
-                      label='Category'
-
+                      label="Category"
                       onChange={this.handleCategoryChange}
-
-                      defaultValue=''>
-
-                      <MenuItem value=''></MenuItem>
+                      defaultValue=""
+                    >
+                      <MenuItem value=""></MenuItem>
 
                       {this.state.categoryList.map((item, index) => (
-
                         <MenuItem value={item.id} key={index}>
-
                           {item.name}
-
                         </MenuItem>
-
                       ))}
-
                     </Select>
-
                   </FormControl>
-
                 </Grid>
 
                 <Grid item xs={12} md={3}>
-
                   <FormControl
-
                     fullWidth
-
-                    error={productFormErros.sub_category_id}>
-
+                    error={productFormErros.sub_category_id}
+                  >
                     <InputLabel>Sub Category</InputLabel>
 
                     <Select
-
                       value={productFormValues.sub_category_id}
-
-                      label='Sub Category'
-
+                      label="Sub Category"
                       onChange={this.handleSubCategoryChange}
-
-                      defaultValue=''>
-
-                      <MenuItem value=''></MenuItem>
+                      defaultValue=""
+                    >
+                      <MenuItem value=""></MenuItem>
 
                       {this.state.subCategoryList.map((item, index) => (
-
                         <MenuItem value={item.id} key={index}>
-
                           {item.name}
-
                         </MenuItem>
-
                       ))}
-
                     </Select>
-
                   </FormControl>
-
                 </Grid>
 
                 <Grid item xs={12} md={6}>
-
                   <FormControl fullWidth error={productFormErros.product_id}>
-
                     <InputLabel>Product</InputLabel>
 
                     <Select
-
                       value={productFormValues.product_id}
-
-                      label='Product'
-
+                      label="Product"
                       onChange={this.handleProductChange}
-
-                      defaultValue=''>
-
-                      <MenuItem value=''></MenuItem>
+                      defaultValue=""
+                    >
+                      <MenuItem value=""></MenuItem>
 
                       {this.state.stockProductList.map((item, index) => (
-
                         <MenuItem value={item.id} key={index}>
-
                           {item.name}
-
                         </MenuItem>
-
                       ))}
-
                     </Select>
-
                   </FormControl>
-
                 </Grid>
 
                 {productFormValues.product_type != "material" ? (
-
                   <>
-
                     {/*<Grid item xs={12} md={3}>
 
                                             <TextField
@@ -10065,37 +7172,23 @@ class SaleForm extends React.Component {
                                             </FormControl>
 
                                                 </Grid>*/}
-
                   </>
-
                 ) : null}
 
                 {this.state.stockProductDetails.length &&
-
                 productFormValues.product_id ? (
-
                   <Grid item xs={12}>
-
                     <FormControl fullWidth>
-
                       <RadioGroup
-
-                        name='stock_id'
-
+                        name="stock_id"
                         value={productFormValues.stock_id}
-
-                        onChange={this.handleProductFormStockChange}>
-
+                        onChange={this.handleProductFormStockChange}
+                      >
                         {!this.checkIfAllStockAdded() ? (
-
                           <TableContainer component={Paper}>
-
                             <Table>
-
                               <TableHead>
-
                                 <TableRow>
-
                                   <TableCell>Size Name</TableCell>
 
                                   <TableCell>Material Name</TableCell>
@@ -10107,107 +7200,63 @@ class SaleForm extends React.Component {
                                   <TableCell>Unit</TableCell>
 
                                   <TableCell>Quantity</TableCell>
-
                                 </TableRow>
-
                               </TableHead>
 
                               <TableBody>
-
                                 {this.state.stockProductDetails.map(
-
                                   (itm, i) => {
-
                                     return !this.checkIfStockAdded(
-
-                                      itm.stock_id
-
+                                      itm.stock_id,
                                     ) ? (
-
                                       <React.Fragment key={i}>
-
                                         <TableRow>
-
                                           <TableCell
-
-                                            rowSpan={itm.materials.length + 1}>
-
+                                            rowSpan={itm.materials.length + 1}
+                                          >
                                             <FormControlLabel
-
                                               value={itm.stock_id}
-
                                               control={<Radio />}
-
                                             />{" "}
-
                                             {itm.size_name}
-
                                           </TableCell>
-
                                         </TableRow>
 
                                         {itm.materials.map((x, indx) => (
-
                                           <React.Fragment key={indx}>
-
                                             <TableRow>
-
                                               <TableCell>
-
                                                 {x.material_name}
-
                                               </TableCell>
 
                                               <TableCell>{x.purity}</TableCell>
 
                                               <TableCell>
-
                                                 {weightFormat(x.weight, true)}
-
                                               </TableCell>
 
                                               <TableCell>
-
                                                 {x.unit_name}
-
                                               </TableCell>
 
                                               <TableCell>
-
                                                 {x.quantity}
-
                                               </TableCell>
-
                                             </TableRow>
-
                                           </React.Fragment>
-
                                         ))}
-
                                       </React.Fragment>
-
                                     ) : null;
-
-                                  }
-
+                                  },
                                 )}
-
                               </TableBody>
-
                             </Table>
-
                           </TableContainer>
-
                         ) : null}
-
                       </RadioGroup>
-
                     </FormControl>
 
-
-
                     <FormControl fullWidth>
-
                       {/*<ToggleButtonGroup
 
                                                 className='product-button'
@@ -10285,35 +7334,22 @@ class SaleForm extends React.Component {
                                             </ToggleButtonGroup>*/}
 
                       {this.checkIfAllStockAdded() ? (
-
                         <h3>No Stock available</h3>
-
                       ) : null}
-
                     </FormControl>
-
                   </Grid>
-
                 ) : null}
 
                 {productFormValues.product_type == "material" ? (
-
                   <Grid item xs={12}>
-
                     <TableContainer component={Paper}>
-
                       <Table
-
                         sx={{ minWidth: 650 }}
-
-                        aria-label='simple table'
-
-                        className='ratn-table-product-wrapper'>
-
-                        <TableHead className='ratn-table-header'>
-
-                          <TableRow className='pur-details-inner-table'>
-
+                        aria-label="simple table"
+                        className="ratn-table-product-wrapper"
+                      >
+                        <TableHead className="ratn-table-header">
+                          <TableRow className="pur-details-inner-table">
                             <TableCell>Material Name</TableCell>
 
                             <TableCell>Purity</TableCell>
@@ -10321,115 +7357,68 @@ class SaleForm extends React.Component {
                             <TableCell>Quantity</TableCell>
 
                             <TableCell>Weight</TableCell>
-
                           </TableRow>
-
                         </TableHead>
 
-                        <TableBody className='pur-details-table-body'>
-
+                        <TableBody className="pur-details-table-body">
                           {productFormValues.materials.map((item, index) => (
-
                             <TableRow key={index}>
-
                               <TableCell>{item.material_name}</TableCell>
 
                               <TableCell>{item.purity}</TableCell>
 
                               <TableCell>
-
                                 <TextField
-
-                                  label='Quantity'
-
-                                  variant='outlined'
-
+                                  label="Quantity"
+                                  variant="outlined"
                                   fullWidth
-
                                   onInput={(e) => validateInteger(e)}
-
                                   value={item.quantity}
-
                                   onChange={(event) =>
-
                                     this.handleMaterialFormChange(
-
                                       event,
 
                                       index,
 
-                                      "quantity"
-
+                                      "quantity",
                                     )
-
                                   }
-
                                   error={materialFormErros[index].quantity}
-
                                 />
-
                               </TableCell>
 
                               <TableCell>
-
                                 <TextField
-
-                                  label='Weight'
-
-                                  variant='outlined'
-
+                                  label="Weight"
+                                  variant="outlined"
                                   fullWidth
-
                                   onInput={(e) => validateNumber(e)}
-
                                   value={item.weight}
-
                                   onChange={(event) =>
-
                                     this.handleMaterialFormChange(
-
                                       event,
 
                                       index,
 
-                                      "weight"
-
+                                      "weight",
                                     )
-
                                   }
-
                                   InputProps={{
-
                                     endAdornment: (
-
-                                      <InputAdornment position='start'>
-
+                                      <InputAdornment position="start">
                                         {item.unit_name}
-
                                       </InputAdornment>
-
                                     ),
-
                                   }}
-
                                   error={materialFormErros[index].weight}
-
                                 />
-
                               </TableCell>
-
                             </TableRow>
-
                           ))}
-
                         </TableBody>
-
                       </Table>
-
                     </TableContainer>
-
                   </Grid>
-
                 ) : null}
 
                 {/*<Grid item xs={12}>
@@ -10671,659 +7660,390 @@ class SaleForm extends React.Component {
                                 </Grid>*/}
 
                 <Grid item xs={12}>
-
-                  <Stack spacing={1} direction='row' justifyContent='flex-end'>
-
+                  <Stack spacing={1} direction="row" justifyContent="flex-end">
                     <Button
-
-                      variant='contained'
-
-                      type='button'
-
-                      onClick={this.handleProductSubmit}>
-
+                      variant="contained"
+                      type="button"
+                      onClick={this.handleProductSubmit}
+                    >
                       Add Product
-
                     </Button>
 
                     <Button
-
-                      variant='outlined'
-
-                      onClick={this.handleProductDialogClose}>
-
+                      variant="outlined"
+                      onClick={this.handleProductDialogClose}
+                    >
                       Cancel
-
                     </Button>
-
                   </Stack>
-
                 </Grid>
-
               </Grid>
-
             </Box>
-
           </DialogContent>
-
         </Dialog>
 
-
-
         <Dialog
-
           open={this.state.payNowForReturnDialogOpen}
-
           onClose={this.handlePayNowForReturnDialogClose}
-
           fullWidth
-
-          maxWidth='xs'
-
-          className='ratn-dialog-wrapper'>
-
+          maxWidth="xs"
+          className="ratn-dialog-wrapper"
+        >
           <DialogTitle>Pay the amount!</DialogTitle>
 
           <DialogContent>
-
-            <DialogContentText id='alert-dialog-slide-description'>
-
-              {`Total return charge is : ${total_charge_for_return} and customer paid : ${formValues.paid_amount}, so customer need to pay : ${priceFormat(total_charge_for_return-formValues.paid_amount).toFixed(2)} to initiate return process. Please goto paynow section to collect the amount from customer.`}
-
+            <DialogContentText id="alert-dialog-slide-description">
+              {`Total return charge is : ${total_charge_for_return} and customer paid : ${formValues.paid_amount}, so customer need to pay : ${priceFormat(total_charge_for_return - formValues.paid_amount).toFixed(2)} to initiate return process. Please goto paynow section to collect the amount from customer.`}
             </DialogContentText>
-
           </DialogContent>
 
           <DialogActions>
-
-            <Stack spacing={2} direction='row' justifyContent='flex-end'>
-
-              <Button variant='outlined' onClick={this.handlePayNowForReturnDialogClose}>
-
+            <Stack spacing={2} direction="row" justifyContent="flex-end">
+              <Button
+                variant="outlined"
+                onClick={this.handlePayNowForReturnDialogClose}
+              >
                 Ok
-
               </Button>
-
             </Stack>
-
           </DialogActions>
-
         </Dialog>
-        
+
         <Dialog
-
           open={this.state.returnChargeApplyDialogOpen}
-
           onClose={this.handleReturnChargeApplyDialogOpen}
-
           fullWidth
-
-          maxWidth='xs'
-
-          className='ratn-dialog-wrapper'>
-
+          maxWidth="xs"
+          className="ratn-dialog-wrapper"
+        >
           <DialogTitle>Payable amount!</DialogTitle>
 
           <DialogContent>
-
-            <DialogContentText id='alert-dialog-slide-description'>
-
+            <DialogContentText id="alert-dialog-slide-description">
               {`Total payable amount will be : ${this.state.return_amount}. Will receive within 7 working days as per company policy.`}
-
             </DialogContentText>
-
           </DialogContent>
 
           <DialogActions>
             {!submitting ? (
-              <Stack spacing={2} direction='row' justifyContent='flex-end'>
-
-                <Button variant='outlined' onClick={this.handleReturnChargeApplyDialogOpen}>
-
+              <Stack spacing={2} direction="row" justifyContent="flex-end">
+                <Button
+                  variant="outlined"
+                  onClick={this.handleReturnChargeApplyDialogOpen}
+                >
                   Cancel
-
                 </Button>
 
                 <Button
-
-                    variant='contained'
-
-                    type='button'
-
-                    onClick={this.handleReturnConfirm}>
-
-                    Yes, Confirm
-
-                  </Button>
-
+                  variant="contained"
+                  type="button"
+                  onClick={this.handleReturnConfirm}
+                >
+                  Yes, Confirm
+                </Button>
               </Stack>
-
             ) : (
-
-              <Stack spacing={2} direction='row' justifyContent='flex-end'>
-
-                <CircularProgress size='30px' />
-
+              <Stack spacing={2} direction="row" justifyContent="flex-end">
+                <CircularProgress size="30px" />
               </Stack>
-
             )}
-
           </DialogActions>
-
         </Dialog>
 
         <Dialog
-
           open={this.state.deleteDialogOpen}
-
           onClose={this.handleDialogClose}
-
           fullWidth
-
-          maxWidth='xs'
-
-          className='ratn-dialog-wrapper'>
-
+          maxWidth="xs"
+          className="ratn-dialog-wrapper"
+        >
           <DialogTitle>Delete</DialogTitle>
 
           <DialogContent>
-
-            <DialogContentText id='alert-dialog-slide-description'>
-
+            <DialogContentText id="alert-dialog-slide-description">
               Are you sure want to delete this record?
-
             </DialogContentText>
-
           </DialogContent>
 
           <DialogActions>
-
-            <Stack spacing={2} direction='row' justifyContent='flex-end'>
-
-              <Button variant='outlined' onClick={this.handleDialogClose}>
-
+            <Stack spacing={2} direction="row" justifyContent="flex-end">
+              <Button variant="outlined" onClick={this.handleDialogClose}>
                 Cancel
-
               </Button>
 
               <Button
-
-                variant='contained'
-
-                type='button'
-
-                onClick={this.handleDeleteConfirm}>
-
+                variant="contained"
+                type="button"
+                onClick={this.handleDeleteConfirm}
+              >
                 Yes, Confirm
-
               </Button>
-
             </Stack>
-
           </DialogActions>
-
         </Dialog>
 
-
-
         <Dialog
-
           open={this.state.returnDialogOpen}
-
           onClose={this.returnDialogClose}
-
           fullWidth
-
-          maxWidth='xs'
-
-          className='ratn-dialog-wrapper'>
-
+          maxWidth="xs"
+          className="ratn-dialog-wrapper"
+        >
           <DialogTitle>Return</DialogTitle>
 
           <DialogContent>
-
-            <DialogContentText id='alert-dialog-slide-description'>
-
+            <DialogContentText id="alert-dialog-slide-description">
               Are you sure want to return these product(s)?
-
             </DialogContentText>
 
             {return_from_wallet > 0 ? (
-
               <>
-
                 <FormControl>
-
                   <RadioGroup
-
                     row
-
-                    name='row-radio-buttons-group'
-
+                    name="row-radio-buttons-group"
                     value={this.state.payment_type}
-
                     onChange={(e) =>
-
                       this.setState({ payment_type: e.target.value })
-
-                    }>
-
+                    }
+                  >
                     {!will_return_charge_apply ? (
-
                       <FormControlLabel
-
-                        value='advance'
-
+                        value="advance"
                         control={<Radio />}
-
                         label={
-
                           "Payment move to advance " +
-
                           displayAmount(return_from_wallet)
-
                         }
-
                       />
-
                     ) : null}
 
                     <FormControlLabel
-
-                      value='return'
-
+                      value="return"
                       control={<Radio />}
-
                       label={
-
                         "Payment Return " + displayAmount(return_from_wallet)
-
                       }
-
                     />
-
                   </RadioGroup>
-
                 </FormControl>
 
                 {this.state.payment_type == "return" &&
-
                 !will_return_charge_apply ? (
-
                   <FormControl fullWidth>
-
                     <InputLabel>Payment Mode</InputLabel>
 
                     <Select
-
-                      className='input-inner'
-
+                      className="input-inner"
                       value={this.state.return_payment_mode}
-
                       fullWidth
-
-                      label='Payment Mode'
-
+                      label="Payment Mode"
                       onChange={(e) =>
-
                         this.setState({ return_payment_mode: e.target.value })
+                      }
+                    >
+                      <MenuItem value="cash">Cash</MenuItem>
 
-                      }>
+                      <MenuItem value="cheque">Cheque</MenuItem>
 
-                      <MenuItem value='cash'>Cash</MenuItem>
+                      <MenuItem value="imps_neft">BANKING/RTGS/NEFT</MenuItem>
 
-                      <MenuItem value='cheque'>Cheque</MenuItem>
-
-                      <MenuItem value='imps_neft'>BANKING/RTGS/NEFT</MenuItem>
-
-                      <MenuItem value='online'>UPI/PhonePe/Gpay</MenuItem>
-
+                      <MenuItem value="online">UPI/PhonePe/Gpay</MenuItem>
                     </Select>
-
                   </FormControl>
-
                 ) : null}
-
               </>
-
             ) : null}
-
           </DialogContent>
 
           <DialogActions>
-
             {!submitting ? (
-
-              <Stack spacing={2} direction='row' justifyContent='flex-end'>
-
-                <Button variant='outlined' onClick={this.returnDialogClose}>
-
+              <Stack spacing={2} direction="row" justifyContent="flex-end">
+                <Button variant="outlined" onClick={this.returnDialogClose}>
                   Cancel
-
                 </Button>
 
                 <Button
-
-                  variant='contained'
-
-                  type='button'
-
-                  onClick={this.handleReturnConfirm}>
-
+                  variant="contained"
+                  type="button"
+                  onClick={this.handleReturnConfirm}
+                >
                   Yes, Confirm
-
                 </Button>
-
               </Stack>
-
             ) : (
-
-              <Stack spacing={2} direction='row' justifyContent='flex-end'>
-
-                <CircularProgress size='30px' />
-
+              <Stack spacing={2} direction="row" justifyContent="flex-end">
+                <CircularProgress size="30px" />
               </Stack>
-
             )}
-
           </DialogActions>
-
         </Dialog>
 
-
-
         <Dialog
-
           open={this.state.materialReturnDialog}
-
           onClose={this.handleReturnDialogClose}
-
           fullWidth
-
-          maxWidth='md'
-
-          className='ratn-dialog-wrapper'>
-
+          maxWidth="md"
+          className="ratn-dialog-wrapper"
+        >
           <DialogTitle>Return Product</DialogTitle>
 
           <DialogContent>
-
             <DialogContentText></DialogContentText>
 
             <Box sx={{ flexGrow: 1, m: 0.5 }}>
-
               {actionProduct ? (
-
                 <Grid container spacing={2}>
-
                   <Grid item xs={12} md={6}>
-
                     <TextField
-
-                      label='Name'
-
-                      variant='outlined'
-
+                      label="Name"
+                      variant="outlined"
                       fullWidth
-
                       value={actionProduct.product_name}
-
                       disabled
-
                       InputProps={{
-
                         className: "non_disable_text",
-
                       }}
-
                     />
-
                   </Grid>
 
                   <Grid item xs={12} md={2}>
-
                     <TextField
-
-                      label='Purity'
-
-                      variant='outlined'
-
+                      label="Purity"
+                      variant="outlined"
                       fullWidth
-
                       value={actionProduct.materials[0].purity_name}
-
                       disabled
-
                       InputProps={{
-
                         className: "non_disable_text",
-
                       }}
-
                     />
-
                   </Grid>
 
                   <Grid item xs={12} md={2}>
-
                     <TextField
-
-                      label='Avl Qty'
-
-                      variant='outlined'
-
+                      label="Avl Qty"
+                      variant="outlined"
                       fullWidth
-
                       value={actionProduct.materials[0].avl_qty}
-
                       disabled
-
                       InputProps={{
-
                         className: "non_disable_text",
-
                       }}
-
                     />
-
                   </Grid>
 
                   <Grid item xs={12} md={2}>
-
                     <TextField
-
-                      label='Avl Weight'
-
-                      variant='outlined'
-
+                      label="Avl Weight"
+                      variant="outlined"
                       fullWidth
-
                       value={actionProduct.materials[0].avl_weight}
-
                       disabled
-
                       InputProps={{
-
                         className: "non_disable_text",
 
                         endAdornment: (
-
-                          <InputAdornment position='start'>
-
+                          <InputAdornment position="start">
                             {actionProduct.materials[0].unit_name}
-
                           </InputAdornment>
-
                         ),
-
                       }}
-
                     />
-
                   </Grid>
 
                   <Grid item xs={12} md={4}>
-
                     <TextField
-
-                      label='Quantity'
-
-                      variant='outlined'
-
+                      label="Quantity"
+                      variant="outlined"
                       fullWidth
-
                       onInput={(e) => validateInteger(e)}
-
                       value={actionProduct.materials[0].return_qty}
-
                       onChange={(event) =>
-
                         this.handleReturnMaterial(
-
                           event.target.value,
 
-                          "return_qty"
-
+                          "return_qty",
                         )
-
                       }
-
                       error={this.state.return_qty_error}
-
                     />
-
                   </Grid>
 
                   <Grid item xs={12} md={4}>
-
                     <TextField
-
-                      label='Weight'
-
-                      variant='outlined'
-
+                      label="Weight"
+                      variant="outlined"
                       fullWidth
-
                       onInput={(e) => validateNumber(e)}
-
                       value={actionProduct.materials[0].return_weight}
-
                       onChange={(event) =>
-
                         this.handleReturnMaterial(
-
                           event.target.value,
 
-                          "return_weight"
-
+                          "return_weight",
                         )
-
                       }
-
                       error={this.state.return_weight_error}
-
                       InputProps={{
-
                         className: "non_disable_text",
 
                         endAdornment: (
-
-                          <InputAdornment position='start'>
-
+                          <InputAdornment position="start">
                             {actionProduct.materials[0].unit_name}
-
                           </InputAdornment>
-
                         ),
-
                       }}
-
                     />
-
                   </Grid>
 
                   <Grid item xs={12} md={12}>
-
                     <Stack
-
                       spacing={1}
-
-                      direction='row'
-
-                      justifyContent='flex-end'>
-
+                      direction="row"
+                      justifyContent="flex-end"
+                    >
                       <Button
-
-                        variant='outlined'
-
-                        onClick={this.handleReturnDialogClose}>
-
+                        variant="outlined"
+                        onClick={this.handleReturnDialogClose}
+                      >
                         Close
-
                       </Button>
 
                       {this.state.return_products.length &&
-
                       this.state.return_products[actionProductIndex]
-
                         .is_return ? (
-
                         <Button
-
-                          variant='outlined'
-
-                          onClick={this.handleCancelReturn}>
-
+                          variant="outlined"
+                          onClick={this.handleCancelReturn}
+                        >
                           Cancel Return
-
                         </Button>
-
                       ) : null}
 
                       <Button
-
-                        variant='contained'
-
-                        type='button'
-
-                        onClick={this.handleReturnMaterialSubmit}>
-
+                        variant="contained"
+                        type="button"
+                        onClick={this.handleReturnMaterialSubmit}
+                      >
                         Save
-
                       </Button>
-
                     </Stack>
-
                   </Grid>
-
                 </Grid>
-
               ) : null}
-
             </Box>
-
           </DialogContent>
-
         </Dialog>
 
-
-
         <Modal
-
           open={this.state.qrScannerOpen}
-
           onClose={this.handleCloseQRScanner}
-
           aria-labelledby="qr-scanner-modal"
-
           aria-describedby="scan-qr-code-for-certificate-number"
-
         >
-
           <Box
-
             sx={{
-
               position: "absolute",
 
               top: "50%",
@@ -11347,63 +8067,62 @@ class SaleForm extends React.Component {
               flexDirection: "column",
 
               alignItems: "center",
-
             }}
-
           >
-
-            <Typography id="qr-scanner-modal" variant="h6" component="h2" sx={{ mb: 2 }}>
-
+            <Typography
+              id="qr-scanner-modal"
+              variant="h6"
+              component="h2"
+              sx={{ mb: 2 }}
+            >
               Scan QR Code
-
             </Typography>
 
             {this.state.qrScannerError && (
-
               <Alert severity="warning" sx={{ width: "100%", mb: 2 }}>
-
                 {this.state.qrScannerError}
-
               </Alert>
-
             )}
 
-            <Box id="qr-reader" sx={{ width: "100%", height: 300, mb: 2 }}></Box>
+            <Box
+              id="qr-reader"
+              sx={{ width: "100%", height: 300, mb: 2 }}
+            ></Box>
 
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 2, textAlign: "center" }}>
-
-              Position the QR code within the frame to scan. Make sure it's well-lit and clearly visible.
-
+            <Typography
+              variant="body2"
+              color="text.secondary"
+              sx={{ mb: 2, textAlign: "center" }}
+            >
+              Position the QR code within the frame to scan. Make sure it's
+              well-lit and clearly visible.
             </Typography>
 
-            <Button variant="outlined" color="primary" onClick={this.handleRetryQRScanner} fullWidth>
-
+            <Button
+              variant="outlined"
+              color="primary"
+              onClick={this.handleRetryQRScanner}
+              fullWidth
+            >
               Retry
-
             </Button>
 
-            <Button variant="contained" color="primary" onClick={this.handleCloseQRScanner} fullWidth>
-
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={this.handleCloseQRScanner}
+              fullWidth
+            >
               Cancel
-
             </Button>
-
           </Box>
-
         </Modal>
-
       </Box>
-
     );
-
   }
-
 }
 
-
-
 const mapStateToProps = (state) => ({
-
   distributorList: state.superadmin.distributor.items,
 
   adminList: state.superadmin.admin.items,
@@ -11443,19 +8162,13 @@ const mapStateToProps = (state) => ({
   supplierList: state.superadmin.supplier.items,
 
   reportCharge: state.superadmin.reportCharge.items,
-
 });
 
-
-
 const mapDispatchToProps = (dispatch) => ({
-
   dispatch,
 
   actions: bindActionCreators(
-
     {
-
       salesStore,
 
       salesUpdate,
@@ -11488,100 +8201,61 @@ const mapDispatchToProps = (dispatch) => ({
 
       supplierList,
 
-      getNotifiactions
-
+      getNotifiactions,
     },
 
-    dispatch
-
+    dispatch,
   ),
-
 });
 
-
-
 export default withRouter(
-
   withSnackbar(
-
     connect(
-
       mapStateToProps,
 
-      mapDispatchToProps
-
+      mapDispatchToProps,
     )(
-
       reduxForm({
-
         form: "SaleForm",
-
-      })(SaleForm)
-
-    )
-
-  )
-
+      })(SaleForm),
+    ),
+  ),
 );
 
-
-
 function Row(props) {
-
   const { row } = props;
 
   const [open, setOpen] = React.useState(false);
 
-
-
   return (
-
     <React.Fragment>
-
       <TableRow sx={{ "& > *": { borderBottom: "unset" } }}>
-
         <TableCell>
-
           <IconButton
-
-            aria-label='expand row'
-
-            size='small'
-
-            onClick={() => setOpen(!open)}>
-
+            aria-label="expand row"
+            size="small"
+            onClick={() => setOpen(!open)}
+          >
             {open ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
-
           </IconButton>
-
         </TableCell>
 
-        <TableCell component='th' scope='row'>
-
+        <TableCell component="th" scope="row">
           {row.product_name}
-
         </TableCell>
 
         <TableCell>{row.size_name}</TableCell>
 
         <TableCell>{row.quantity}</TableCell>
-
       </TableRow>
 
       <TableRow>
-
         <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={11}>
-
-          <Collapse in={open} timeout='auto' unmountOnExit>
-
+          <Collapse in={open} timeout="auto" unmountOnExit>
             <Box sx={{ margin: 1 }}>
-
-              <Table size='medium' aria-label='orders'>
-
+              <Table size="medium" aria-label="orders">
                 <TableHead>
-
-                  <TableRow className='pur-details-inner-table'>
-
+                  <TableRow className="pur-details-inner-table">
                     <TableCell>Material Name</TableCell>
 
                     <TableCell>Purity</TableCell>
@@ -11591,18 +8265,13 @@ function Row(props) {
                     <TableCell>Weight</TableCell>
 
                     <TableCell>Unit</TableCell>
-
                   </TableRow>
-
                 </TableHead>
 
-                <TableBody className='pur-details-table-body'>
-
+                <TableBody className="pur-details-table-body">
                   {row.materials.map((item, i) => (
-
                     <TableRow key={i}>
-
-                      <TableCell scope='row'>{item.material_name}</TableCell>
+                      <TableCell scope="row">{item.material_name}</TableCell>
 
                       <TableCell>{item.purity_name}</TableCell>
 
@@ -11611,26 +8280,14 @@ function Row(props) {
                       <TableCell>{item.weight}</TableCell>
 
                       <TableCell>{item.unit_name}</TableCell>
-
                     </TableRow>
-
                   ))}
-
                 </TableBody>
-
               </Table>
-
             </Box>
-
           </Collapse>
-
         </TableCell>
-
       </TableRow>
-
     </React.Fragment>
-
   );
-
 }
-
