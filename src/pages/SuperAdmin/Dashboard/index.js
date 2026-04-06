@@ -708,6 +708,53 @@ class DashboardPage extends Component {
               </div>
             </CardContent>
           ) : null}
+          {(this.isAdmin && profile && profile.own == false)?<>
+            <CardContent
+              className="dashboard_card_content bg-color-2"
+              sx={{ display: "flex", justifyContent: "space-between" }}
+            >
+              <Typography
+                sx={{ fontSize: 14, margin: 0 }}
+                color="text.secondary"
+                gutterBottom
+                component="span"
+              >
+                <h1 onClick={() => this.handleClick("admins?own=0")}>
+                  Buyer Admin &nbsp;{" "}
+                  <span>
+                    {dashboard ? (
+                      dashboard.total_other_admin_buyer
+                    ) : (
+                    <CircularProgress size="20px" />
+                    )}
+                  </span>{" "}
+                </h1>
+                <h2>
+                  {dashboard ? (
+                    dashboard.total_other_admin_buyer_due_amount
+                  ) : (
+                  <CircularProgress size="20px" />
+                  )}
+                </h2>
+                {/*<h2
+                  onClick={() =>
+                    this.handleClick("stocks?own_admin=0&by_specific=1")
+                  }
+                >
+                  {dashboard ? (
+                    dashboard.total_other_admin_stock +
+                    " | " +
+                    dashboard.total_other_admin_stock_price
+                  ) : (
+                  <CircularProgress size="20px" />
+                  )}
+                </h2>*/}
+              </Typography>
+              <div className="card-icon">
+                <GroupIcon />
+              </div>
+            </CardContent>
+          </>:null}
 
           {this.isSuperAdmin &&
           hasPermission(permissions, "distributor", "list") ? (

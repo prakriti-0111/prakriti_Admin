@@ -35,7 +35,7 @@ import {
   convertToFormData,
   toBase64,
   getValuesFromKey,
-  validateInteger
+  validateInteger,
 } from "src/helpers/helper";
 import { bindActionCreators } from "redux";
 import {
@@ -117,7 +117,7 @@ class ProductForm extends React.Component {
       categories: this.props.categories,
       certificates: this.props.certificates,
       materialList: this.props.materialList,
-      materialGroup: formData? formData.marerialGroups:[],
+      materialGroup: formData ? formData.marerialGroups : [],
       sizeList: this.props.sizeList,
       sub_categories: this.props.sub_categories,
       product_type: formData ? formData.type : "in_house",
@@ -232,8 +232,43 @@ class ProductForm extends React.Component {
     }
   }
 
+  normalizeDecimalValue = (value, maxDecimals = 3) => {
+    if (value === null || typeof value === "undefined" || value === "") {
+      return "";
+    }
+
+    const numericValue = Number(value);
+    if (Number.isNaN(numericValue)) {
+      return value;
+    }
+
+    return numericValue
+      .toFixed(maxDecimals)
+      .replace(/\.0+$/, "")
+      .replace(/(\.\d*?)0+$/, "$1");
+  };
+
+  normalizeSizeMaterials = (sizeMaterials = []) => {
+    if (!Array.isArray(sizeMaterials)) {
+      return [];
+    }
+
+    return sizeMaterials.map((sizeMaterial) => ({
+      ...sizeMaterial,
+      materials: Array.isArray(sizeMaterial.materials)
+        ? sizeMaterial.materials.map((material) => ({
+            ...material,
+            weight: this.normalizeDecimalValue(material.weight),
+          }))
+        : [],
+    }));
+  };
+
   initializeFormData = () => {
     let formValues = { ...this.state.formData };
+    const normalizedSizeMaterials = this.normalizeSizeMaterials(
+      this.state.formData.size_materials,
+    );
     formValues.status = formValues.status ? 1 : 0;
     formValues.is_featured = formValues.is_featured ? 1 : 0;
     formValues.certified = formValues.certified ? 1 : 0;
@@ -268,14 +303,14 @@ class ProductForm extends React.Component {
       existing_images: formValues.images,
       existing_main_image: this.state.formData.main_image,
       existing_video_file: this.state.formData.video,
-      size_materials: this.state.formData.size_materials,
+      size_materials: normalizedSizeMaterials,
       tags: this.state.formData.tags,
       product_type: formValues.type,
       description: this.state.formData.description
         ? EditorState.createWithContent(
             ContentState.createFromBlockArray(
-              convertFromHTML(this.state.formData.description)
-            )
+              convertFromHTML(this.state.formData.description),
+            ),
           )
         : EditorState.createEmpty(),
     });
@@ -590,14 +625,21 @@ class ProductForm extends React.Component {
               variant="outlined"
               type="number"
               InputProps={{ inputProps: { min: 0, max: 10 } }}
-              value={this.state.materialGroup[item.id] ? this.state.materialGroup[item.id] : ''}
-              onClick={(e) => { e.stopPropagation(); return false; }}
+              value={
+                this.state.materialGroup[item.id]
+                  ? this.state.materialGroup[item.id]
+                  : ""
+              }
+              onClick={(e) => {
+                e.stopPropagation();
+                return false;
+              }}
               onChange={(e) => {
                 let mg = this.state.materialGroup;
                 mg[item.id] = parseInt(e.target.value);
                 console.log("material group", mg);
                 this.setState({
-                  materialGroup: mg
+                  materialGroup: mg,
                 });
               }}
             />
@@ -883,10 +925,14 @@ class ProductForm extends React.Component {
     }
 
     let values = { ...this.getDefaultValues(), ...data };
-    
-    if(values.materials && Array.isArray(values.materials)) {
+
+    if (values.materials && Array.isArray(values.materials)) {
       for (let index = 0; index < values.materials.length; index++) {
-        values.materialGroup[index] = this.state.materialGroup[values.materials[index]] ? this.state.materialGroup[values.materials[index]] : '';
+        values.materialGroup[index] = this.state.materialGroup[
+          values.materials[index]
+        ]
+          ? this.state.materialGroup[values.materials[index]]
+          : "";
       }
     }
 
@@ -907,7 +953,7 @@ class ProductForm extends React.Component {
         this.props.dispatch(
           updateSyncErrors("ProductForm", {
             sizes: "Size is required.",
-          })
+          }),
         );
         errors = true;
       }
@@ -915,7 +961,7 @@ class ProductForm extends React.Component {
         this.props.dispatch(
           updateSyncErrors("ProductForm", {
             materials: "Materials is required.",
-          })
+          }),
         );
         errors = true;
       }
@@ -924,7 +970,7 @@ class ProductForm extends React.Component {
         this.props.dispatch(
           updateSyncErrors("ProductForm", {
             material_id: "Materials is required.",
-          })
+          }),
         );
         errors = true;
       }
@@ -932,7 +978,12 @@ class ProductForm extends React.Component {
 
     for (let i = 0; i < this.state.size_materials.length; i++) {
       for (let x = 0; x < this.state.size_materials[i].materials.length; x++) {
-        this.state.size_materials[i].materials[x]["material_group"] = this.state.materialGroup[this.state.size_materials[i].materials[x].material_id] ? this.state.materialGroup[this.state.size_materials[i].materials[x].material_id] : '';
+        this.state.size_materials[i].materials[x]["material_group"] = this.state
+          .materialGroup[this.state.size_materials[i].materials[x].material_id]
+          ? this.state.materialGroup[
+              this.state.size_materials[i].materials[x].material_id
+            ]
+          : "";
         if (!this.state.size_materials[i].materials[x].purities.length) {
           this.state.size_materials[i].materials[x]["purity_error"] = true;
           errors = true;
@@ -957,7 +1008,7 @@ class ProductForm extends React.Component {
     for (let i = 0; i < this.state.size_materials.length; i++) {
       for (let x = 0; x < this.state.size_materials[i].materials.length; x++) {
         let plist = this.getMaterialPurities(
-          this.state.size_materials[i].materials[x].material_id
+          this.state.size_materials[i].materials[x].material_id,
         );
         let pvalues = this.state.size_materials[i].materials[x].purities;
         this.state.size_materials[i].materials[x].purities =
@@ -1062,7 +1113,9 @@ class ProductForm extends React.Component {
           {
             material_id: materials[0],
             material_name: item.length ? item[0].name : "",
-            meterial_group: this.state.materialGroup[materials[0]] ? this.state.materialGroup[materials[0]] : '',
+            meterial_group: this.state.materialGroup[materials[0]]
+              ? this.state.materialGroup[materials[0]]
+              : "",
             purities: [],
             weight: "",
             unit_id: item.length ? item[0].unit_id : "",
@@ -1090,7 +1143,9 @@ class ProductForm extends React.Component {
             thisMaterials.push({
               material_id: m,
               material_name: item.length ? item[0].name : "",
-              meterial_group: this.state.materialGroup[materials[0]] ? this.state.materialGroup[materials[0]] : '',
+              meterial_group: this.state.materialGroup[materials[0]]
+                ? this.state.materialGroup[materials[0]]
+                : "",
               purities: [],
               weight: "",
               unit_id: item.length ? item[0].unit_id : "",
@@ -1201,10 +1256,12 @@ class ProductForm extends React.Component {
 
           size_materials[i].materials[material_key].weight =
             i % gapvalueData == 0
-              ? (Number(e.target.value) +
-                (percValue / 100) *
-                  Number(e.target.value) *
-                  ((i / gapvalueData) % 1 == 0 ? i / gapvalueData : 1)).toFixed(2)
+              ? this.normalizeDecimalValue(
+                  Number(e.target.value) +
+                    (percValue / 100) *
+                      Number(e.target.value) *
+                      ((i / gapvalueData) % 1 == 0 ? i / gapvalueData : 1),
+                )
               : weightvalue;
         }
       }
@@ -1383,18 +1440,25 @@ class ProductForm extends React.Component {
                 disabled={onlyView}
               />
             </Grid>
-            {this.props.formData && <Grid item xs={6} md={2} className="create-input">
-              <Field
-                className="input-inner"
-                name="added_by_name"
-                component={this.renderTextField}
-                label="Added by"
-                value={this.props.formData?.added_by_name}
-                disabled={true}
-              />
-            </Grid>}
+            {this.props.formData && (
+              <Grid item xs={6} md={2} className="create-input">
+                <Field
+                  className="input-inner"
+                  name="added_by_name"
+                  component={this.renderTextField}
+                  label="Added by"
+                  value={this.props.formData?.added_by_name}
+                  disabled={true}
+                />
+              </Grid>
+            )}
             {this.state.product_type != "material" ? (
-              <Grid item xs={6} md={`${this.props.formData?'1':'3'}`} className="create-input">
+              <Grid
+                item
+                xs={6}
+                md={`${this.props.formData ? "1" : "3"}`}
+                className="create-input"
+              >
                 <Field
                   className="input-inner"
                   name="tax_rate_id"
@@ -1553,7 +1617,7 @@ class ProductForm extends React.Component {
                           this.changePercentage(
                             e.target.value,
                             items.material_name,
-                            index
+                            index,
                           )
                         }
                       />
@@ -1639,7 +1703,7 @@ class ProductForm extends React.Component {
                                 renderValue={(selected) =>
                                   this.getSelectedPurities(
                                     selected,
-                                    m.material_id
+                                    m.material_id,
                                   ).join(", ")
                                 }
                                 onChange={(e) =>
@@ -1667,7 +1731,7 @@ class ProductForm extends React.Component {
                                         <ListItemText primary={p.name} />
                                       </MenuItem>
                                     );
-                                  }
+                                  },
                                 )}
                               </Select>
                             </FormControl>
@@ -1687,7 +1751,7 @@ class ProductForm extends React.Component {
                                   e,
                                   index,
                                   key,
-                                  m.material_name
+                                  m.material_name,
                                 )
                               }
                               sx={{ marginBottom: "5px" }}
@@ -2254,7 +2318,7 @@ class ProductForm extends React.Component {
                     onClick={() =>
                       this.props.navigate(
                         getUserDashboardRoute(getRoleName(this.state.auth)) +
-                          "/products"
+                          "/products",
                       )
                     }
                   >
@@ -2298,7 +2362,7 @@ const mapDispatchToProps = (dispatch) => ({
       productList,
       change,
     },
-    dispatch
+    dispatch,
   ),
 });
 
@@ -2310,14 +2374,14 @@ export default withRouter(
   withSnackbar(
     connect(
       mapStateToProps,
-      mapDispatchToProps
+      mapDispatchToProps,
     )(
       reduxForm({
         form: "ProductForm",
         validate,
-      })(ProductForm)
-    )
-  )
+      })(ProductForm),
+    ),
+  ),
 );
 
 const Tags = ({ data, handleDelete }) => {
