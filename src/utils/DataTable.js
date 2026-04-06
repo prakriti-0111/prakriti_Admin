@@ -20,7 +20,7 @@ const spinnerStyles = `
 `;
 
 // Inject styles into the document head
-if (typeof document !== 'undefined') {
+if (typeof document !== "undefined") {
   const styleSheet = document.createElement("style");
   styleSheet.type = "text/css";
   styleSheet.innerText = spinnerStyles;
@@ -87,6 +87,7 @@ class DataTable extends React.Component {
   }
 
   handleChangePage = (e, number) => {
+    console.log("page datatable", number);
     this.props.handlePagination(number);
   };
 
@@ -106,6 +107,8 @@ class DataTable extends React.Component {
   getData = (item) => {
     // console.log("--this is sene the data for ",item)
     let arr = [];
+    // console.log("this is the data for ", arr);
+
     for (let i of this.state.columns) {
       let d = i.name in item ? item[i.name] : "";
       if (Array.isArray(d)) {
@@ -160,7 +163,7 @@ class DataTable extends React.Component {
                   target="_blank"
                 >
                   {item.attendence_address.login.address}
-                </a>
+                </a>,
               );
               if (item.attendence_address.logout) {
                 links.push(
@@ -174,7 +177,7 @@ class DataTable extends React.Component {
                     target="_blank"
                   >
                     {item.attendence_address.logout.address}
-                  </a>
+                  </a>,
                 );
               }
             }
@@ -210,11 +213,14 @@ class DataTable extends React.Component {
           style.height = "40px";
         }
         // Use custom onImageClick if provided, otherwise use default
-        const imageClickHandler = this.props.onImageClick 
+        const imageClickHandler = this.props.onImageClick
           ? (e) => {
               e.preventDefault();
               e.stopPropagation();
-              console.log("DataTable: Calling custom onImageClick with:", { d, item });
+              console.log("DataTable: Calling custom onImageClick with:", {
+                d,
+                item,
+              });
               this.props.onImageClick(d, item);
             }
           : () => this.handleImageClick(d);
@@ -225,7 +231,7 @@ class DataTable extends React.Component {
             name={"this is tested comment"}
             className="table-data-image cursor-pointer"
             onClick={imageClickHandler}
-          />
+          />,
         );
       } else if ("isRating" in i && i.isRating) {
         arr.push(<Rating name="read-only" value={d} readOnly />);
@@ -254,6 +260,7 @@ class DataTable extends React.Component {
         arr.push(d);
       }
     }
+
     return arr;
   };
 
@@ -279,13 +286,19 @@ class DataTable extends React.Component {
         break;
 
       case "...":
-        return <div style={{
-          width: "12px",
-          height: "12px",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center"
-        }}>...</div>;
+        return (
+          <div
+            style={{
+              width: "12px",
+              height: "12px",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            ...
+          </div>
+        );
         break;
 
       case "Download":
@@ -335,6 +348,12 @@ class DataTable extends React.Component {
     }
     if (props.total !== state.total) {
       update.total = props.total;
+    }
+    if (props.limit !== state.limit) {
+      update.limit = props.limit;
+      if (!state.showAll) {
+        update.manualLimit = props.limit;
+      }
     }
     if (props.actions !== state.actions) {
       update.actions = props.actions;
@@ -408,6 +427,12 @@ class DataTable extends React.Component {
   };
 
   handleLimitChange = (e) => {
+    console.log(
+      "this is the value ",
+      this.state.page,
+      this.state.limit,
+      e.target.value,
+    );
     this.setState(
       {
         manualLimit: e.target.value,
@@ -416,9 +441,9 @@ class DataTable extends React.Component {
       () => {
         this.props.handlePagination(
           e.target.value == "all" ? 1 : this.state.page,
-          this.state.showAll
+          this.state.showAll,
         );
-      }
+      },
     );
   };
 
@@ -460,11 +485,11 @@ class DataTable extends React.Component {
           Array.from(row.cells).map((cell) => {
             const img = cell.querySelector("img");
             return img ? img.src : cell.textContent;
-          })
+          }),
         );
 
-        console.log("rows",rows);
-        this.setState({ CrfunResult: rows});
+        // console.log("rows", rows);
+        this.setState({ CrfunResult: rows });
       } else {
         this.setState({ CrfunResult: "No table found in the response" });
       }
@@ -489,7 +514,13 @@ class DataTable extends React.Component {
       showAll,
       stickyHeader,
     } = this.state;
-    const totalPage = !showAll ? Math.ceil(total / limit) : 1;
+    const safeLimit = Number(limit) > 0 ? Number(limit) : 1;
+    const totalPage = !showAll ? Math.ceil(total / safeLimit) : 1;
+    const isClientPagination = Number(total) === Number(rows.length);
+    const paginatedRows =
+      !showAll && havePagination && isClientPagination
+        ? rows.slice((page - 1) * safeLimit, page * safeLimit)
+        : rows;
 
     const crFunction = async (item) => {
       this.setState({ CrfunResult: "Loading..." });
@@ -518,7 +549,7 @@ class DataTable extends React.Component {
             Array.from(row.cells).map((cell) => {
               const img = cell.querySelector("img");
               return img ? img.src : cell.textContent;
-            })
+            }),
           );
 
           this.setState({ CrfunResult: JSON.stringify(rows, null, 2) });
@@ -531,9 +562,8 @@ class DataTable extends React.Component {
       }
     };
 
-    console.log("this is the data ", this.state.CrfunResult);
-    console.log("crfunresult", this.state.CrfunResult);
-    
+    // console.log("this is the data ", this.state.CrfunResult);
+    // console.log("crfunresult", this.state.CrfunResult);
 
     return (
       <>
@@ -572,8 +602,8 @@ class DataTable extends React.Component {
                 ) : (
                   <table className="table table-striped">
                     <tbody style={{ fontSize: "12px" }}>
-                      {Array.isArray(this.state.CrfunResult)?this.state.CrfunResult.map(
-                        ([key, value], index) => (
+                      {Array.isArray(this.state.CrfunResult) ? (
+                        this.state.CrfunResult.map(([key, value], index) => (
                           <tr key={index}>
                             <th scope="row">{key}</th>
                             <td>
@@ -591,8 +621,10 @@ class DataTable extends React.Component {
                               )}
                             </td>
                           </tr>
-                        )
-                      ): <h6>{this.state.CrfunResult}</h6>}
+                        ))
+                      ) : (
+                        <h6>{this.state.CrfunResult}</h6>
+                      )}
                     </tbody>
                   </table>
                 )}
@@ -634,11 +666,12 @@ class DataTable extends React.Component {
               </TableRow>
             </TableHead>
             <TableBody>
-              {rows.map((row, i) => (
+              {paginatedRows.map((row, i) => (
                 <TableRow key={i}>
                   {this.state.showSerialNo ? (
                     <TableCell align={rowAlign} style={{ fontSize: "12px" }}>
-                      {this.getSerialNo(i, page, limit)}
+                      {/* {console.log("page, limit", page, limit)} */}
+                      {this.getSerialNo(i, page, safeLimit)}
                     </TableCell>
                   ) : null}
                   {this.getData(row).map((item, index) => {
@@ -675,14 +708,17 @@ class DataTable extends React.Component {
                           justifyContent={rowAlign}
                           alignItems={rowAlign}
                         >
-                          {(this.props.getRowActions ? this.props.getRowActions(row) : actions).map((a, index) => {
+                          {(this.props.getRowActions
+                            ? this.props.getRowActions(row)
+                            : actions
+                          ).map((a, index) => {
                             return (
                               <React.Fragment key={index}>
                                 {(!("show" in a) || a.show) &&
                                 (("conditions" in a &&
                                   this.checkActionBtnCondtion(
                                     a.conditions,
-                                    row
+                                    row,
                                   )) ||
                                   !("conditions" in a)) ? (
                                   <Button
@@ -690,34 +726,52 @@ class DataTable extends React.Component {
                                     variant="contained"
                                     color={a.color}
                                     onClick={() =>
-                                      !a.disabled && !a.loading && this.handleActionButtonClick(a, row)
+                                      !a.disabled &&
+                                      !a.loading &&
+                                      this.handleActionButtonClick(a, row)
                                     }
                                     disabled={a.disabled || a.loading || false}
-                                    style={{ 
+                                    style={{
                                       fontSize: "10px",
                                       minWidth: "32px",
                                       minHeight: "32px",
-                                      opacity: a.loading ? 0.6 : (a.disabled ? 0.5 : 1),
-                                      cursor: a.disabled || a.loading ? "not-allowed" : "pointer",
-                                      transition: "all 0.2s ease-in-out"
+                                      opacity: a.loading
+                                        ? 0.6
+                                        : a.disabled
+                                          ? 0.5
+                                          : 1,
+                                      cursor:
+                                        a.disabled || a.loading
+                                          ? "not-allowed"
+                                          : "pointer",
+                                      transition: "all 0.2s ease-in-out",
                                     }}
-                                    title={a.loading ? "Adding to cart..." : (a.disabled ? "Disabled" : "")}
+                                    title={
+                                      a.loading
+                                        ? "Adding to cart..."
+                                        : a.disabled
+                                          ? "Disabled"
+                                          : ""
+                                    }
                                   >
                                     {a.loading ? (
-                                      <div 
-                                        className="spinner-border spinner-border-sm" 
+                                      <div
+                                        className="spinner-border spinner-border-sm"
                                         role="status"
                                         style={{
                                           width: "14px",
                                           height: "14px",
-                                          border: "2px solid rgba(255, 255, 255, 0.3)",
+                                          border:
+                                            "2px solid rgba(255, 255, 255, 0.3)",
                                           borderTop: "2px solid #ffffff",
                                           borderRadius: "50%",
                                           animation: "spin 1s linear infinite",
-                                          display: "inline-block"
+                                          display: "inline-block",
                                         }}
                                       >
-                                        <span className="visually-hidden">Loading...</span>
+                                        <span className="visually-hidden">
+                                          Loading...
+                                        </span>
                                       </div>
                                     ) : (
                                       this.getActionIcon(a)
@@ -733,7 +787,7 @@ class DataTable extends React.Component {
                         <span
                           style={{
                             ...this.getActionValueStyle(
-                              row[this.state.actionValue]
+                              row[this.state.actionValue],
                             ),
                             fontSize: "12px",
                           }}
@@ -746,7 +800,7 @@ class DataTable extends React.Component {
                 </TableRow>
               ))}
 
-              {rows.length === 0 ? (
+              {paginatedRows.length === 0 ? (
                 <TableRow>
                   <TableCell
                     align="center"
