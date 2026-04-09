@@ -37,6 +37,7 @@ import {
   AccordionSummary,
   CircularProgress,
   Modal,
+  Tooltip,
 } from "@mui/material";
 import {
   ContactPageSharp,
@@ -131,6 +132,7 @@ class PurchaseForm extends React.Component {
     super(props);
 
     let formData = "formData" in this.props ? this.props.formData : null;
+    console.log("formData : ",formData);
     this.state = {
       SubmitSave: false,
       formData: formData,
@@ -151,7 +153,7 @@ class PurchaseForm extends React.Component {
       productDialog: false,
       supplier_gst_no: "",
       current_image: [],
-      formValues: {
+      formValues: formData != null?{ ...formData } : {
         supplier_id: "",
         invoice_number: "",
         invoice_date: moment().format("MM/DD/YYYY"),
@@ -177,7 +179,7 @@ class PurchaseForm extends React.Component {
         advance_amount: 0,
         pay_from_advance: false,
       },
-      formErros: {
+      formErrors: {
         supplier_id: false,
         invoice_number: false,
         invoice_date: false,
@@ -190,6 +192,24 @@ class PurchaseForm extends React.Component {
         discount: false,
         paid_amount: false,
         due_date: false,
+      },
+      productFormErrors: {
+        material_id: false,
+        product_id: false,
+        certificate_no: false,
+        size_id: false,
+        worker_id: false,
+        category_id: false,
+        sub_category_id: false,
+      },
+      materialFormErrors:{
+        weight: false,
+        pakka_weight: false,
+        quantity: false,
+        material_id: false,
+        purity_id: false,
+        unit_id: false,
+        rate: false,
       },
       deleteDialogOpen: false,
       deletingIndex: 0,
@@ -708,6 +728,37 @@ class PurchaseForm extends React.Component {
     }
     if (props.formData !== state.formData) {
       update.formData = props.formData;
+      // When formData changes (edit mode), merge with pre-store items
+      if (props.formData && Object.keys(props.formData).length > 0) {
+        console.log("=== getDerivedStateFromProps: Merging products from both APIs ===");
+        console.log("props.formData.products:", props.formData.products);
+        console.log("state.prePurchaseItems:", state.prePurchaseItems);
+        
+        // Mark products from edit API with source
+        let editProducts = (props.formData.products || []).map(product => ({
+          ...product,
+          source: 'edit',
+          is_new_product: false
+        }));
+        
+        // Mark pre-store items with source
+        let preStoreProducts = (state.prePurchaseItems || []).map(product => ({
+          ...product,
+          source: 'pre-store',
+          is_new_product: true
+        }));
+        
+        // Merge both arrays - edit products first, then pre-store items
+        let mergedProducts = [...editProducts, ...preStoreProducts];
+        
+        console.log("Merged products:", mergedProducts);
+        
+        update.formValues = { 
+          ...props.formData,
+          products: mergedProducts
+        };
+        console.log("update.formValues.products:", update.formValues.products);
+      }
     }
     if (props.isReturnForm !== state.isReturnForm) {
       update.isReturnForm = props.isReturnForm;
@@ -722,6 +773,45 @@ class PurchaseForm extends React.Component {
   initializeFormData = () => {
     let formValues = { ...this.state.formData };
     let return_products = [];
+    
+    // Ensure products array exists and is properly formatted
+    if (!formValues.products) {
+      formValues.products = [];
+    } else if (typeof formValues.products === 'object' && !Array.isArray(formValues.products)) {
+      // If products is an object with numeric keys, convert to array
+      formValues.products = Object.values(formValues.products);
+    }
+    
+    // Mark edit API products with source
+    formValues.products = (formValues.products || []).map(product => {
+      if (!product.source) {
+        return { ...product, source: 'edit', is_new_product: false };
+      }
+      return product;
+    });
+    
+    // Merge with pre-store items
+    let preStoreProducts = (this.state.prePurchaseItems || []).map(product => ({
+      ...product,
+      source: 'pre-store',
+      is_new_product: true
+    }));
+    
+    formValues.products = [...formValues.products, ...preStoreProducts];
+    
+    console.log("=== initializeFormData: Merged products ===", formValues.products);
+    
+    // Ensure type is properly set - infer from products if not in formData
+    if (!formValues.type && formValues.products && formValues.products.length > 0) {
+      // Infer type from the first product's product_type
+      const firstProduct = formValues.products[0];
+      formValues.type = firstProduct.product_type === "material" ? "material" : "product";
+    }
+    // Fallback to default if still empty
+    if (!formValues.type) {
+      formValues.type = "product";
+    }
+    
     for (let i = 0; i < formValues.products.length; i++) {
       return_products.push({
         id: formValues.products[i].id,
@@ -747,15 +837,36 @@ class PurchaseForm extends React.Component {
 
   componentDidUpdate(prevProps, prevState) {
     if (this.props.formData != prevProps.formData) {
+      console.log("=== FORM DATA CHANGED ===");
+      console.log("New formData:", this.props.formData);
       this.initializeFormData();
     }
 
+    // When pre-purchase items change, merge them with existing edit products
     if(this.state.prePurchaseItems != prevState.prePurchaseItems){
+      console.log("=== PRE-PURCHASE ITEMS CHANGED ===");
+      console.log("New prePurchaseItems:", this.state.prePurchaseItems);
+      
+      // Get current edit products (those with source='edit')
+      const currentEditProducts = (this.state.formValues.products || []).filter(p => p.source === 'edit');
+      
+      // Mark new pre-store items
+      const newPreStoreProducts = (this.state.prePurchaseItems || []).map(product => ({
+        ...product,
+        source: 'pre-store',
+        is_new_product: true
+      }));
+      
+      // Merge: edit products first, then pre-store items
+      const mergedProducts = [...currentEditProducts, ...newPreStoreProducts];
+      
+      console.log("Merged products after pre-store change:", mergedProducts);
+      
       this.setState(
         {
           formValues: {
             ...this.state.formValues,
-            products: this.state.prePurchaseItems || [],
+            products: mergedProducts,
           },
         }, () => {
           this.handleCalculateMainPrice();
@@ -774,6 +885,19 @@ class PurchaseForm extends React.Component {
       this.props.query.get("return_sale") != prevProps.query.get("return_sale")
     ) {
       this.loadReturnSale();
+    }
+
+    // Ensure formValues has products if formData was received but formValues doesn't have them
+    if (this.props.formData && this.props.formData.products && 
+        (!this.state.formValues.products || this.state.formValues.products.length === 0)) {
+      console.log("=== FIXING MISSING PRODUCTS ===");
+      console.log("formData.products:", this.props.formData.products);
+      this.setState({
+        formValues: {
+          ...this.state.formValues,
+          products: this.props.formData.products
+        }
+      });
     }
 
     if (this.state.actionCalled) {
@@ -808,6 +932,12 @@ class PurchaseForm extends React.Component {
         }
       } else {
         if (this.state.editSuccess) {
+          console.log("=== PURCHASE UPDATE SUCCESSFUL - CLEARING PRE-STORE ITEMS ===");
+          
+          // Clear all pre-store items after successful update
+          this.props.actions.prePurchaseDelete("all");
+          console.log("Pre-store items cleared after purchase update");
+          
           this.props.enqueueSnackbar(this.state.successMessage, {
             variant: "success",
           });
@@ -837,10 +967,58 @@ class PurchaseForm extends React.Component {
       });
       return;
     }
+    
+    // Determine purchase type using helper method
+    const purchaseType = this.getPurchaseType();
+    const itemType = purchaseType === "material" ? "Material" : "Product";
+    
+    if (!this.state.isCreateFrom) {
+      this.props.enqueueSnackbar(
+        `Adding new ${itemType.toLowerCase()} to this ${purchaseType} purchase.`,
+        {
+          variant: "info",
+          autoHideDuration: 2000,
+        }
+      );
+    }
+    
+    // Load the appropriate list based on purchase type
+    if (purchaseType === "product") {
+      // Load all products initially (not filtered by subcategory)
+      this.props.actions.productList({ all: 1, purity_price: 1 });
+    } else {
+      // Material list is already loaded in componentDidMount
+      // But we can reload if needed
+      this.props.actions.materialList({ all: 1 });
+    }
+    
     this.setState({
       productDialog: true,
       ...this.getDefaultProductFormData(),
     });
+  };
+
+  // Helper method to get purchase type with fallbacks
+  getPurchaseType = () => {
+    let purchaseType = this.state.formValues.type;
+    
+    // Fallback 1: If type is not set, try to infer from existing products
+    if (!purchaseType && this.state.formValues.products && this.state.formValues.products.length > 0) {
+      const existingProduct = this.state.formValues.products[0];
+      purchaseType = existingProduct.product_type === "material" ? "material" : "product";
+    }
+    
+    // Fallback 2: If still not available, check formData
+    if (!purchaseType && this.state.formData && this.state.formData.type) {
+      purchaseType = this.state.formData.type;
+    }
+    
+    // Fallback 3: Default to "product" if nothing else works
+    if (!purchaseType) {
+      purchaseType = "product";
+    }
+    
+    return purchaseType;
   };
 
   handleSupplierChange = (event) => {
@@ -1085,7 +1263,7 @@ class PurchaseForm extends React.Component {
   updateProductFormValues = (val, key, callBack = false) => {
     let productFormValues = this.state.productFormValues;
     let sizeList = this.state.sizeList;
-    let materialFormErros = this.state.materialFormErros;
+    let materialFormErrors = this.state.materialFormErrors;
     productFormValues[key] = val;
     let change_default_material = this.state.change_default_material;
     // console.log(val, key, data);
@@ -1102,7 +1280,7 @@ class PurchaseForm extends React.Component {
     if (key == "product_id") {
       let m = _.filter(this.state.productList, { id: val });
       let materials = [];
-      materialFormErros = [];
+      materialFormErrors = [];
       console.log("m : ", m);
       if (m.length) {
         for (let item of m[0].materials) {
@@ -1123,7 +1301,7 @@ class PurchaseForm extends React.Component {
             amount: "",
             weight_in_gram: "",
           });
-          materialFormErros.push({
+          materialFormErrors.push({
             weight: false,
             pakka_weight: false,
             quantity: false,
@@ -1169,7 +1347,7 @@ class PurchaseForm extends React.Component {
     } else if (key == "material_id") {
       let m = _.filter(this.state.materialList, { id: val });
       let materials = [];
-      materialFormErros = [];
+      materialFormErrors = [];
       if (m.length) {
         materials.push({
           id: 0,
@@ -1186,7 +1364,7 @@ class PurchaseForm extends React.Component {
           amount: "",
           weight_in_gram: "",
         });
-        materialFormErros.push({
+        materialFormErrors.push({
           weight: false,
           pakka_weight: false,
           quantity: false,
@@ -1241,7 +1419,7 @@ class PurchaseForm extends React.Component {
       {
         productFormValues: productFormValues,
         sizeList: sizeList,
-        materialFormErros: materialFormErros,
+        materialFormErrors: materialFormErrors,
         change_default_material: change_default_material,
       },
       () => {
@@ -1499,7 +1677,7 @@ class PurchaseForm extends React.Component {
         gst_type: "igst",
         has_certificate: false,
       },
-      productFormErros: {
+      productFormErrors: {
         material_id: false,
         product_id: false,
         certificate_no: false,
@@ -1508,7 +1686,7 @@ class PurchaseForm extends React.Component {
         category_id: false,
         sub_category_id: false,
       },
-      materialFormErros: [],
+      materialFormErrors: [],
     };
   };
 
@@ -1678,7 +1856,31 @@ class PurchaseForm extends React.Component {
   handleProductSubmit = async () => {
     console.log(this.state);
     let hasErr = this.productFormValidate();
+    
+    // Validate product type matches purchase type (especially for edit mode)
     if (!hasErr) {
+      const purchaseType = this.getPurchaseType();
+      const productType = this.state.productFormValues.product_type;
+      
+      // In edit mode, ensure new product type matches existing purchase type
+      if (!this.state.isCreateFrom && this.state.formValues.products && this.state.formValues.products.length > 0) {
+        const existingProductType = this.state.formValues.products[0].product_type;
+        // For material purchase, product_type should be "material"
+        // For product purchase, product_type should not be "material"
+        if (purchaseType === "material" && productType !== "material") {
+          this.props.enqueueSnackbar("Cannot add product to material purchase. Please add only materials.", {
+            variant: "error",
+          });
+          return;
+        }
+        if (purchaseType === "product" && productType === "material") {
+          this.props.enqueueSnackbar("Cannot add material to product purchase. Please add only products.", {
+            variant: "error",
+          });
+          return;
+        }
+      }
+      
       //check certificate is unique
       let res = await checkCertificateNo({
         certificate_no: this.state.productFormValues.certificate_no,
@@ -1703,6 +1905,8 @@ class PurchaseForm extends React.Component {
         /* save purchasePreSave record id in formValues.product seleted item */
         
         _data.id = savedProduct.data.data.id;
+        _data.is_new_product = true; // Mark as new product for edit mode
+        _data.source = 'pre-store'; // Mark as from pre-store API
         console.log("Saved product record ID:", _data.id);
       } catch (error) {
         console.error("Error saving product:", error);
@@ -1730,7 +1934,7 @@ class PurchaseForm extends React.Component {
             size_id: "",
           },
           change_default_material: false,
-          //productDialog: false
+          productDialog: false,
         },
         () => {
           this.handleCalculateMainPrice();
@@ -1745,22 +1949,22 @@ class PurchaseForm extends React.Component {
 
   productFormValidate = () => {
     let productFormValues = this.state.productFormValues;
-    let productFormErros = this.state.productFormErros;
-    let materialFormErros = this.state.materialFormErros;
+    let productFormErrors = this.state.productFormErrors;
+    let materialFormErrors = this.state.materialFormErrors;
     let hasErr = false;
     if (this.state.formValues.type == "product") {
       if (isEmpty(productFormValues.product_id)) {
-        productFormErros.product_id = true;
+        productFormErrors.product_id = true;
         hasErr = true;
       } else {
-        productFormErros.product_id = false;
+        productFormErrors.product_id = false;
       }
     } else {
       if (isEmpty(productFormValues.material_id)) {
-        productFormErros.material_id = true;
+        productFormErrors.material_id = true;
         hasErr = true;
       } else {
-        productFormErros.material_id = false;
+        productFormErrors.material_id = false;
       }
     }
     if (
@@ -1768,27 +1972,27 @@ class PurchaseForm extends React.Component {
       productFormValues.has_certificate
     ) {
       if (isEmpty(productFormValues.certificate_no) || productFormValues.certificate_no.startsWith("http") || !/^[A-Za-z0-9]+$/.test(productFormValues.certificate_no)) {
-        productFormErros.certificate_no = true;
+        productFormErrors.certificate_no = true;
         hasErr = true;
       } else {
-        productFormErros.certificate_no = false;
+        productFormErrors.certificate_no = false;
       }
       if (isEmpty(productFormValues.size_id)) {
-        productFormErros.size_id = true;
+        productFormErrors.size_id = true;
         hasErr = true;
       } else {
-        productFormErros.size_id = false;
+        productFormErrors.size_id = false;
       }
     } else {
-      productFormErros.certificate_no = false;
-      productFormErros.size_id = false;
+      productFormErrors.certificate_no = false;
+      productFormErrors.size_id = false;
     }
     if (productFormValues.product_type == "in_house") {
       /*if (isEmpty(productFormValues.worker_id)) {
-                productFormErros.worker_id = true;
+                productFormErrors.worker_id = true;
                 hasErr = true;
             } else {
-                productFormErros.worker_id = false;
+                productFormErrors.worker_id = false;
             }*/
     }
 
@@ -1797,49 +2001,49 @@ class PurchaseForm extends React.Component {
     }
     for (let i = 0; i < productFormValues.materials.length; i++) {
       if (isEmpty(productFormValues.materials[i].weight)) {
-        materialFormErros[i].weight = true;
+        materialFormErrors[i].weight = true;
         hasErr = true;
       } else {
-        materialFormErros[i].weight = false;
+        materialFormErrors[i].weight = false;
       }
 
       if (productFormValues.product_type == "material") {
         if (isEmpty(productFormValues.materials[i].pakka_weight)) {
-          materialFormErros[i].pakka_weight = true;
+          materialFormErrors[i].pakka_weight = true;
           hasErr = true;
         } else {
-          materialFormErros[i].pakka_weight = false;
+          materialFormErrors[i].pakka_weight = false;
         }
       }
       /*if (isEmpty(productFormValues.materials[i].quantity)) {
-                materialFormErros[i].quantity = true;
+                materialFormErrors[i].quantity = true;
                 hasErr = true;
             } else {
-                materialFormErros[i].quantity = false;
+                materialFormErrors[i].quantity = false;
             }*/
       if (isEmpty(productFormValues.materials[i].purity_id)) {
-        materialFormErros[i].purity_id = true;
+        materialFormErrors[i].purity_id = true;
         hasErr = true;
       } else {
-        materialFormErros[i].purity_id = false;
+        materialFormErrors[i].purity_id = false;
       }
       if (isEmpty(productFormValues.materials[i].purity_id)) {
-        materialFormErros[i].purity_id = true;
+        materialFormErrors[i].purity_id = true;
         hasErr = true;
       } else {
-        materialFormErros[i].purity_id = false;
+        materialFormErrors[i].purity_id = false;
       }
       if (isEmpty(productFormValues.materials[i].unit_id)) {
-        materialFormErros[i].unit_id = true;
+        materialFormErrors[i].unit_id = true;
         hasErr = true;
       } else {
-        materialFormErros[i].unit_id = false;
+        materialFormErrors[i].unit_id = false;
       }
       if (isEmpty(productFormValues.materials[i].rate)) {
-        materialFormErros[i].rate = true;
+        materialFormErrors[i].rate = true;
         hasErr = true;
       } else {
-        materialFormErros[i].rate = false;
+        materialFormErrors[i].rate = false;
       }
     }
 
@@ -1862,12 +2066,12 @@ class PurchaseForm extends React.Component {
       }
     }
 
-    // console.log(productFormErros);
-    // console.log(materialFormErros);
+    // console.log(productFormErrors);
+    // console.log(materialFormErrors);
 
     this.setState({
-      productFormErros: productFormErros,
-      materialFormErros: materialFormErros,
+      productFormErrors: productFormErrors,
+      materialFormErrors: materialFormErrors,
     });
     return hasErr;
   };
@@ -1887,11 +2091,18 @@ class PurchaseForm extends React.Component {
 
   handleDeleteConfirm = () => {
     let formValues = this.state.formValues;
-    let proIdxData = formValues.products.find(
-      (item, index) => index === this.state.deletingIndex
-    );
+    let proIdxData = formValues.products[this.state.deletingIndex];
+    
     console.log("proIdxData : ", proIdxData);
-    this.props.actions.prePurchaseDelete(proIdxData.id);
+    console.log("Product source : ", proIdxData.source);
+    
+    // Delete from pre-store API if it's from pre-store list
+    if (proIdxData.source === 'pre-store' || proIdxData.is_new_product) {
+      console.log("Deleting from pre-store:", proIdxData.id);
+      this.props.actions.prePurchaseDelete(proIdxData.id);
+    }
+    // Note: Deleting from edit API products happens on form submit (purchaseUpdate)
+    
     formValues.products.splice(this.state.deletingIndex, 1);
     this.setState(
       {
@@ -2007,41 +2218,59 @@ class PurchaseForm extends React.Component {
         this.props.actions.purchaseStore(data);
         this.props.actions.prePurchaseDelete("all");
       } else {
+        // For edit mode, prepare data with all products (edit + pre-store)
+        let updateData = {
+          ...this.state.formValues,
+          // Filter out source and is_new_product fields before sending to API
+          products: this.state.formValues.products.map(product => {
+            const { source, is_new_product, ...cleanProduct } = product;
+            return cleanProduct;
+          })
+        };
+        
+        console.log("=== UPDATING PURCHASE WITH ALL PRODUCTS ===");
+        console.log("Total products before cleaning:", this.state.formValues.products.length);
+        console.log("Products by source:", {
+          edit: this.state.formValues.products.filter(p => p.source === 'edit').length,
+          'pre-store': this.state.formValues.products.filter(p => p.source === 'pre-store').length
+        });
+        console.log("Cleaned products for API:", updateData.products.length);
+        
         this.props.actions.purchaseUpdate(
           this.state.formData.id,
-          this.state.formValues
+          updateData
         );
       }
     }
   };
 
   formValidate = () => {
-    let formErros = this.state.formErros;
+    let formErrors = this.state.formErrors;
     let formValues = this.state.formValues;
     let hasErr = false;
     if (isEmpty(formValues.supplier_id)) {
-      formErros.supplier_id = true;
+      formErrors.supplier_id = true;
       hasErr = true;
     } else {
-      formErros.supplier_id = false;
+      formErrors.supplier_id = false;
     }
     if (isEmpty(formValues.invoice_date)) {
-      formErros.invoice_date = true;
+      formErrors.invoice_date = true;
       hasErr = true;
     } else {
-      formErros.invoice_date = false;
+      formErrors.invoice_date = false;
     }
     /*if (isEmpty(formValues.paid_amount)) {
-            formErros.paid_amount = true;
+            formErrors.paid_amount = true;
             hasErr = true;
         } else {
-            formErros.paid_amount = false;
+            formErrors.paid_amount = false;
         }*/
     if (isEmpty(formValues.due_date)) {
-      formErros.due_date = true;
+      formErrors.due_date = true;
       hasErr = true;
     } else {
-      formErros.due_date = false;
+      formErrors.due_date = false;
     }
     if (
       !isEmpty(formValues.total_payable) &&
@@ -2059,7 +2288,7 @@ class PurchaseForm extends React.Component {
       }
     }
     this.setState({
-      formErros: formErros,
+      formErrors: formErrors,
     });
     return hasErr;
   };
@@ -2150,11 +2379,20 @@ class PurchaseForm extends React.Component {
         });
       }
     } else {
-      this.props.actions.productList({
-        all: 1,
-        sub_category_id: event.target.value,
-        purity_price: 1,
-      });
+      if (event.target.value) {
+        // Filter products by subcategory
+        this.props.actions.productList({
+          all: 1,
+          sub_category_id: event.target.value,
+          purity_price: 1,
+        });
+      } else {
+        // Load all products when subcategory is cleared
+        this.props.actions.productList({
+          all: 1,
+          purity_price: 1,
+        });
+      }
       this.updateProductFormValues("", "product_id");
       this.props.dispatch({
         type: RESET_PRODUCT_LIST,
@@ -2404,8 +2642,9 @@ class PurchaseForm extends React.Component {
   };
 
   isMaterialFormDisabled = () => {
+    const products = (this.state.formValues && this.state.formValues.products) || [];
     if (
-      this.state.formValues.products.length == 0 &&
+      products.length == 0 &&
       !this.state.productFormValues.size_id &&
       this.state.productFormValues.product_type != "material"
     ) {
@@ -2466,20 +2705,35 @@ class PurchaseForm extends React.Component {
   render() {
     const {
       formValues,
-      formErros,
+      formErrors,
       productFormValues,
-      productFormErros,
-      materialFormErros,
+      productFormErrors,
+      materialFormErrors,
       submitting,
       actionProductIndex,
       return_sale_data,
+      formData,
     } = this.state;
-    const actionProduct = formValues.products.length
-      ? formValues.products[actionProductIndex]
+    
+    // Ensure products are available - use formValues.products, fallback to formData.products
+    const products = (formValues && formValues.products) || 
+                     (formData && formData.products) || 
+                     [];
+    
+    // Debug logging to understand data flow
+    console.log("=== RENDER DEBUG ===");
+    console.log("formData:", formData);
+    console.log("formValues:", formValues);
+    console.log("formValues.products:", formValues.products);
+    console.log("computed products:", products);
+    console.log("products.length:", products.length);
+    
+    const actionProduct = products && products.length
+      ? products[actionProductIndex]
       : null;
-    console.log("formValues.products : ------", formValues.products);
-    console.log("QR code data : ------", this.state.qrScanner);
-    console.log("productFormValues.materials", productFormValues.materials);
+    console.log("products.length : ------", products.length);
+    //console.log("QR code data : ------", this.state.qrScanner);
+    //console.log("productFormValues.materials", productFormValues.materials);
     let total_report_charge_amount = 0;
     let total_report_charge_tax_amount = 0;
     let total_report_charge_amount_after_tax = 0;
@@ -2520,18 +2774,18 @@ class PurchaseForm extends React.Component {
                             newValue ? newValue.id : "",
                             "material_id"
                           ); */
-    console.log("productFormValues.materials: ", productFormValues.materials);
-    console.log("material_groups : ", productFormValues.material_groups);
-    console.log("grp_materials: ", productFormValues.grp_materials);
-    console.log("selected_grp_materials: ", productFormValues.selected_grp_materials);
-    console.log("productFormValues.product_type != 'material' && productFormValues.materials.length > 0 && productFormValues.material_groups && productFormValues.material_groups.length > 0 : ", (productFormValues.product_type != "material" && productFormValues.materials.length > 0 && productFormValues.material_groups && productFormValues.material_groups.length > 0 ));
+    // console.log("productFormValues.materials: ", productFormValues.materials);
+    // console.log("material_groups : ", productFormValues.material_groups);
+    // console.log("grp_materials: ", productFormValues.grp_materials);
+    // console.log("selected_grp_materials: ", productFormValues.selected_grp_materials);
+    // console.log("productFormValues.product_type != 'material' && productFormValues.materials.length > 0 && productFormValues.material_groups && productFormValues.material_groups.length > 0 : ", (productFormValues.product_type != "material" && productFormValues.materials.length > 0 && productFormValues.material_groups && productFormValues.material_groups.length > 0 ));
     
-    if(productFormValues.selected_grp_materials){
-      console.log("here----------------------------",Array.from(productFormValues.selected_grp_materials));
-      Array.from(productFormValues.selected_grp_materials).map((item, index) => {
-        console.log("material group item: ", item, index);
-      });
-    }
+    // if(productFormValues.selected_grp_materials){
+    //   console.log("here----------------------------",Array.from(productFormValues.selected_grp_materials));
+    //   Array.from(productFormValues.selected_grp_materials).map((item, index) => {
+    //     console.log("material group item: ", item, index);
+    //   });
+    // }
 
     return (
       <Box sx={{ flexGrow: 1, m: 0.5 }} className="ratn-dialog-inner">
@@ -2579,7 +2833,7 @@ class PurchaseForm extends React.Component {
               md={!formValues.supplier_id ? 4 : 4}
               className="create-input"
             >
-              <FormControl fullWidth error={formErros.supplier_id}>
+              <FormControl fullWidth error={formErrors.supplier_id}>
                 <InputLabel>Supplier</InputLabel>
                 <Select
                   className="input-inner non_disable_text"
@@ -2675,28 +2929,36 @@ class PurchaseForm extends React.Component {
                 <InputLabel>Purchase Type</InputLabel>
                 <Select
                   className="input-inner non_disable_text"
-                  value={formValues.type}
+                  value={this.getPurchaseType()}
                   fullWidth
                   label="Purchase Type"
                   onChange={this.handlePurchasTypeChange}
                   disabled={!this.state.isCreateFrom}
                   endAdornment={
                     <InputAdornment position="end">
-                      <Button
-                        size="small"
-                        variant="contained"
-                        color="warning"
-                        onClick={this.handleAddNewProduct}
-                        disabled={!this.state.isCreateFrom}
-                        sx={{
-                          minWidth: "auto",
-                          px: 1,
-                          height: "28px",
-                          fontSize: "0.75rem",
-                        }}
+                      <Tooltip 
+                        title={
+                          !this.state.isCreateFrom 
+                            ? `Add new ${this.getPurchaseType() === "material" ? "Material" : "Product"} to this purchase`
+                            : "Add new item"
+                        }
+                        arrow
                       >
-                        Add
-                      </Button>
+                        <Button
+                          size="small"
+                          variant="contained"
+                          color="warning"
+                          onClick={this.handleAddNewProduct}
+                          sx={{
+                            minWidth: "auto",
+                            px: 1,
+                            height: "28px",
+                            fontSize: "0.75rem",
+                          }}
+                        >
+                          Add
+                        </Button>
+                      </Tooltip>
                     </InputAdornment>
                   }
                 >
@@ -2743,7 +3005,7 @@ class PurchaseForm extends React.Component {
                 renderInput={(params) => (
                   <TextField
                     {...params}
-                    error={formErros.invoice_date}
+                    error={formErrors.invoice_date}
                     InputProps={{
                       className: "non_disable_text",
                     }}
@@ -2837,7 +3099,7 @@ class PurchaseForm extends React.Component {
                   className="loans_view tax-input p_view"
                 >
                   <Grid item xs={6} md={2}>
-                    <FormControl fullWidth error={productFormErros.category_id}>
+                    <FormControl fullWidth error={productFormErrors.category_id}>
                       <InputLabel>Category</InputLabel>
                       <Select
                         value={productFormValues.category_id}
@@ -2857,7 +3119,7 @@ class PurchaseForm extends React.Component {
                   <Grid item xs={6} md={2}>
                     <FormControl
                       fullWidth
-                      error={productFormErros.sub_category_id}
+                      error={productFormErrors.sub_category_id}
                     >
                       <InputLabel>Sub Category</InputLabel>
                       <Select
@@ -2883,7 +3145,7 @@ class PurchaseForm extends React.Component {
                       productFormValues.product_type == "in_house" ? 2.5 : 2.5
                     }
                   >
-                    {/*<FormControl fullWidth error={productFormErros.product_id}>
+                    {/*<FormControl fullWidth error={productFormErrors.product_id}>
                                             <InputLabel>Product</InputLabel>
                                             <Select
                                                 value={productFormValues.product_id}
@@ -2923,7 +3185,7 @@ class PurchaseForm extends React.Component {
                               autoComplete: "new-password",
                             }}
                             fullWidth
-                            error={productFormErros.product_id}
+                            error={productFormErrors.product_id}
                           />
                         )}
                         onChange={(event, newValue) => {
@@ -2955,7 +3217,7 @@ class PurchaseForm extends React.Component {
                               autoComplete: "new-password",
                             }}
                             fullWidth
-                            error={productFormErros.material_id}
+                            error={productFormErrors.material_id}
                           />
                         )}
                         onChange={(event, newValue) => {
@@ -3074,7 +3336,7 @@ class PurchaseForm extends React.Component {
                         }
                         style={{ maxWidth: "fit-content " }}
                       >
-                        <FormControl error={productFormErros.size_id}>
+                        <FormControl error={productFormErrors.size_id}>
                           <InputLabel>Size</InputLabel>
                           <Select
                             style={{ width: "100px" }}
@@ -3118,7 +3380,7 @@ class PurchaseForm extends React.Component {
                               // Call the debounced function for API/processing
                               this.handleCertificateChange(event);
                             }}
-                            error={productFormErros.certificate_no}
+                            error={productFormErrors.certificate_no}
                             InputProps={{
                               endAdornment: (
                                 <InputAdornment position="end">
@@ -3174,7 +3436,7 @@ class PurchaseForm extends React.Component {
                   {/*{
                                             this.isSuperAdmin ?
                                                 <Grid item xs={12} md={2}>
-                                                    <FormControl fullWidth error={productFormErros.worker_id}>
+                                                    <FormControl fullWidth error={productFormErrors.worker_id}>
                                                         <InputLabel>Worker</InputLabel>
                                                         <Select
                                                             value={productFormValues.worker_id}
@@ -3241,7 +3503,7 @@ class PurchaseForm extends React.Component {
                                           <TableCell style={{ minWidth: "150px" }}>
                                             <FormControl
                                               fullWidth
-                                              error={materialFormErros[materialIndex]?.material_id}
+                                              error={materialFormErrors[materialIndex]?.material_id}
                                             >
                                               <InputLabel>Material</InputLabel>
                                               <Select
@@ -3275,7 +3537,7 @@ class PurchaseForm extends React.Component {
                                           <TableCell style={{ minWidth: "150px" }}>
                                             <FormControl
                                               fullWidth
-                                              error={materialFormErros[materialIndex]?.purity_id}
+                                              error={materialFormErrors[materialIndex]?.purity_id}
                                             >
                                               <InputLabel>Purity</InputLabel>
                                               <Select
@@ -3326,7 +3588,7 @@ class PurchaseForm extends React.Component {
                                                   "quantity"
                                                 )
                                               }
-                                              error={materialFormErros[materialIndex]?.quantity}
+                                              error={materialFormErrors[materialIndex]?.quantity}
                                               disabled={this.isMaterialFormDisabled()}
                                             />
                                           </TableCell>
@@ -3344,7 +3606,7 @@ class PurchaseForm extends React.Component {
                                                   "weight"
                                                 )
                                               }
-                                              error={materialFormErros[materialIndex]?.weight}
+                                              error={materialFormErrors[materialIndex]?.weight}
                                               disabled={this.isMaterialFormDisabled()}
                                             />
                                           </TableCell>
@@ -3364,7 +3626,7 @@ class PurchaseForm extends React.Component {
                                                   )
                                                 }
                                                 error={
-                                                  materialFormErros[materialIndex]?.pakka_weight
+                                                  materialFormErrors[materialIndex]?.pakka_weight
                                                 }
                                                 disabled={this.isMaterialFormDisabled()}
                                               />  
@@ -3375,7 +3637,7 @@ class PurchaseForm extends React.Component {
                                           <TableCell style={{ minWidth: "150px" }}>
                                             <FormControl
                                               fullWidth
-                                              error={materialFormErros[materialIndex]?.unit_id}
+                                              error={materialFormErrors[materialIndex]?.unit_id}
                                             >
                                               <InputLabel>Unit</InputLabel>
                                               <Select
@@ -3421,7 +3683,7 @@ class PurchaseForm extends React.Component {
                                                   </InputAdornment>
                                                 ),
                                               }}
-                                              error={materialFormErros[materialIndex]?.rate}
+                                              error={materialFormErrors[materialIndex]?.rate}
                                               disabled={this.isMaterialFormDisabled()}
                                             />
                                           </TableCell>
@@ -3432,7 +3694,7 @@ class PurchaseForm extends React.Component {
                                               fullWidth
                                               value={item.amount}
                                               disabled
-                                              error={materialFormErros[materialIndex]?.amount}
+                                              error={materialFormErrors[materialIndex]?.amount}
                                               InputProps={{
                                                 startAdornment: (
                                                   <InputAdornment position="start">
@@ -3456,7 +3718,7 @@ class PurchaseForm extends React.Component {
                                   <TableCell style={{ minWidth: "150px" }}>
                                     <FormControl
                                       fullWidth
-                                      error={materialFormErros[index].purity_id}
+                                      error={materialFormErrors[index].purity_id}
                                     >
                                       <InputLabel>Purity</InputLabel>
                                       <Select
@@ -3506,7 +3768,7 @@ class PurchaseForm extends React.Component {
                                           "quantity"
                                         )
                                       }
-                                      error={materialFormErros[index].quantity}
+                                      error={materialFormErrors[index].quantity}
                                       disabled={this.isMaterialFormDisabled()}
                                     />
                                   </TableCell>
@@ -3524,7 +3786,7 @@ class PurchaseForm extends React.Component {
                                           "weight"
                                         )
                                       }
-                                      error={materialFormErros[index].weight}
+                                      error={materialFormErrors[index].weight}
                                       disabled={this.isMaterialFormDisabled()}
                                     />
                                   </TableCell>
@@ -3544,7 +3806,7 @@ class PurchaseForm extends React.Component {
                                           )
                                         }
                                         error={
-                                          materialFormErros[index].pakka_weight
+                                          materialFormErrors[index].pakka_weight
                                         }
                                         disabled={this.isMaterialFormDisabled()}
                                       />
@@ -3555,7 +3817,7 @@ class PurchaseForm extends React.Component {
                                   <TableCell style={{ minWidth: "150px" }}>
                                     <FormControl
                                       fullWidth
-                                      error={materialFormErros[index].unit_id}
+                                      error={materialFormErrors[index].unit_id}
                                     >
                                       <InputLabel>Unit</InputLabel>
                                       <Select
@@ -3601,7 +3863,7 @@ class PurchaseForm extends React.Component {
                                           </InputAdornment>
                                         ),
                                       }}
-                                      error={materialFormErros[index].rate}
+                                      error={materialFormErrors[index].rate}
                                       disabled={this.isMaterialFormDisabled()}
                                     />
                                   </TableCell>
@@ -3612,7 +3874,7 @@ class PurchaseForm extends React.Component {
                                       fullWidth
                                       value={item.amount}
                                       disabled
-                                      error={materialFormErros[index].amount}
+                                      error={materialFormErrors[index].amount}
                                       InputProps={{
                                         startAdornment: (
                                           <InputAdornment position="start">
@@ -3849,6 +4111,7 @@ class PurchaseForm extends React.Component {
                     {this.state.isReturnForm ? <TableCell></TableCell> : null}
                     <TableCell>#</TableCell>
                     <TableCell>Product Name</TableCell>
+                    <TableCell>Source</TableCell>
                     <TableCell>Certificate No</TableCell>
                     <TableCell>Total Weight</TableCell>
                     <TableCell>Size</TableCell>
@@ -3865,8 +4128,9 @@ class PurchaseForm extends React.Component {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {formValues.products.map((item, index) => (
-                    <React.Fragment key={index}>
+                  {products && products.length > 0 ? (
+                    products.map((item, index) => (
+                      <React.Fragment key={index}>
                       <TableRow
                         className={
                           "is_return" in item && item.is_return
@@ -3908,6 +4172,18 @@ class PurchaseForm extends React.Component {
                           {index + 1 < 10 ? "0" + (index + 1) : index + 1}
                         </TableCell>
                         <TableCell>{item.product_name}</TableCell>
+                        <TableCell>
+                          <span style={{
+                            padding: '4px 8px',
+                            borderRadius: '4px',
+                            backgroundColor: item.source === 'edit' ? '#e3f2fd' : '#fff3e0',
+                            color: item.source === 'edit' ? '#1976d2' : '#f57c00',
+                            fontSize: '12px',
+                            fontWeight: '500'
+                          }}>
+                            {item.source === 'edit' ? 'Saved' : 'Draft'}
+                          </span>
+                        </TableCell>
                         <TableCell>
                           {item.certificate_no ? item.certificate_no : "-"}
                         </TableCell>
@@ -4058,8 +4334,9 @@ class PurchaseForm extends React.Component {
                         </TableRow>
                       ) : null}
                     </React.Fragment>
-                  ))}
-                  {formValues.products.length > 0 ? (
+                  ))
+                ) : null}
+                  {products && products.length > 0 ? (
                     <TableRow>
                       <TableCell
                         colSpan={!this.state.isReturnForm ? 8 : 9}
@@ -4580,7 +4857,7 @@ class PurchaseForm extends React.Component {
                             onChange={(event) =>
                               this.handleDefaultChange(event, "paid_amount")
                             }
-                            error={formErros.paid_amount}
+                            error={formErrors?.paid_amount}
                             disabled={
                               !this.state.isCreateFrom ||
                               (return_sale_data ? true : false)
@@ -4644,7 +4921,7 @@ class PurchaseForm extends React.Component {
                                 <TextField
                                   fullWidth
                                   {...params}
-                                  error={formErros.due_date}
+                                  error={formErrors.due_date}
                                 />
                               )}
                               disabled={!this.state.isCreateFrom}
@@ -4761,7 +5038,7 @@ class PurchaseForm extends React.Component {
                         <Box sx={{ flexGrow: 1, m: 0.5 }}>
                             <Grid container spacing={2}>
                                 <Grid item xs={2}>
-                                    <FormControl fullWidth error={productFormErros.category_id}>
+                                    <FormControl fullWidth error={productFormErrors.category_id}>
                                         <InputLabel>Category</InputLabel>
                                         <Select
                                             value={productFormValues.category_id}
@@ -4779,7 +5056,7 @@ class PurchaseForm extends React.Component {
                                     </FormControl>
                                 </Grid>
                                 <Grid item xs={2}>
-                                    <FormControl fullWidth error={productFormErros.sub_category_id}>
+                                    <FormControl fullWidth error={productFormErrors.sub_category_id}>
                                         <InputLabel>Sub Category</InputLabel>
                                         <Select
                                             value={productFormValues.sub_category_id}
@@ -4797,7 +5074,7 @@ class PurchaseForm extends React.Component {
                                     </FormControl>
                                 </Grid>
                                 <Grid item xs={productFormValues.product_type == "in_house" ? 3 : 4}>
-                                    <FormControl fullWidth error={productFormErros.product_id}>
+                                    <FormControl fullWidth error={productFormErrors.product_id}>
                                         <InputLabel>Product</InputLabel>
                                         <Select
                                             value={productFormValues.product_id}
@@ -4824,11 +5101,11 @@ class PurchaseForm extends React.Component {
                                                     fullWidth
                                                     value={productFormValues.certificate_no}
                                                     onChange={(event) => this.handleProductFormDefaultChange(event, 'certificate_no')}
-                                                    error={productFormErros.certificate_no}
+                                                    error={productFormErrors.certificate_no}
                                                 />
                                             </Grid>
                                             <Grid item xs={productFormValues.product_type == "in_house" ? 1 : 2}>
-                                                <FormControl fullWidth error={productFormErros.size_id}>
+                                                <FormControl fullWidth error={productFormErrors.size_id}>
                                                     <InputLabel>Size</InputLabel>
                                                     <Select
                                                         value={productFormValues.size_id}
@@ -4851,7 +5128,7 @@ class PurchaseForm extends React.Component {
                                 {
                                     productFormValues.product_type == "in_house" ?
                                         <Grid item xs={2}>
-                                            <FormControl fullWidth error={productFormErros.worker_id}>
+                                            <FormControl fullWidth error={productFormErrors.worker_id}>
                                                 <InputLabel>Worker</InputLabel>
                                                 <Select
                                                     value={productFormValues.worker_id}
@@ -4891,7 +5168,7 @@ class PurchaseForm extends React.Component {
                                                         <TableRow key={index}>
                                                             <TableCell>{item.material_name}</TableCell>
                                                             <TableCell style={{ minWidth: '150px' }}>
-                                                                <FormControl fullWidth error={materialFormErros[index].purity_id}>
+                                                                <FormControl fullWidth error={materialFormErrors[index].purity_id}>
                                                                     <InputLabel>Purity</InputLabel>
                                                                     <Select
                                                                         value={item.purity_id}
@@ -4915,7 +5192,7 @@ class PurchaseForm extends React.Component {
                                                                     fullWidth
                                                                     value={item.quantity}
                                                                     onChange={(event) => this.handleMaterialFormChange(event, index, 'quantity')}
-                                                                    error={materialFormErros[index].quantity}
+                                                                    error={materialFormErrors[index].quantity}
                                                                 />
                                                             </TableCell>
                                                             <TableCell>
@@ -4925,11 +5202,11 @@ class PurchaseForm extends React.Component {
                                                                     fullWidth
                                                                     value={item.weight}
                                                                     onChange={(event) => this.handleMaterialFormChange(event, index, 'weight')}
-                                                                    error={materialFormErros[index].weight}
+                                                                    error={materialFormErrors[index].weight}
                                                                 />
                                                             </TableCell>
                                                             <TableCell style={{ minWidth: '150px' }}>
-                                                                <FormControl fullWidth error={materialFormErros[index].unit_id}>
+                                                                <FormControl fullWidth error={materialFormErrors[index].unit_id}>
                                                                     <InputLabel>Unit</InputLabel>
                                                                     <Select
                                                                         value={item.unit_id}
@@ -4956,7 +5233,7 @@ class PurchaseForm extends React.Component {
                                                                     InputProps={{
                                                                         startAdornment: <InputAdornment position="start">₹</InputAdornment>
                                                                     }}
-                                                                    error={materialFormErros[index].rate}
+                                                                    error={materialFormErrors[index].rate}
                                                                 />
                                                             </TableCell>
                                                             <TableCell>
@@ -4966,7 +5243,7 @@ class PurchaseForm extends React.Component {
                                                                     fullWidth
                                                                     value={item.amount}
                                                                     disabled
-                                                                    error={materialFormErros[index].amount}
+                                                                    error={materialFormErrors[index].amount}
                                                                     InputProps={{
                                                                         startAdornment: <InputAdornment position="start">₹</InputAdornment>
                                                                     }}
