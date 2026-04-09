@@ -744,6 +744,8 @@ class PurchaseForm extends React.Component {
         // Mark pre-store items with source
         let preStoreProducts = (state.prePurchaseItems || []).map(product => ({
           ...product,
+          pre_store_id: product.id,
+          id: 0,
           source: 'pre-store',
           is_new_product: true
         }));
@@ -793,6 +795,8 @@ class PurchaseForm extends React.Component {
     // Merge with pre-store items
     let preStoreProducts = (this.state.prePurchaseItems || []).map(product => ({
       ...product,
+      pre_store_id: product.id,
+      id: 0,
       source: 'pre-store',
       is_new_product: true
     }));
@@ -853,6 +857,8 @@ class PurchaseForm extends React.Component {
       // Mark new pre-store items
       const newPreStoreProducts = (this.state.prePurchaseItems || []).map(product => ({
         ...product,
+        pre_store_id: product.id,
+        id: 0,
         source: 'pre-store',
         is_new_product: true
       }));
@@ -1902,12 +1908,12 @@ class PurchaseForm extends React.Component {
       try {
         let savedProduct = await purchasePreStore(_data);
         console.log("Product saved successfully:", savedProduct);
-        /* save purchasePreSave record id in formValues.product seleted item */
-        
-        _data.id = savedProduct.data.data.id;
+        /* save pre-store record id in formValues product for deletion, but use id=0 so update API treats it as a new purchase product */
+        _data.pre_store_id = savedProduct.data.data.id;
+        _data.id = 0;
         _data.is_new_product = true; // Mark as new product for edit mode
         _data.source = 'pre-store'; // Mark as from pre-store API
-        console.log("Saved product record ID:", _data.id);
+        console.log("Saved pre-store record ID:", _data.pre_store_id);
       } catch (error) {
         console.error("Error saving product:", error);
         return this.props.enqueueSnackbar(
@@ -2098,8 +2104,9 @@ class PurchaseForm extends React.Component {
     
     // Delete from pre-store API if it's from pre-store list
     if (proIdxData.source === 'pre-store' || proIdxData.is_new_product) {
-      console.log("Deleting from pre-store:", proIdxData.id);
-      this.props.actions.prePurchaseDelete(proIdxData.id);
+      const preStoreId = proIdxData.pre_store_id || proIdxData.id;
+      console.log("Deleting from pre-store:", preStoreId);
+      this.props.actions.prePurchaseDelete(preStoreId);
     }
     // Note: Deleting from edit API products happens on form submit (purchaseUpdate)
     
