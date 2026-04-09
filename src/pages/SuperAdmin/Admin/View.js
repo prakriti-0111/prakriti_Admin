@@ -851,7 +851,7 @@ class AdminViewPage extends React.Component {
                           />
                         </FormControl>
                       </Grid>
-                      {!this.isAdminUser && (
+                      {!admin.own && (
                         <Grid
                           item
                           xs={4}
@@ -867,7 +867,7 @@ class AdminViewPage extends React.Component {
                           </Button>
                         </Grid>
                       )}
-                      {!admin.own && !this.isAdminUser && (
+                      {!admin.own && (
                         <Grid
                           item
                           xs={4}
@@ -916,7 +916,7 @@ class AdminViewPage extends React.Component {
                               /* downloadAction={this.handleInvoiceDownload} */
                               payAction={this.handleInvoicePay}
                               downloadAction={this.handleInvoiceDownloadView}
-                              allowPay={!this.isAdminUser}
+                              allowPay={true}
                             />
                           ))}
                         </TableBody>
