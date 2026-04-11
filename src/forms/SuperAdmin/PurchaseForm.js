@@ -2012,9 +2012,10 @@ class PurchaseForm extends React.Component {
             size_id: "",
           },
           change_default_material: false,
-          productDialog: false,
+          //productDialog: false,
         },
         () => {
+          this.props.actions.purchasePreStoreList({ all: 1 });
           this.handleCalculateMainPrice();
         },
       );
@@ -2193,6 +2194,7 @@ class PurchaseForm extends React.Component {
         deleteDialogOpen: false,
       },
       () => {
+        this.props.actions.purchasePreStoreList({ all: 1 });
         this.handleCalculateMainPrice();
       },
     );
