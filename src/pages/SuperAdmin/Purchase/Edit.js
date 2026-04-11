@@ -47,25 +47,35 @@ class PurchaseEditPage extends Component {
   }
 
   render() {
+    const purchaseType =
+      (this.state.purchase &&
+        (this.state.purchase.type ||
+          this.state.purchase.purchase_type ||
+          this.state.purchase.purchaseType)) ||
+      "product";
+
     return (
-      <MainCard title='Edit Purchase'>
+      <MainCard title="Edit Purchase">
         <div>
           {this.state.purchase ? (
             <>
               {this.state.purchase.created_myself &&
               this.state.purchase.is_approved == 0 ? (
-                <PurchaseForm formData={this.state.purchase} />
+                <PurchaseForm
+                  key={`${this.state.id}-${purchaseType}`}
+                  formData={this.state.purchase}
+                />
               ) : (
                 <div>
-                  <Alert variant='filled' severity='error'>
+                  <Alert variant="filled" severity="error">
                     You can't edit this purchase.
                   </Alert>
                 </div>
               )}
             </>
           ) : (
-            <Grid container justifyContent='center'>
-              <CircularProgress size='30px' />
+            <Grid container justifyContent="center">
+              <CircularProgress size="30px" />
             </Grid>
           )}
         </div>
@@ -84,10 +94,10 @@ const mapDispatchToProps = (dispatch) => ({
     {
       purchaseEdit,
     },
-    dispatch
+    dispatch,
   ),
 });
 
 export default withSnackbar(
-  withRouter(connect(mapStateToProps, mapDispatchToProps)(PurchaseEditPage))
+  withRouter(connect(mapStateToProps, mapDispatchToProps)(PurchaseEditPage)),
 );
