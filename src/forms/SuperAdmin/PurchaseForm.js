@@ -53,7 +53,7 @@ import {
   isEmpty,
   calculateGST,
   validateNumber,
-  validateInteger
+  validateInteger,
 } from "src/helpers/helper";
 import { bindActionCreators } from "redux";
 import {
@@ -64,7 +64,7 @@ import {
   purchaseReturn,
   purchaseRawEdit,
   purchasePreStoreList,
-  prePurchaseDelete
+  prePurchaseDelete,
 } from "actions/superadmin/purchase.actions";
 import { employeeList } from "actions/superadmin/employee.actions";
 import { supplierList } from "actions/superadmin/supplier.actions";
@@ -127,16 +127,55 @@ const debounce = (func, wait) => {
   };
 };
 
+const resolvePurchaseType = (source = {}, fallback = null) => {
+  if (!source) {
+    source = {};
+  }
+
+  let purchaseType =
+    source.type ||
+    source.purchase_type ||
+    source.purchaseType ||
+    (fallback &&
+      (fallback.type || fallback.purchase_type || fallback.purchaseType));
+
+  const products = source.products || (fallback && fallback.products) || [];
+
+  if (!purchaseType && Array.isArray(products) && products.length > 0) {
+    const firstProduct = products[0] || {};
+
+    if (firstProduct.product_type) {
+      purchaseType =
+        firstProduct.product_type === "material" ? "material" : "product";
+    } else if (firstProduct.material_id || firstProduct.material_name) {
+      purchaseType = "material";
+    }
+  }
+
+  if (purchaseType !== "material") {
+    purchaseType = "product";
+  }
+
+  return purchaseType;
+};
+
 class PurchaseForm extends React.Component {
   constructor(props) {
     super(props);
 
     let formData = "formData" in this.props ? this.props.formData : null;
-    console.log("formData : ",formData);
+    const normalizedType = resolvePurchaseType(formData, formData);
+    const normalizedFormData = formData
+      ? {
+          ...formData,
+          type: normalizedType,
+        }
+      : null;
+    console.log("formData : ", formData);
     this.state = {
       SubmitSave: false,
-      formData: formData,
-      isCreateFrom: !formData,
+      formData: normalizedFormData,
+      isCreateFrom: !normalizedFormData,
       isReturnForm: this.props.isReturnForm,
       supplierList: this.props.supplierList,
       productList: this.props.productList,
@@ -153,32 +192,35 @@ class PurchaseForm extends React.Component {
       productDialog: false,
       supplier_gst_no: "",
       current_image: [],
-      formValues: formData != null?{ ...formData } : {
-        supplier_id: "",
-        invoice_number: "",
-        invoice_date: moment().format("MM/DD/YYYY"),
-        products: this.props.prePurchaseItems || [],
-        notes: "",
-        payment_mode: "cash",
-        transaction_no: "",
-        cheque_no: "",
-        taxable_amount: "",
-        tax_percentage: "",
-        tax: "",
-        cgst_tax: "",
-        sgst_tax: "",
-        igst_tax: "",
-        total_amount: "",
-        discount: "",
-        total_payable: "",
-        paid_amount: "",
-        due_amount: "",
-        due_date: "",
-        total_sub_total: "",
-        type: "product",
-        advance_amount: 0,
-        pay_from_advance: false,
-      },
+      formValues:
+        normalizedFormData != null
+          ? { ...normalizedFormData }
+          : {
+              supplier_id: "",
+              invoice_number: "",
+              invoice_date: moment().format("MM/DD/YYYY"),
+              products: this.props.prePurchaseItems || [],
+              notes: "",
+              payment_mode: "cash",
+              transaction_no: "",
+              cheque_no: "",
+              taxable_amount: "",
+              tax_percentage: "",
+              tax: "",
+              cgst_tax: "",
+              sgst_tax: "",
+              igst_tax: "",
+              total_amount: "",
+              discount: "",
+              total_payable: "",
+              paid_amount: "",
+              due_amount: "",
+              due_date: "",
+              total_sub_total: "",
+              type: "product",
+              advance_amount: 0,
+              pay_from_advance: false,
+            },
       formErrors: {
         supplier_id: false,
         invoice_number: false,
@@ -202,7 +244,7 @@ class PurchaseForm extends React.Component {
         category_id: false,
         sub_category_id: false,
       },
-      materialFormErrors:{
+      materialFormErrors: {
         weight: false,
         pakka_weight: false,
         quantity: false,
@@ -254,6 +296,10 @@ class PurchaseForm extends React.Component {
     this.isSuperAdmin = isSuperAdmin();
     this.debouncedFetchData = _.debounce(this.fetchData, 500); // Debounce API calls with a 500ms delay
   }
+
+  resolvePurchaseType = (source = {}, fallback = null) => {
+    return resolvePurchaseType(source, fallback);
+  };
 
   componentDidMount() {
     this.props.actions.purchasePreStoreList({ all: 1 });
@@ -359,13 +405,13 @@ class PurchaseForm extends React.Component {
               console.log("Using AI-based BarcodeDetector API");
             } else {
               console.log(
-                "BarcodeDetector API not available, using jsQR fallback"
+                "BarcodeDetector API not available, using jsQR fallback",
               );
             }
           } catch (error) {
             console.error("Error initializing BarcodeDetector:", error);
             console.log(
-              "BarcodeDetector API not available, using jsQR fallback"
+              "BarcodeDetector API not available, using jsQR fallback",
             );
           }
 
@@ -425,7 +471,7 @@ class PurchaseForm extends React.Component {
                       0,
                       0,
                       canvas.width,
-                      canvas.height
+                      canvas.height,
                     );
 
                     // Get boundary rectangle for focused scanning
@@ -436,7 +482,7 @@ class PurchaseForm extends React.Component {
                       boundaryRect.x,
                       boundaryRect.y,
                       boundaryRect.width,
-                      boundaryRect.height
+                      boundaryRect.height,
                     );
 
                     // Use BarcodeDetector if available and working (AI-based, faster)
@@ -479,7 +525,7 @@ class PurchaseForm extends React.Component {
                       imageData.data,
                       imageData.width,
                       imageData.height,
-                      { inversionAttempts: "dontInvert" } // Faster processing
+                      { inversionAttempts: "dontInvert" }, // Faster processing
                     );
 
                     if (code) {
@@ -636,7 +682,7 @@ class PurchaseForm extends React.Component {
       this.props.query.get("purchase_on_approve") != 0
     ) {
       let res = await purchaseRawEdit(
-        this.props.query.get("purchase_on_approve")
+        this.props.query.get("purchase_on_approve"),
       );
       if (res.data.success) {
         this.setState(
@@ -657,7 +703,7 @@ class PurchaseForm extends React.Component {
                 target: { value: res.data.data.supplier_id },
               });
             }, 1000);
-          }
+          },
         );
       }
     }
@@ -727,37 +773,49 @@ class PurchaseForm extends React.Component {
       update.subCategoryList = props.subCategoryList;
     }
     if (props.formData !== state.formData) {
-      update.formData = props.formData;
+      const normalizedType = resolvePurchaseType(
+        props.formData,
+        props.formData,
+      );
+      update.formData = {
+        ...props.formData,
+        type: normalizedType,
+      };
       // When formData changes (edit mode), merge with pre-store items
       if (props.formData && Object.keys(props.formData).length > 0) {
-        console.log("=== getDerivedStateFromProps: Merging products from both APIs ===");
+        console.log(
+          "=== getDerivedStateFromProps: Merging products from both APIs ===",
+        );
         console.log("props.formData.products:", props.formData.products);
         console.log("state.prePurchaseItems:", state.prePurchaseItems);
-        
+
         // Mark products from edit API with source
-        let editProducts = (props.formData.products || []).map(product => ({
+        let editProducts = (props.formData.products || []).map((product) => ({
           ...product,
-          source: 'edit',
-          is_new_product: false
+          source: "edit",
+          is_new_product: false,
         }));
-        
+
         // Mark pre-store items with source
-        let preStoreProducts = (state.prePurchaseItems || []).map(product => ({
-          ...product,
-          pre_store_id: product.id,
-          id: 0,
-          source: 'pre-store',
-          is_new_product: true
-        }));
-        
+        let preStoreProducts = (state.prePurchaseItems || []).map(
+          (product) => ({
+            ...product,
+            pre_store_id: product.id,
+            id: 0,
+            source: "pre-store",
+            is_new_product: true,
+          }),
+        );
+
         // Merge both arrays - edit products first, then pre-store items
         let mergedProducts = [...editProducts, ...preStoreProducts];
-        
+
         console.log("Merged products:", mergedProducts);
-        
-        update.formValues = { 
+
+        update.formValues = {
           ...props.formData,
-          products: mergedProducts
+          type: normalizedType,
+          products: mergedProducts,
         };
         console.log("update.formValues.products:", update.formValues.products);
       }
@@ -775,47 +833,47 @@ class PurchaseForm extends React.Component {
   initializeFormData = () => {
     let formValues = { ...this.state.formData };
     let return_products = [];
-    
+
     // Ensure products array exists and is properly formatted
     if (!formValues.products) {
       formValues.products = [];
-    } else if (typeof formValues.products === 'object' && !Array.isArray(formValues.products)) {
+    } else if (
+      typeof formValues.products === "object" &&
+      !Array.isArray(formValues.products)
+    ) {
       // If products is an object with numeric keys, convert to array
       formValues.products = Object.values(formValues.products);
     }
-    
+
     // Mark edit API products with source
-    formValues.products = (formValues.products || []).map(product => {
+    formValues.products = (formValues.products || []).map((product) => {
       if (!product.source) {
-        return { ...product, source: 'edit', is_new_product: false };
+        return { ...product, source: "edit", is_new_product: false };
       }
       return product;
     });
-    
+
     // Merge with pre-store items
-    let preStoreProducts = (this.state.prePurchaseItems || []).map(product => ({
-      ...product,
-      pre_store_id: product.id,
-      id: 0,
-      source: 'pre-store',
-      is_new_product: true
-    }));
-    
+    let preStoreProducts = (this.state.prePurchaseItems || []).map(
+      (product) => ({
+        ...product,
+        pre_store_id: product.id,
+        id: 0,
+        source: "pre-store",
+        is_new_product: true,
+      }),
+    );
+
     formValues.products = [...formValues.products, ...preStoreProducts];
-    
-    console.log("=== initializeFormData: Merged products ===", formValues.products);
-    
-    // Ensure type is properly set - infer from products if not in formData
-    if (!formValues.type && formValues.products && formValues.products.length > 0) {
-      // Infer type from the first product's product_type
-      const firstProduct = formValues.products[0];
-      formValues.type = firstProduct.product_type === "material" ? "material" : "product";
-    }
-    // Fallback to default if still empty
-    if (!formValues.type) {
-      formValues.type = "product";
-    }
-    
+
+    console.log(
+      "=== initializeFormData: Merged products ===",
+      formValues.products,
+    );
+
+    // Ensure type is always normalized for edit flow
+    formValues.type = this.resolvePurchaseType(formValues, this.state.formData);
+
     for (let i = 0; i < formValues.products.length; i++) {
       return_products.push({
         id: formValues.products[i].id,
@@ -835,7 +893,7 @@ class PurchaseForm extends React.Component {
         setTimeout(() => {
           this.getSupplierDetails();
         }, 1000);
-      }
+      },
     );
   };
 
@@ -847,36 +905,41 @@ class PurchaseForm extends React.Component {
     }
 
     // When pre-purchase items change, merge them with existing edit products
-    if(this.state.prePurchaseItems != prevState.prePurchaseItems){
+    if (this.state.prePurchaseItems != prevState.prePurchaseItems) {
       console.log("=== PRE-PURCHASE ITEMS CHANGED ===");
       console.log("New prePurchaseItems:", this.state.prePurchaseItems);
-      
+
       // Get current edit products (those with source='edit')
-      const currentEditProducts = (this.state.formValues.products || []).filter(p => p.source === 'edit');
-      
+      const currentEditProducts = (this.state.formValues.products || []).filter(
+        (p) => p.source === "edit",
+      );
+
       // Mark new pre-store items
-      const newPreStoreProducts = (this.state.prePurchaseItems || []).map(product => ({
-        ...product,
-        pre_store_id: product.id,
-        id: 0,
-        source: 'pre-store',
-        is_new_product: true
-      }));
-      
+      const newPreStoreProducts = (this.state.prePurchaseItems || []).map(
+        (product) => ({
+          ...product,
+          pre_store_id: product.id,
+          id: 0,
+          source: "pre-store",
+          is_new_product: true,
+        }),
+      );
+
       // Merge: edit products first, then pre-store items
       const mergedProducts = [...currentEditProducts, ...newPreStoreProducts];
-      
+
       console.log("Merged products after pre-store change:", mergedProducts);
-      
+
       this.setState(
         {
           formValues: {
             ...this.state.formValues,
             products: mergedProducts,
           },
-        }, () => {
+        },
+        () => {
           this.handleCalculateMainPrice();
-        }
+        },
       );
     }
 
@@ -894,15 +957,19 @@ class PurchaseForm extends React.Component {
     }
 
     // Ensure formValues has products if formData was received but formValues doesn't have them
-    if (this.props.formData && this.props.formData.products && 
-        (!this.state.formValues.products || this.state.formValues.products.length === 0)) {
+    if (
+      this.props.formData &&
+      this.props.formData.products &&
+      (!this.state.formValues.products ||
+        this.state.formValues.products.length === 0)
+    ) {
       console.log("=== FIXING MISSING PRODUCTS ===");
       console.log("formData.products:", this.props.formData.products);
       this.setState({
         formValues: {
           ...this.state.formValues,
-          products: this.props.formData.products
-        }
+          products: this.props.formData.products,
+        },
       });
     }
 
@@ -918,11 +985,12 @@ class PurchaseForm extends React.Component {
           if (this.props.query.get("purchase_on_approval") == 0) {
             this.props.navigate(
               getUserDashboardRoute(getRoleName(this.state.auth)) +
-                "/purchase-on-approve"
+                "/purchase-on-approve",
             );
           } else {
             this.props.navigate(
-              getUserDashboardRoute(getRoleName(this.state.auth)) + "/purchases"
+              getUserDashboardRoute(getRoleName(this.state.auth)) +
+                "/purchases",
             );
           }
         } else {
@@ -938,12 +1006,14 @@ class PurchaseForm extends React.Component {
         }
       } else {
         if (this.state.editSuccess) {
-          console.log("=== PURCHASE UPDATE SUCCESSFUL - CLEARING PRE-STORE ITEMS ===");
-          
+          console.log(
+            "=== PURCHASE UPDATE SUCCESSFUL - CLEARING PRE-STORE ITEMS ===",
+          );
+
           // Clear all pre-store items after successful update
           this.props.actions.prePurchaseDelete("all");
           console.log("Pre-store items cleared after purchase update");
-          
+
           this.props.enqueueSnackbar(this.state.successMessage, {
             variant: "success",
           });
@@ -973,21 +1043,21 @@ class PurchaseForm extends React.Component {
       });
       return;
     }
-    
+
     // Determine purchase type using helper method
     const purchaseType = this.getPurchaseType();
     const itemType = purchaseType === "material" ? "Material" : "Product";
-    
+
     if (!this.state.isCreateFrom) {
       this.props.enqueueSnackbar(
         `Adding new ${itemType.toLowerCase()} to this ${purchaseType} purchase.`,
         {
           variant: "info",
           autoHideDuration: 2000,
-        }
+        },
       );
     }
-    
+
     // Load the appropriate list based on purchase type
     if (purchaseType === "product") {
       // Load all products initially (not filtered by subcategory)
@@ -997,7 +1067,7 @@ class PurchaseForm extends React.Component {
       // But we can reload if needed
       this.props.actions.materialList({ all: 1 });
     }
-    
+
     this.setState({
       productDialog: true,
       ...this.getDefaultProductFormData(),
@@ -1006,25 +1076,7 @@ class PurchaseForm extends React.Component {
 
   // Helper method to get purchase type with fallbacks
   getPurchaseType = () => {
-    let purchaseType = this.state.formValues.type;
-    
-    // Fallback 1: If type is not set, try to infer from existing products
-    if (!purchaseType && this.state.formValues.products && this.state.formValues.products.length > 0) {
-      const existingProduct = this.state.formValues.products[0];
-      purchaseType = existingProduct.product_type === "material" ? "material" : "product";
-    }
-    
-    // Fallback 2: If still not available, check formData
-    if (!purchaseType && this.state.formData && this.state.formData.type) {
-      purchaseType = this.state.formData.type;
-    }
-    
-    // Fallback 3: Default to "product" if nothing else works
-    if (!purchaseType) {
-      purchaseType = "product";
-    }
-    
-    return purchaseType;
+    return this.resolvePurchaseType(this.state.formValues, this.state.formData);
   };
 
   handleSupplierChange = (event) => {
@@ -1051,7 +1103,7 @@ class PurchaseForm extends React.Component {
       },
       () => {
         this.getSupplierDetails();
-      }
+      },
     );
   };
 
@@ -1068,14 +1120,17 @@ class PurchaseForm extends React.Component {
       },
       () => {
         this.handleCalculateMainPrice();
-      }
+      },
     );
   };
 
   handleProductChange = (event, val) => {
     this.updateProductFormValues(val, "product_id", () => {
       let productFormValues = this.state.productFormValues;
-      if(productFormValues.product_type != "material" && productFormValues.materials.length > 0){
+      if (
+        productFormValues.product_type != "material" &&
+        productFormValues.materials.length > 0
+      ) {
         //this.handleMaterialChange();
         let groupedMaterials = [];
         let materialGroups = [];
@@ -1083,55 +1138,51 @@ class PurchaseForm extends React.Component {
         let actualProductMaterials = [];
         /* group materials into array by material.group */
         productFormValues.materials.forEach((material, index) => {
-          if (!isEmpty(material.group)){
-            if(!groupedMaterials[`grp_`+material.group]) {
-              materialGroups.push(`grp_`+material.group);
-              groupedMaterials[`grp_`+material.group] = [];
-              initialSelectedProductMaterial[`grp_`+material.group] = [];
-              initialSelectedProductMaterial[`grp_`+material.group].push(material);
+          if (!isEmpty(material.group)) {
+            if (!groupedMaterials[`grp_` + material.group]) {
+              materialGroups.push(`grp_` + material.group);
+              groupedMaterials[`grp_` + material.group] = [];
+              initialSelectedProductMaterial[`grp_` + material.group] = [];
+              initialSelectedProductMaterial[`grp_` + material.group].push(
+                material,
+              );
               actualProductMaterials.push(material);
             }
-            groupedMaterials[`grp_`+material.group].push(material);
+            groupedMaterials[`grp_` + material.group].push(material);
           }
         });
         console.log("Grouped Materials: ", groupedMaterials);
-        console.log("Initial Selected Product Material: ", initialSelectedProductMaterial);
-        console.log("Object.values(groupedMaterials): ", Object.values(groupedMaterials));
+        console.log(
+          "Initial Selected Product Material: ",
+          initialSelectedProductMaterial,
+        );
+        console.log(
+          "Object.values(groupedMaterials): ",
+          Object.values(groupedMaterials),
+        );
         /* if(!this.state.selectedProductMaterial){
           this.setState({
             selectedProductMaterial: initialSelectedProductMaterial
           });
         } */
-        if(materialGroups.length > 0){
+        if (materialGroups.length > 0) {
+          this.updateProductFormValues(materialGroups, "material_groups");
+          this.updateProductFormValues(groupedMaterials, "grp_materials");
           this.updateProductFormValues(
-              materialGroups,
-              "material_groups"
-            );
+            initialSelectedProductMaterial,
+            "selected_grp_materials",
+          );
           this.updateProductFormValues(
-              groupedMaterials,
-              "grp_materials"
-            );
-          this.updateProductFormValues(
-              initialSelectedProductMaterial,
-              "selected_grp_materials"
-            );
-          this.updateProductFormValues(
-              actualProductMaterials,
-              "actual_product_materials"
-            ); 
+            actualProductMaterials,
+            "actual_product_materials",
+          );
         } else {
+          this.updateProductFormValues(materialGroups, "material_groups");
+          this.updateProductFormValues(groupedMaterials, "grp_materials");
           this.updateProductFormValues(
-              materialGroups,
-              "material_groups"
-            );
-          this.updateProductFormValues(
-              groupedMaterials,
-              "grp_materials"
-            );
-          this.updateProductFormValues(
-              initialSelectedProductMaterial,
-              "selected_grp_materials"
-            );
+            initialSelectedProductMaterial,
+            "selected_grp_materials",
+          );
         }
       }
     });
@@ -1241,9 +1292,8 @@ class PurchaseForm extends React.Component {
         : "No product image found";
 
       if (productImgSrc !== "No product image found") {
-        const imageData = await this.fetchImageAndConvertToBase64(
-          productImgSrc
-        );
+        const imageData =
+          await this.fetchImageAndConvertToBase64(productImgSrc);
         console.log(imageData);
       }
 
@@ -1391,33 +1441,44 @@ class PurchaseForm extends React.Component {
       //let res = this.loadDefaultWeightQty(paramProductFrom, paramMaterials);
       //productFormValues.materials = [...res];
       change_default_material = true;
-    } else if(key == "grp_material_selected"){
+    } else if (key == "grp_material_selected") {
       let grpMetArr = val.split("#");
       let groupKey = grpMetArr[0];
       let materialId = parseInt(grpMetArr[1]);
       let selectedMaterials = productFormValues.selected_grp_materials;
-      
+
       let currentSelectedMaterials = [];
-      let allMaterialsInGroup = productFormValues.grp_materials[groupKey] ? productFormValues.grp_materials[groupKey] : [];
-      let matToAddArr = _.filter(allMaterialsInGroup, { material_id: materialId });
-      if(matToAddArr.length){
+      let allMaterialsInGroup = productFormValues.grp_materials[groupKey]
+        ? productFormValues.grp_materials[groupKey]
+        : [];
+      let matToAddArr = _.filter(allMaterialsInGroup, {
+        material_id: materialId,
+      });
+      if (matToAddArr.length) {
         currentSelectedMaterials.push(matToAddArr[0]);
       }
-      
+
       selectedMaterials[groupKey] = currentSelectedMaterials;
       productFormValues.selected_grp_materials = selectedMaterials;
-      console.log("Selected Materials after update: ", Object.values(productFormValues.selected_grp_materials).flat());
+      console.log(
+        "Selected Materials after update: ",
+        Object.values(productFormValues.selected_grp_materials).flat(),
+      );
       //productFormValues.materials = Object.values(productFormValues.selected_grp_materials).flat();
-      let newSelectedMaterials = Object.values(productFormValues.selected_grp_materials).flat();
+      let newSelectedMaterials = Object.values(
+        productFormValues.selected_grp_materials,
+      ).flat();
       productFormValues.materials = newSelectedMaterials.map((itm, i) => {
-        let findItem = productFormValues.materials.filter(m => m.material_id == itm.material_id);
-        if(findItem.length > 0){
-            return findItem[0];
+        let findItem = productFormValues.materials.filter(
+          (m) => m.material_id == itm.material_id,
+        );
+        if (findItem.length > 0) {
+          return findItem[0];
         } else {
-            return itm;
+          return itm;
         }
       });
-    } else if(key == "actual_product_materials"){
+    } else if (key == "actual_product_materials") {
       productFormValues.materials = val;
     }
 
@@ -1430,10 +1491,10 @@ class PurchaseForm extends React.Component {
       },
       () => {
         this.calculatePrice();
-        if(callBack && typeof callBack === "function"){ 
+        if (callBack && typeof callBack === "function") {
           callBack();
-        } 
-      }
+        }
+      },
     );
   };
 
@@ -1510,7 +1571,7 @@ class PurchaseForm extends React.Component {
           productFormValues.materials[i].rate
             ? priceFormat(
                 parseFloat(productFormValues.materials[i].pakka_weight) *
-                  parseFloat(productFormValues.materials[i].rate)
+                  parseFloat(productFormValues.materials[i].rate),
               )
             : 0;
       } else {
@@ -1519,7 +1580,7 @@ class PurchaseForm extends React.Component {
           productFormValues.materials[i].rate
             ? priceFormat(
                 parseFloat(productFormValues.materials[i].weight) *
-                  parseFloat(productFormValues.materials[i].rate)
+                  parseFloat(productFormValues.materials[i].rate),
               )
             : 0;
       }
@@ -1528,12 +1589,12 @@ class PurchaseForm extends React.Component {
       if (productFormValues.product_type == "material") {
         weight = convertUnitToGram(
           productFormValues.materials[i].unit_name,
-          productFormValues.materials[i].pakka_weight
+          productFormValues.materials[i].pakka_weight,
         );
       } else {
         weight = convertUnitToGram(
           productFormValues.materials[i].unit_name,
-          productFormValues.materials[i].weight
+          productFormValues.materials[i].weight,
         );
       }
       //  console.log("------------ this is convertUnitToGram", weight);
@@ -1570,14 +1631,14 @@ class PurchaseForm extends React.Component {
       console.log("if");
       console.log(
         "productFormValues.tax_percentage : ",
-        productFormValues.tax_percentage
+        productFormValues.tax_percentage,
       );
       tax_percentage = parseFloat(productFormValues.tax_percentage);
       gst_type = productFormValues.gst_type;
       result = calculateGST(
         productFormValues.tax_info,
         total,
-        this.state.supplier_gst_no
+        this.state.supplier_gst_no,
       );
       if (result) gst_type = result.type;
 
@@ -1612,16 +1673,16 @@ class PurchaseForm extends React.Component {
             ? productFormValues.tax_info.igst
             : "0"
           : productFormValues.tax_info
-          ? productFormValues.tax_info.cgst + productFormValues.tax_info.sgst
-          : "0"
+            ? productFormValues.tax_info.cgst + productFormValues.tax_info.sgst
+            : "0",
       );
       console.log("tax_percentage : ", tax_percentage);
-      (result = null), (gst_type = productFormValues.gst_type);
+      ((result = null), (gst_type = productFormValues.gst_type));
       if (productFormValues.tax_info) {
         result = calculateGST(
           productFormValues.tax_info,
           total,
-          this.state.supplier_gst_no
+          this.state.supplier_gst_no,
         );
         tax = result ? result.total : 0;
         if (result) gst_type = result.type;
@@ -1709,7 +1770,7 @@ class PurchaseForm extends React.Component {
       console.log("materials[index].purity_id : ", materials[index].purity_id);
       console.log("materials[index].purities : ", materials[index].purities);
       let prioritySelected = materials[index].purities.filter(
-        (itm) => itm.id == materials[index].purity_id
+        (itm) => itm.id == materials[index].purity_id,
       );
       console.log("prioritySelected : ", prioritySelected);
       materials[index] = {
@@ -1719,7 +1780,7 @@ class PurchaseForm extends React.Component {
             ? parseFloat(
                 (parseFloat(materials[index].weight) *
                   parseFloat(prioritySelected[0].value)) /
-                  100
+                  100,
               ).toFixed(2)
             : parseFloat(materials[index].weight),
       };
@@ -1728,7 +1789,7 @@ class PurchaseForm extends React.Component {
 
     if (key == "weight" && productFormValues.product_type == "material") {
       let prioritySelected = materials[index].purities.filter(
-        (itm) => itm.id == materials[index].purity_id
+        (itm) => itm.id == materials[index].purity_id,
       );
       console.log("prioritySelected : ", prioritySelected);
       let wt = materials[index].weight != "" ? materials[index].weight : 0;
@@ -1737,7 +1798,7 @@ class PurchaseForm extends React.Component {
         pakka_weight:
           prioritySelected[0].value != ""
             ? parseFloat(
-                (parseFloat(wt) * parseFloat(prioritySelected[0].value)) / 100
+                (parseFloat(wt) * parseFloat(prioritySelected[0].value)) / 100,
               ).toFixed(2)
             : parseFloat(wt),
       };
@@ -1767,7 +1828,7 @@ class PurchaseForm extends React.Component {
           // total_value += Number(materials[index].weight);
           total_value += convertUnitToGram(
             productFormValues.materials[index].unit_name,
-            productFormValues.materials[index].weight
+            productFormValues.materials[index].weight,
           );
           // console.log("------------total value is ", total_value);
         }
@@ -1775,7 +1836,7 @@ class PurchaseForm extends React.Component {
         materials[0].weight = (weight - total_value).toFixed(3);
 
         let prioritySelected = materials[0].purities.filter(
-          (itm) => itm.id == materials[0].purity_id
+          (itm) => itm.id == materials[0].purity_id,
         );
         console.log("prioritySelected : ", prioritySelected);
 
@@ -1785,7 +1846,7 @@ class PurchaseForm extends React.Component {
               ? parseFloat(
                   (parseFloat(materials[0].weight) *
                     parseFloat(prioritySelected[0].value)) /
-                    100
+                    100,
                 ).toFixed(3)
               : parseFloat(materials[0].weight).toFixed(3);
         }
@@ -1799,7 +1860,7 @@ class PurchaseForm extends React.Component {
       },
       () => {
         this.calculatePrice();
-      }
+      },
     );
   };
 
@@ -1821,7 +1882,7 @@ class PurchaseForm extends React.Component {
       result = calculateGST(
         productFormValues.tax_info,
         total,
-        this.state.supplier_gst_no
+        this.state.supplier_gst_no,
       );
       tax = result ? result.total : 0;
       if (result) gst_type = result.type;
@@ -1862,31 +1923,42 @@ class PurchaseForm extends React.Component {
   handleProductSubmit = async () => {
     console.log(this.state);
     let hasErr = this.productFormValidate();
-    
+
     // Validate product type matches purchase type (especially for edit mode)
     if (!hasErr) {
       const purchaseType = this.getPurchaseType();
       const productType = this.state.productFormValues.product_type;
-      
+
       // In edit mode, ensure new product type matches existing purchase type
-      if (!this.state.isCreateFrom && this.state.formValues.products && this.state.formValues.products.length > 0) {
-        const existingProductType = this.state.formValues.products[0].product_type;
+      if (
+        !this.state.isCreateFrom &&
+        this.state.formValues.products &&
+        this.state.formValues.products.length > 0
+      ) {
+        const existingProductType =
+          this.state.formValues.products[0].product_type;
         // For material purchase, product_type should be "material"
         // For product purchase, product_type should not be "material"
         if (purchaseType === "material" && productType !== "material") {
-          this.props.enqueueSnackbar("Cannot add product to material purchase. Please add only materials.", {
-            variant: "error",
-          });
+          this.props.enqueueSnackbar(
+            "Cannot add product to material purchase. Please add only materials.",
+            {
+              variant: "error",
+            },
+          );
           return;
         }
         if (purchaseType === "product" && productType === "material") {
-          this.props.enqueueSnackbar("Cannot add material to product purchase. Please add only products.", {
-            variant: "error",
-          });
+          this.props.enqueueSnackbar(
+            "Cannot add material to product purchase. Please add only products.",
+            {
+              variant: "error",
+            },
+          );
           return;
         }
       }
-      
+
       //check certificate is unique
       let res = await checkCertificateNo({
         certificate_no: this.state.productFormValues.certificate_no,
@@ -1912,7 +1984,7 @@ class PurchaseForm extends React.Component {
         _data.pre_store_id = savedProduct.data.data.id;
         _data.id = 0;
         _data.is_new_product = true; // Mark as new product for edit mode
-        _data.source = 'pre-store'; // Mark as from pre-store API
+        _data.source = "pre-store"; // Mark as from pre-store API
         console.log("Saved pre-store record ID:", _data.pre_store_id);
       } catch (error) {
         console.error("Error saving product:", error);
@@ -1920,7 +1992,7 @@ class PurchaseForm extends React.Component {
           "An error occurred while saving the product.",
           {
             variant: "error",
-          }
+          },
         );
       }
 
@@ -1940,11 +2012,12 @@ class PurchaseForm extends React.Component {
             size_id: "",
           },
           change_default_material: false,
-          productDialog: false,
+          //productDialog: false,
         },
         () => {
+          this.props.actions.purchasePreStoreList({ all: 1 });
           this.handleCalculateMainPrice();
-        }
+        },
       );
       this.props.enqueueSnackbar("Product added successfully.", {
         variant: "success",
@@ -1977,7 +2050,11 @@ class PurchaseForm extends React.Component {
       productFormValues.product_type != "material" &&
       productFormValues.has_certificate
     ) {
-      if (isEmpty(productFormValues.certificate_no) || productFormValues.certificate_no.startsWith("http") || !/^[A-Za-z0-9]+$/.test(productFormValues.certificate_no)) {
+      if (
+        isEmpty(productFormValues.certificate_no) ||
+        productFormValues.certificate_no.startsWith("http") ||
+        !/^[A-Za-z0-9]+$/.test(productFormValues.certificate_no)
+      ) {
         productFormErrors.certificate_no = true;
         hasErr = true;
       } else {
@@ -2098,18 +2175,18 @@ class PurchaseForm extends React.Component {
   handleDeleteConfirm = () => {
     let formValues = this.state.formValues;
     let proIdxData = formValues.products[this.state.deletingIndex];
-    
+
     console.log("proIdxData : ", proIdxData);
     console.log("Product source : ", proIdxData.source);
-    
+
     // Delete from pre-store API if it's from pre-store list
-    if (proIdxData.source === 'pre-store' || proIdxData.is_new_product) {
+    if (proIdxData.source === "pre-store" || proIdxData.is_new_product) {
       const preStoreId = proIdxData.pre_store_id || proIdxData.id;
       console.log("Deleting from pre-store:", preStoreId);
       this.props.actions.prePurchaseDelete(preStoreId);
     }
     // Note: Deleting from edit API products happens on form submit (purchaseUpdate)
-    
+
     formValues.products.splice(this.state.deletingIndex, 1);
     this.setState(
       {
@@ -2117,8 +2194,9 @@ class PurchaseForm extends React.Component {
         deleteDialogOpen: false,
       },
       () => {
+        this.props.actions.purchasePreStoreList({ all: 1 });
         this.handleCalculateMainPrice();
-      }
+      },
     );
   };
 
@@ -2170,7 +2248,7 @@ class PurchaseForm extends React.Component {
     }
     total_payable = priceFormat(
       total_amount - discount - this.state.return_amount,
-      true
+      true,
     );
     if (!isEmpty(formValues.paid_amount)) {
       paid_amount = parseFloat(formValues.paid_amount);
@@ -2229,24 +2307,28 @@ class PurchaseForm extends React.Component {
         let updateData = {
           ...this.state.formValues,
           // Filter out source and is_new_product fields before sending to API
-          products: this.state.formValues.products.map(product => {
+          products: this.state.formValues.products.map((product) => {
             const { source, is_new_product, ...cleanProduct } = product;
             return cleanProduct;
-          })
+          }),
         };
-        
+
         console.log("=== UPDATING PURCHASE WITH ALL PRODUCTS ===");
-        console.log("Total products before cleaning:", this.state.formValues.products.length);
+        console.log(
+          "Total products before cleaning:",
+          this.state.formValues.products.length,
+        );
         console.log("Products by source:", {
-          edit: this.state.formValues.products.filter(p => p.source === 'edit').length,
-          'pre-store': this.state.formValues.products.filter(p => p.source === 'pre-store').length
+          edit: this.state.formValues.products.filter(
+            (p) => p.source === "edit",
+          ).length,
+          "pre-store": this.state.formValues.products.filter(
+            (p) => p.source === "pre-store",
+          ).length,
         });
         console.log("Cleaned products for API:", updateData.products.length);
-        
-        this.props.actions.purchaseUpdate(
-          this.state.formData.id,
-          updateData
-        );
+
+        this.props.actions.purchaseUpdate(this.state.formData.id, updateData);
       }
     }
   };
@@ -2290,7 +2372,7 @@ class PurchaseForm extends React.Component {
         hasErr = true;
         this.props.enqueueSnackbar(
           "Paid amount must be less than or equal to payable amount.",
-          { variant: "error" }
+          { variant: "error" },
         );
       }
     }
@@ -2425,7 +2507,7 @@ class PurchaseForm extends React.Component {
       },
       () => {
         this.calculateReturnAmount();
-      }
+      },
     );
   };
 
@@ -2450,14 +2532,14 @@ class PurchaseForm extends React.Component {
       return_payment_mode: this.state.return_payment_mode,
       return_amount_from_wallet: priceFormat(
         parseFloat(this.state.return_amount) -
-          parseFloat(this.state.formValues.due_amount)
+          parseFloat(this.state.formValues.due_amount),
       ),
     });
     if (res.data.success) {
       this.props.actions.cartList();
       this.props.enqueueSnackbar(res.data.message, { variant: "success" });
       this.props.navigate(
-        getUserDashboardRoute(getRoleName(this.state.auth)) + "/purchases"
+        getUserDashboardRoute(getRoleName(this.state.auth)) + "/purchases",
       );
     } else {
       this.setState({
@@ -2505,7 +2587,7 @@ class PurchaseForm extends React.Component {
       ) {
         this.props.enqueueSnackbar(
           "Weight can't be more than available weight.",
-          { variant: "error" }
+          { variant: "error" },
         );
       }
     } else {
@@ -2528,7 +2610,7 @@ class PurchaseForm extends React.Component {
       ) {
         this.props.enqueueSnackbar(
           "Quantity can't be more than available quantity.",
-          { variant: "error" }
+          { variant: "error" },
         );
       }
     } else {
@@ -2546,7 +2628,7 @@ class PurchaseForm extends React.Component {
         },
         () => {
           this.calculateReturnAmount();
-        }
+        },
       );
     }
   };
@@ -2561,26 +2643,26 @@ class PurchaseForm extends React.Component {
       if (return_products[i].is_return) {
         if (formValues.products[i].product_type == "material") {
           let return_weight = parseFloat(
-            formValues.products[i].materials[0].return_weight
+            formValues.products[i].materials[0].return_weight,
           );
           return_weight = formValues.products[i].materials[0].purity_info.value
             ? (return_weight *
                 parseFloat(
-                  formValues.products[i].materials[0].purity_info.value
+                  formValues.products[i].materials[0].purity_info.value,
                 )) /
               100
             : return_weight;
 
           let thisAmt = priceFormat(
             parseFloat(return_weight) *
-              parseFloat(formValues.products[i].materials[0].rate)
+              parseFloat(formValues.products[i].materials[0].rate),
           );
           let thisReturnCharge = formValues.have_return_charge
             ? parseFloat(formValues.products[i].return_charge_percent) > 0
               ? priceFormat(
                   (thisAmt *
                     parseFloat(formValues.products[i].return_charge_percent)) /
-                    100
+                    100,
                 )
               : 0
             : 0;
@@ -2649,7 +2731,8 @@ class PurchaseForm extends React.Component {
   };
 
   isMaterialFormDisabled = () => {
-    const products = (this.state.formValues && this.state.formValues.products) || [];
+    const products =
+      (this.state.formValues && this.state.formValues.products) || [];
     if (
       products.length == 0 &&
       !this.state.productFormValues.size_id &&
@@ -2670,7 +2753,7 @@ class PurchaseForm extends React.Component {
       },
       () => {
         this.handleCalculateMainPrice();
-      }
+      },
     );
   };
 
@@ -2684,7 +2767,7 @@ class PurchaseForm extends React.Component {
       },
       () => {
         this.handleCalculateMainPrice();
-      }
+      },
     );
   };
 
@@ -2707,7 +2790,7 @@ class PurchaseForm extends React.Component {
 
   handleMaterialChange = () => {
     //productFormValues.materials
-  }
+  };
 
   render() {
     const {
@@ -2721,12 +2804,13 @@ class PurchaseForm extends React.Component {
       return_sale_data,
       formData,
     } = this.state;
-    
+
     // Ensure products are available - use formValues.products, fallback to formData.products
-    const products = (formValues && formValues.products) || 
-                     (formData && formData.products) || 
-                     [];
-    
+    const products =
+      (formValues && formValues.products) ||
+      (formData && formData.products) ||
+      [];
+
     // Debug logging to understand data flow
     console.log("=== RENDER DEBUG ===");
     console.log("formData:", formData);
@@ -2734,10 +2818,9 @@ class PurchaseForm extends React.Component {
     console.log("formValues.products:", formValues.products);
     console.log("computed products:", products);
     console.log("products.length:", products.length);
-    
-    const actionProduct = products && products.length
-      ? products[actionProductIndex]
-      : null;
+
+    const actionProduct =
+      products && products.length ? products[actionProductIndex] : null;
     console.log("products.length : ------", products.length);
     //console.log("QR code data : ------", this.state.qrScanner);
     //console.log("productFormValues.materials", productFormValues.materials);
@@ -2786,7 +2869,7 @@ class PurchaseForm extends React.Component {
     // console.log("grp_materials: ", productFormValues.grp_materials);
     // console.log("selected_grp_materials: ", productFormValues.selected_grp_materials);
     // console.log("productFormValues.product_type != 'material' && productFormValues.materials.length > 0 && productFormValues.material_groups && productFormValues.material_groups.length > 0 : ", (productFormValues.product_type != "material" && productFormValues.materials.length > 0 && productFormValues.material_groups && productFormValues.material_groups.length > 0 ));
-    
+
     // if(productFormValues.selected_grp_materials){
     //   console.log("here----------------------------",Array.from(productFormValues.selected_grp_materials));
     //   Array.from(productFormValues.selected_grp_materials).map((item, index) => {
@@ -2943,9 +3026,9 @@ class PurchaseForm extends React.Component {
                   disabled={!this.state.isCreateFrom}
                   endAdornment={
                     <InputAdornment position="end">
-                      <Tooltip 
+                      <Tooltip
                         title={
-                          !this.state.isCreateFrom 
+                          !this.state.isCreateFrom
                             ? `Add new ${this.getPurchaseType() === "material" ? "Material" : "Product"} to this purchase`
                             : "Add new item"
                         }
@@ -3091,7 +3174,7 @@ class PurchaseForm extends React.Component {
               className="p_heading_list mb-0 mt-0"
               style={{ position: "relative" }}
             >
-              <span className="purchase_p_title " style={{ marginTop: '16px' }}>
+              <span className="purchase_p_title " style={{ marginTop: "16px" }}>
                 Purchase{" "}
                 {formValues.type == "product" ? "Products" : "Materials"}
               </span>
@@ -3106,7 +3189,10 @@ class PurchaseForm extends React.Component {
                   className="loans_view tax-input p_view"
                 >
                   <Grid item xs={6} md={2}>
-                    <FormControl fullWidth error={productFormErrors.category_id}>
+                    <FormControl
+                      fullWidth
+                      error={productFormErrors.category_id}
+                    >
                       <InputLabel>Category</InputLabel>
                       <Select
                         value={productFormValues.category_id}
@@ -3199,7 +3285,7 @@ class PurchaseForm extends React.Component {
                           this.handleProductChange(
                             event,
                             newValue ? newValue.id : "",
-                            this.state.productList
+                            this.state.productList,
                           );
                         }}
                       />
@@ -3230,7 +3316,7 @@ class PurchaseForm extends React.Component {
                         onChange={(event, newValue) => {
                           this.updateProductFormValues(
                             newValue ? newValue.id : "",
-                            "material_id"
+                            "material_id",
                           );
                         }}
                       />
@@ -3399,10 +3485,16 @@ class PurchaseForm extends React.Component {
                                         color="primary"
                                         onClick={() =>
                                           this.handleEditScannedField(
-                                            "certificate_no"
+                                            "certificate_no",
                                           )
                                         }
-                                        style={{ width: "40px", height: "40px", marginRight: 6, padding: 0, minWidth: 0 }}
+                                        style={{
+                                          width: "40px",
+                                          height: "40px",
+                                          marginRight: 6,
+                                          padding: 0,
+                                          minWidth: 0,
+                                        }}
                                         title="Edit certificate / link"
                                       >
                                         <Edit sx={{ color: "#1976d2" }} />
@@ -3412,10 +3504,17 @@ class PurchaseForm extends React.Component {
                                         className="add-button purchase_add_p"
                                         color="primary"
                                         onClick={this.handleRetryQRScanner}
-                                        style={{ width: "40px", height: "40px", padding: 0, minWidth: 0 }}
+                                        style={{
+                                          width: "40px",
+                                          height: "40px",
+                                          padding: 0,
+                                          minWidth: 0,
+                                        }}
                                         title="Rescan QR code"
                                       >
-                                        <QrCodeScanner sx={{ color: "#1976d2" }} />
+                                        <QrCodeScanner
+                                          sx={{ color: "#1976d2" }}
+                                        />
                                       </Button>
                                     </>
                                   ) : (
@@ -3424,7 +3523,12 @@ class PurchaseForm extends React.Component {
                                       className="add-button purchase_add_p"
                                       color="primary"
                                       onClick={this.handleOpenQRScanner}
-                                      style={{ width: "40px", height: "40px", padding: 0, minWidth: 0 }}
+                                      style={{
+                                        width: "40px",
+                                        height: "40px",
+                                        padding: 0,
+                                        minWidth: 0,
+                                      }}
                                       title="Scan QR code"
                                     >
                                       <QrCodeScanner
@@ -3490,413 +3594,531 @@ class PurchaseForm extends React.Component {
                           </TableRow>
                         </TableHead>
                         <TableBody className="p-invoice-date">
-                          {productFormValues.product_type != "material" && productFormValues.materials.length > 0 && productFormValues.material_groups && productFormValues.material_groups.length > 0 
-                            ?<>
+                          {productFormValues.product_type != "material" &&
+                          productFormValues.materials.length > 0 &&
+                          productFormValues.material_groups &&
+                          productFormValues.material_groups.length > 0 ? (
+                            <>
                               {
                                 //productFormValues.material_groups && productFormValues.material_groups.map((grpName, index) => {
-                                  productFormValues.materials && productFormValues.materials.map((item, index) => {
-                                    let materialIndex = productFormValues.materials.findIndex(mat => mat.material_id == item.material_id && mat.group == item.group);
-                                    let grpName = "grp_"+item.group;
-                                    return (<React.Fragment key={`materialGrp-${index}`}>
-                                      {console.log("materialGrp : item : ", item)}
-                                      <TableRow>
-                                        <TableCell colSpan={8} sx={{ backgroundColor: '#f0f0f0', fontWeight: 'bold' }}>
-                                          Group {item.group}
-                                        </TableCell>
-                                      </TableRow>
-                                      {/* {materialObj.map((item, index) => ( */}
-                                        <TableRow key={materialIndex}>
-                                          <TableCell>{item.material_name}</TableCell>
-                                          <TableCell style={{ minWidth: "150px" }}>
-                                            <FormControl
-                                              fullWidth
-                                              error={materialFormErrors[materialIndex]?.material_id}
+                                productFormValues.materials &&
+                                  productFormValues.materials.map(
+                                    (item, index) => {
+                                      let materialIndex =
+                                        productFormValues.materials.findIndex(
+                                          (mat) =>
+                                            mat.material_id ==
+                                              item.material_id &&
+                                            mat.group == item.group,
+                                        );
+                                      let grpName = "grp_" + item.group;
+                                      return (
+                                        <React.Fragment
+                                          key={`materialGrp-${index}`}
+                                        >
+                                          {console.log(
+                                            "materialGrp : item : ",
+                                            item,
+                                          )}
+                                          <TableRow>
+                                            <TableCell
+                                              colSpan={8}
+                                              sx={{
+                                                backgroundColor: "#f0f0f0",
+                                                fontWeight: "bold",
+                                              }}
                                             >
-                                              <InputLabel>Material</InputLabel>
-                                              <Select
-                                                value={item.material_id}
-                                                label="Material"
-                                                onChange={(event) =>
-                                                  /* this.handleMaterialFormChange(
+                                              Group {item.group}
+                                            </TableCell>
+                                          </TableRow>
+                                          {/* {materialObj.map((item, index) => ( */}
+                                          <TableRow key={materialIndex}>
+                                            <TableCell>
+                                              {item.material_name}
+                                            </TableCell>
+                                            <TableCell
+                                              style={{ minWidth: "150px" }}
+                                            >
+                                              <FormControl
+                                                fullWidth
+                                                error={
+                                                  materialFormErrors[
+                                                    materialIndex
+                                                  ]?.material_id
+                                                }
+                                              >
+                                                <InputLabel>
+                                                  Material
+                                                </InputLabel>
+                                                <Select
+                                                  value={item.material_id}
+                                                  label="Material"
+                                                  onChange={(event) =>
+                                                    /* this.handleMaterialFormChange(
                                                     event,
                                                     index,  
                                                     "grp_material"
                                                   ) */
-                                                  this.updateProductFormValues(
-                                                    grpName+"#"+event.target.value,
-                                                    "grp_material_selected"
-                                                  )
-                                                }
-                                                defaultValue=""
-                                                disabled={this.isMaterialFormDisabled()}
-                                              >
-                                                <MenuItem value=""></MenuItem>
-                                                {productFormValues.grp_materials[grpName] && productFormValues.grp_materials[grpName].map((itm, index) => (
-                                                  <MenuItem value={itm.material_id} key={index}>
-                                                    {itm.material_name}{" "}
-                                                    {" "}
-                                                    
-                                                  </MenuItem>
-                                                ))}
-                                              </Select>
-                                            </FormControl>
-                                          </TableCell>
-                                          <TableCell style={{ minWidth: "150px" }}>
-                                            <FormControl
-                                              fullWidth
-                                              error={materialFormErrors[materialIndex]?.purity_id}
+                                                    this.updateProductFormValues(
+                                                      grpName +
+                                                        "#" +
+                                                        event.target.value,
+                                                      "grp_material_selected",
+                                                    )
+                                                  }
+                                                  defaultValue=""
+                                                  disabled={this.isMaterialFormDisabled()}
+                                                >
+                                                  <MenuItem value=""></MenuItem>
+                                                  {productFormValues
+                                                    .grp_materials[grpName] &&
+                                                    productFormValues.grp_materials[
+                                                      grpName
+                                                    ].map((itm, index) => (
+                                                      <MenuItem
+                                                        value={itm.material_id}
+                                                        key={index}
+                                                      >
+                                                        {itm.material_name}{" "}
+                                                      </MenuItem>
+                                                    ))}
+                                                </Select>
+                                              </FormControl>
+                                            </TableCell>
+                                            <TableCell
+                                              style={{ minWidth: "150px" }}
                                             >
-                                              <InputLabel>Purity</InputLabel>
-                                              <Select
-                                                value={item.purity_id}
-                                                label="Purity"
-                                                onChange={(event) =>
-                                                  this.handleMaterialFormChange(
-                                                    event,
-                                                    materialIndex,  
-                                                    "purity_id"
-                                                  )
+                                              <FormControl
+                                                fullWidth
+                                                error={
+                                                  materialFormErrors[
+                                                    materialIndex
+                                                  ]?.purity_id
                                                 }
-                                                defaultValue=""
-                                                disabled={this.isMaterialFormDisabled()}
                                               >
-                                                <MenuItem value=""></MenuItem>
-                                                {console.log("item here : ", item, item.purities)}
-                                                {item.purities.map((item, index) => (
-                                                  <MenuItem value={item.id} key={index}>
-                                                    {item.name}{" "}
-                                                    {item.mrp_display ? (
-                                                      <>
-                                                        ({displayAmount(item.mrp_display)} /{" "}
-                                                        {item.unit_name})
-                                                      </>
-                                                    ) : (
-                                                      ""
-                                                    )}{" "}
-                                                    {item.value != ""
-                                                      ? item.value + "%"
-                                                      : ""}
-                                                  </MenuItem>
-                                                ))}
-                                              </Select>
-                                            </FormControl>
-                                          </TableCell>
-                                          <TableCell>
-                                            <TextField
-                                              label="Quantity"
-                                              variant="outlined"
-                                              fullWidth
-                                              value={item.quantity}
-                                              onInput={(e) => validateInteger(e)}
-                                              onChange={(event) =>
-                                                this.handleMaterialFormChange(
-                                                  event,
-                                                  materialIndex,
-                                                  "quantity"
-                                                )
-                                              }
-                                              error={materialFormErrors[materialIndex]?.quantity}
-                                              disabled={this.isMaterialFormDisabled()}
-                                            />
-                                          </TableCell>
-                                          <TableCell>
-                                            <TextField
-                                              label="Total Weight"
-                                              variant="outlined"
-                                              fullWidth
-                                              value={item.weight}
-                                              onInput={(e) => validateNumber(e)}
-                                              onChange={(event) =>
-                                                this.handleMaterialFormChange(
-                                                  event,
-                                                  materialIndex,
-                                                  "weight"
-                                                )
-                                              }
-                                              error={materialFormErrors[materialIndex]?.weight}
-                                              disabled={this.isMaterialFormDisabled()}
-                                            />
-                                          </TableCell>
-                                          {productFormValues.product_type == "material" ? (
+                                                <InputLabel>Purity</InputLabel>
+                                                <Select
+                                                  value={item.purity_id}
+                                                  label="Purity"
+                                                  onChange={(event) =>
+                                                    this.handleMaterialFormChange(
+                                                      event,
+                                                      materialIndex,
+                                                      "purity_id",
+                                                    )
+                                                  }
+                                                  defaultValue=""
+                                                  disabled={this.isMaterialFormDisabled()}
+                                                >
+                                                  <MenuItem value=""></MenuItem>
+                                                  {console.log(
+                                                    "item here : ",
+                                                    item,
+                                                    item.purities,
+                                                  )}
+                                                  {item.purities.map(
+                                                    (item, index) => (
+                                                      <MenuItem
+                                                        value={item.id}
+                                                        key={index}
+                                                      >
+                                                        {item.name}{" "}
+                                                        {item.mrp_display ? (
+                                                          <>
+                                                            (
+                                                            {displayAmount(
+                                                              item.mrp_display,
+                                                            )}{" "}
+                                                            / {item.unit_name})
+                                                          </>
+                                                        ) : (
+                                                          ""
+                                                        )}{" "}
+                                                        {item.value != ""
+                                                          ? item.value + "%"
+                                                          : ""}
+                                                      </MenuItem>
+                                                    ),
+                                                  )}
+                                                </Select>
+                                              </FormControl>
+                                            </TableCell>
                                             <TableCell>
                                               <TextField
-                                                label="Pakka"
+                                                label="Quantity"
                                                 variant="outlined"
                                                 fullWidth
-                                                onInput={(e) => validateNumber(e)}
-                                                value={item.pakka_weight}
+                                                value={item.quantity}
+                                                onInput={(e) =>
+                                                  validateInteger(e)
+                                                }
                                                 onChange={(event) =>
                                                   this.handleMaterialFormChange(
                                                     event,
                                                     materialIndex,
-                                                    "pakka_weight"
+                                                    "quantity",
                                                   )
                                                 }
                                                 error={
-                                                  materialFormErrors[materialIndex]?.pakka_weight
+                                                  materialFormErrors[
+                                                    materialIndex
+                                                  ]?.quantity
                                                 }
                                                 disabled={this.isMaterialFormDisabled()}
-                                              />  
+                                              />
                                             </TableCell>
-                                          ) : (
-                                            ""  
-                                          )}
-                                          <TableCell style={{ minWidth: "150px" }}>
-                                            <FormControl
-                                              fullWidth
-                                              error={materialFormErrors[materialIndex]?.unit_id}
-                                            >
-                                              <InputLabel>Unit</InputLabel>
-                                              <Select
-                                                value={item.unit_id}
-                                                label="Purity"
+                                            <TableCell>
+                                              <TextField
+                                                label="Total Weight"
+                                                variant="outlined"
+                                                fullWidth
+                                                value={item.weight}
+                                                onInput={(e) =>
+                                                  validateNumber(e)
+                                                }
                                                 onChange={(event) =>
                                                   this.handleMaterialFormChange(
                                                     event,
                                                     materialIndex,
-                                                    "unit_id"
+                                                    "weight",
                                                   )
                                                 }
-                                                defaultValue=""
+                                                error={
+                                                  materialFormErrors[
+                                                    materialIndex
+                                                  ]?.weight
+                                                }
                                                 disabled={this.isMaterialFormDisabled()}
-                                              >
-                                                <MenuItem value=""></MenuItem>
-                                                {this.state.unitList.map((item, index) => (
-                                                  <MenuItem value={item.id} key={index}>
-                                                    {item.name}
-                                                  </MenuItem>
-                                                ))}
-                                              </Select>
-                                            </FormControl>
-                                          </TableCell>
-                                          <TableCell>
-                                            <TextField
-                                              label="Rate"
-                                              variant="outlined"
-                                              fullWidth
-                                              onInput={(e) => validateNumber(e)}
-                                              value={item.rate}
-                                              onChange={(event) =>
-                                                this.handleMaterialFormChange(
-                                                  event,
-                                                  materialIndex,
-                                                  "rate"
-                                                )
-                                              }
-                                              InputProps={{
-                                                startAdornment: (
-                                                  <InputAdornment position="start">
-                                                    ₹
-                                                  </InputAdornment>
-                                                ),
-                                              }}
-                                              error={materialFormErrors[materialIndex]?.rate}
-                                              disabled={this.isMaterialFormDisabled()}
-                                            />
-                                          </TableCell>
-                                          <TableCell>
-                                            <TextField
-                                              label="Amount"
-                                              variant="outlined"
-                                              fullWidth
-                                              value={item.amount}
-                                              disabled
-                                              error={materialFormErrors[materialIndex]?.amount}
-                                              InputProps={{
-                                                startAdornment: (
-                                                  <InputAdornment position="start">
-                                                    ₹
-                                                  </InputAdornment>
-                                                ),
-                                              }}
-                                            />
-                                          </TableCell>
-                                        </TableRow>
-                                      {/* ))} */}
-                                    </React.Fragment>)
-                                  })
-                                // })
-                              } 
-                            </>
-                            :<>
-                              {productFormValues.materials.map((item, index) => (
-                                <TableRow key={index}>
-                                  <TableCell>{item.material_name}</TableCell>
-                                  <TableCell style={{ minWidth: "150px" }}>
-                                    <FormControl
-                                      fullWidth
-                                      error={materialFormErrors[index].purity_id}
-                                    >
-                                      <InputLabel>Purity</InputLabel>
-                                      <Select
-                                        value={item.purity_id}
-                                        label="Purity"
-                                        onChange={(event) =>
-                                          this.handleMaterialFormChange(
-                                            event,
-                                            index,
-                                            "purity_id"
-                                          )
-                                        }
-                                        defaultValue=""
-                                        disabled={this.isMaterialFormDisabled()}
-                                      >
-                                        <MenuItem value=""></MenuItem>
-                                        {item.purities.map((item, index) => (
-                                          <MenuItem value={item.id} key={index}>
-                                            {item.name}{" "}
-                                            {item.mrp_display ? (
-                                              <>
-                                                ({displayAmount(item.mrp_display)} /{" "}
-                                                {item.unit_name})
-                                              </>
+                                              />
+                                            </TableCell>
+                                            {productFormValues.product_type ==
+                                            "material" ? (
+                                              <TableCell>
+                                                <TextField
+                                                  label="Pakka"
+                                                  variant="outlined"
+                                                  fullWidth
+                                                  onInput={(e) =>
+                                                    validateNumber(e)
+                                                  }
+                                                  value={item.pakka_weight}
+                                                  onChange={(event) =>
+                                                    this.handleMaterialFormChange(
+                                                      event,
+                                                      materialIndex,
+                                                      "pakka_weight",
+                                                    )
+                                                  }
+                                                  error={
+                                                    materialFormErrors[
+                                                      materialIndex
+                                                    ]?.pakka_weight
+                                                  }
+                                                  disabled={this.isMaterialFormDisabled()}
+                                                />
+                                              </TableCell>
                                             ) : (
                                               ""
-                                            )}{" "}
-                                            {item.value != ""
-                                              ? item.value + "%"
-                                              : ""}
-                                          </MenuItem>
-                                        ))}
-                                      </Select>
-                                    </FormControl>
-                                  </TableCell>
-                                  <TableCell>
-                                    <TextField
-                                      label="Quantity"
-                                      variant="outlined"
-                                      fullWidth
-                                      onInput={(e) => validateInteger(e)}
-                                      value={item.quantity}
-                                      onChange={(event) =>
-                                        this.handleMaterialFormChange(
-                                          event,
-                                          index,
-                                          "quantity"
-                                        )
-                                      }
-                                      error={materialFormErrors[index].quantity}
-                                      disabled={this.isMaterialFormDisabled()}
-                                    />
-                                  </TableCell>
-                                  <TableCell>
-                                    <TextField
-                                      label="Total Weight"
-                                      variant="outlined"
-                                      fullWidth
-                                      onInput={(e) => validateNumber(e)}
-                                      value={item.weight}
-                                      onChange={(event) =>
-                                        this.handleMaterialFormChange(
-                                          event,
-                                          index,
-                                          "weight"
-                                        )
-                                      }
-                                      error={materialFormErrors[index].weight}
-                                      disabled={this.isMaterialFormDisabled()}
-                                    />
-                                  </TableCell>
-                                  {productFormValues.product_type == "material" ? (
+                                            )}
+                                            <TableCell
+                                              style={{ minWidth: "150px" }}
+                                            >
+                                              <FormControl
+                                                fullWidth
+                                                error={
+                                                  materialFormErrors[
+                                                    materialIndex
+                                                  ]?.unit_id
+                                                }
+                                              >
+                                                <InputLabel>Unit</InputLabel>
+                                                <Select
+                                                  value={item.unit_id}
+                                                  label="Purity"
+                                                  onChange={(event) =>
+                                                    this.handleMaterialFormChange(
+                                                      event,
+                                                      materialIndex,
+                                                      "unit_id",
+                                                    )
+                                                  }
+                                                  defaultValue=""
+                                                  disabled={this.isMaterialFormDisabled()}
+                                                >
+                                                  <MenuItem value=""></MenuItem>
+                                                  {this.state.unitList.map(
+                                                    (item, index) => (
+                                                      <MenuItem
+                                                        value={item.id}
+                                                        key={index}
+                                                      >
+                                                        {item.name}
+                                                      </MenuItem>
+                                                    ),
+                                                  )}
+                                                </Select>
+                                              </FormControl>
+                                            </TableCell>
+                                            <TableCell>
+                                              <TextField
+                                                label="Rate"
+                                                variant="outlined"
+                                                fullWidth
+                                                onInput={(e) =>
+                                                  validateNumber(e)
+                                                }
+                                                value={item.rate}
+                                                onChange={(event) =>
+                                                  this.handleMaterialFormChange(
+                                                    event,
+                                                    materialIndex,
+                                                    "rate",
+                                                  )
+                                                }
+                                                InputProps={{
+                                                  startAdornment: (
+                                                    <InputAdornment position="start">
+                                                      ₹
+                                                    </InputAdornment>
+                                                  ),
+                                                }}
+                                                error={
+                                                  materialFormErrors[
+                                                    materialIndex
+                                                  ]?.rate
+                                                }
+                                                disabled={this.isMaterialFormDisabled()}
+                                              />
+                                            </TableCell>
+                                            <TableCell>
+                                              <TextField
+                                                label="Amount"
+                                                variant="outlined"
+                                                fullWidth
+                                                value={item.amount}
+                                                disabled
+                                                error={
+                                                  materialFormErrors[
+                                                    materialIndex
+                                                  ]?.amount
+                                                }
+                                                InputProps={{
+                                                  startAdornment: (
+                                                    <InputAdornment position="start">
+                                                      ₹
+                                                    </InputAdornment>
+                                                  ),
+                                                }}
+                                              />
+                                            </TableCell>
+                                          </TableRow>
+                                          {/* ))} */}
+                                        </React.Fragment>
+                                      );
+                                    },
+                                  )
+                                // })
+                              }
+                            </>
+                          ) : (
+                            <>
+                              {productFormValues.materials.map(
+                                (item, index) => (
+                                  <TableRow key={index}>
+                                    <TableCell>{item.material_name}</TableCell>
+                                    <TableCell style={{ minWidth: "150px" }}>
+                                      <FormControl
+                                        fullWidth
+                                        error={
+                                          materialFormErrors[index].purity_id
+                                        }
+                                      >
+                                        <InputLabel>Purity</InputLabel>
+                                        <Select
+                                          value={item.purity_id}
+                                          label="Purity"
+                                          onChange={(event) =>
+                                            this.handleMaterialFormChange(
+                                              event,
+                                              index,
+                                              "purity_id",
+                                            )
+                                          }
+                                          defaultValue=""
+                                          disabled={this.isMaterialFormDisabled()}
+                                        >
+                                          <MenuItem value=""></MenuItem>
+                                          {item.purities.map((item, index) => (
+                                            <MenuItem
+                                              value={item.id}
+                                              key={index}
+                                            >
+                                              {item.name}{" "}
+                                              {item.mrp_display ? (
+                                                <>
+                                                  (
+                                                  {displayAmount(
+                                                    item.mrp_display,
+                                                  )}{" "}
+                                                  / {item.unit_name})
+                                                </>
+                                              ) : (
+                                                ""
+                                              )}{" "}
+                                              {item.value != ""
+                                                ? item.value + "%"
+                                                : ""}
+                                            </MenuItem>
+                                          ))}
+                                        </Select>
+                                      </FormControl>
+                                    </TableCell>
                                     <TableCell>
                                       <TextField
-                                        label="Pakka"
+                                        label="Quantity"
                                         variant="outlined"
                                         fullWidth
-                                        onInput={(e) => validateNumber(e)}
-                                        value={item.pakka_weight}
+                                        onInput={(e) => validateInteger(e)}
+                                        value={item.quantity}
                                         onChange={(event) =>
                                           this.handleMaterialFormChange(
                                             event,
                                             index,
-                                            "pakka_weight"
+                                            "quantity",
                                           )
                                         }
                                         error={
-                                          materialFormErrors[index].pakka_weight
+                                          materialFormErrors[index].quantity
                                         }
                                         disabled={this.isMaterialFormDisabled()}
                                       />
                                     </TableCell>
-                                  ) : (
-                                    ""
-                                  )}
-                                  <TableCell style={{ minWidth: "150px" }}>
-                                    <FormControl
-                                      fullWidth
-                                      error={materialFormErrors[index].unit_id}
-                                    >
-                                      <InputLabel>Unit</InputLabel>
-                                      <Select
-                                        value={item.unit_id}
-                                        label="Purity"
+                                    <TableCell>
+                                      <TextField
+                                        label="Total Weight"
+                                        variant="outlined"
+                                        fullWidth
+                                        onInput={(e) => validateNumber(e)}
+                                        value={item.weight}
                                         onChange={(event) =>
                                           this.handleMaterialFormChange(
                                             event,
                                             index,
-                                            "unit_id"
+                                            "weight",
                                           )
                                         }
-                                        defaultValue=""
+                                        error={materialFormErrors[index].weight}
                                         disabled={this.isMaterialFormDisabled()}
+                                      />
+                                    </TableCell>
+                                    {productFormValues.product_type ==
+                                    "material" ? (
+                                      <TableCell>
+                                        <TextField
+                                          label="Pakka"
+                                          variant="outlined"
+                                          fullWidth
+                                          onInput={(e) => validateNumber(e)}
+                                          value={item.pakka_weight}
+                                          onChange={(event) =>
+                                            this.handleMaterialFormChange(
+                                              event,
+                                              index,
+                                              "pakka_weight",
+                                            )
+                                          }
+                                          error={
+                                            materialFormErrors[index]
+                                              .pakka_weight
+                                          }
+                                          disabled={this.isMaterialFormDisabled()}
+                                        />
+                                      </TableCell>
+                                    ) : (
+                                      ""
+                                    )}
+                                    <TableCell style={{ minWidth: "150px" }}>
+                                      <FormControl
+                                        fullWidth
+                                        error={
+                                          materialFormErrors[index].unit_id
+                                        }
                                       >
-                                        <MenuItem value=""></MenuItem>
-                                        {this.state.unitList.map((item, index) => (
-                                          <MenuItem value={item.id} key={index}>
-                                            {item.name}
-                                          </MenuItem>
-                                        ))}
-                                      </Select>
-                                    </FormControl>
-                                  </TableCell>
-                                  <TableCell>
-                                    <TextField
-                                      label="Rate"
-                                      variant="outlined"
-                                      fullWidth
-                                      onInput={(e) => validateNumber(e)}
-                                      value={item.rate}
-                                      onChange={(event) =>
-                                        this.handleMaterialFormChange(
-                                          event,
-                                          index,
-                                          "rate"
-                                        )
-                                      }
-                                      InputProps={{
-                                        startAdornment: (
-                                          <InputAdornment position="start">
-                                            ₹
-                                          </InputAdornment>
-                                        ),
-                                      }}
-                                      error={materialFormErrors[index].rate}
-                                      disabled={this.isMaterialFormDisabled()}
-                                    />
-                                  </TableCell>
-                                  <TableCell>
-                                    <TextField
-                                      label="Amount"
-                                      variant="outlined"
-                                      fullWidth
-                                      value={item.amount}
-                                      disabled
-                                      error={materialFormErrors[index].amount}
-                                      InputProps={{
-                                        startAdornment: (
-                                          <InputAdornment position="start">
-                                            ₹
-                                          </InputAdornment>
-                                        ),
-                                      }}
-                                    />
-                                  </TableCell>
-                                </TableRow>
-                              ))}
+                                        <InputLabel>Unit</InputLabel>
+                                        <Select
+                                          value={item.unit_id}
+                                          label="Purity"
+                                          onChange={(event) =>
+                                            this.handleMaterialFormChange(
+                                              event,
+                                              index,
+                                              "unit_id",
+                                            )
+                                          }
+                                          defaultValue=""
+                                          disabled={this.isMaterialFormDisabled()}
+                                        >
+                                          <MenuItem value=""></MenuItem>
+                                          {this.state.unitList.map(
+                                            (item, index) => (
+                                              <MenuItem
+                                                value={item.id}
+                                                key={index}
+                                              >
+                                                {item.name}
+                                              </MenuItem>
+                                            ),
+                                          )}
+                                        </Select>
+                                      </FormControl>
+                                    </TableCell>
+                                    <TableCell>
+                                      <TextField
+                                        label="Rate"
+                                        variant="outlined"
+                                        fullWidth
+                                        onInput={(e) => validateNumber(e)}
+                                        value={item.rate}
+                                        onChange={(event) =>
+                                          this.handleMaterialFormChange(
+                                            event,
+                                            index,
+                                            "rate",
+                                          )
+                                        }
+                                        InputProps={{
+                                          startAdornment: (
+                                            <InputAdornment position="start">
+                                              ₹
+                                            </InputAdornment>
+                                          ),
+                                        }}
+                                        error={materialFormErrors[index].rate}
+                                        disabled={this.isMaterialFormDisabled()}
+                                      />
+                                    </TableCell>
+                                    <TableCell>
+                                      <TextField
+                                        label="Amount"
+                                        variant="outlined"
+                                        fullWidth
+                                        value={item.amount}
+                                        disabled
+                                        error={materialFormErrors[index].amount}
+                                        InputProps={{
+                                          startAdornment: (
+                                            <InputAdornment position="start">
+                                              ₹
+                                            </InputAdornment>
+                                          ),
+                                        }}
+                                      />
+                                    </TableCell>
+                                  </TableRow>
+                                ),
+                              )}
                             </>
-                          }
-
-                          
+                          )}
                         </TableBody>
                       </Table>
                     </TableContainer>
@@ -3984,15 +4206,15 @@ class PurchaseForm extends React.Component {
                                       ? productFormValues.tax_info.igst
                                       : "0"
                                     : productFormValues.tax_info
-                                    ? productFormValues.tax_info.cgst +
-                                      productFormValues.tax_info.sgst
-                                    : "0"
+                                      ? productFormValues.tax_info.cgst +
+                                        productFormValues.tax_info.sgst
+                                      : "0",
                                 )
                           }
                           onChange={(event) =>
                             this.updateProductFormValues(
                               event.target.value,
-                              "tax_percentage"
+                              "tax_percentage",
                             )
                           }
                           InputProps={{
@@ -4014,7 +4236,7 @@ class PurchaseForm extends React.Component {
                           onChange={(event) =>
                             this.updateProductFormValues(
                               event.target.value,
-                              "tax"
+                              "tax",
                             )
                           }
                           InputProps={{
@@ -4039,7 +4261,7 @@ class PurchaseForm extends React.Component {
                           onChange={(event) =>
                             this.updateProductFormValues(
                               event.target.value,
-                              "tax"
+                              "tax",
                             )
                           }
                           InputProps={{
@@ -4050,9 +4272,9 @@ class PurchaseForm extends React.Component {
                                     ? productFormValues.tax_info.igst
                                     : "0"
                                   : productFormValues.tax_info
-                                  ? productFormValues.tax_info.cgst +
-                                    productFormValues.tax_info.sgst
-                                  : "0"}
+                                    ? productFormValues.tax_info.cgst +
+                                      productFormValues.tax_info.sgst
+                                    : "0"}
                                 %&nbsp; ₹
                               </InputAdornment>
                             ),
@@ -4135,214 +4357,231 @@ class PurchaseForm extends React.Component {
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {products && products.length > 0 ? (
-                    products.map((item, index) => (
-                      <React.Fragment key={index}>
-                      <TableRow
-                        className={
-                          "is_return" in item && item.is_return
-                            ? "strike_through"
-                            : ""
-                        }
-                      >
-                        {this.state.isReturnForm ? (
-                          <TableCell>
-                            {!item.is_return ? (
-                              <Checkbox
-                                onChange={(e) => this.handleCheckBox(e, index)}
-                                checked={
-                                  this.state.return_products[index].is_return
-                                }
-                              />
-                            ) : null}
-
-                            {!item.is_return &&
-                            item.product_type == "material" &&
-                            item.materials[0].return_weight ? (
-                              <IconButton
-                                aria-label="expand row"
-                                size="small"
-                                onClick={() => this.setOpen(item.id)}
-                              >
-                                {this.checkOpen(item.id) ? (
-                                  <KeyboardArrowUpIcon />
-                                ) : (
-                                  <KeyboardArrowDownIcon />
-                                )}
-                              </IconButton>
-                            ) : (
-                              parseNonNullablePickerDate
-                            )}
-                          </TableCell>
-                        ) : null}
-                        <TableCell>
-                          {index + 1 < 10 ? "0" + (index + 1) : index + 1}
-                        </TableCell>
-                        <TableCell>{item.product_name}</TableCell>
-                        <TableCell>
-                          <span style={{
-                            padding: '4px 8px',
-                            borderRadius: '4px',
-                            backgroundColor: item.source === 'edit' ? '#e3f2fd' : '#fff3e0',
-                            color: item.source === 'edit' ? '#1976d2' : '#f57c00',
-                            fontSize: '12px',
-                            fontWeight: '500'
-                          }}>
-                            {item.source === 'edit' ? 'Saved' : 'Draft'}
-                          </span>
-                        </TableCell>
-                        <TableCell>
-                          {item.certificate_no ? item.certificate_no : "-"}
-                        </TableCell>
-                        <TableCell>
-                          {item.materials.length == 1 ? (
-                            <>
-                              {this.state.isReturnForm
-                                ? weightFormat(
-                                    parseFloat(item.materials[0].avl_weight) -
-                                      parseFloat(
-                                        item.materials[0].return_weight
-                                          ? item.materials[0].return_weight
-                                          : 0
-                                      )
-                                  ) +
-                                  " " +
-                                  item.materials[0].unit_name
-                                : weightFormat(item.materials[0].weight) +
-                                  " " +
-                                  item.materials[0].unit_name}
-                            </>
-                          ) : (
-                            item.total_weight + " Gram"
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          {item.size_name ? item.size_name : "-"}
-                        </TableCell>
-                        <TableCell>
-                          {item.materials.map((m, key) =>
-                            m.weight != 0 ||
-                            (m.quantity != 0 && m.rate != 0) ? (
-                              <p
-                                key={key}
-                                className="purchase-material m-0"
-                                style={{ color: "#000" }}
-                              >
-                                {m.material_name}
-                                {this.getMaterialPurity(
-                                  m.purities,
-                                  m.purity_id,
-                                  m.purity_name
-                                )}{" "}
-                                &nbsp;{" "}
-                                {this.state.isReturnForm && m.quantity ? (
-                                  <>
-                                    {m.avl_qty -
-                                      parseInt(
-                                        m.return_qty ? m.return_qty : 0
-                                      )}{" "}
-                                    Qty&nbsp;
-                                  </>
-                                ) : null}{" "}
-                                {item.product_type == "material"
-                                  ? m.pakka_weight
-                                  : m.weight}{" "}
-                                &nbsp; {m.unit_name}
-                                {item.product_type == "material"
-                                  ? "(Pakka)"
-                                  : ""}{" "}
-                                &nbsp; x &nbsp; {m.rate}
-                              </p>
-                            ) : null
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          {item.materials.map((m, key) =>
-                            m.amount != 0 ? (
-                              <p
-                                key={key}
-                                className="purchase-material m-0"
-                                style={{ color: "#000" }}
-                              >
-                                = &nbsp; {m.amount}
-                              </p>
-                            ) : null
-                          )}
-                        </TableCell>
-                        <TableCell>{priceFormat(item.making_charge)}</TableCell>
-                        <TableCell>{priceFormat(item.rep)}</TableCell>
-                        <TableCell>
-                          {priceFormat(
-                            parseFloat(item.sub_price) +
-                              parseFloat(item.making_charge) +
-                              priceFormat(item.rep)
-                          )}
-                        </TableCell>
-                        <TableCell>{priceFormat(item.tax)}</TableCell>
-                        <TableCell>{priceFormat(item.total)}</TableCell>
-                        {!this.state.isReturnForm ? (
-                          <TableCell>
-                            <IconButton
-                              className="del-icon"
-                              color="error"
-                              component="label"
-                              onClick={() => this.handleProductDelete(index)}
-                            >
-                              <CloseIcon />
-                            </IconButton>
-                          </TableCell>
-                        ) : null}
-                      </TableRow>
-                      {this.state.isReturnForm &&
-                      item.materials.length == 1 &&
-                      this.checkOpen(item.id) ? (
-                        <TableRow className="table-inner-row">
-                          <TableCell
-                            style={{ paddingBottom: 0, paddingTop: 0 }}
-                            colSpan={12}
+                  {products && products.length > 0
+                    ? products.map((item, index) => (
+                        <React.Fragment key={index}>
+                          <TableRow
+                            className={
+                              "is_return" in item && item.is_return
+                                ? "strike_through"
+                                : ""
+                            }
                           >
-                            <Collapse
-                              in={this.checkOpen(item.id)}
-                              timeout="auto"
-                              unmountOnExit
-                            >
-                              <Box sx={{ margin: 1 }}>
-                                <Typography
-                                  variant="h6"
-                                  gutterBottom
-                                  component="div"
-                                ></Typography>
-                                <Table size="medium" aria-label="purchases">
-                                  <TableHead>
-                                    <TableRow className="pur-details-inner-table">
-                                      <TableCell>Quantity</TableCell>
-                                      <TableCell>Weight</TableCell>
-                                      <TableCell>Unit</TableCell>
-                                    </TableRow>
-                                  </TableHead>
-                                  <TableBody className="pur-details-table-body">
-                                    <TableRow>
-                                      <TableCell scope="row">
-                                        {item.materials[0].return_qty}
-                                      </TableCell>
-                                      <TableCell>
-                                        {" "}
-                                        {item.materials[0].return_weight}
-                                      </TableCell>
-                                      <TableCell>
-                                        {item.materials[0].unit_name}
-                                      </TableCell>
-                                    </TableRow>
-                                  </TableBody>
-                                </Table>
-                              </Box>
-                            </Collapse>
-                          </TableCell>
-                        </TableRow>
-                      ) : null}
-                    </React.Fragment>
-                  ))
-                ) : null}
+                            {this.state.isReturnForm ? (
+                              <TableCell>
+                                {!item.is_return ? (
+                                  <Checkbox
+                                    onChange={(e) =>
+                                      this.handleCheckBox(e, index)
+                                    }
+                                    checked={
+                                      this.state.return_products[index]
+                                        .is_return
+                                    }
+                                  />
+                                ) : null}
+
+                                {!item.is_return &&
+                                item.product_type == "material" &&
+                                item.materials[0].return_weight ? (
+                                  <IconButton
+                                    aria-label="expand row"
+                                    size="small"
+                                    onClick={() => this.setOpen(item.id)}
+                                  >
+                                    {this.checkOpen(item.id) ? (
+                                      <KeyboardArrowUpIcon />
+                                    ) : (
+                                      <KeyboardArrowDownIcon />
+                                    )}
+                                  </IconButton>
+                                ) : (
+                                  parseNonNullablePickerDate
+                                )}
+                              </TableCell>
+                            ) : null}
+                            <TableCell>
+                              {index + 1 < 10 ? "0" + (index + 1) : index + 1}
+                            </TableCell>
+                            <TableCell>{item.product_name}</TableCell>
+                            <TableCell>
+                              <span
+                                style={{
+                                  padding: "4px 8px",
+                                  borderRadius: "4px",
+                                  backgroundColor:
+                                    item.source === "edit"
+                                      ? "#e3f2fd"
+                                      : "#fff3e0",
+                                  color:
+                                    item.source === "edit"
+                                      ? "#1976d2"
+                                      : "#f57c00",
+                                  fontSize: "12px",
+                                  fontWeight: "500",
+                                }}
+                              >
+                                {item.source === "edit" ? "Saved" : "Draft"}
+                              </span>
+                            </TableCell>
+                            <TableCell>
+                              {item.certificate_no ? item.certificate_no : "-"}
+                            </TableCell>
+                            <TableCell>
+                              {item.materials.length == 1 ? (
+                                <>
+                                  {this.state.isReturnForm
+                                    ? weightFormat(
+                                        parseFloat(
+                                          item.materials[0].avl_weight,
+                                        ) -
+                                          parseFloat(
+                                            item.materials[0].return_weight
+                                              ? item.materials[0].return_weight
+                                              : 0,
+                                          ),
+                                      ) +
+                                      " " +
+                                      item.materials[0].unit_name
+                                    : weightFormat(item.materials[0].weight) +
+                                      " " +
+                                      item.materials[0].unit_name}
+                                </>
+                              ) : (
+                                item.total_weight + " Gram"
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              {item.size_name ? item.size_name : "-"}
+                            </TableCell>
+                            <TableCell>
+                              {item.materials.map((m, key) =>
+                                m.weight != 0 ||
+                                (m.quantity != 0 && m.rate != 0) ? (
+                                  <p
+                                    key={key}
+                                    className="purchase-material m-0"
+                                    style={{ color: "#000" }}
+                                  >
+                                    {m.material_name}
+                                    {this.getMaterialPurity(
+                                      m.purities,
+                                      m.purity_id,
+                                      m.purity_name,
+                                    )}{" "}
+                                    &nbsp;{" "}
+                                    {this.state.isReturnForm && m.quantity ? (
+                                      <>
+                                        {m.avl_qty -
+                                          parseInt(
+                                            m.return_qty ? m.return_qty : 0,
+                                          )}{" "}
+                                        Qty&nbsp;
+                                      </>
+                                    ) : null}{" "}
+                                    {item.product_type == "material"
+                                      ? m.pakka_weight
+                                      : m.weight}{" "}
+                                    &nbsp; {m.unit_name}
+                                    {item.product_type == "material"
+                                      ? "(Pakka)"
+                                      : ""}{" "}
+                                    &nbsp; x &nbsp; {m.rate}
+                                  </p>
+                                ) : null,
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              {item.materials.map((m, key) =>
+                                m.amount != 0 ? (
+                                  <p
+                                    key={key}
+                                    className="purchase-material m-0"
+                                    style={{ color: "#000" }}
+                                  >
+                                    = &nbsp; {m.amount}
+                                  </p>
+                                ) : null,
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              {priceFormat(item.making_charge)}
+                            </TableCell>
+                            <TableCell>{priceFormat(item.rep)}</TableCell>
+                            <TableCell>
+                              {priceFormat(
+                                parseFloat(item.sub_price) +
+                                  parseFloat(item.making_charge) +
+                                  priceFormat(item.rep),
+                              )}
+                            </TableCell>
+                            <TableCell>{priceFormat(item.tax)}</TableCell>
+                            <TableCell>{priceFormat(item.total)}</TableCell>
+                            {!this.state.isReturnForm ? (
+                              <TableCell>
+                                <IconButton
+                                  className="del-icon"
+                                  color="error"
+                                  component="label"
+                                  onClick={() =>
+                                    this.handleProductDelete(index)
+                                  }
+                                >
+                                  <CloseIcon />
+                                </IconButton>
+                              </TableCell>
+                            ) : null}
+                          </TableRow>
+                          {this.state.isReturnForm &&
+                          item.materials.length == 1 &&
+                          this.checkOpen(item.id) ? (
+                            <TableRow className="table-inner-row">
+                              <TableCell
+                                style={{ paddingBottom: 0, paddingTop: 0 }}
+                                colSpan={12}
+                              >
+                                <Collapse
+                                  in={this.checkOpen(item.id)}
+                                  timeout="auto"
+                                  unmountOnExit
+                                >
+                                  <Box sx={{ margin: 1 }}>
+                                    <Typography
+                                      variant="h6"
+                                      gutterBottom
+                                      component="div"
+                                    ></Typography>
+                                    <Table size="medium" aria-label="purchases">
+                                      <TableHead>
+                                        <TableRow className="pur-details-inner-table">
+                                          <TableCell>Quantity</TableCell>
+                                          <TableCell>Weight</TableCell>
+                                          <TableCell>Unit</TableCell>
+                                        </TableRow>
+                                      </TableHead>
+                                      <TableBody className="pur-details-table-body">
+                                        <TableRow>
+                                          <TableCell scope="row">
+                                            {item.materials[0].return_qty}
+                                          </TableCell>
+                                          <TableCell>
+                                            {" "}
+                                            {item.materials[0].return_weight}
+                                          </TableCell>
+                                          <TableCell>
+                                            {item.materials[0].unit_name}
+                                          </TableCell>
+                                        </TableRow>
+                                      </TableBody>
+                                    </Table>
+                                  </Box>
+                                </Collapse>
+                              </TableCell>
+                            </TableRow>
+                          ) : null}
+                        </React.Fragment>
+                      ))
+                    : null}
                   {products && products.length > 0 ? (
                     <TableRow>
                       <TableCell
@@ -4413,7 +4652,7 @@ class PurchaseForm extends React.Component {
                             {`${
                               formValues.sale.report_qty
                             } pics x ${displayAmount(
-                              formValues.sale.report_charge
+                              formValues.sale.report_charge,
                             )} = `}
                           </TableCell>
                           <TableCell className=" align-items-center">
@@ -4421,7 +4660,7 @@ class PurchaseForm extends React.Component {
                           </TableCell>
                           <TableCell className=" align-items-center">
                             {`${priceFormat(
-                              formValues.sale.report_tax_percentage
+                              formValues.sale.report_tax_percentage,
                             ).toFixed(2)}%`}
                           </TableCell>
                           <TableCell className=" align-items-center">
@@ -4429,7 +4668,7 @@ class PurchaseForm extends React.Component {
                           </TableCell>
                           <TableCell className=" align-items-center">
                             {displayAmount(
-                              total_report_charge_amount_after_tax
+                              total_report_charge_amount_after_tax,
                             )}
                           </TableCell>
                           <TableCell className=" align-items-center">
@@ -5404,7 +5643,7 @@ class PurchaseForm extends React.Component {
                         "Payment move to advance " +
                         displayAmount(
                           parseFloat(this.state.return_amount) -
-                            parseFloat(this.state.formValues.due_amount)
+                            parseFloat(this.state.formValues.due_amount),
                         )
                       }
                     />
@@ -5415,7 +5654,7 @@ class PurchaseForm extends React.Component {
                         "Payment Return " +
                         displayAmount(
                           parseFloat(this.state.return_amount) -
-                            parseFloat(this.state.formValues.due_amount)
+                            parseFloat(this.state.formValues.due_amount),
                         )
                       }
                     />
@@ -5540,7 +5779,7 @@ class PurchaseForm extends React.Component {
                       onChange={(event) =>
                         this.handleReturnMaterial(
                           event.target.value,
-                          "return_qty"
+                          "return_qty",
                         )
                       }
                       error={this.state.return_qty_error}
@@ -5555,7 +5794,7 @@ class PurchaseForm extends React.Component {
                       onChange={(event) =>
                         this.handleReturnMaterial(
                           event.target.value,
-                          "return_weight"
+                          "return_weight",
                         )
                       }
                       error={this.state.return_weight_error}
@@ -5723,7 +5962,7 @@ const mapDispatchToProps = (dispatch) => ({
       materialList,
       cartList,
     },
-    dispatch
+    dispatch,
   ),
 });
 
@@ -5731,11 +5970,11 @@ export default withRouter(
   withSnackbar(
     connect(
       mapStateToProps,
-      mapDispatchToProps
+      mapDispatchToProps,
     )(
       reduxForm({
         form: "PurchaseForm",
-      })(PurchaseForm)
-    )
-  )
+      })(PurchaseForm),
+    ),
+  ),
 );
