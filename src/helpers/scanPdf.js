@@ -19,8 +19,11 @@ async function extractPdfData(verifyUrl) {
       throw new Error("No r parameter found in URL");
     }
 
+    // Remove last 2 characters from r value
+    const adjustedRValue = rValue.length > 2 ? rValue.slice(0, -2) : rValue;
+
     // Construct the PDF URL
-    const pdfUrl = `https://pdf.igi.org/${rValue}.pdf`;
+    const pdfUrl = `https://pdf.igi.org/${adjustedRValue}.pdf`;
     console.log("Fetching PDF from:", pdfUrl);
 
     // Fetch the PDF as an ArrayBuffer
