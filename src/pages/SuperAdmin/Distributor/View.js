@@ -860,7 +860,7 @@ class DistrubutorViewPage extends React.Component {
                               />
                             </FormControl>
                           </Grid>
-                          <Grid
+                          {/* <Grid
                             item
                             xs={12}
                             md={2}
@@ -871,7 +871,7 @@ class DistrubutorViewPage extends React.Component {
                               onClick={() => this.handlePayNow()}>
                               Pay
                             </Button>
-                          </Grid>
+                          </Grid> */}
                           {!admin.own && <Grid
                             item
                             xs={4}
