@@ -851,8 +851,8 @@ class AdminViewPage extends React.Component {
                           />
                         </FormControl>
                       </Grid>
-                      {!admin.own && (
-                        <Grid
+                      {!admin.own && (<>
+                        {/* <Grid
                           item
                           xs={4}
                           md={2}
@@ -865,8 +865,8 @@ class AdminViewPage extends React.Component {
                           >
                             Pay
                           </Button>
-                        </Grid>
-                      )}
+                        </Grid> */}
+                      </>)}
                       {!admin.own && (
                         <Grid
                           item

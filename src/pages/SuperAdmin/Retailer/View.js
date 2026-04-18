@@ -948,7 +948,8 @@ class RetailerViewPage extends React.Component {
                           </FormControl>
                         </Grid>
                         {!this.isAdmin ? (
-                          <Grid
+                          <>
+                          {/* <Grid
                             item
                             xs={6}
                             md={2}
@@ -959,7 +960,8 @@ class RetailerViewPage extends React.Component {
                               onClick={() => this.handlePayNow()}>
                               Pay
                             </Button>
-                          </Grid>
+                          </Grid> */}
+                          </>
                         ) : null}
                           <Grid
                             item
