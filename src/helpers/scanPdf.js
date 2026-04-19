@@ -20,7 +20,7 @@ async function extractPdfData(verifyUrl) {
     }
 
     // Remove last 2 characters from r value
-    const adjustedRValue = rValue.length > 2 ? rValue.slice(0, -2) : rValue;
+    const adjustedRValue = rValue;
 
     // Construct the PDF URL
     const pdfUrl = `https://pdf.igi.org/${adjustedRValue}.pdf`;
@@ -38,7 +38,7 @@ async function extractPdfData(verifyUrl) {
     console.log("PDF loaded, number of pages:", pdf.numPages);
 
     let textContent = "";
-    
+
     // If PDF has 2 pages, only process the second page
     if (pdf.numPages === 2) {
       console.log("Processing second page of 2-page PDF");
@@ -71,15 +71,23 @@ async function extractPdfData(verifyUrl) {
 function parseIgiReport(text) {
   return {
     // Try to extract summary number if present (case-insensitive, with or without period)
-    summary_number: text.match(/Summary No\.?\s*:\s*([A-Za-z0-9]+)/i)?.[1] || "",
+    summary_number:
+      text.match(/Summary No\.?\s*:\s*([A-Za-z0-9]+)/i)?.[1] || "",
     // Extract report number (case-insensitive, with or without period)
     report_number: text.match(/Report No\.?\s*:\s*([A-Za-z0-9]+)/i)?.[1] || "",
-    description: text.match(/Description\s*:\s*(.*?)\s*Shape and Cut/i)?.[1]?.trim() || "",
-    shape_cut: text.match(/Shape and Cut\s*:\s*(.*?)\s*Tot\. Est\. Weight/i)?.[1]?.trim() || "",
-    total_estimated_weight_carat: parseFloat(text.match(/Tot\. Est\. Weight\s*:\s*([\d.]+)/i)?.[1]) || null,
+    description:
+      text.match(/Description\s*:\s*(.*?)\s*Shape and Cut/i)?.[1]?.trim() || "",
+    shape_cut:
+      text
+        .match(/Shape and Cut\s*:\s*(.*?)\s*Tot\. Est\. Weight/i)?.[1]
+        ?.trim() || "",
+    total_estimated_weight_carat:
+      parseFloat(text.match(/Tot\. Est\. Weight\s*:\s*([\d.]+)/i)?.[1]) || null,
     color: text.match(/Color\s*:\s*([A-Za-z0-9 \-]+)/i)?.[1]?.trim() || "",
     clarity: text.match(/Clarity\s*:\s*([A-Za-z0-9]+)/i)?.[1]?.trim() || "",
-    comments: text.match(/Comments\s*:\s*(.*?)(?:Important notice|$)/is)?.[1]?.trim() || "",
+    comments:
+      text.match(/Comments\s*:\s*(.*?)(?:Important notice|$)/is)?.[1]?.trim() ||
+      "",
   };
 }
 
