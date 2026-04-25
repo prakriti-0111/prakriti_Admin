@@ -56,7 +56,7 @@ import { displayAmount, isEmpty } from "src/helpers/helper";
 import { FreeBreakfastOutlined } from "@mui/icons-material";
 import { unitList } from "actions/superadmin/unit.actions";
 import { sizeList } from "actions/superadmin/size.actions";
-import { convertUnitToGram, weightFormat, toBase64, isMainSuperAdmin } from "src/helpers/helper";
+import { convertUnitToGram, weightFormat, toBase64, isAdmin, isMainSuperAdmin } from "src/helpers/helper";
 import _ from "lodash";
 import jsQR from "jsqr";
 import extractPdfData from "src/helpers/scanPdf";
@@ -127,6 +127,7 @@ class StockPage extends Component {
       selectedStockForImageUpdate: null, // Store the stock item for image update
       imageFile: null, // Store the selected image file
       updatingImage: false, // Track if image is being updated
+      currentImagePreviewFailed: false,
       // View-only image dialog for non-superadmin users
       imageViewDialogOpen: false,
       imageViewPath: "",
@@ -478,13 +479,18 @@ class StockPage extends Component {
     }
   };
 
-  handleImageClick = (imageUrl, row) => {
-    // Super Admin can update image; others can only view
-    if (isMainSuperAdmin() && row) {
+  handleImageClick = (imageUrl, row, imageMeta = {}) => {
+    const isSuperAdminUser = isMainSuperAdmin();
+    const isAdminUser = isAdmin();
+    const isBrokenImage = imageMeta.isImageLoaded === false;
+    const canUpdateImage = row && (isSuperAdminUser || (isAdminUser && isBrokenImage));
+
+    if (canUpdateImage) {
       this.setState({
         imageUpdateDialogOpen: true,
         selectedStockForImageUpdate: row,
         imageFile: null,
+        currentImagePreviewFailed: isBrokenImage,
       });
     } else {
       this.setState({
@@ -506,6 +512,7 @@ class StockPage extends Component {
       imageUpdateDialogOpen: false,
       selectedStockForImageUpdate: null,
       imageFile: null,
+      currentImagePreviewFailed: false,
     });
     // Reset file input - check if ref exists and has current property
     // Use setTimeout to ensure the ref is available after state update
@@ -2197,17 +2204,28 @@ class StockPage extends Component {
                       <Typography variant="body2" sx={{ mb: 1, fontWeight: 'bold' }}>
                         Current Image:
                       </Typography>
-                      <img
-                        src={this.state.selectedStockForImageUpdate.current_image || this.state.selectedStockForImageUpdate.image}
-                        alt="Current"
-                        style={{
-                          width: '100%',
-                          maxWidth: '250px',
-                          height: 'auto',
-                          borderRadius: '8px',
-                          border: '1px solid #e0e0e0'
-                        }}
-                      />
+                      {this.state.currentImagePreviewFailed ? (
+                        <Typography
+                          variant="body2"
+                          color="text.secondary"
+                          sx={{ textAlign: 'center', px: 2 }}
+                        >
+                          Current image preview is not available. Upload a new image to replace it.
+                        </Typography>
+                      ) : (
+                        <img
+                          src={this.state.selectedStockForImageUpdate.current_image || this.state.selectedStockForImageUpdate.image}
+                          alt="Current"
+                          onError={() => this.setState({ currentImagePreviewFailed: true })}
+                          style={{
+                            width: '100%',
+                            maxWidth: '250px',
+                            height: 'auto',
+                            borderRadius: '8px',
+                            border: '1px solid #e0e0e0'
+                          }}
+                        />
+                      )}
                     </Box>
                   )}
                   
