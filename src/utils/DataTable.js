@@ -217,11 +217,18 @@ class DataTable extends React.Component {
           ? (e) => {
               e.preventDefault();
               e.stopPropagation();
+              const imageElement = e.currentTarget;
               console.log("DataTable: Calling custom onImageClick with:", {
                 d,
                 item,
               });
-              this.props.onImageClick(d, item);
+              this.props.onImageClick(d, item, {
+                isImageLoaded: Boolean(
+                  imageElement &&
+                    imageElement.complete &&
+                    imageElement.naturalWidth > 0,
+                ),
+              });
             }
           : () => this.handleImageClick(d);
         arr.push(
