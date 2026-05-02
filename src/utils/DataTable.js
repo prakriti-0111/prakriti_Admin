@@ -225,8 +225,8 @@ class DataTable extends React.Component {
               this.props.onImageClick(d, item, {
                 isImageLoaded: Boolean(
                   imageElement &&
-                    imageElement.complete &&
-                    imageElement.naturalWidth > 0,
+                  imageElement.complete &&
+                  imageElement.naturalWidth > 0,
                 ),
               });
             }
