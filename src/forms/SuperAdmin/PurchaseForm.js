@@ -198,7 +198,7 @@ class PurchaseForm extends React.Component {
           : {
               supplier_id: "",
               invoice_number: "",
-              invoice_date: moment().format("MM/DD/YYYY"),
+              invoice_date: moment().format("DD/MM/YYYY"),
               products: this.props.prePurchaseItems || [],
               notes: "",
               payment_mode: "cash",
@@ -833,6 +833,11 @@ class PurchaseForm extends React.Component {
   initializeFormData = () => {
     let formValues = { ...this.state.formData };
     let return_products = [];
+
+    // Ensure invoice_date has a value (use today's date if missing)
+    if (!formValues.invoice_date) {
+      formValues.invoice_date = moment().format("DD/MM/YYYY");
+    }
 
     // Ensure products array exists and is properly formatted
     if (!formValues.products) {
@@ -3083,26 +3088,17 @@ class PurchaseForm extends React.Component {
             md={!formValues.supplier_id ? 2 : 2}
             className="p-invoice-date create-input"
           >
-            <LocalizationProvider dateAdapter={AdapterDayjs}>
-              <DatePicker
-                label="Invoice Date"
-                value={formValues.invoice_date}
-                inputFormat="DD/MM/YYYY"
-                onChange={(newValue) =>
-                  this.updateFormValues(newValue, "invoice_date")
-                }
-                disabled={!this.state.isCreateFrom}
-                renderInput={(params) => (
-                  <TextField
-                    {...params}
-                    error={formErrors.invoice_date}
-                    InputProps={{
-                      className: "non_disable_text",
-                    }}
-                  />
-                )}
-              />
-            </LocalizationProvider>
+            <TextField
+              label="Invoice Date"
+              variant="outlined"
+              fullWidth
+              value={formValues.invoice_date || ""}
+              disabled
+              InputLabelProps={{ shrink: true }}
+              InputProps={{
+                className: "non_disable_text",
+              }}
+            />
           </Grid>
 
           {formValues.supplier_id ? (
