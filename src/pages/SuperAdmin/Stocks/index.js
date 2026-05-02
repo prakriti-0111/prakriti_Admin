@@ -56,7 +56,13 @@ import { displayAmount, isEmpty } from "src/helpers/helper";
 import { FreeBreakfastOutlined } from "@mui/icons-material";
 import { unitList } from "actions/superadmin/unit.actions";
 import { sizeList } from "actions/superadmin/size.actions";
-import { convertUnitToGram, weightFormat, toBase64, isAdmin, isMainSuperAdmin } from "src/helpers/helper";
+import {
+  convertUnitToGram,
+  weightFormat,
+  toBase64,
+  isAdmin,
+  isMainSuperAdmin,
+} from "src/helpers/helper";
 import _ from "lodash";
 import jsQR from "jsqr";
 import extractPdfData from "src/helpers/scanPdf";
@@ -202,15 +208,17 @@ class StockPage extends Component {
   handleCartAdded = (row) => {
     console.log("Item already in cart! You can not add this item.");
     this.props.enqueueSnackbar(
-        "Item already in cart! You can not add this item.",
-        { variant: "error" }
+      "Item already in cart! You can not add this item.",
+      { variant: "error" },
     );
   };
 
   // Generate table actions dynamically based on current state and specific row
   getTableActions = (row = null) => {
-    const isProcessing = row ? this.state.processingCartItems.has(`${row.id}_${row.product_id}`) : false;
-    
+    const isProcessing = row
+      ? this.state.processingCartItems.has(`${row.id}_${row.product_id}`)
+      : false;
+
     return [
       {
         label: "View",
@@ -357,17 +365,28 @@ class StockPage extends Component {
 
     // Check for certificate match after items are updated
     // Only auto-add to cart if this is a certificate-specific search (not a regular product search)
-    if (prevProps.items !== this.props.items && this.state.queryParams.search && 
-        this.state.pendingCertificateNo && this.state.searchingCertificate) {
+    if (
+      prevProps.items !== this.props.items &&
+      this.state.queryParams.search &&
+      this.state.pendingCertificateNo &&
+      this.state.searchingCertificate
+    ) {
       const searchCert = this.state.queryParams.search;
-      console.log("Search results updated, checking for certificate:", searchCert);
-      
+      console.log(
+        "Search results updated, checking for certificate:",
+        searchCert,
+      );
+
       if (this.props.items && this.props.items.length > 0) {
         // Find exact certificate match
-        const exactMatch = this.props.items.find(item => {
-          const normalizedItemCert = String(item.certificate_no).trim().toUpperCase();
+        const exactMatch = this.props.items.find((item) => {
+          const normalizedItemCert = String(item.certificate_no)
+            .trim()
+            .toUpperCase();
           const normalizedSearchCert = String(searchCert).trim().toUpperCase();
-          console.log(`Comparing certificates: ${normalizedItemCert} vs ${normalizedSearchCert}`);
+          console.log(
+            `Comparing certificates: ${normalizedItemCert} vs ${normalizedSearchCert}`,
+          );
           return normalizedItemCert === normalizedSearchCert;
         });
 
@@ -377,20 +396,63 @@ class StockPage extends Component {
           if (exactMatch.can_add_cart) {
             // Mark certificate as processed and ensure processing flags are cleared
             // before calling handleAddToCart so the action is allowed to proceed.
-            this.setState({
-              pendingCertificateNo: null,
-              searchingCertificate: false,
-              processingCertificate: false
-            }, () => {
-              // Give React a tick to flush state, then trigger add to cart
-              setTimeout(() => this.handleAddToCart(exactMatch), 50);
-            });
+            this.setState(
+              {
+                pendingCertificateNo: null,
+                searchingCertificate: false,
+                processingCertificate: false,
+              },
+              () => {
+                // Give React a tick to flush state, then trigger add to cart
+                setTimeout(() => this.handleAddToCart(exactMatch), 50);
+              },
+            );
           } else {
-            this.props.enqueueSnackbar(`Certificate ${searchCert} found but cannot be added to cart`, {
-              variant: "warning"
-            });
+            this.props.enqueueSnackbar(
+              `Certificate ${searchCert} found but cannot be added to cart`,
+              {
+                variant: "warning",
+              },
+            );
             // Reset all states when item cannot be added to cart
-            this.setState({
+            this.setState(
+              {
+                processingCertificate: false,
+                manualCertificate: "",
+                pendingCertificateNo: null,
+                searchingCertificate: false,
+                queryParams: {
+                  ...this.state.queryParams,
+                  search: "", // Clear search to show all items
+                },
+              },
+              () => {
+                this.loadListData(); // Refresh the list
+                // Focus on certificate input after state update
+                setTimeout(() => {
+                  const certificateInput = document.querySelector(
+                    'input[placeholder="Enter certificate number or URL"]',
+                  );
+                  if (certificateInput) {
+                    certificateInput.focus();
+                  }
+                }, 100);
+              },
+            );
+          }
+        } else {
+          console.log(
+            `[WARNING] Certificate ${searchCert} not found in search results`,
+          );
+          this.props.enqueueSnackbar(
+            `Certificate ${searchCert} not found in search results`,
+            {
+              variant: "warning",
+            },
+          );
+          // Reset all states when certificate is not found
+          this.setState(
+            {
               processingCertificate: false,
               manualCertificate: "",
               pendingCertificateNo: null,
@@ -398,25 +460,32 @@ class StockPage extends Component {
               queryParams: {
                 ...this.state.queryParams,
                 search: "", // Clear search to show all items
-              }
-            }, () => {
+              },
+            },
+            () => {
               this.loadListData(); // Refresh the list
               // Focus on certificate input after state update
               setTimeout(() => {
-                const certificateInput = document.querySelector('input[placeholder="Enter certificate number or URL"]');
+                const certificateInput = document.querySelector(
+                  'input[placeholder="Enter certificate number or URL"]',
+                );
                 if (certificateInput) {
                   certificateInput.focus();
                 }
               }, 100);
-            });
-          }
-        } else {
-          console.log(`[WARNING] Certificate ${searchCert} not found in search results`);
-          this.props.enqueueSnackbar(`Certificate ${searchCert} not found in search results`, {
-            variant: "warning"
-          });
-          // Reset all states when certificate is not found
-          this.setState({
+            },
+          );
+        }
+      } else {
+        this.props.enqueueSnackbar(
+          `No items found for certificate ${searchCert}`,
+          {
+            variant: "warning",
+          },
+        );
+        // Reset all states when no items are found
+        this.setState(
+          {
             processingCertificate: false,
             manualCertificate: "",
             pendingCertificateNo: null,
@@ -424,42 +493,21 @@ class StockPage extends Component {
             queryParams: {
               ...this.state.queryParams,
               search: "", // Clear search to show all items
-            }
-          }, () => {
+            },
+          },
+          () => {
             this.loadListData(); // Refresh the list
             // Focus on certificate input after state update
             setTimeout(() => {
-              const certificateInput = document.querySelector('input[placeholder="Enter certificate number or URL"]');
+              const certificateInput = document.querySelector(
+                'input[placeholder="Enter certificate number or URL"]',
+              );
               if (certificateInput) {
                 certificateInput.focus();
               }
             }, 100);
-          });
-        }
-      } else {
-        this.props.enqueueSnackbar(`No items found for certificate ${searchCert}`, {
-          variant: "warning"
-        });
-        // Reset all states when no items are found
-        this.setState({
-          processingCertificate: false,
-          manualCertificate: "",
-          pendingCertificateNo: null,
-          searchingCertificate: false,
-          queryParams: {
-            ...this.state.queryParams,
-            search: "", // Clear search to show all items
-          }
-        }, () => {
-          this.loadListData(); // Refresh the list
-          // Focus on certificate input after state update
-          setTimeout(() => {
-            const certificateInput = document.querySelector('input[placeholder="Enter certificate number or URL"]');
-            if (certificateInput) {
-              certificateInput.focus();
-            }
-          }, 100);
-        });
+          },
+        );
       }
     }
   }
@@ -472,8 +520,8 @@ class StockPage extends Component {
   handleView = (row) => {
     if (this.state.queryParams.total_avl_stock == 1) {
       window
-          .open(`${process.env.FRONT_BASE_URL}products/${row.slug}`, "_blank")
-          .focus();
+        .open(`${process.env.FRONT_BASE_URL}products/${row.slug}`, "_blank")
+        .focus();
     } else {
       this.props.navigate("view/" + row.id);
     }
@@ -483,7 +531,8 @@ class StockPage extends Component {
     const isSuperAdminUser = isMainSuperAdmin();
     const isAdminUser = isAdmin();
     const isBrokenImage = imageMeta.isImageLoaded === false;
-    const canUpdateImage = row && (isSuperAdminUser || (isAdminUser && isBrokenImage));
+    const canUpdateImage =
+      row && (isSuperAdminUser || (isAdminUser && isBrokenImage));
 
     if (canUpdateImage) {
       this.setState({
@@ -495,7 +544,7 @@ class StockPage extends Component {
     } else {
       this.setState({
         imageViewDialogOpen: true,
-        imageViewPath: imageUrl || (row ? (row.current_image || row.image) : ""),
+        imageViewPath: imageUrl || (row ? row.current_image || row.image : ""),
       });
     }
   };
@@ -518,7 +567,7 @@ class StockPage extends Component {
     // Use setTimeout to ensure the ref is available after state update
     setTimeout(() => {
       if (this.imageFileInputRef && this.imageFileInputRef.current) {
-        this.imageFileInputRef.current.value = '';
+        this.imageFileInputRef.current.value = "";
       }
     }, 0);
   };
@@ -527,7 +576,7 @@ class StockPage extends Component {
     const file = event.target.files[0];
     if (file) {
       // Validate file type
-      if (!file.type.startsWith('image/')) {
+      if (!file.type.startsWith("image/")) {
         this.props.enqueueSnackbar("Please select a valid image file", {
           variant: "error",
         });
@@ -546,7 +595,7 @@ class StockPage extends Component {
 
   handleUpdateImage = async () => {
     const { selectedStockForImageUpdate, imageFile } = this.state;
-    
+
     if (!imageFile) {
       this.props.enqueueSnackbar("Please select an image to update", {
         variant: "warning",
@@ -581,7 +630,10 @@ class StockPage extends Component {
         image: imageBase64,
       };
 
-      console.log("Updating image for certificate:", selectedStockForImageUpdate.certificate_no);
+      console.log(
+        "Updating image for certificate:",
+        selectedStockForImageUpdate.certificate_no,
+      );
       console.log("Image data URL length:", imageBase64.length);
 
       // Call update API - POST /api/superadmin/stocks/update-image
@@ -590,21 +642,27 @@ class StockPage extends Component {
       if (response && response.data && response.data.success) {
         this.props.enqueueSnackbar(
           response.data.message || "Image updated successfully",
-          { variant: "success" }
+          { variant: "success" },
         );
-        
+
         // Close dialog and refresh list
         this.handleImageUpdateDialogClose();
         this.loadListData();
       } else {
-        const errorMessage = response?.data?.message || response?.data?.error || "Failed to update image";
+        const errorMessage =
+          response?.data?.message ||
+          response?.data?.error ||
+          "Failed to update image";
         this.props.enqueueSnackbar(errorMessage, {
           variant: "error",
         });
       }
     } catch (error) {
       console.error("Error updating image:", error);
-      const errorMessage = error.response?.data?.message || error.message || "Error updating image";
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        "Error updating image";
       this.props.enqueueSnackbar(errorMessage, {
         variant: "error",
       });
@@ -615,23 +673,23 @@ class StockPage extends Component {
 
   handlePagination = (page, all) => {
     this.setState(
-        {
-          queryParams: {
-            ...this.state.queryParams,
-            page: page,
-            all: all ? 1 : 0,
-          },
+      {
+        queryParams: {
+          ...this.state.queryParams,
+          page: page,
+          all: all ? 1 : 0,
         },
-        () => {
-          this.loadListData();
-        }
+      },
+      () => {
+        this.loadListData();
+      },
     );
   };
 
   handleSearch = () => {
     // Load the search results and show them in the list
     this.loadListData();
-  }
+  };
 
   handleCertificateNoChange = (event) => {
     const value = event.target.value;
@@ -647,18 +705,23 @@ class StockPage extends Component {
     try {
       const cleanedText = decodedText.trim();
       if (!cleanedText) {
-        console.log('[ERROR] Invalid QR code scan');
-        this.props.enqueueSnackbar("Invalid QR code scan", { variant: "error" });
+        console.log("[ERROR] Invalid QR code scan");
+        this.props.enqueueSnackbar("Invalid QR code scan", {
+          variant: "error",
+        });
         this.handleCloseQRScanner(); // Close scanner on invalid scan
         this.setState({ processingCertificate: false }); // Reset loading state
         return;
       }
       // Display the scanned value in the certificate input field
-      this.setState({ 
+      this.setState({
         processingCertificate: true,
-        manualCertificate: cleanedText // Show scanned value in input
+        manualCertificate: cleanedText, // Show scanned value in input
       });
-      if (cleanedText.startsWith("http://") || cleanedText.startsWith("https://")) {
+      if (
+        cleanedText.startsWith("http://") ||
+        cleanedText.startsWith("https://")
+      ) {
         await this.fetchData(cleanedText);
         this.handleCloseQRScanner(); // Close scanner after URL processing
       } else {
@@ -668,7 +731,9 @@ class StockPage extends Component {
       }
     } catch (error) {
       console.error("Error processing QR code:", error);
-      this.props.enqueueSnackbar("Error processing QR code", { variant: "error" });
+      this.props.enqueueSnackbar("Error processing QR code", {
+        variant: "error",
+      });
       this.setState({ processingCertificate: false });
       this.handleCloseQRScanner(); // Close scanner on error
     }
@@ -682,8 +747,8 @@ class StockPage extends Component {
     }
     this.setState({ processingCertificate: true });
     if (
-        manualCertificate.startsWith("http://") ||
-        manualCertificate.startsWith("https://")
+      manualCertificate.startsWith("http://") ||
+      manualCertificate.startsWith("https://")
     ) {
       this.fetchData(manualCertificate);
     } else {
@@ -710,15 +775,24 @@ class StockPage extends Component {
 
       // Make a direct API call to get the item
       const response = await this.props.actions.stocksList(searchParams);
-      
-      if (response && response.data && response.data.success && response.data.data.items && response.data.data.items.length > 0) {
+
+      if (
+        response &&
+        response.data &&
+        response.data.success &&
+        response.data.data.items &&
+        response.data.data.items.length > 0
+      ) {
         const item = response.data.data.items[0];
-        
+
         // Check if item can be added to cart
         if (!item.can_add_cart) {
-          this.props.enqueueSnackbar(`Item ${item.certificate_no} cannot be added to cart`, {
-            variant: "warning"
-          });
+          this.props.enqueueSnackbar(
+            `Item ${item.certificate_no} cannot be added to cart`,
+            {
+              variant: "warning",
+            },
+          );
           this.setState({ processingCertificate: false });
           return;
         }
@@ -727,33 +801,38 @@ class StockPage extends Component {
         let check_cart = await getCartItemById({
           stock_id: item.id,
           product_id: item.product_id,
-          certificate_no: item.certificate_no
+          certificate_no: item.certificate_no,
         });
-        
+
         if (!check_cart.data.success) {
-          this.props.enqueueSnackbar("Error checking cart status", { variant: "error" });
+          this.props.enqueueSnackbar("Error checking cart status", {
+            variant: "error",
+          });
           this.setState({ processingCertificate: false });
           return;
         }
 
         if (check_cart.data.data && check_cart.data.data.length > 0) {
-          this.props.enqueueSnackbar(`Item ${item.certificate_no} is already in cart`, {
-            variant: "warning"
-          });
+          this.props.enqueueSnackbar(
+            `Item ${item.certificate_no} is already in cart`,
+            {
+              variant: "warning",
+            },
+          );
           this.setState({ processingCertificate: false });
           return;
         }
 
         // Add to cart directly
         if (item.type !== "material" && row.certificate_no != "") {
-          const materials = item.stock_materials.map(material => ({
+          const materials = item.stock_materials.map((material) => ({
             material_id: material.material_id,
             purity_id: material.purity_id,
             weight: material.weight,
             unit_id: material.unit_id,
             quantity: material.quantity,
           }));
-          
+
           const data = {
             stock_id: item.id,
             product_id: item.product_id,
@@ -761,7 +840,7 @@ class StockPage extends Component {
             materials,
             quantity: 1,
           };
-          
+
           await this.props.actions.cartStore(data);
         } else {
           // Handle material items - open cart dialog
@@ -769,28 +848,55 @@ class StockPage extends Component {
             cart_stock: item,
             cartDialog: true,
             unit_id: item.stock_materials[0]?.unit_id || "",
-            processingCertificate: false
+            processingCertificate: false,
           });
           return;
         }
 
         // Clear certificate input and refresh
-        this.setState({
-          manualCertificate: "",
-          processingCertificate: false
-        }, () => {
-          // Focus on certificate input after successful addition
-          setTimeout(() => {
-            const certificateInput = document.querySelector('input[placeholder="Enter certificate number or URL"]');
-            if (certificateInput) {
-              certificateInput.focus();
-            }
-          }, 100);
-        });
-
+        this.setState(
+          {
+            manualCertificate: "",
+            processingCertificate: false,
+          },
+          () => {
+            // Focus on certificate input after successful addition
+            setTimeout(() => {
+              const certificateInput = document.querySelector(
+                'input[placeholder="Enter certificate number or URL"]',
+              );
+              if (certificateInput) {
+                certificateInput.focus();
+              }
+            }, 100);
+          },
+        );
       } else {
         // If direct add fails, fall back to search process
-        this.setState({
+        this.setState(
+          {
+            queryParams: {
+              ...this.state.queryParams,
+              search: certificateNo,
+              page: 1,
+              limit: 50,
+            },
+            pendingCertificateNo: certificateNo,
+            searchingCertificate: true,
+            processingCertificate: true,
+          },
+          async () => {
+            await this.loadListData();
+            // Keep searchingCertificate true so componentDidUpdate can auto-add
+            // It will be cleared after auto-add completes
+          },
+        );
+      }
+    } catch (error) {
+      console.error("Error in direct add to cart:", error);
+      // Fall back to search process on error
+      this.setState(
+        {
           queryParams: {
             ...this.state.queryParams,
             search: certificateNo,
@@ -799,64 +905,50 @@ class StockPage extends Component {
           },
           pendingCertificateNo: certificateNo,
           searchingCertificate: true,
-          processingCertificate: true
-        }, async () => {
+          processingCertificate: true,
+        },
+        async () => {
           await this.loadListData();
           // Keep searchingCertificate true so componentDidUpdate can auto-add
           // It will be cleared after auto-add completes
-        });
-      }
-    } catch (error) {
-      console.error("Error in direct add to cart:", error);
-      // Fall back to search process on error
-      this.setState({
-        queryParams: {
-          ...this.state.queryParams,
-          search: certificateNo,
-          page: 1,
-          limit: 50,
         },
-        pendingCertificateNo: certificateNo,
-        searchingCertificate: true,
-        processingCertificate: true
-      }, async () => {
-        await this.loadListData();
-        // Keep searchingCertificate true so componentDidUpdate can auto-add
-        // It will be cleared after auto-add completes
-      });
+      );
     }
   };
 
   handleAddToCart = async (row) => {
     // Strict prevention of multiple requests
     if (this.addToCartProcess) {
-      console.log('Add to cart already in progress, ignoring request');
+      console.log("Add to cart already in progress, ignoring request");
       this.setState({ processingCertificate: false }); // Reset loading state
       return;
     }
-    
+
     // Additional check for processing state
     if (this.state.processingCertificate) {
-      console.log('Certificate processing in progress, ignoring cart request');
+      console.log("Certificate processing in progress, ignoring cart request");
       this.setState({ processingCertificate: false });
       return;
     }
-    
+
     try {
       // Set processing flags immediately
       this.addToCartProcess = true;
       this.setState({ processingCertificate: true }); // Set loading state
-      
+
       // Check if item can be added to cart first (faster check)
       if (!row.can_add_cart) {
-        this.props.enqueueSnackbar(`Item ${row.certificate_no} cannot be added to cart`, {
-          variant: "warning"
-        });
-        this.setState({ 
+        this.props.enqueueSnackbar(
+          `Item ${row.certificate_no} cannot be added to cart`,
+          {
+            variant: "warning",
+          },
+        );
+        this.setState({
           processingCertificate: false,
           manualCertificate: "",
           pendingCertificateNo: null,
-          searchingCertificate: false
+          searchingCertificate: false,
         });
         this.addToCartProcess = false;
         return;
@@ -866,48 +958,56 @@ class StockPage extends Component {
       let check_cart = await getCartItemById({
         stock_id: row.id,
         product_id: row.product_id,
-        certificate_no: row.certificate_no
+        certificate_no: row.certificate_no,
       });
-      
+
       if (!check_cart.data.success) {
-        this.props.enqueueSnackbar("Item already in cart! You can not add this item.", { 
-          variant: "error" 
-        });
+        this.props.enqueueSnackbar(
+          "Item already in cart! You can not add this item.",
+          {
+            variant: "error",
+          },
+        );
         // Reset all states immediately
-        this.setState({ 
-          processingCertificate: false,
-          manualCertificate: "",
-          pendingCertificateNo: null,
-          searchingCertificate: false,
-          queryParams: {
-            ...this.state.queryParams,
-            search: "", // Clear search to show all items
-          }
-        }, () => {
-          this.addToCartProcess = false;
-          this.loadListData(); // Refresh the list
-          // Focus on certificate input after state update
-          setTimeout(() => {
-            const certificateInput = document.querySelector('input[placeholder="Enter certificate number or URL"]');
-            if (certificateInput) {
-              certificateInput.focus();
-            }
-          }, 100);
-        });
+        this.setState(
+          {
+            processingCertificate: false,
+            manualCertificate: "",
+            pendingCertificateNo: null,
+            searchingCertificate: false,
+            queryParams: {
+              ...this.state.queryParams,
+              search: "", // Clear search to show all items
+            },
+          },
+          () => {
+            this.addToCartProcess = false;
+            this.loadListData(); // Refresh the list
+            // Focus on certificate input after state update
+            setTimeout(() => {
+              const certificateInput = document.querySelector(
+                'input[placeholder="Enter certificate number or URL"]',
+              );
+              if (certificateInput) {
+                certificateInput.focus();
+              }
+            }, 100);
+          },
+        );
         return;
       }
 
       // Process based on item type
       if (row.type !== "material" && row.certificate_no != "") {
         // Handle non-material items - optimized data preparation
-        const materials = row.stock_materials.map(material => ({
+        const materials = row.stock_materials.map((material) => ({
           material_id: material.material_id,
           purity_id: material.purity_id,
           weight: material.weight,
           unit_id: material.unit_id,
           quantity: material.quantity,
         }));
-        
+
         const data = {
           stock_id: row.id,
           product_id: row.product_id,
@@ -915,63 +1015,75 @@ class StockPage extends Component {
           materials,
           quantity: 1,
         };
-        
+
         await this.props.actions.cartStore(data);
 
         // Refresh the list after successful add to cart
-        this.setState({
-          queryParams: {
-            ...this.state.queryParams,
-            page: 1,
-            limit: 50,
-            search: "", // Clear search to show all items
+        this.setState(
+          {
+            queryParams: {
+              ...this.state.queryParams,
+              page: 1,
+              limit: 50,
+              search: "", // Clear search to show all items
+            },
+            manualCertificate: "", // Clear the certificate input field
+            pendingCertificateNo: null, // Clear pending certificate
+            searchingCertificate: false, // Reset searching state
+            processingCertificate: false, // Reset loading state
           },
-          manualCertificate: "", // Clear the certificate input field
-          pendingCertificateNo: null, // Clear pending certificate
-          searchingCertificate: false, // Reset searching state
-          processingCertificate: false // Reset loading state
-        }, () => {
-          this.loadListData();
-          // Focus on certificate input after successful addition
-          setTimeout(() => {
-            const certificateInput = document.querySelector('input[placeholder="Enter certificate number or URL"]');
-            if (certificateInput) {
-              certificateInput.focus();
-            }
-          }, 100);
-        });
+          () => {
+            this.loadListData();
+            // Focus on certificate input after successful addition
+            setTimeout(() => {
+              const certificateInput = document.querySelector(
+                'input[placeholder="Enter certificate number or URL"]',
+              );
+              if (certificateInput) {
+                certificateInput.focus();
+              }
+            }, 100);
+          },
+        );
       } else {
         // Handle material items - open cart dialog
         this.setState({
           cart_stock: row,
           cartDialog: true,
           unit_id: row.stock_materials[0]?.unit_id || "",
-          processingCertificate: false // Reset loading state for material items
+          processingCertificate: false, // Reset loading state for material items
         });
       }
     } catch (error) {
       console.error("Error adding to cart:", error);
-      this.props.enqueueSnackbar("Error adding item to cart", { variant: "error" });
-      this.setState({ 
-        processingCertificate: false,
-        manualCertificate: "",
-        pendingCertificateNo: null,
-        searchingCertificate: false,
-        queryParams: {
-          ...this.state.queryParams,
-          search: "", // Clear search to show all items
-        }
-      }, () => {
-        this.addToCartProcess = false;
-        this.loadListData(); // Refresh the list
-        // Focus on certificate input after error
-        setTimeout(() => {
-          const certificateInput = document.querySelector('input[placeholder="Enter certificate number or URL"]');
-          if (certificateInput) {
-            certificateInput.focus();
-          }
-        }, 100);
+      this.props.enqueueSnackbar("Error adding item to cart", {
+        variant: "error",
       });
+      this.setState(
+        {
+          processingCertificate: false,
+          manualCertificate: "",
+          pendingCertificateNo: null,
+          searchingCertificate: false,
+          queryParams: {
+            ...this.state.queryParams,
+            search: "", // Clear search to show all items
+          },
+        },
+        () => {
+          this.addToCartProcess = false;
+          this.loadListData(); // Refresh the list
+          // Focus on certificate input after error
+          setTimeout(() => {
+            const certificateInput = document.querySelector(
+              'input[placeholder="Enter certificate number or URL"]',
+            );
+            if (certificateInput) {
+              certificateInput.focus();
+            }
+          }, 100);
+        },
+      );
     } finally {
       this.addToCartProcess = false;
     }
@@ -980,24 +1092,27 @@ class StockPage extends Component {
   // Separate function for action buttons that doesn't affect certificate input
   handleActionAddToCart = async (row) => {
     const itemKey = `${row.id}_${row.product_id}`;
-    
+
     // Check if this specific item is already being processed
     if (this.state.processingCartItems.has(itemKey)) {
-      console.log('This item is already being added to cart, ignoring request');
+      console.log("This item is already being added to cart, ignoring request");
       return;
     }
-    
+
     try {
       // Add this specific item to processing set
       const newProcessingItems = new Set(this.state.processingCartItems);
       newProcessingItems.add(itemKey);
       this.setState({ processingCartItems: newProcessingItems });
-      
+
       // Check if item can be added to cart first (faster check)
       if (!row.can_add_cart) {
-        this.props.enqueueSnackbar(`Item ${row.certificate_no} cannot be added to cart`, {
-          variant: "warning"
-        });
+        this.props.enqueueSnackbar(
+          `Item ${row.certificate_no} cannot be added to cart`,
+          {
+            variant: "warning",
+          },
+        );
         // Remove this item from processing set
         const newProcessingItems = new Set(this.state.processingCartItems);
         newProcessingItems.delete(itemKey);
@@ -1009,11 +1124,13 @@ class StockPage extends Component {
       let check_cart = await getCartItemById({
         stock_id: row.id,
         product_id: row.product_id,
-        certificate_no: row.certificate_no
+        certificate_no: row.certificate_no,
       });
-      
+
       if (!check_cart.data.success) {
-        this.props.enqueueSnackbar("Error checking cart status", { variant: "error" });
+        this.props.enqueueSnackbar("Error checking cart status", {
+          variant: "error",
+        });
         // Remove this item from processing set
         const newProcessingItems = new Set(this.state.processingCartItems);
         newProcessingItems.delete(itemKey);
@@ -1022,9 +1139,12 @@ class StockPage extends Component {
       }
 
       if (check_cart.data.data && check_cart.data.data.length > 0) {
-        this.props.enqueueSnackbar(`Item ${row.certificate_no} is already in cart`, {
-          variant: "warning"
-        });
+        this.props.enqueueSnackbar(
+          `Item ${row.certificate_no} is already in cart`,
+          {
+            variant: "warning",
+          },
+        );
         // Remove this item from processing set
         const newProcessingItems = new Set(this.state.processingCartItems);
         newProcessingItems.delete(itemKey);
@@ -1035,14 +1155,14 @@ class StockPage extends Component {
       // Process based on item type
       if (row.type !== "material" && !isEmpty(row.certificate_no)) {
         // Handle non-material items - optimized data preparation
-        const materials = row.stock_materials.map(material => ({
+        const materials = row.stock_materials.map((material) => ({
           material_id: material.material_id,
           purity_id: material.purity_id,
           weight: material.weight,
           unit_id: material.unit_id,
           quantity: material.quantity,
         }));
-        
+
         const data = {
           stock_id: row.id,
           product_id: row.product_id,
@@ -1050,23 +1170,26 @@ class StockPage extends Component {
           materials,
           quantity: 1,
         };
-        
+
         await this.props.actions.cartStore(data);
 
         // Refresh the list after successful add to cart (without affecting certificate input)
-        this.setState({
-          queryParams: {
-            ...this.state.queryParams,
-            page: 1,
-            limit: 50,
+        this.setState(
+          {
+            queryParams: {
+              ...this.state.queryParams,
+              page: 1,
+              limit: 50,
+            },
+            processingCertificate: false,
+            manualCertificate: "",
+            pendingCertificateNo: null,
+            searchingCertificate: false,
           },
-          processingCertificate: false,
-          manualCertificate: "",
-          pendingCertificateNo: null,
-          searchingCertificate: false
-        }, () => {
-          this.loadListData();
-        });
+          () => {
+            this.loadListData();
+          },
+        );
       } else {
         // Handle material items - open cart dialog
         this.setState({
@@ -1076,12 +1199,14 @@ class StockPage extends Component {
           processingCertificate: false,
           manualCertificate: "",
           pendingCertificateNo: null,
-          searchingCertificate: false
+          searchingCertificate: false,
         });
       }
     } catch (error) {
       console.error("Error adding to cart:", error);
-      this.props.enqueueSnackbar("Error adding item to cart", { variant: "error" });
+      this.props.enqueueSnackbar("Error adding item to cart", {
+        variant: "error",
+      });
     } finally {
       // Remove this item from processing set
       const newProcessingItems = new Set(this.state.processingCartItems);
@@ -1116,11 +1241,11 @@ class StockPage extends Component {
   handleMaterialAddToCart = async () => {
     let row = this.state.cart_stock;
     if (!this.formValidate()) {
-      this.setState({ 
+      this.setState({
         processingCertificate: false,
         manualCertificate: "",
         pendingCertificateNo: null,
-        searchingCertificate: false
+        searchingCertificate: false,
       });
       return false;
     } else if (parseInt(this.state.quantity) > parseInt(row.quantity)) {
@@ -1128,11 +1253,11 @@ class StockPage extends Component {
         variant: "error",
         autoHideDuration: 3000,
       });
-      this.setState({ 
+      this.setState({
         processingCertificate: false,
         manualCertificate: "",
         pendingCertificateNo: null,
-        searchingCertificate: false
+        searchingCertificate: false,
       });
       return;
     } else {
@@ -1163,36 +1288,39 @@ class StockPage extends Component {
         await this.props.actions.cartStore(data);
 
         // Close the dialog and reset state
-        this.setState({
-          cartDialog: false,
-          quantity: "",
-          unit_id: "",
-          weight: "",
-          queryParams: {
-            ...this.state.queryParams,
-            page: 1,
-            limit: 50,
-            search: "", // Clear search to show all items
+        this.setState(
+          {
+            cartDialog: false,
+            quantity: "",
+            unit_id: "",
+            weight: "",
+            queryParams: {
+              ...this.state.queryParams,
+              page: 1,
+              limit: 50,
+              search: "", // Clear search to show all items
+            },
+            manualCertificate: "", // Clear the certificate input field
+            pendingCertificateNo: null, // Clear pending certificate
+            searchingCertificate: false, // Reset searching state
+            processingCertificate: false, // Reset loading state
           },
-          manualCertificate: "", // Clear the certificate input field
-          pendingCertificateNo: null, // Clear pending certificate
-          searchingCertificate: false, // Reset searching state
-          processingCertificate: false // Reset loading state
-        }, () => {
-          // Refresh the list after successful add to cart
-          this.loadListData();
-        });
+          () => {
+            // Refresh the list after successful add to cart
+            this.loadListData();
+          },
+        );
       } catch (error) {
         console.error("Error adding to cart:", error);
         this.props.enqueueSnackbar("Error adding item to cart", {
           variant: "error",
           autoHideDuration: 3000,
         });
-        this.setState({ 
+        this.setState({
           processingCertificate: false,
           manualCertificate: "",
           pendingCertificateNo: null,
-          searchingCertificate: false
+          searchingCertificate: false,
         });
       }
     }
@@ -1204,7 +1332,7 @@ class StockPage extends Component {
       processingCertificate: false, // Reset processing state when dialog closes
       manualCertificate: "",
       pendingCertificateNo: null,
-      searchingCertificate: false
+      searchingCertificate: false,
     });
     this.addToCartProcess = false;
   };
@@ -1222,15 +1350,18 @@ class StockPage extends Component {
 
   handleCardClick = (category_id) => {
     this.props.actions.subCategoryList({ all: 1, category_id: category_id });
-    this.setState({
-      queryParams: {
-        ...this.state.queryParams,
-        category_id: category_id
-      }
-    }, () => {
-      this.handleSearch()
-    })
-  }
+    this.setState(
+      {
+        queryParams: {
+          ...this.state.queryParams,
+          category_id: category_id,
+        },
+      },
+      () => {
+        this.handleSearch();
+      },
+    );
+  };
 
   handleSubCategoryChange = (event) => {
     this.setState({
@@ -1337,11 +1468,11 @@ class StockPage extends Component {
           // Start camera stream with optimized settings
           navigator.mediaDevices
             .getUserMedia({
-              video: { 
+              video: {
                 facingMode: "environment",
                 width: { ideal: 1280 },
                 height: { ideal: 720 },
-                frameRate: { ideal: 30 }
+                frameRate: { ideal: 30 },
               },
               audio: false,
             })
@@ -1361,25 +1492,45 @@ class StockPage extends Component {
                   const boundaryRect = boundary.getBoundingClientRect();
 
                   return {
-                    x: Math.floor((canvas.width * (boundaryRect.left - videoRect.left)) / videoRect.width),
-                    y: Math.floor((canvas.height * (boundaryRect.top - videoRect.top)) / videoRect.height),
-                    width: Math.floor((canvas.width * boundaryRect.width) / videoRect.width),
-                    height: Math.floor((canvas.height * boundaryRect.height) / videoRect.height),
+                    x: Math.floor(
+                      (canvas.width * (boundaryRect.left - videoRect.left)) /
+                        videoRect.width,
+                    ),
+                    y: Math.floor(
+                      (canvas.height * (boundaryRect.top - videoRect.top)) /
+                        videoRect.height,
+                    ),
+                    width: Math.floor(
+                      (canvas.width * boundaryRect.width) / videoRect.width,
+                    ),
+                    height: Math.floor(
+                      (canvas.height * boundaryRect.height) / videoRect.height,
+                    ),
                   };
                 };
 
                 // Optimized scanning function
                 const scanQRCode = () => {
-                  if (!scannerState.active || scannerState.processingFrame) return;
+                  if (!scannerState.active || scannerState.processingFrame)
+                    return;
 
                   const now = Date.now();
-                  if (now - scannerState.lastScanTime >= scannerState.scanInterval) {
+                  if (
+                    now - scannerState.lastScanTime >=
+                    scannerState.scanInterval
+                  ) {
                     scannerState.lastScanTime = now;
                     scannerState.processingFrame = true;
 
                     try {
                       // Draw current video frame to canvas
-                      canvasContext.drawImage(video, 0, 0, canvas.width, canvas.height);
+                      canvasContext.drawImage(
+                        video,
+                        0,
+                        0,
+                        canvas.width,
+                        canvas.height,
+                      );
 
                       // Get boundary rectangle for focused scanning
                       const boundaryRect = getBoundaryRect();
@@ -1389,13 +1540,18 @@ class StockPage extends Component {
                         boundaryRect.x,
                         boundaryRect.y,
                         boundaryRect.width,
-                        boundaryRect.height
+                        boundaryRect.height,
                       );
 
                       // Scan with jsQR
-                      const code = jsQR(imageData.data, imageData.width, imageData.height, {
-                        inversionAttempts: "dontInvert",
-                      });
+                      const code = jsQR(
+                        imageData.data,
+                        imageData.width,
+                        imageData.height,
+                        {
+                          inversionAttempts: "dontInvert",
+                        },
+                      );
 
                       if (code) {
                         console.log("Decoded QR Code:", code.data);
@@ -1410,7 +1566,8 @@ class StockPage extends Component {
                   }
 
                   // Continue scanning
-                  scannerState.animationFrameId = requestAnimationFrame(scanQRCode);
+                  scannerState.animationFrameId =
+                    requestAnimationFrame(scanQRCode);
                 };
 
                 scanQRCode();
@@ -1454,19 +1611,24 @@ class StockPage extends Component {
       }
     }
 
-    this.setState({ 
-      qrScannerOpen: false, 
-      qrScanner: null,
-      processingCertificate: false // Reset processing state
-    }, () => {
-      // Focus on certificate input after scanner closes
-      setTimeout(() => {
-        const certificateInput = document.querySelector('input[placeholder="Enter certificate number or URL"]');
-        if (certificateInput) {
-          certificateInput.focus();
-        }
-      }, 100);
-    });
+    this.setState(
+      {
+        qrScannerOpen: false,
+        qrScanner: null,
+        processingCertificate: false, // Reset processing state
+      },
+      () => {
+        // Focus on certificate input after scanner closes
+        setTimeout(() => {
+          const certificateInput = document.querySelector(
+            'input[placeholder="Enter certificate number or URL"]',
+          );
+          if (certificateInput) {
+            certificateInput.focus();
+          }
+        }, 100);
+      },
+    );
   };
 
   fetchData = async (url) => {
@@ -1485,32 +1647,41 @@ class StockPage extends Component {
 
           // Process the certificate number directly
           let certificateNumber = "";
-          if (result.text.report_number && result.text.report_number.trim() !== "") {
+          if (
+            result.text.report_number &&
+            result.text.report_number.trim() !== ""
+          ) {
             certificateNumber = result.text.report_number;
-          } else if (result.text.summary_number && result.text.summary_number.trim() !== "") {
+          } else if (
+            result.text.summary_number &&
+            result.text.summary_number.trim() !== ""
+          ) {
             certificateNumber = result.text.summary_number;
           }
 
           if (certificateNumber) {
             console.log("Certificate number from PDF:", certificateNumber);
             // Update the manual certificate input to show the extracted certificate
-            this.setState({
-              manualCertificate: certificateNumber,
-              queryParams: {
-                ...this.state.queryParams,
-                search: certificateNumber,
-                page: 1,
-                limit: 50,
+            this.setState(
+              {
+                manualCertificate: certificateNumber,
+                queryParams: {
+                  ...this.state.queryParams,
+                  search: certificateNumber,
+                  page: 1,
+                  limit: 50,
+                },
+                pendingCertificateNo: certificateNumber,
+                searchingCertificate: true,
               },
-              pendingCertificateNo: certificateNumber,
-              searchingCertificate: true
-            }, () => {
-              // Perform search - componentDidUpdate will auto-add to cart
-              this.loadListData();
-              this.handleCloseQRScanner(); // Close scanner after processing
-            });
+              () => {
+                // Perform search - componentDidUpdate will auto-add to cart
+                this.loadListData();
+                this.handleCloseQRScanner(); // Close scanner after processing
+              },
+            );
           } else {
-            console.log('[WARNING4] No certificate number found in PDF');
+            console.log("[WARNING4] No certificate number found in PDF");
             this.props.enqueueSnackbar("No certificate number found in PDF", {
               variant: "warning",
             });
@@ -1540,29 +1711,32 @@ class StockPage extends Component {
 
       const searchedForElement = doc.querySelector("b");
       const searchedForText = searchedForElement
-          ? searchedForElement.textContent
-          : null;
+        ? searchedForElement.textContent
+        : null;
 
       if (searchedForText) {
         console.log("Certificate number from URL:", searchedForText);
         // Update the manual certificate input to show the extracted certificate
-        this.setState({
-          manualCertificate: searchedForText,
-          queryParams: {
-            ...this.state.queryParams,
-            search: searchedForText,
-            page: 1,
-            limit: 50,
+        this.setState(
+          {
+            manualCertificate: searchedForText,
+            queryParams: {
+              ...this.state.queryParams,
+              search: searchedForText,
+              page: 1,
+              limit: 50,
+            },
+            pendingCertificateNo: searchedForText,
+            searchingCertificate: true,
           },
-          pendingCertificateNo: searchedForText,
-          searchingCertificate: true
-        }, () => {
-          // Perform search - componentDidUpdate will auto-add to cart
-          this.loadListData();
-          this.handleCloseQRScanner(); // Close scanner after processing
-        });
+          () => {
+            // Perform search - componentDidUpdate will auto-add to cart
+            this.loadListData();
+            this.handleCloseQRScanner(); // Close scanner after processing
+          },
+        );
       } else {
-        console.log('[WARNING7] No certificate found in URL');
+        console.log("[WARNING7] No certificate found in URL");
         this.props.enqueueSnackbar("No certificate found in URL", {
           variant: "warning",
         });
@@ -1581,130 +1755,130 @@ class StockPage extends Component {
 
   render() {
     return (
-        <>
-          <div className="sale-heading">
-            {this.state.queryParams.total_avl_stock == 1 ? (
-                <h1>Total Available Stock List</h1>
-            ) : (
-                <h1>List For Sale</h1>
-            )}
-          </div>
-          {this.state.price_by_categories.length ? (
-              <Card className="dashboard_card" style={{ marginBottom: "4px" }}>
-                {this.state.price_by_categories.map((item, key) => (
-                    <CardContent
-                        className={`dashboard_card_content bg-color-1`}
-                        sx={{ display: "flex", justifyContent: "space-between" }}
-                        key={key}
-                        onClick={() => this.handleCardClick(item.category_id)}
-                    >
-                      <Typography
-                          sx={{ fontSize: 14, margin: 0 }}
-                          color="text.secondary"
-                          gutterBottom
-                          component="span"
-                      >
-                        <h1>{item.category_name}</h1>
-                        <h2>{displayAmount(item.total_amount)}</h2>
-                        <h3>{item.quantity} Piece(s)</h3>
-                      </Typography>
-                      <div className="card-icon">{/* <DiamondIcon /> */}</div>
-                    </CardContent>
-                ))}
-              </Card>
-          ) : null}
-          <MainCard>
-            <Box sx={{ flexGrow: 1, m: 0.5 }} className="ratn-dialog-inner">
-              <Grid
-                  container
-                  spacing={2}
-                  className="tax-input loans_view p_view"
-                  columnSpacing={{ xs: 1, sm: 2, md: 2 }}
+      <>
+        <div className="sale-heading">
+          {this.state.queryParams.total_avl_stock == 1 ? (
+            <h1>Total Available Stock List</h1>
+          ) : (
+            <h1>List For Sale</h1>
+          )}
+        </div>
+        {this.state.price_by_categories.length ? (
+          <Card className="dashboard_card" style={{ marginBottom: "4px" }}>
+            {this.state.price_by_categories.map((item, key) => (
+              <CardContent
+                className={`dashboard_card_content bg-color-1`}
+                sx={{ display: "flex", justifyContent: "space-between" }}
+                key={key}
+                onClick={() => this.handleCardClick(item.category_id)}
               >
-                <Grid item xs={6} md={3} className="create-input">
-                  <FormControl fullWidth>
-                    <InputLabel>Category</InputLabel>
-                    <Select
-                        value={this.state.queryParams.category_id}
-                        label="Category"
-                        onChange={this.handleCategoryChange}
-                        className="input-inner"
-                        defaultValue=""
-                    >
-                      <MenuItem value="">All</MenuItem>
-                      {this.state.categories.map((item, index) => (
-                          <MenuItem value={item.id} key={index}>
-                            {item.name}
-                          </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-                </Grid>
-                <Grid item xs={6} md={3} className="create-input">
-                  <FormControl fullWidth>
-                    <InputLabel>Sub Category</InputLabel>
-                    <Select
-                        value={this.state.queryParams.sub_category_id}
-                        label="Sub Category"
-                        onChange={this.handleSubCategoryChange}
-                        className="input-inner"
-                        defaultValue=""
-                    >
-                      <MenuItem value="">All</MenuItem>
-                      {this.state.sub_categories.map((item, index) => (
-                          <MenuItem value={item.id} key={index}>
-                            {item.name}
-                          </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-                </Grid>
-                <Grid item xs={6} md={3} className="create-input">
-                  <FormControl fullWidth>
-                    <TextField
-                        label="Search"
-                        variant="outlined"
-                        value={this.state.queryParams.search}
-                        onChange={this.handleSearchChange}
-                        InputProps={{
-                          endAdornment: (
-                              <Button
-                                  variant=""
-                                  color="primary"
-                                  onClick={this.handleSearch}
-                                  sx={{
-                                    minWidth: '40px',
-                                    width: '40px',
-                                    height: '40px',
-                                    borderRadius: '50%',
-                                    marginRight: '-14px',
-                                    transition: 'all 0.3s ease',
-                                    '&:hover': {
-                                      backgroundColor: 'rgba(25, 118, 210, 0.08)',
-                                      transform: 'scale(1.1)',
-                                      '& .MuiSvgIcon-root': {
-                                        color: 'primary.main'
-                                      }
-                                    }
-                                  }}
-                              >
-                                <SearchIcon />
-                              </Button>
-                          ),
-                        }}
-                    />
-                  </FormControl>
-                </Grid>
-                <Grid item xs={6} md={3} className="create-input">
-                  <FormControl fullWidth>
-                    <div
-                        style={{
-                          display: "flex",
-                          flexDirection: "column",
-                          gap: "8px",
-                        }}
-                    >
-                      {/* <div style={{ display: "flex", gap: "8px" }}>
+                <Typography
+                  sx={{ fontSize: 14, margin: 0 }}
+                  color="text.secondary"
+                  gutterBottom
+                  component="span"
+                >
+                  <h1>{item.category_name}</h1>
+                  <h2>{displayAmount(item.total_amount)}</h2>
+                  <h3>{item.quantity} Piece(s)</h3>
+                </Typography>
+                <div className="card-icon">{/* <DiamondIcon /> */}</div>
+              </CardContent>
+            ))}
+          </Card>
+        ) : null}
+        <MainCard>
+          <Box sx={{ flexGrow: 1, m: 0.5 }} className="ratn-dialog-inner">
+            <Grid
+              container
+              spacing={2}
+              className="tax-input loans_view p_view"
+              columnSpacing={{ xs: 1, sm: 2, md: 2 }}
+            >
+              <Grid item xs={6} md={3} className="create-input">
+                <FormControl fullWidth>
+                  <InputLabel>Category</InputLabel>
+                  <Select
+                    value={this.state.queryParams.category_id}
+                    label="Category"
+                    onChange={this.handleCategoryChange}
+                    className="input-inner"
+                    defaultValue=""
+                  >
+                    <MenuItem value="">All</MenuItem>
+                    {this.state.categories.map((item, index) => (
+                      <MenuItem value={item.id} key={index}>
+                        {item.name}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Grid>
+              <Grid item xs={6} md={3} className="create-input">
+                <FormControl fullWidth>
+                  <InputLabel>Sub Category</InputLabel>
+                  <Select
+                    value={this.state.queryParams.sub_category_id}
+                    label="Sub Category"
+                    onChange={this.handleSubCategoryChange}
+                    className="input-inner"
+                    defaultValue=""
+                  >
+                    <MenuItem value="">All</MenuItem>
+                    {this.state.sub_categories.map((item, index) => (
+                      <MenuItem value={item.id} key={index}>
+                        {item.name}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Grid>
+              <Grid item xs={6} md={3} className="create-input">
+                <FormControl fullWidth>
+                  <TextField
+                    label="Search"
+                    variant="outlined"
+                    value={this.state.queryParams.search}
+                    onChange={this.handleSearchChange}
+                    InputProps={{
+                      endAdornment: (
+                        <Button
+                          variant=""
+                          color="primary"
+                          onClick={this.handleSearch}
+                          sx={{
+                            minWidth: "40px",
+                            width: "40px",
+                            height: "40px",
+                            borderRadius: "50%",
+                            marginRight: "-14px",
+                            transition: "all 0.3s ease",
+                            "&:hover": {
+                              backgroundColor: "rgba(25, 118, 210, 0.08)",
+                              transform: "scale(1.1)",
+                              "& .MuiSvgIcon-root": {
+                                color: "primary.main",
+                              },
+                            },
+                          }}
+                        >
+                          <SearchIcon />
+                        </Button>
+                      ),
+                    }}
+                  />
+                </FormControl>
+              </Grid>
+              <Grid item xs={6} md={3} className="create-input">
+                <FormControl fullWidth>
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "8px",
+                    }}
+                  >
+                    {/* <div style={{ display: "flex", gap: "8px" }}>
                       <TextField
                         label="Certificate Number"
                         variant="outlined"
@@ -1719,95 +1893,108 @@ class StockPage extends Component {
                       />
                     </div> */}
 
-                      {/* Manual Input Box */}
-                      <TextField
-                          label="Certificate Entry"
-                          variant="outlined"
-                          placeholder="Enter certificate number or URL"
-                          value={this.state.manualCertificate}
-                          onChange={(event) =>
-                              this.setState({ manualCertificate: event.target.value })
-                          }
-                          onKeyPress={(event) => {
-                            if (
-                                event.key === "Enter" &&
-                                this.state.manualCertificate
-                            ) {
-                              this.handleAddManualCertificate();
-                            }
-                          }}
-                          fullWidth
-                          disabled={this.state.processingCertificate}
-                          InputProps={{
-                            endAdornment: (
-                              <>
-                                <Button
-                                    variant=""
-                                    color="primary"
-                                    onClick={() => {
-                                      if (this.state.manualCertificate) {
-                                        this.handleAddManualCertificate();
-                                      }
-                                    }}
-                                    disabled={this.state.processingCertificate || !this.state.manualCertificate}
-                                    sx={{
-                                      minWidth: "40px",
-                                      width: "40px",
-                                      height: "40px",
-                                      borderRadius: "50%",
-                                      marginRight: "8px",
-                                      transition: 'all 0.3s ease',
-                                      '&:hover': {
-                                        backgroundColor: 'rgba(25, 118, 210, 0.08)',
-                                        transform: 'scale(1.1)',
-                                        '& .MuiSvgIcon-root': {
-                                          color: 'primary.main'
-                                        }
-                                      }
-                                    }}
+                    {/* Manual Input Box */}
+                    <TextField
+                      label="Certificate Entry"
+                      variant="outlined"
+                      placeholder="Enter certificate number or URL"
+                      value={this.state.manualCertificate}
+                      onChange={(event) =>
+                        this.setState({ manualCertificate: event.target.value })
+                      }
+                      onKeyPress={(event) => {
+                        if (
+                          event.key === "Enter" &&
+                          this.state.manualCertificate
+                        ) {
+                          this.handleAddManualCertificate();
+                        }
+                      }}
+                      fullWidth
+                      disabled={this.state.processingCertificate}
+                      InputProps={{
+                        endAdornment: (
+                          <>
+                            <Button
+                              variant=""
+                              color="primary"
+                              onClick={() => {
+                                if (this.state.manualCertificate) {
+                                  this.handleAddManualCertificate();
+                                }
+                              }}
+                              disabled={
+                                this.state.processingCertificate ||
+                                !this.state.manualCertificate
+                              }
+                              sx={{
+                                minWidth: "40px",
+                                width: "40px",
+                                height: "40px",
+                                borderRadius: "50%",
+                                marginRight: "8px",
+                                transition: "all 0.3s ease",
+                                "&:hover": {
+                                  backgroundColor: "rgba(25, 118, 210, 0.08)",
+                                  transform: "scale(1.1)",
+                                  "& .MuiSvgIcon-root": {
+                                    color: "primary.main",
+                                  },
+                                },
+                              }}
+                            >
+                              {this.state.processingCertificate ? (
+                                <div
+                                  className="spinner-border spinner-border-sm"
+                                  role="status"
                                 >
-                                  {this.state.processingCertificate ? (
-                                    <div className="spinner-border spinner-border-sm" role="status">
-                                      <span className="visually-hidden">Loading...</span>
-                                    </div>
-                                  ) : (
-                                    <SearchIcon />
-                                  )}
-                                </Button>
-                                <Button
-                                    variant=""
-                                    color="primary"
-                                    onClick={this.handleOpenQRScanner}
-                                    disabled={this.state.processingCertificate}
-                                    sx={{
-                                      minWidth: "10px",
-                                      height: "40px",
-                                      transition: 'all 0.3s ease',
-                                      '&:hover': {
-                                        backgroundColor: 'rgba(25, 118, 210, 0.08)',
-                                        transform: 'scale(1.1)',
-                                        '& .MuiSvgIcon-root': {
-                                          color: 'primary.main'
-                                        }
-                                      }
-                                    }}
+                                  <span className="visually-hidden">
+                                    Loading...
+                                  </span>
+                                </div>
+                              ) : (
+                                <SearchIcon />
+                              )}
+                            </Button>
+                            <Button
+                              variant=""
+                              color="primary"
+                              onClick={this.handleOpenQRScanner}
+                              disabled={this.state.processingCertificate}
+                              sx={{
+                                minWidth: "10px",
+                                height: "40px",
+                                transition: "all 0.3s ease",
+                                "&:hover": {
+                                  backgroundColor: "rgba(25, 118, 210, 0.08)",
+                                  transform: "scale(1.1)",
+                                  "& .MuiSvgIcon-root": {
+                                    color: "primary.main",
+                                  },
+                                },
+                              }}
+                            >
+                              {this.state.processingCertificate ? (
+                                <div
+                                  className="spinner-border spinner-border-sm"
+                                  role="status"
                                 >
-                                  {this.state.processingCertificate ? (
-                                    <div className="spinner-border spinner-border-sm" role="status">
-                                      <span className="visually-hidden">Loading...</span>
-                                    </div>
-                                  ) : (
-                                    <QrCodeScannerIcon />
-                                  )}
-                                </Button>
-                              </>
-                            ),
-                          }}
-                      />
-                    </div>
-                  </FormControl>
-                </Grid>
-                {/*<Grid item xs={6} md={3} className='create-input'>
+                                  <span className="visually-hidden">
+                                    Loading...
+                                  </span>
+                                </div>
+                              ) : (
+                                <QrCodeScannerIcon />
+                              )}
+                            </Button>
+                          </>
+                        ),
+                      }}
+                    />
+                  </div>
+                </FormControl>
+              </Grid>
+              {/*<Grid item xs={6} md={3} className='create-input'>
                 <FormControl fullWidth>
                   <TextField
                     label="Qty"
@@ -1874,7 +2061,7 @@ class StockPage extends Component {
                   </Select>
                 </FormControl>
               </Grid>*/}
-                {/*<Grid item xs={6} md={3} className='create-input'>
+              {/*<Grid item xs={6} md={3} className='create-input'>
                 <FormControl fullWidth>
                   <TextField
                     label="Price"
@@ -1884,7 +2071,7 @@ class StockPage extends Component {
                   />
                 </FormControl>
               </Grid>*/}
-                {/* <Grid
+              {/* <Grid
                 item
                 xs={6}
                 md={3}
@@ -1898,378 +2085,433 @@ class StockPage extends Component {
                   Search
                 </Button>
               </Grid> */}
-              </Grid>
-            </Box>
-            <Grid container spacing={gridSpacing} className="orders-sale-button">
-              {console.log(this.props)}
-              <DataTable
-                  columns={this.columns}
-                  rows={this.state.items}
-                  page={this.state.queryParams.page}
-                  limit={this.state.queryParams.limit}
-                  total={this.state.total}
-                  handlePagination={this.handlePagination}
-                  actions={this.getTableActions()}
-                  haveAllOption={true}
-                  getRowActions={this.getTableActions} // Pass function to generate row-specific actions
-                  onImageClick={this.handleImageClick} // Pass custom image click handler
-              />
             </Grid>
-          </MainCard>
+          </Box>
+          <Grid container spacing={gridSpacing} className="orders-sale-button">
+            {console.log(this.props)}
+            <DataTable
+              columns={this.columns}
+              rows={this.state.items}
+              page={this.state.queryParams.page}
+              limit={this.state.queryParams.limit}
+              total={this.state.total}
+              handlePagination={this.handlePagination}
+              actions={this.getTableActions()}
+              haveAllOption={true}
+              getRowActions={this.getTableActions} // Pass function to generate row-specific actions
+              onImageClick={this.handleImageClick} // Pass custom image click handler
+            />
+          </Grid>
+        </MainCard>
 
-          {/* Read-only Image Dialog for non-superadmin users */}
-          <Dialog onClose={this.handleImageViewDialogClose} open={this.state.imageViewDialogOpen}>
-            <DialogTitle>
-              <CloseIcon sx={{ cursor: 'pointer', float: 'right', marginTop: '5px', width: '30px' }} onClick={this.handleImageViewDialogClose} />
-            </DialogTitle>
-            <DialogContent>
-              <img src={this.state.imageViewPath} />
-            </DialogContent>
-          </Dialog>
+        {/* Read-only Image Dialog for non-superadmin users */}
+        <Dialog
+          onClose={this.handleImageViewDialogClose}
+          open={this.state.imageViewDialogOpen}
+        >
+          <DialogTitle>
+            <CloseIcon
+              sx={{
+                cursor: "pointer",
+                float: "right",
+                marginTop: "5px",
+                width: "30px",
+              }}
+              onClick={this.handleImageViewDialogClose}
+            />
+          </DialogTitle>
+          <DialogContent>
+            <img src={this.state.imageViewPath} />
+          </DialogContent>
+        </Dialog>
 
-          <Dialog
-              open={this.state.cartDialog}
-              onClose={this.handleDialogClose}
-              fullWidth
-              maxWidth="sm"
-              className="ratn-dialog-wrapper"
-          >
-            <DialogTitle>
-              {this.state.cart_stock ? (
-                  <div className="cart-item-wrapper">
+        <Dialog
+          open={this.state.cartDialog}
+          onClose={this.handleDialogClose}
+          fullWidth
+          maxWidth="sm"
+          className="ratn-dialog-wrapper"
+        >
+          <DialogTitle>
+            {this.state.cart_stock ? (
+              <div className="cart-item-wrapper">
                 <span className="cart-item-header">
                   {this.state.cart_stock.name}
                 </span>
-                    <div className="cart-item-header-right">
-                      <p>
-                        Rate: &nbsp; &nbsp;
-                        <strong> {this.state.cart_stock.mrp_display} </strong>
-                      </p>
-                      &nbsp; &nbsp;
-                      <p>
-                        <strong>
-                          {" "}
-                          {this.state.cart_stock.total_weight_display}{" "}
-                        </strong>
-                      </p>
-                    </div>
-                  </div>
-              ) : null}
-            </DialogTitle>
-            <div>
-              <DialogContentText></DialogContentText>
-              {console.log("this.state.cart_stock : ", this.state.cart_stock)}
-              {this.state.cart_stock ? (
-                  <TableContainer component={Paper}>
-                    <div className="ratn-table-purchase-wrapper">
-                      <Table
-                          aria-label="collapsible table"
-                          className="invoice_product_list"
-                      >
-                        <TableHead className="ratn-table-header sale-modal-header">
-                          <TableRow>
-                            <TableCell>Purity</TableCell>
-                            <TableCell>Available Qty</TableCell>
-                            <TableCell>Avl. Weight</TableCell>
-                            <TableCell>Sale Unit</TableCell>
-                          </TableRow>
-                        </TableHead>
-                        <TableBody>
-                          <TableRow>
-                            <TableCell>
-                              {this.state.cart_stock.stock_materials[0].purity_name}
-                            </TableCell>
-                            <TableCell>{this.state.cart_stock.quantity}</TableCell>
-                            <TableCell>
-                              {this.state.cart_stock.total_weight_display}
-                            </TableCell>
-                            <TableCell>
-                              {this.state.cart_stock.unit_display[0]}
-                            </TableCell>
-                          </TableRow>
-                          {/* {this.state.suppliers.map((row, i) => (
+                <div className="cart-item-header-right">
+                  <p>
+                    Rate: &nbsp; &nbsp;
+                    <strong> {this.state.cart_stock.mrp_display} </strong>
+                  </p>
+                  &nbsp; &nbsp;
+                  <p>
+                    <strong>
+                      {" "}
+                      {this.state.cart_stock.total_weight_display}{" "}
+                    </strong>
+                  </p>
+                </div>
+              </div>
+            ) : null}
+          </DialogTitle>
+          <div>
+            <DialogContentText></DialogContentText>
+            {console.log("this.state.cart_stock : ", this.state.cart_stock)}
+            {this.state.cart_stock ? (
+              <TableContainer component={Paper}>
+                <div className="ratn-table-purchase-wrapper">
+                  <Table
+                    aria-label="collapsible table"
+                    className="invoice_product_list"
+                  >
+                    <TableHead className="ratn-table-header sale-modal-header">
+                      <TableRow>
+                        <TableCell>Purity</TableCell>
+                        <TableCell>Available Qty</TableCell>
+                        <TableCell>Avl. Weight</TableCell>
+                        <TableCell>Sale Unit</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      <TableRow>
+                        <TableCell>
+                          {this.state.cart_stock.stock_materials[0].purity_name}
+                        </TableCell>
+                        <TableCell>{this.state.cart_stock.quantity}</TableCell>
+                        <TableCell>
+                          {this.state.cart_stock.total_weight_display}
+                        </TableCell>
+                        <TableCell>
+                          {this.state.cart_stock.unit_display[0]}
+                        </TableCell>
+                      </TableRow>
+                      {/* {this.state.suppliers.map((row, i) => (
                                 <Row key={i} row={row} index={i} />
                               ))} */}
-                        </TableBody>
-                      </Table>
-                    </div>
-                  </TableContainer>
-              ) : null}
-              <div className="sale_modal_wrapper">
-                <Box sx={{ flexGrow: 1, m: 0.5 }}>
-                  <Grid container spacing={2}>
-                    <Grid item xs={3}>
-                      &nbsp;
-                    </Grid>
-                    <Grid item xs={3}>
-                      <TextField
-                          label="Quantity"
-                          variant="outlined"
-                          fullWidth
-                          value={this.state.quantity}
-                          onChange={(event) =>
-                              this.setState({ quantity: event.target.value })
-                          }
-                          error={this.state.quantity_error}
-                      />
-                    </Grid>
-                    <Grid item xs={3}>
-                      <TextField
-                          label="Weight"
-                          variant="outlined"
-                          fullWidth
-                          value={this.state.weight}
-                          onChange={(event) =>
-                              this.setState({ weight: event.target.value })
-                          }
-                          error={this.state.weight_error}
-                      />
-                    </Grid>
-                    <Grid item xs={3}>
-                      <FormControl fullWidth error={this.state.unit_error}>
-                        <InputLabel>Unit</InputLabel>
-                        <Select
-                            value={this.state.unit_id}
-                            label="Unit"
-                            onChange={(event) =>
-                                this.setState({ unit_id: event.target.value })
-                            }
-                            className="input-inner"
-                            defaultValue=""
-                        >
-                          <MenuItem value=""></MenuItem>
-                          {this.state.unitList.map((item, index) => (
-                              <MenuItem value={item.id} key={index}>
-                                {item.name}
-                              </MenuItem>
-                          ))}
-                        </Select>
-                      </FormControl>
-                    </Grid>
-                    <Grid item xs={12} style={{ paddingTop: "12px" }}>
-                      <Stack
-                          spacing={1}
-                          direction="row"
-                          justifyContent="flex-end"
-                      >
-                        <Button
-                            variant="outlined"
-                            onClick={this.handleDialogClose}
-                        >
-                          Cancel
-                        </Button>
-                        <Button
-                            variant="contained"
-                            type="button"
-                            onClick={this.handleMaterialAddToCart}
-                        >
-                          Add to Cart
-                        </Button>
-                      </Stack>
-                    </Grid>
+                    </TableBody>
+                  </Table>
+                </div>
+              </TableContainer>
+            ) : null}
+            <div className="sale_modal_wrapper">
+              <Box sx={{ flexGrow: 1, m: 0.5 }}>
+                <Grid container spacing={2}>
+                  <Grid item xs={3}>
+                    &nbsp;
                   </Grid>
-                </Box>
-              </div>
+                  <Grid item xs={3}>
+                    <TextField
+                      label="Quantity"
+                      variant="outlined"
+                      fullWidth
+                      value={this.state.quantity}
+                      onChange={(event) =>
+                        this.setState({ quantity: event.target.value })
+                      }
+                      error={this.state.quantity_error}
+                    />
+                  </Grid>
+                  <Grid item xs={3}>
+                    <TextField
+                      label="Weight"
+                      variant="outlined"
+                      fullWidth
+                      value={this.state.weight}
+                      onChange={(event) =>
+                        this.setState({ weight: event.target.value })
+                      }
+                      error={this.state.weight_error}
+                    />
+                  </Grid>
+                  <Grid item xs={3}>
+                    <FormControl fullWidth error={this.state.unit_error}>
+                      <InputLabel>Unit</InputLabel>
+                      <Select
+                        value={this.state.unit_id}
+                        label="Unit"
+                        onChange={(event) =>
+                          this.setState({ unit_id: event.target.value })
+                        }
+                        className="input-inner"
+                        defaultValue=""
+                      >
+                        <MenuItem value=""></MenuItem>
+                        {this.state.unitList.map((item, index) => (
+                          <MenuItem value={item.id} key={index}>
+                            {item.name}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                  </Grid>
+                  <Grid item xs={12} style={{ paddingTop: "12px" }}>
+                    <Stack
+                      spacing={1}
+                      direction="row"
+                      justifyContent="flex-end"
+                    >
+                      <Button
+                        variant="outlined"
+                        onClick={this.handleDialogClose}
+                      >
+                        Cancel
+                      </Button>
+                      <Button
+                        variant="contained"
+                        type="button"
+                        onClick={this.handleMaterialAddToCart}
+                      >
+                        Add to Cart
+                      </Button>
+                    </Stack>
+                  </Grid>
+                </Grid>
+              </Box>
             </div>
-          </Dialog>
+          </div>
+        </Dialog>
 
-          {/* QR Scanner Dialog */}
-          <Dialog
-              open={this.state.qrScannerOpen}
-              onClose={this.handleCloseQRScanner}
-              fullWidth
-              maxWidth="sm"
-              PaperProps={{
-                style: {
-                  borderRadius: '12px',
-                  overflow: 'hidden'
-                }
+        {/* QR Scanner Dialog */}
+        <Dialog
+          open={this.state.qrScannerOpen}
+          onClose={this.handleCloseQRScanner}
+          fullWidth
+          maxWidth="sm"
+          PaperProps={{
+            style: {
+              borderRadius: "12px",
+              overflow: "hidden",
+            },
+          }}
+        >
+          <DialogTitle
+            sx={{
+              background: "#f5f5f5",
+              borderBottom: "1px solid #e0e0e0",
+              padding: "16px 24px",
+            }}
+          >
+            Scan QR Code
+          </DialogTitle>
+          <DialogContent sx={{ padding: "24px" }}>
+            <div
+              id="qr-reader"
+              style={{
+                width: "100%",
+                height: "400px",
+                borderRadius: "8px",
+                overflow: "hidden",
+                position: "relative",
               }}
-          >
-            <DialogTitle sx={{ 
-              background: '#f5f5f5',
-              borderBottom: '1px solid #e0e0e0',
-              padding: '16px 24px'
-            }}>
-              Scan QR Code
-            </DialogTitle>
-            <DialogContent sx={{ padding: '24px' }}>
-              <div
-                id="qr-reader"
-                style={{ 
-                  width: "100%", 
-                  height: "400px",
-                  borderRadius: '8px',
-                  overflow: 'hidden',
-                  position: 'relative'
-                }}
-              ></div>
-              {this.state.qrScannerError && (
-                <Typography 
-                  color="error" 
-                  sx={{ 
-                    mt: 2,
-                    textAlign: 'center',
-                    padding: '8px',
-                    background: '#ffebee',
-                    borderRadius: '4px'
-                  }}
-                >
-                  {this.state.qrScannerError}
-                </Typography>
-              )}
-            </DialogContent>
-            <DialogActions sx={{ 
-              padding: '16px 24px',
-              borderTop: '1px solid #e0e0e0'
-            }}>
-              <Button 
-                onClick={this.handleCloseQRScanner}
-                variant="outlined"
+            ></div>
+            {this.state.qrScannerError && (
+              <Typography
+                color="error"
                 sx={{
-                  borderRadius: '8px',
-                  textTransform: 'none',
-                  padding: '8px 24px'
+                  mt: 2,
+                  textAlign: "center",
+                  padding: "8px",
+                  background: "#ffebee",
+                  borderRadius: "4px",
                 }}
               >
-                Cancel
-              </Button>
-            </DialogActions>
-          </Dialog>
-
-          {/* Image Update Dialog */}
-          <Dialog
-              open={this.state.imageUpdateDialogOpen}
-              onClose={this.handleImageUpdateDialogClose}
-              fullWidth
-              maxWidth="sm"
-              className="ratn-dialog-wrapper"
-          >
-            <DialogTitle sx={{ 
-              display: 'flex', 
-              justifyContent: 'space-between', 
-              alignItems: 'center',
-              padding: '16px 24px',
-              backgroundColor: '#1976d2',
-              color: 'white'
-            }}>
-              <Typography variant="h6" sx={{ color: 'white' }}>
-                Update Image - Certificate {this.state.selectedStockForImageUpdate?.certificate_no}
+                {this.state.qrScannerError}
               </Typography>
-              <IconButton
-                onClick={this.handleImageUpdateDialogClose}
-                sx={{ padding: 0, color: 'white' }}
+            )}
+          </DialogContent>
+          <DialogActions
+            sx={{
+              padding: "16px 24px",
+              borderTop: "1px solid #e0e0e0",
+            }}
+          >
+            <Button
+              onClick={this.handleCloseQRScanner}
+              variant="outlined"
+              sx={{
+                borderRadius: "8px",
+                textTransform: "none",
+                padding: "8px 24px",
+              }}
+            >
+              Cancel
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* Image Update Dialog */}
+        <Dialog
+          open={this.state.imageUpdateDialogOpen}
+          onClose={this.handleImageUpdateDialogClose}
+          fullWidth
+          maxWidth="sm"
+          className="ratn-dialog-wrapper"
+        >
+          <DialogTitle
+            sx={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              padding: "16px 24px",
+              backgroundColor: "#1976d2",
+              color: "white",
+            }}
+          >
+            <Typography variant="h6" sx={{ color: "white" }}>
+              Update Image - Certificate{" "}
+              {this.state.selectedStockForImageUpdate?.certificate_no}
+            </Typography>
+            <IconButton
+              onClick={this.handleImageUpdateDialogClose}
+              sx={{ padding: 0, color: "white" }}
+            >
+              <CloseIcon sx={{ color: "white" }} />
+            </IconButton>
+          </DialogTitle>
+          <DialogContent sx={{ padding: "24px" }}>
+            <Box sx={{ mt: 2, mb: 3 }}>
+              <Typography variant="body2" sx={{ mb: 2, fontWeight: "bold" }}>
+                Select New Image:
+              </Typography>
+              <Button
+                variant="outlined"
+                component="label"
+                startIcon={<CloudUploadIcon />}
+                fullWidth
+                sx={{
+                  mb: 3,
+                  padding: "12px",
+                  borderStyle: "dashed",
+                  borderColor: "#1976d2",
+                }}
               >
-                <CloseIcon sx={{ color: 'white' }} />
-              </IconButton>
-            </DialogTitle>
-            <DialogContent sx={{ padding: '24px' }}>
-              <Box sx={{ mt: 2, mb: 3 }}>
-                <Typography variant="body2" sx={{ mb: 2, fontWeight: 'bold' }}>
-                  Select New Image:
-                </Typography>
-                <Button
-                  variant="outlined"
-                  component="label"
-                  startIcon={<CloudUploadIcon />}
-                  fullWidth
-                  sx={{
-                    mb: 3,
-                    padding: '12px',
-                    borderStyle: 'dashed',
-                    borderColor: '#1976d2'
+                {this.state.imageFile
+                  ? this.state.imageFile.name
+                  : "Choose Image File"}
+                <input
+                  ref={(ref) => {
+                    this.imageFileInputRef = ref;
                   }}
-                >
-                  {this.state.imageFile ? this.state.imageFile.name : 'Choose Image File'}
-                  <input
-                    ref={(ref) => { this.imageFileInputRef = ref; }}
-                    type="file"
-                    accept="image/*"
-                    onChange={this.handleImageFileChange}
-                    style={{ display: 'none' }}
-                  />
-                </Button>
-                
-                {/* Current Image and Preview in a single row using flex */}
-                <Box sx={{ 
-                  display: 'flex', 
-                  flexDirection: 'row', 
+                  type="file"
+                  accept="image/*"
+                  onChange={this.handleImageFileChange}
+                  style={{ display: "none" }}
+                />
+              </Button>
+
+              {/* Current Image and Preview in a single row using flex */}
+              <Box
+                sx={{
+                  display: "flex",
+                  flexDirection: "row",
                   gap: 2,
-                  justifyContent: 'space-around',
-                  alignItems: 'flex-start'
-                }}>
-                  {/* Current Image */}
-                  {this.state.selectedStockForImageUpdate && (
-                    <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                      <Typography variant="body2" sx={{ mb: 1, fontWeight: 'bold' }}>
-                        Current Image:
+                  justifyContent: "space-around",
+                  alignItems: "flex-start",
+                }}
+              >
+                {/* Current Image */}
+                {this.state.selectedStockForImageUpdate && (
+                  <Box
+                    sx={{
+                      flex: 1,
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                    }}
+                  >
+                    <Typography
+                      variant="body2"
+                      sx={{ mb: 1, fontWeight: "bold" }}
+                    >
+                      Current Image:
+                    </Typography>
+                    {this.state.currentImagePreviewFailed ? (
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        sx={{ textAlign: "center", px: 2 }}
+                      >
+                        Current image preview is not available. Upload a new
+                        image to replace it.
                       </Typography>
-                      {this.state.currentImagePreviewFailed ? (
-                        <Typography
-                          variant="body2"
-                          color="text.secondary"
-                          sx={{ textAlign: 'center', px: 2 }}
-                        >
-                          Current image preview is not available. Upload a new image to replace it.
-                        </Typography>
-                      ) : (
-                        <img
-                          src={this.state.selectedStockForImageUpdate.current_image || this.state.selectedStockForImageUpdate.image}
-                          alt="Current"
-                          onError={() => this.setState({ currentImagePreviewFailed: true })}
-                          style={{
-                            width: '100%',
-                            maxWidth: '250px',
-                            height: 'auto',
-                            borderRadius: '8px',
-                            border: '1px solid #e0e0e0'
-                          }}
-                        />
-                      )}
-                    </Box>
-                  )}
-                  
-                  {/* Preview Image */}
-                  {this.state.imageFile && (
-                    <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                      <Typography variant="body2" sx={{ mb: 1, fontWeight: 'bold' }}>
-                        Preview:
-                      </Typography>
+                    ) : (
                       <img
-                        src={URL.createObjectURL(this.state.imageFile)}
-                        alt="Preview"
+                        src={
+                          this.state.selectedStockForImageUpdate
+                            .current_image ||
+                          this.state.selectedStockForImageUpdate.image
+                        }
+                        alt="Current"
+                        onError={() =>
+                          this.setState({ currentImagePreviewFailed: true })
+                        }
                         style={{
-                          width: '100%',
-                          maxWidth: '250px',
-                          height: 'auto',
-                          borderRadius: '8px',
-                          border: '1px solid #e0e0e0'
+                          width: "100%",
+                          maxWidth: "250px",
+                          height: "auto",
+                          borderRadius: "8px",
+                          border: "1px solid #e0e0e0",
                         }}
                       />
-                    </Box>
-                  )}
-                </Box>
+                    )}
+                  </Box>
+                )}
+
+                {/* Preview Image */}
+                {this.state.imageFile && (
+                  <Box
+                    sx={{
+                      flex: 1,
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                    }}
+                  >
+                    <Typography
+                      variant="body2"
+                      sx={{ mb: 1, fontWeight: "bold" }}
+                    >
+                      Preview:
+                    </Typography>
+                    <img
+                      src={URL.createObjectURL(this.state.imageFile)}
+                      alt="Preview"
+                      style={{
+                        width: "100%",
+                        maxWidth: "250px",
+                        height: "auto",
+                        borderRadius: "8px",
+                        border: "1px solid #e0e0e0",
+                      }}
+                    />
+                  </Box>
+                )}
               </Box>
-            </DialogContent>
-            <DialogActions sx={{ padding: '16px 24px', borderTop: '1px solid #e0e0e0' }}>
-              <Button
-                onClick={this.handleImageUpdateDialogClose}
-                variant="outlined"
-                disabled={this.state.updatingImage}
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={this.handleUpdateImage}
-                variant="contained"
-                disabled={this.state.updatingImage || !this.state.imageFile}
-                startIcon={this.state.updatingImage ? <CircularProgress size={20} /> : null}
-              >
-                {this.state.updatingImage ? 'Updating...' : 'Update Image'}
-              </Button>
-            </DialogActions>
-          </Dialog>
-        </>
+            </Box>
+          </DialogContent>
+          <DialogActions
+            sx={{ padding: "16px 24px", borderTop: "1px solid #e0e0e0" }}
+          >
+            <Button
+              onClick={this.handleImageUpdateDialogClose}
+              variant="outlined"
+              disabled={this.state.updatingImage}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={this.handleUpdateImage}
+              variant="contained"
+              disabled={this.state.updatingImage || !this.state.imageFile}
+              startIcon={
+                this.state.updatingImage ? <CircularProgress size={20} /> : null
+              }
+            >
+              {this.state.updatingImage ? "Updating..." : "Update Image"}
+            </Button>
+          </DialogActions>
+        </Dialog>
+      </>
     );
   }
 }
@@ -2297,21 +2539,21 @@ const mapDispatchToProps = (dispatch) => {
   return {
     dispatch,
     actions: bindActionCreators(
-        {
-          stocksList,
-          subCategoryList,
-          cartStore,
-          cartList,
-          categoryList,
-          materialList,
-          unitList,
-          sizeList,
-        },
-        dispatch
+      {
+        stocksList,
+        subCategoryList,
+        cartStore,
+        cartList,
+        categoryList,
+        materialList,
+        unitList,
+        sizeList,
+      },
+      dispatch,
     ),
   };
 };
 
 export default withSnackbar(
-    withRouter(connect(mapStateToProps, mapDispatchToProps)(StockPage))
+  withRouter(connect(mapStateToProps, mapDispatchToProps)(StockPage)),
 );
