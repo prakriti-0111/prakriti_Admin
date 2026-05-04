@@ -475,10 +475,16 @@ class WalletPage extends Component {
   };
 
   handlePaymentSubmit = () => {
-    if (!this.formValidate()) {
-      this.setState({
-        processing: true,
-      });
+    // prevent duplicate submissions
+    if (this.state.processing) return;
+
+    const hasErr = this.formValidate();
+    if (hasErr) {
+      this.setState({ processing: false });
+      return;
+    }
+
+    this.setState({ processing: true }, () => {
       let data = { ...this.state.paymentFormValues };
       if (data.payment_role == "admin" || data.payment_role == "distributor") {
         data.table_type = "sale";
@@ -486,7 +492,7 @@ class WalletPage extends Component {
         data.table_type = "purchase";
       }
       this.props.actions.paymentStore(data);
-    }
+    });
   };
 
   formValidate = () => {
