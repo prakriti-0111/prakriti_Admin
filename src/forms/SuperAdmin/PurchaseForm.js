@@ -808,8 +808,24 @@ class PurchaseForm extends React.Component {
           }),
         );
 
-        // Merge both arrays - edit products first, then pre-store items
-        let mergedProducts = [...editProducts, ...preStoreProducts];
+        // Preserve any existing pre-store items already present in state.formValues
+        const existingProducts = (state.formValues && state.formValues.products) || [];
+        const existingPreStore = existingProducts.filter((p) => p && p.source === "pre-store");
+
+        // Build a map of combined pre-store items keyed by pre_store_id to avoid duplicates
+        const combinedPreStoreMap = {};
+        preStoreProducts.forEach((p) => {
+          if (p && p.pre_store_id) combinedPreStoreMap[p.pre_store_id] = p;
+        });
+        existingPreStore.forEach((p) => {
+          const id = p.pre_store_id || p.id;
+          if (id && !combinedPreStoreMap[id]) combinedPreStoreMap[id] = p;
+        });
+
+        const combinedPreStore = Object.values(combinedPreStoreMap);
+
+        // Merge edit products with the combined pre-store list
+        let mergedProducts = [...editProducts, ...combinedPreStore];
 
         console.log("Merged products:", mergedProducts);
 
@@ -904,59 +920,74 @@ class PurchaseForm extends React.Component {
   };
 
   componentDidUpdate(prevProps, prevState) {
+    // Only initialize when formData reference actually changed
     if (this.props.formData != prevProps.formData) {
       console.log("=== FORM DATA CHANGED ===");
       console.log("New formData:", this.props.formData);
       this.initializeFormData();
     }
 
-    // When pre-purchase items change, merge them with existing edit products
-    // But only add pre-store items that are NOT already being deleted from the form
-    if (this.state.prePurchaseItems != prevState.prePurchaseItems) {
-      console.log("=== PRE-PURCHASE ITEMS CHANGED ===");
-      console.log("New prePurchaseItems:", this.state.prePurchaseItems);
+    // When pre-purchase items change in props or state, merge them with
+    // existing products. Prefer checking props change (Redux update) so we
+    // always incorporate the latest server response.
+    if (this.props.prePurchaseItems != prevProps.prePurchaseItems || this.state.prePurchaseItems != prevState.prePurchaseItems) {
+      const latestPreStore = this.props.prePurchaseItems || this.state.prePurchaseItems || [];
+      console.log("=== PRE-PURCHASE ITEMS UPDATED ===");
+      console.log("Latest prePurchaseItems (props/state):", latestPreStore);
 
-      // Get current products in the form
       const currentProducts = this.state.formValues.products || [];
-      
-      // Get current edit products (those with source='edit')
-      const currentEditProducts = currentProducts.filter(
-        (p) => p.source === "edit",
-      );
 
-      // Get current pre-store products being edited (those marked with source='pre-store')
-      const currentPreStoreProductIds = currentProducts
-        .filter((p) => p.source === "pre-store")
-        .map((p) => p.pre_store_id || p.id);
+      // Build map of existing products by pre_store_id or id to avoid duplicates
+      const existingMap = {};
+      currentProducts.forEach((p) => {
+        const key = p && (p.pre_store_id || p.id);
+        if (key !== undefined) existingMap[key] = p;
+      });
 
-      // Only add pre-store items that are NOT already in the form
-      // This prevents re-adding products that were intentionally deleted
-      const newPreStoreProducts = (this.state.prePurchaseItems || [])
-        .filter((product) => !currentPreStoreProductIds.includes(product.id))
-        .map((product) => ({
-          ...product,
-          pre_store_id: product.id,
-          id: 0,
-          source: "pre-store",
-          is_new_product: true,
-        }));
+      // Convert latest pre-store items into product items and merge into map
+      latestPreStore.forEach((product) => {
+        const key = product.id;
+        if (!existingMap[key]) {
+          existingMap[key] = {
+            ...product,
+            pre_store_id: product.id,
+            id: 0,
+            source: "pre-store",
+            is_new_product: true,
+          };
+        }
+      });
 
-      // Merge: edit products first, then new pre-store items
-      const mergedProducts = [...currentEditProducts, ...newPreStoreProducts];
+      // Reconstruct mergedProducts preserving original order of currentProducts
+      const mergedProducts = [...currentProducts];
+      // Append any new pre-store items that were not present
+      Object.values(existingMap).forEach((p) => {
+        if (!mergedProducts.find((mp) => (mp.pre_store_id || mp.id) === (p.pre_store_id || p.id))) {
+          mergedProducts.push(p);
+        }
+      });
 
-      console.log("Merged products after pre-store change:", mergedProducts);
-
-      this.setState(
-        {
-          formValues: {
-            ...this.state.formValues,
-            products: mergedProducts,
+      if (!_.isEqual(mergedProducts, currentProducts)) {
+        console.log("Merged products after pre-store update:", mergedProducts);
+        this.setState(
+          {
+            formValues: {
+              ...this.state.formValues,
+              products: mergedProducts,
+            },
+            prePurchaseItems: latestPreStore,
           },
-        },
-        () => {
-          this.handleCalculateMainPrice();
-        },
-      );
+          () => {
+            this.handleCalculateMainPrice();
+          },
+        );
+      } else {
+        console.log("No change in merged products after pre-store update.");
+        // Still update prePurchaseItems in state so subsequent deletes/adds compare correctly
+        if (!_.isEqual(this.state.prePurchaseItems, latestPreStore)) {
+          this.setState({ prePurchaseItems: latestPreStore });
+        }
+      }
     }
 
     if (
@@ -979,14 +1010,20 @@ class PurchaseForm extends React.Component {
       (!this.state.formValues.products ||
         this.state.formValues.products.length === 0)
     ) {
-      console.log("=== FIXING MISSING PRODUCTS ===");
-      console.log("formData.products:", this.props.formData.products);
-      this.setState({
-        formValues: {
-          ...this.state.formValues,
-          products: this.props.formData.products,
-        },
-      });
+      const incomingProducts = this.props.formData.products || [];
+      // Only setState if the current products are actually different
+      if (!_.isEqual(this.state.formValues.products, incomingProducts)) {
+        console.log("=== FIXING MISSING PRODUCTS ===");
+        console.log("formData.products:", incomingProducts);
+        this.setState({
+          formValues: {
+            ...this.state.formValues,
+            products: incomingProducts,
+          },
+        });
+      } else {
+        console.log("Products already match incoming formData, skipping setState.");
+      }
     }
 
     if (this.state.actionCalled) {
@@ -2215,6 +2252,47 @@ class PurchaseForm extends React.Component {
       try {
         await this.props.actions.purchaseProductDelete(this.state.formData.id, proIdxData.id);
         console.log("Existing purchase product deleted successfully via API");
+
+        // Fetch the latest purchase data and update the form values so UI refreshes
+        try {
+          const res = await purchaseRawEdit(this.state.formData.id);
+          if (res.data && res.data.success) {
+            const latest = res.data.data || {};
+            // mark edit products
+            const editProducts = (latest.products || []).map((p) => ({
+              ...p,
+              source: "edit",
+              is_new_product: false,
+            }));
+
+            // include current pre-store items (if any)
+            const preStoreProducts = (this.state.prePurchaseItems || []).map((product) => ({
+              ...product,
+              pre_store_id: product.id,
+              id: 0,
+              source: "pre-store",
+              is_new_product: true,
+            }));
+
+            const merged = [...editProducts, ...preStoreProducts];
+
+            this.setState({
+              formValues: {
+                ...this.state.formValues,
+                ...latest,
+                products: merged,
+              },
+            });
+            // Refresh pre-store list in Redux so other parts of the UI stay in sync
+            try {
+              this.props.actions.purchasePreStoreList({ all: 1 });
+            } catch (err) {
+              console.error('Error refreshing pre-store list after delete:', err);
+            }
+          }
+        } catch (err) {
+          console.error("Error fetching latest purchase after delete:", err);
+        }
       } catch (error) {
         console.error("Error deleting existing purchase product:", error);
       }
