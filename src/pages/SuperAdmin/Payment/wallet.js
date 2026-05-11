@@ -52,7 +52,7 @@ import {
   isDistributor,
   isSalesExecutive,
   getRoleName,
-  getUserDashboardRoute
+  getUserDashboardRoute,
 } from "src/helpers/helper";
 import { withSnackbar } from "notistack";
 import AccountBalanceWalletIcon from "@mui/icons-material/AccountBalanceWallet";
@@ -228,7 +228,10 @@ class WalletPage extends Component {
     if (this.state.processing) return;
     this.setState({ processing: true });
     try {
-      let res = await paymentStatusChange(this.state.actionRow.id, this.state.formvalues);
+      let res = await paymentStatusChange(
+        this.state.actionRow.id,
+        this.state.formvalues,
+      );
       if (res.data && res.data.success) {
         this.props.enqueueSnackbar(res.data.message, { variant: "success" });
         this.setState({ openDialog: false });
@@ -238,11 +241,17 @@ class WalletPage extends Component {
           const mode = this.state.queryParams.payment_mode || "";
           const bres = await paymentGetWalletBalance(mode);
           if (bres && bres.data && bres.data.success) {
-            this.setState({ balance_by_mode: bres.data.data.balance_by_mode || this.state.balance_by_mode });
+            this.setState({
+              balance_by_mode:
+                bres.data.data.balance_by_mode || this.state.balance_by_mode,
+            });
           }
         } catch (e) {}
       } else {
-        this.props.enqueueSnackbar((res && res.data && res.data.message) || "Error", { variant: "error" });
+        this.props.enqueueSnackbar(
+          (res && res.data && res.data.message) || "Error",
+          { variant: "error" },
+        );
       }
     } catch (err) {
       this.props.enqueueSnackbar(err.toString(), { variant: "error" });
@@ -400,7 +409,7 @@ class WalletPage extends Component {
       },
       () => {
         this.handleSearch();
-      }
+      },
     );
   };
 
@@ -447,7 +456,7 @@ class WalletPage extends Component {
             },
           });
         }
-      }
+      },
     );
   };
 
@@ -617,7 +626,7 @@ class WalletPage extends Component {
           {
             label: "Distributor",
             value: "distributor",
-          }
+          },
         ];
       } else {
         payment_roles = [
@@ -657,7 +666,7 @@ class WalletPage extends Component {
       });
     }
 
-    if(this.isSuperAdmin || (profile && !profile.own && this.isAdmin)){
+    if (this.isSuperAdmin || (profile && !profile.own && this.isAdmin)) {
       payment_types.push({
         label: "Payment",
         value: "payment",
@@ -667,7 +676,7 @@ class WalletPage extends Component {
     console.log(
       "-----------------------------------------columns",
       this.columns,
-      this.state.items
+      this.state.items,
     );
     /* let advanceData = 0; */
 
@@ -850,7 +859,7 @@ class WalletPage extends Component {
         </Grid>
         {console.log(
           "--------------------retailerList",
-          this.props.retailerList
+          this.props.retailerList,
         )}
         <Grid container spacing={gridSpacing} className="wallet_table">
           {this.state.advanceFilter == true ? (
@@ -888,7 +897,63 @@ class WalletPage extends Component {
           ) : (
             <DataTable
               columns={this.columns}
-              rows={this.state.items}
+              rows={(this.state.items || []).map((row) => {
+                const rawStatus = (row.status || "").toString().toLowerCase();
+                const rawAction = (row.action_value || "")
+                  .toString()
+                  .toLowerCase();
+                const receiverProcessed =
+                  row.can_accept === true &&
+                  (rawStatus === "success" ||
+                    rawStatus === "accepted" ||
+                    rawStatus === "failed" ||
+                    rawStatus === "declined" ||
+                    rawStatus === "reject" ||
+                    rawStatus === "rejected");
+
+                let normalizedActionValue = row.action_value;
+                if (rawStatus === "pending" && !row.can_accept) {
+                  // original pending row that was acted on — show processed
+                  normalizedActionValue = "processed";
+                } else if (rawStatus === "pending" && row.can_accept) {
+                  normalizedActionValue = "Pending";
+                } else if (
+                  receiverProcessed &&
+                  (rawAction === "pending" || !rawAction)
+                ) {
+                  normalizedActionValue =
+                    rawStatus === "failed" ||
+                    rawStatus === "declined" ||
+                    rawStatus === "reject" ||
+                    rawStatus === "rejected"
+                      ? "Declined"
+                      : "Accepted";
+                }
+
+                let normalizedDisplayMode = row.display_mode;
+                if (
+                  receiverProcessed &&
+                  typeof normalizedDisplayMode === "string" &&
+                  normalizedDisplayMode
+                    .toLowerCase()
+                    .includes("to be processed")
+                ) {
+                  normalizedDisplayMode = normalizedDisplayMode.replace(
+                    /<[^>]*>\s*to\s*be\s*processed[^<]*<\/[^>]*>/gi,
+                    "",
+                  );
+                  normalizedDisplayMode = normalizedDisplayMode.replace(
+                    /to\s*be\s*processed[^<]*/gi,
+                    "",
+                  );
+                }
+
+                return {
+                  ...row,
+                  action_value: normalizedActionValue,
+                  display_mode: normalizedDisplayMode,
+                };
+              })}
               page={this.state.queryParams.page}
               limit={this.state.queryParams.limit}
               total={this.state.total}
@@ -897,12 +962,20 @@ class WalletPage extends Component {
               actionValue={"action_value"}
               actionValueColorConditions={[
                 {
+                  value: "Pending",
+                  color: "orange",
+                },
+                {
                   value: "Accepted",
                   color: "green",
                 },
                 {
                   value: "Declined",
                   color: "red",
+                },
+                {
+                  value: "processed",
+                  color: "gray",
                 },
               ]}
             />
@@ -1005,13 +1078,17 @@ class WalletPage extends Component {
                       fullWidth
                       label="Payment Type"
                       onChange={(event) => {
-                        if(event.target.value == "payment"){
+                        if (event.target.value == "payment") {
                           this.props.navigate(
-                            getUserDashboardRoute(getRoleName(this.state.auth)) +
-                              "/suppliers"
+                            getUserDashboardRoute(
+                              getRoleName(this.state.auth),
+                            ) + "/suppliers",
                           );
                         } else {
-                          this.updateFormValue(event.target.value, "payment_type");
+                          this.updateFormValue(
+                            event.target.value,
+                            "payment_type",
+                          );
                         }
                       }}
                     >
@@ -1116,7 +1193,7 @@ class WalletPage extends Component {
                       onChange={(event, newValue) => {
                         this.updateFormValue(
                           newValue ? newValue.id : "",
-                          "user_id"
+                          "user_id",
                         );
                       }}
                     />
@@ -1253,11 +1330,11 @@ const mapDispatchToProps = (dispatch) => {
         paymentStore,
         retailerList,
       },
-      dispatch
+      dispatch,
     ),
   };
 };
 
 export default withSnackbar(
-  withRouter(connect(mapStateToProps, mapDispatchToProps)(WalletPage))
+  withRouter(connect(mapStateToProps, mapDispatchToProps)(WalletPage)),
 );
