@@ -30,6 +30,7 @@ import {
   walletHistoryList,
   paymentStatusChange,
   paymentStore,
+  paymentGetWalletBalance,
 } from "actions/superadmin/payment.actions";
 import DataTable from "src/utils/DataTable";
 import {
@@ -170,12 +171,8 @@ class WalletPage extends Component {
         color: "primary",
         conditions: [
           {
-            key: "status",
-            value: "pending",
-          },
-          {
-            key: "can_accept",
-            value: true,
+            key: "action_value",
+            value: "Pending",
           },
         ],
       },
@@ -185,12 +182,8 @@ class WalletPage extends Component {
         color: "error",
         conditions: [
           {
-            key: "status",
-            value: "pending",
-          },
-          {
-            key: "can_accept",
-            value: true,
+            key: "action_value",
+            value: "Pending",
           },
         ],
       },
@@ -232,18 +225,29 @@ class WalletPage extends Component {
   };
 
   handleSubmit = async () => {
-    let res = await paymentStatusChange(
-      this.state.actionRow.id,
-      this.state.formvalues,
-    );
-    if (res.data.success) {
-      this.props.enqueueSnackbar(res.data.message, { variant: "success" });
-      this.setState({
-        openDialog: false,
-      });
-      this.loadListData();
-    } else {
-      this.props.enqueueSnackbar(res.data.message, { variant: "error" });
+    if (this.state.processing) return;
+    this.setState({ processing: true });
+    try {
+      let res = await paymentStatusChange(this.state.actionRow.id, this.state.formvalues);
+      if (res.data && res.data.success) {
+        this.props.enqueueSnackbar(res.data.message, { variant: "success" });
+        this.setState({ openDialog: false });
+        this.loadListData();
+        // refresh wallet balances
+        try {
+          const mode = this.state.queryParams.payment_mode || "";
+          const bres = await paymentGetWalletBalance(mode);
+          if (bres && bres.data && bres.data.success) {
+            this.setState({ balance_by_mode: bres.data.data.balance_by_mode || this.state.balance_by_mode });
+          }
+        } catch (e) {}
+      } else {
+        this.props.enqueueSnackbar((res && res.data && res.data.message) || "Error", { variant: "error" });
+      }
+    } catch (err) {
+      this.props.enqueueSnackbar(err.toString(), { variant: "error" });
+    } finally {
+      this.setState({ processing: false });
     }
   };
 
@@ -475,10 +479,16 @@ class WalletPage extends Component {
   };
 
   handlePaymentSubmit = () => {
-    if (!this.formValidate()) {
-      this.setState({
-        processing: true,
-      });
+    // prevent duplicate submissions
+    if (this.state.processing) return;
+
+    const hasErr = this.formValidate();
+    if (hasErr) {
+      this.setState({ processing: false });
+      return;
+    }
+
+    this.setState({ processing: true }, () => {
       let data = { ...this.state.paymentFormValues };
       if (data.payment_role == "admin" || data.payment_role == "distributor") {
         data.table_type = "sale";
@@ -486,7 +496,7 @@ class WalletPage extends Component {
         data.table_type = "purchase";
       }
       this.props.actions.paymentStore(data);
-    }
+    });
   };
 
   formValidate = () => {
