@@ -51,7 +51,7 @@ import {
   isDistributor,
   isSalesExecutive,
   getRoleName,
-  getUserDashboardRoute
+  getUserDashboardRoute,
 } from "src/helpers/helper";
 import { withSnackbar } from "notistack";
 import AccountBalanceWalletIcon from "@mui/icons-material/AccountBalanceWallet";
@@ -234,7 +234,7 @@ class WalletPage extends Component {
   handleSubmit = async () => {
     let res = await paymentStatusChange(
       this.state.actionRow.id,
-      this.state.formvalues
+      this.state.formvalues,
     );
     if (res.data.success) {
       this.props.enqueueSnackbar(res.data.message, { variant: "success" });
@@ -396,7 +396,7 @@ class WalletPage extends Component {
       },
       () => {
         this.handleSearch();
-      }
+      },
     );
   };
 
@@ -443,7 +443,7 @@ class WalletPage extends Component {
             },
           });
         }
-      }
+      },
     );
   };
 
@@ -607,7 +607,7 @@ class WalletPage extends Component {
           {
             label: "Distributor",
             value: "distributor",
-          }
+          },
         ];
       } else {
         payment_roles = [
@@ -647,7 +647,7 @@ class WalletPage extends Component {
       });
     }
 
-    if(this.isSuperAdmin || (profile && !profile.own && this.isAdmin)){
+    if (this.isSuperAdmin || (profile && !profile.own && this.isAdmin)) {
       payment_types.push({
         label: "Payment",
         value: "payment",
@@ -657,7 +657,7 @@ class WalletPage extends Component {
     console.log(
       "-----------------------------------------columns",
       this.columns,
-      this.state.items
+      this.state.items,
     );
     /* let advanceData = 0; */
 
@@ -840,7 +840,7 @@ class WalletPage extends Component {
         </Grid>
         {console.log(
           "--------------------retailerList",
-          this.props.retailerList
+          this.props.retailerList,
         )}
         <Grid container spacing={gridSpacing} className="wallet_table">
           {this.state.advanceFilter == true ? (
@@ -1005,13 +1005,17 @@ class WalletPage extends Component {
                       fullWidth
                       label="Payment Type"
                       onChange={(event) => {
-                        if(event.target.value == "payment"){
+                        if (event.target.value == "payment") {
                           this.props.navigate(
-                            getUserDashboardRoute(getRoleName(this.state.auth)) +
-                              "/suppliers"
+                            getUserDashboardRoute(
+                              getRoleName(this.state.auth),
+                            ) + "/suppliers",
                           );
                         } else {
-                          this.updateFormValue(event.target.value, "payment_type");
+                          this.updateFormValue(
+                            event.target.value,
+                            "payment_type",
+                          );
                         }
                       }}
                     >
@@ -1116,7 +1120,7 @@ class WalletPage extends Component {
                       onChange={(event, newValue) => {
                         this.updateFormValue(
                           newValue ? newValue.id : "",
-                          "user_id"
+                          "user_id",
                         );
                       }}
                     />
@@ -1253,11 +1257,11 @@ const mapDispatchToProps = (dispatch) => {
         paymentStore,
         retailerList,
       },
-      dispatch
+      dispatch,
     ),
   };
 };
 
 export default withSnackbar(
-  withRouter(connect(mapStateToProps, mapDispatchToProps)(WalletPage))
+  withRouter(connect(mapStateToProps, mapDispatchToProps)(WalletPage)),
 );
