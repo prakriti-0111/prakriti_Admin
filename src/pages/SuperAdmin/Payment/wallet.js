@@ -52,7 +52,7 @@ import {
   isDistributor,
   isSalesExecutive,
   getRoleName,
-  getUserDashboardRoute
+  getUserDashboardRoute,
 } from "src/helpers/helper";
 import { withSnackbar } from "notistack";
 import AccountBalanceWalletIcon from "@mui/icons-material/AccountBalanceWallet";
@@ -400,7 +400,7 @@ class WalletPage extends Component {
       },
       () => {
         this.handleSearch();
-      }
+      },
     );
   };
 
@@ -447,7 +447,7 @@ class WalletPage extends Component {
             },
           });
         }
-      }
+      },
     );
   };
 
@@ -617,7 +617,7 @@ class WalletPage extends Component {
           {
             label: "Distributor",
             value: "distributor",
-          }
+          },
         ];
       } else {
         payment_roles = [
@@ -657,7 +657,7 @@ class WalletPage extends Component {
       });
     }
 
-    if(this.isSuperAdmin || (profile && !profile.own && this.isAdmin)){
+    if (this.isSuperAdmin || (profile && !profile.own && this.isAdmin)) {
       payment_types.push({
         label: "Payment",
         value: "payment",
@@ -667,7 +667,7 @@ class WalletPage extends Component {
     console.log(
       "-----------------------------------------columns",
       this.columns,
-      this.state.items
+      this.state.items,
     );
     /* let advanceData = 0; */
 
@@ -850,7 +850,7 @@ class WalletPage extends Component {
         </Grid>
         {console.log(
           "--------------------retailerList",
-          this.props.retailerList
+          this.props.retailerList,
         )}
         <Grid container spacing={gridSpacing} className="wallet_table">
           {this.state.advanceFilter == true ? (
@@ -888,7 +888,13 @@ class WalletPage extends Component {
           ) : (
             <DataTable
               columns={this.columns}
-              rows={this.state.items}
+              rows={(this.state.items || []).map((row) => ({
+                ...row,
+                action_value:
+                  row.status === "pending" && !row.can_accept
+                    ? "Pending"
+                    : row.action_value,
+              }))}
               page={this.state.queryParams.page}
               limit={this.state.queryParams.limit}
               total={this.state.total}
@@ -896,6 +902,10 @@ class WalletPage extends Component {
               actions={this.tableActions}
               actionValue={"action_value"}
               actionValueColorConditions={[
+                {
+                  value: "Pending",
+                  color: "orange",
+                },
                 {
                   value: "Accepted",
                   color: "green",
@@ -1005,13 +1015,17 @@ class WalletPage extends Component {
                       fullWidth
                       label="Payment Type"
                       onChange={(event) => {
-                        if(event.target.value == "payment"){
+                        if (event.target.value == "payment") {
                           this.props.navigate(
-                            getUserDashboardRoute(getRoleName(this.state.auth)) +
-                              "/suppliers"
+                            getUserDashboardRoute(
+                              getRoleName(this.state.auth),
+                            ) + "/suppliers",
                           );
                         } else {
-                          this.updateFormValue(event.target.value, "payment_type");
+                          this.updateFormValue(
+                            event.target.value,
+                            "payment_type",
+                          );
                         }
                       }}
                     >
@@ -1116,7 +1130,7 @@ class WalletPage extends Component {
                       onChange={(event, newValue) => {
                         this.updateFormValue(
                           newValue ? newValue.id : "",
-                          "user_id"
+                          "user_id",
                         );
                       }}
                     />
@@ -1253,11 +1267,11 @@ const mapDispatchToProps = (dispatch) => {
         paymentStore,
         retailerList,
       },
-      dispatch
+      dispatch,
     ),
   };
 };
 
 export default withSnackbar(
-  withRouter(connect(mapStateToProps, mapDispatchToProps)(WalletPage))
+  withRouter(connect(mapStateToProps, mapDispatchToProps)(WalletPage)),
 );
