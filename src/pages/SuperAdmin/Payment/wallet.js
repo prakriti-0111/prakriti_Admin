@@ -913,10 +913,47 @@ class WalletPage extends Component {
 
                 let normalizedActionValue = row.action_value;
                 if (rawStatus === "pending" && !row.can_accept) {
-                  // original pending row that was acted on — show processed
-                  normalizedActionValue = "processed";
+                  if (
+                    rawAction === "accepted" ||
+                    rawAction === "success" ||
+                    rawAction === "processed"
+                  ) {
+                    normalizedActionValue = "processed";
+                  } else if (
+                    rawAction === "failed" ||
+                    rawAction === "declined" ||
+                    rawAction === "reject" ||
+                    rawAction === "rejected"
+                  ) {
+                    normalizedActionValue = "Declined";
+                  } else {
+                    const creditAmount = parseFloat(
+                      (row.credit || "0")
+                        .toString()
+                        .replace(/[^0-9.-]/g, ""),
+                    );
+                    normalizedActionValue =
+                      !Number.isNaN(creditAmount) && creditAmount > 0
+                        ? "processed"
+                        : "Pending";
+                  }
                 } else if (rawStatus === "pending" && row.can_accept) {
-                  normalizedActionValue = "Pending";
+                  if (
+                    rawAction === "accepted" ||
+                    rawAction === "success" ||
+                    rawAction === "processed"
+                  ) {
+                    normalizedActionValue = "processed";
+                  } else if (
+                    rawAction === "failed" ||
+                    rawAction === "declined" ||
+                    rawAction === "reject" ||
+                    rawAction === "rejected"
+                  ) {
+                    normalizedActionValue = "Declined";
+                  } else {
+                    normalizedActionValue = "Pending";
+                  }
                 } else if (
                   receiverProcessed &&
                   (rawAction === "pending" || !rawAction)
@@ -927,7 +964,7 @@ class WalletPage extends Component {
                     rawStatus === "reject" ||
                     rawStatus === "rejected"
                       ? "Declined"
-                      : "Accepted";
+                      : "processed";
                 }
 
                 let normalizedDisplayMode = row.display_mode;
