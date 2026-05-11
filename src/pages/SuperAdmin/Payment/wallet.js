@@ -228,7 +228,10 @@ class WalletPage extends Component {
     if (this.state.processing) return;
     this.setState({ processing: true });
     try {
-      let res = await paymentStatusChange(this.state.actionRow.id, this.state.formvalues);
+      let res = await paymentStatusChange(
+        this.state.actionRow.id,
+        this.state.formvalues,
+      );
       if (res.data && res.data.success) {
         this.props.enqueueSnackbar(res.data.message, { variant: "success" });
         this.setState({ openDialog: false });
@@ -238,11 +241,17 @@ class WalletPage extends Component {
           const mode = this.state.queryParams.payment_mode || "";
           const bres = await paymentGetWalletBalance(mode);
           if (bres && bres.data && bres.data.success) {
-            this.setState({ balance_by_mode: bres.data.data.balance_by_mode || this.state.balance_by_mode });
+            this.setState({
+              balance_by_mode:
+                bres.data.data.balance_by_mode || this.state.balance_by_mode,
+            });
           }
         } catch (e) {}
       } else {
-        this.props.enqueueSnackbar((res && res.data && res.data.message) || "Error", { variant: "error" });
+        this.props.enqueueSnackbar(
+          (res && res.data && res.data.message) || "Error",
+          { variant: "error" },
+        );
       }
     } catch (err) {
       this.props.enqueueSnackbar(err.toString(), { variant: "error" });
@@ -888,13 +897,63 @@ class WalletPage extends Component {
           ) : (
             <DataTable
               columns={this.columns}
-              rows={(this.state.items || []).map((row) => ({
-                ...row,
-                action_value:
-                  row.status === "pending" && !row.can_accept
-                    ? "Pending"
-                    : row.action_value,
-              }))}
+              rows={(this.state.items || []).map((row) => {
+                const rawStatus = (row.status || "").toString().toLowerCase();
+                const rawAction = (row.action_value || "")
+                  .toString()
+                  .toLowerCase();
+                const receiverProcessed =
+                  row.can_accept === true &&
+                  (rawStatus === "success" ||
+                    rawStatus === "accepted" ||
+                    rawStatus === "failed" ||
+                    rawStatus === "declined" ||
+                    rawStatus === "reject" ||
+                    rawStatus === "rejected");
+
+                let normalizedActionValue = row.action_value;
+                if (rawStatus === "pending" && !row.can_accept) {
+                  // original pending row that was acted on — show processed
+                  normalizedActionValue = "processed";
+                } else if (rawStatus === "pending" && row.can_accept) {
+                  normalizedActionValue = "Pending";
+                } else if (
+                  receiverProcessed &&
+                  (rawAction === "pending" || !rawAction)
+                ) {
+                  normalizedActionValue =
+                    rawStatus === "failed" ||
+                    rawStatus === "declined" ||
+                    rawStatus === "reject" ||
+                    rawStatus === "rejected"
+                      ? "Declined"
+                      : "Accepted";
+                }
+
+                let normalizedDisplayMode = row.display_mode;
+                if (
+                  receiverProcessed &&
+                  typeof normalizedDisplayMode === "string" &&
+                  normalizedDisplayMode
+                    .toLowerCase()
+                    .includes("to be processed")
+                ) {
+                  normalizedDisplayMode = normalizedDisplayMode.replace(
+                    /<[^>]*>\s*to\s*be\s*processed[^<]*<\/[^>]*>/gi,
+                    "",
+                  );
+                  normalizedDisplayMode = normalizedDisplayMode.replace(
+                    /to\s*be\s*processed[^<]*/gi,
+                    "",
+                  );
+                }
+
+                return {
+                  ...row,
+                  action_value: normalizedActionValue,
+                  display_mode: normalizedDisplayMode,
+                };
+              })}
               page={this.state.queryParams.page}
               limit={this.state.queryParams.limit}
               total={this.state.total}
@@ -913,6 +972,10 @@ class WalletPage extends Component {
                 {
                   value: "Declined",
                   color: "red",
+                },
+                {
+                  value: "processed",
+                  color: "gray",
                 },
               ]}
             />
