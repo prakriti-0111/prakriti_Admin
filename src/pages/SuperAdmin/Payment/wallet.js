@@ -878,7 +878,13 @@ class WalletPage extends Component {
           ) : (
             <DataTable
               columns={this.columns}
-              rows={this.state.items}
+              rows={(this.state.items || []).map((row) => ({
+                ...row,
+                action_value:
+                  row.status === "pending" && !row.can_accept
+                    ? "Pending"
+                    : row.action_value,
+              }))}
               page={this.state.queryParams.page}
               limit={this.state.queryParams.limit}
               total={this.state.total}
@@ -886,6 +892,10 @@ class WalletPage extends Component {
               actions={this.tableActions}
               actionValue={"action_value"}
               actionValueColorConditions={[
+                {
+                  value: "Pending",
+                  color: "orange",
+                },
                 {
                   value: "Accepted",
                   color: "green",
