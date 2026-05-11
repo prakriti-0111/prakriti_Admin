@@ -722,6 +722,8 @@ class DataTable extends React.Component {
                             return (
                               <React.Fragment key={index}>
                                 {(!("show" in a) || a.show) &&
+                                // hide accept/decline buttons if row is not actionable
+                                !((a.label === 'green_tick' || a.label === 'Close') && row.can_accept !== true) &&
                                 (("conditions" in a &&
                                   this.checkActionBtnCondtion(
                                     a.conditions,
