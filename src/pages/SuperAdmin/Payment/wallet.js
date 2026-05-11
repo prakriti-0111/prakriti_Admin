@@ -928,9 +928,7 @@ class WalletPage extends Component {
                     normalizedActionValue = "Declined";
                   } else {
                     const creditAmount = parseFloat(
-                      (row.credit || "0")
-                        .toString()
-                        .replace(/[^0-9.-]/g, ""),
+                      (row.credit || "0").toString().replace(/[^0-9.-]/g, ""),
                     );
                     normalizedActionValue =
                       !Number.isNaN(creditAmount) && creditAmount > 0
