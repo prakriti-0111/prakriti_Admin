@@ -138,7 +138,13 @@ class SalePage extends Component {
   static getDerivedStateFromProps(props, state) {
     let update = {};
     if (props.items !== state.items) {
-      update.items = props.items;
+      const items = props.items.map((item) => {
+        return {
+          ...item,
+          invoice_number: `${item.invoice_number} (${item.no_of_products})`
+        };
+      });
+      update.items = items;
     }
 
     if (props.total !== state.total) {
