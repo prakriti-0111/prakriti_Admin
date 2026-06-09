@@ -24,6 +24,9 @@ class SaleProductsPage extends Component {
       categories: this.props.categories,
       sub_categories: this.props.sub_categories,
       queryParams: {
+        page: 1,
+        limit: 50,
+        all: 0,
         category_id: '',
         sub_category_id: '',
       },
@@ -144,6 +147,22 @@ class SaleProductsPage extends Component {
       })
   }
 
+  handlePagination = (page, all = false) => {
+    this.setState(
+      {
+        queryParams: {
+          ...this.state.queryParams,
+          page: page,
+          all: all ? 1 : 0,
+          limit: all ? this.state.total || this.state.queryParams.limit : 50,
+        },
+      },
+      () => {
+        this.loadListData();
+      },
+    );
+  };
+
   handleView = (row) => {
     this.props.navigate(getUserDashboardRoute(getRoleName(this.state.auth)) + '/sales/view/' + row.sale_id);
   }
@@ -154,6 +173,9 @@ class SaleProductsPage extends Component {
     this.setState({
       queryParams: {
         ...this.state.queryParams,
+        page: 1,
+        all: 0,
+        limit: 50,
         category_id: val
       }
     })
@@ -179,7 +201,19 @@ class SaleProductsPage extends Component {
   }
 
   handleSearch = () => {
-    this.loadListData();
+    this.setState(
+      {
+        queryParams: {
+          ...this.state.queryParams,
+          page: 1,
+          all: 0,
+          limit: 50,
+        },
+      },
+      () => {
+        this.loadListData();
+      },
+    );
   }
 
   handleCardClick = (category_id) => {
@@ -187,11 +221,14 @@ class SaleProductsPage extends Component {
     this.setState({
       queryParams: {
         ...this.state.queryParams,
-        category_id: category_id
+        page: 1,
+        all: 0,
+        limit: 50,
+        category_id: category_id,
       }
     }, () => {
       this.handleSearch()
-    })
+    });
   }
 
   render() {
@@ -294,7 +331,9 @@ class SaleProductsPage extends Component {
               page={this.state.queryParams.page}
               limit={this.state.queryParams.limit}
               total={this.state.items.length}
-              havePagination={false}
+              haveAllOption={true}
+              //havePagination={false}
+              handlePagination={this.handlePagination}
               actions={this.tableActions}
             />
           </Grid>
