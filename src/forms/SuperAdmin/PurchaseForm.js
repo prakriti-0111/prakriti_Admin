@@ -1035,17 +1035,23 @@ class PurchaseForm extends React.Component {
           this.props.dispatch({
             type: RESET_PURCHASE,
           });
-          if (this.props.query.get("purchase_on_approval") == 0) {
-            this.props.navigate(
-              getUserDashboardRoute(getRoleName(this.state.auth)) +
-                "/purchase-on-approve",
-            );
-          } else {
-            this.props.navigate(
-              getUserDashboardRoute(getRoleName(this.state.auth)) +
-                "/purchases",
-            );
-          }
+
+          // delete all pre-store items after successful creation
+          this.props.actions.prePurchaseDelete("all");
+
+          setTimeout(() => {
+            if (this.props.query.get("purchase_on_approval") == 0) {
+              this.props.navigate(
+                getUserDashboardRoute(getRoleName(this.state.auth)) +
+                  "/purchase-on-approve",
+              );
+            } else {
+              this.props.navigate(
+                getUserDashboardRoute(getRoleName(this.state.auth)) +
+                  "/purchases",
+              );
+            }
+          }, 1500);
         } else {
           this.setState({
             submitting: false,
@@ -2429,7 +2435,6 @@ class PurchaseForm extends React.Component {
           return_sale_id: return_sale_data ? return_sale_data.id : "",
         };
         this.props.actions.purchaseStore(data);
-        this.props.actions.prePurchaseDelete("all");
       } else {
         // For edit mode, prepare data with all products (edit + pre-store)
         let updateData = {
