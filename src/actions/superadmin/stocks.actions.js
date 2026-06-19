@@ -104,3 +104,7 @@ export const updateStockImage = async(data) => {
     return await axios.post(`/superadmin/stocks/update-image`, data);
 }
 
+export const downloadCurrentStockReport = async(params) => {
+    params = objectToQuery(params, true)
+    return await axios.get(`/superadmin/stocks/current-stock-report${params}`);
+}
