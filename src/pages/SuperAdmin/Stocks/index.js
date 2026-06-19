@@ -29,6 +29,7 @@ import {
   getPriceByCategory,
   getCartItemById,
   updateStockImage,
+  downloadCurrentStockReport
 } from "actions/superadmin/stocks.actions";
 import { subCategoryList } from "actions/superadmin/subCategory.actions";
 import { cartStore, cartList } from "actions/superadmin/cart.actions";
@@ -62,6 +63,8 @@ import {
   toBase64,
   isAdmin,
   isMainSuperAdmin,
+  objectToQuery,
+  getAuthData,
 } from "src/helpers/helper";
 import _ from "lodash";
 import jsQR from "jsqr";
@@ -69,6 +72,7 @@ import extractPdfData from "src/helpers/scanPdf";
 import SearchIcon from "@mui/icons-material/Search";
 import CloseIcon from "@mui/icons-material/Close";
 import CloudUploadIcon from "@mui/icons-material/CloudUpload";
+import FileDownloadIcon from '@mui/icons-material/FileDownload';
 
 class StockPage extends Component {
   constructor(props) {
@@ -137,6 +141,7 @@ class StockPage extends Component {
       // View-only image dialog for non-superadmin users
       imageViewDialogOpen: false,
       imageViewPath: "",
+      downloadingReport: false,
     };
 
     this.columns = [
@@ -515,6 +520,51 @@ class StockPage extends Component {
   loadListData = () => {
     console.log("loadListData", this.state.queryParams);
     this.props.actions.stocksList(this.state.queryParams);
+  };
+
+  downloadCurrentStockReport = async () => {
+    try {
+      this.setState({ downloadingReport: true });
+      /*const token = getAuthData("access_token");
+      const query = objectToQuery(this.state.queryParams, true);
+      const res = await fetch(`/api/superadmin/stocks/current-stock-report${query}`, {
+        headers: { Authorization: token ? "Bearer " + token : "" },
+      });*/
+      const res = await downloadCurrentStockReport(this.state.queryParams);
+      console.log("Report response:", res);
+      if (!res.statusText || res.statusText.toLowerCase() !== "ok") {
+        this.props.enqueueSnackbar("Failed to download report", { variant: "error" });
+        return;
+      }
+      const contentType = res.headers.get("content-type") || "";
+      //console.log("Report response content-type:", contentType);
+      if (contentType.includes("application/json")) {
+        //const data = await res.json();
+        //console.log("Report response data:", data);
+        if (res.data && res.data.data && res.data.data.url) {
+          // open the returned file URL
+          const win = window.open(res.data.data.url, "_blank");
+          if (!win) {
+            // fallback: download via anchor
+            const a = document.createElement("a");
+            a.href = res.data.data.url;
+            a.download = res.data.data.file_name || "current-stock-report.pdf";
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+          }
+        } else {
+          this.props.enqueueSnackbar("Failed to download report", { variant: "error" });
+        }
+      } else {
+        this.props.enqueueSnackbar("Invalid content type. Failed to download report", { variant: "error" });
+      }
+    } catch (err) {
+      console.error(err);
+      this.props.enqueueSnackbar("Download failed", { variant: "error" });
+    } finally {
+      this.setState({ downloadingReport: false });
+    }
   };
 
   handleView = (row) => {
@@ -1994,6 +2044,21 @@ class StockPage extends Component {
                   </div>
                 </FormControl>
               </Grid>
+              {(isMainSuperAdmin() || isAdmin()) && (
+                <Grid item xs={12} md={12} sx={{ mb: 1 }} className="create-input">
+                  
+                  {this.state.downloadingReport ? (
+                    <CircularProgress size={30} />
+                  ) : (
+                    <Button
+                      variant="contained"
+                      onClick={this.downloadCurrentStockReport}
+                    >
+                      <span className="download-text">Current Stock Report</span><FileDownloadIcon />
+                    </Button>
+                  )}
+                </Grid>
+              )}
               {/*<Grid item xs={6} md={3} className='create-input'>
                 <FormControl fullWidth>
                   <TextField
