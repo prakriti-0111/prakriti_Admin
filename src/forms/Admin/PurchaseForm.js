@@ -675,53 +675,68 @@ class PurchaseForm extends React.Component {
     }
 
     handleDeleteConfirm = () => {
-        let formValues = this.state.formValues;
-        formValues.products.splice(this.state.deletingIndex, 1);
+        const formValues = {
+            ...this.state.formValues,
+            products: [...this.state.formValues.products],
+        };
+        const updatedProducts = formValues.products.filter((_, index) => index !== this.state.deletingIndex);
         this.setState({
-            formValues: formValues,
+            formValues: {
+                ...formValues,
+                products: updatedProducts,
+            },
             deleteDialogOpen: false
         }, () => {
-            this.handleCalculateMainPrice()
+            this.handleCalculateMainPrice(updatedProducts)
         })
     }
 
-    handleCalculateMainPrice = () => {
-        let formValues = this.state.formValues;
-        let return_products = this.state.return_products;
+    getCalculatedMainPriceValues = (products = this.state.formValues.products) => {
+        const currentFormValues = this.state.formValues;
         let taxable_amount = 0, tax = 0, total_amount = 0, discount = 0, total_payable = 0, paid_amount = 0, due_amount = 0, cgst_tax = 0, sgst_tax = 0, igst_tax = 0, total_sub_total = 0;
-        for (let i = 0; i < formValues.products.length; i++) {
+        for (let i = 0; i < products.length; i++) {
             /*if(return_products[i].is_return){
                 continue;
             }*/
-            taxable_amount += (parseFloat(formValues.products[i].sub_price) + parseFloat(formValues.products[i].making_charge) + (formValues.products[i].rep ? parseFloat(formValues.products[i].rep) : 0));
-            tax += formValues.products[i].tax ? parseFloat(formValues.products[i].tax) : 0;
-            total_amount += parseFloat(formValues.products[i].total);
-            cgst_tax += formValues.products[i].cgst_tax ? parseFloat(formValues.products[i].cgst_tax) : 0;
-            sgst_tax += formValues.products[i].sgst_tax ? parseFloat(formValues.products[i].sgst_tax) : 0;
-            igst_tax += formValues.products[i].igst_tax ? parseFloat(formValues.products[i].igst_tax) : 0;
-            total_sub_total += parseFloat(formValues.products[i].sub_price);
-            total_sub_total += parseFloat(formValues.products[i].making_charge);
+            taxable_amount += (parseFloat(products[i].sub_price) + parseFloat(products[i].making_charge) + (products[i].rep ? parseFloat(products[i].rep) : 0));
+            tax += products[i].tax ? parseFloat(products[i].tax) : 0;
+            total_amount += parseFloat(products[i].total);
+            cgst_tax += products[i].cgst_tax ? parseFloat(products[i].cgst_tax) : 0;
+            sgst_tax += products[i].sgst_tax ? parseFloat(products[i].sgst_tax) : 0;
+            igst_tax += products[i].igst_tax ? parseFloat(products[i].igst_tax) : 0;
+            total_sub_total += parseFloat(products[i].sub_price);
+            total_sub_total += parseFloat(products[i].making_charge);
         }
         taxable_amount = priceFormat(taxable_amount, true);
         tax = priceFormat(tax, true);
         total_amount = priceFormat(total_amount, true);
-        if (!isEmpty(formValues.discount)) {
-            discount = parseFloat(formValues.discount);
+        if (!isEmpty(currentFormValues.discount)) {
+            discount = parseFloat(currentFormValues.discount);
         }
         total_payable = priceFormat(total_amount - discount - this.state.return_amount, true);
-        if (!isEmpty(formValues.paid_amount)) {
-            paid_amount = parseFloat(formValues.paid_amount);
+        if (!isEmpty(currentFormValues.paid_amount)) {
+            paid_amount = parseFloat(currentFormValues.paid_amount);
         }
         due_amount = priceFormat(total_payable - paid_amount, true);
-        formValues.taxable_amount = taxable_amount;
-        formValues.tax = tax;
-        formValues.total_amount = total_amount;
-        formValues.total_payable = total_payable;
-        formValues.due_amount = due_amount;
-        formValues.cgst_tax = priceFormat(cgst_tax, true);
-        formValues.sgst_tax = priceFormat(sgst_tax, true);
-        formValues.igst_tax = priceFormat(igst_tax, true);
-        formValues.total_sub_total = priceFormat(total_sub_total);
+        return {
+            taxable_amount,
+            tax,
+            total_amount,
+            total_payable,
+            due_amount,
+            cgst_tax: priceFormat(cgst_tax, true),
+            sgst_tax: priceFormat(sgst_tax, true),
+            igst_tax: priceFormat(igst_tax, true),
+            total_sub_total: priceFormat(total_sub_total),
+        };
+    }
+
+    handleCalculateMainPrice = (products = this.state.formValues.products) => {
+        let formValues = {
+            ...this.state.formValues,
+            products: [...products],
+            ...this.getCalculatedMainPriceValues(products),
+        };
         this.setState({
             formValues: formValues
         });
@@ -736,13 +751,20 @@ class PurchaseForm extends React.Component {
             return false;
         }
         if (!hasErr && formValues.products.length) {
+            const calculatedValues = this.getCalculatedMainPriceValues(formValues.products);
             this.setState({
                 submitting: true
             })
             if (this.state.isCreateFrom) {
-                this.props.actions.purchaseStore(this.state.formValues);
+                this.props.actions.purchaseStore({
+                    ...this.state.formValues,
+                    ...calculatedValues,
+                });
             } else {
-                this.props.actions.purchaseUpdate(this.state.formData.id, this.state.formValues);
+                this.props.actions.purchaseUpdate(this.state.formData.id, {
+                    ...this.state.formValues,
+                    ...calculatedValues,
+                });
             }
         }
     }
