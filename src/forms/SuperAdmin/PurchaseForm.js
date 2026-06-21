@@ -809,8 +809,11 @@ class PurchaseForm extends React.Component {
         );
 
         // Preserve any existing pre-store items already present in state.formValues
-        const existingProducts = (state.formValues && state.formValues.products) || [];
-        const existingPreStore = existingProducts.filter((p) => p && p.source === "pre-store");
+        const existingProducts =
+          (state.formValues && state.formValues.products) || [];
+        const existingPreStore = existingProducts.filter(
+          (p) => p && p.source === "pre-store",
+        );
 
         // Build a map of combined pre-store items keyed by pre_store_id to avoid duplicates
         const combinedPreStoreMap = {};
@@ -930,8 +933,12 @@ class PurchaseForm extends React.Component {
     // When pre-purchase items change in props or state, merge them with
     // existing products. Prefer checking props change (Redux update) so we
     // always incorporate the latest server response.
-    if (this.props.prePurchaseItems != prevProps.prePurchaseItems || this.state.prePurchaseItems != prevState.prePurchaseItems) {
-      const latestPreStore = this.props.prePurchaseItems || this.state.prePurchaseItems || [];
+    if (
+      this.props.prePurchaseItems != prevProps.prePurchaseItems ||
+      this.state.prePurchaseItems != prevState.prePurchaseItems
+    ) {
+      const latestPreStore =
+        this.props.prePurchaseItems || this.state.prePurchaseItems || [];
       console.log("=== PRE-PURCHASE ITEMS UPDATED ===");
       console.log("Latest prePurchaseItems (props/state):", latestPreStore);
 
@@ -962,7 +969,11 @@ class PurchaseForm extends React.Component {
       const mergedProducts = [...currentProducts];
       // Append any new pre-store items that were not present
       Object.values(existingMap).forEach((p) => {
-        if (!mergedProducts.find((mp) => (mp.pre_store_id || mp.id) === (p.pre_store_id || p.id))) {
+        if (
+          !mergedProducts.find(
+            (mp) => (mp.pre_store_id || mp.id) === (p.pre_store_id || p.id),
+          )
+        ) {
           mergedProducts.push(p);
         }
       });
@@ -1022,7 +1033,9 @@ class PurchaseForm extends React.Component {
           },
         });
       } else {
-        console.log("Products already match incoming formData, skipping setState.");
+        console.log(
+          "Products already match incoming formData, skipping setState.",
+        );
       }
     }
 
@@ -2254,9 +2267,15 @@ class PurchaseForm extends React.Component {
       }
     } else if (proIdxData.source === "edit") {
       // For existing products, call the delete API immediately
-      console.log("This is an existing product (source=edit), calling delete API with ID:", proIdxData.id);
+      console.log(
+        "This is an existing product (source=edit), calling delete API with ID:",
+        proIdxData.id,
+      );
       try {
-        await this.props.actions.purchaseProductDelete(this.state.formData.id, proIdxData.id);
+        await this.props.actions.purchaseProductDelete(
+          this.state.formData.id,
+          proIdxData.id,
+        );
         console.log("Existing purchase product deleted successfully via API");
 
         // Fetch the latest purchase data and update the form values so UI refreshes
@@ -2272,13 +2291,15 @@ class PurchaseForm extends React.Component {
             }));
 
             // include current pre-store items (if any)
-            const preStoreProducts = (this.state.prePurchaseItems || []).map((product) => ({
-              ...product,
-              pre_store_id: product.id,
-              id: 0,
-              source: "pre-store",
-              is_new_product: true,
-            }));
+            const preStoreProducts = (this.state.prePurchaseItems || []).map(
+              (product) => ({
+                ...product,
+                pre_store_id: product.id,
+                id: 0,
+                source: "pre-store",
+                is_new_product: true,
+              }),
+            );
 
             const merged = [...editProducts, ...preStoreProducts];
 
@@ -2293,7 +2314,10 @@ class PurchaseForm extends React.Component {
             try {
               this.props.actions.purchasePreStoreList({ all: 1 });
             } catch (err) {
-              console.error('Error refreshing pre-store list after delete:', err);
+              console.error(
+                "Error refreshing pre-store list after delete:",
+                err,
+              );
             }
           }
         } catch (err) {
@@ -2306,12 +2330,15 @@ class PurchaseForm extends React.Component {
 
     // Create new array without mutating the original state
     const updatedProducts = formValues.products.filter(
-      (_, index) => index !== this.state.deletingIndex
+      (_, index) => index !== this.state.deletingIndex,
     );
 
     console.log("Products before deletion:", formValues.products.length);
     console.log("Products after deletion:", updatedProducts.length);
-    console.log("Remaining product IDs:", updatedProducts.map((p) => p.id));
+    console.log(
+      "Remaining product IDs:",
+      updatedProducts.map((p) => p.id),
+    );
 
     this.setState(
       {
@@ -2354,22 +2381,12 @@ class PurchaseForm extends React.Component {
       taxable_amount +=
         parseFloat(products[i].sub_price) +
         parseFloat(products[i].making_charge) +
-        (products[i].rep
-          ? parseFloat(products[i].rep)
-          : 0);
-      tax += products[i].tax
-        ? parseFloat(products[i].tax)
-        : 0;
+        (products[i].rep ? parseFloat(products[i].rep) : 0);
+      tax += products[i].tax ? parseFloat(products[i].tax) : 0;
       total_amount += parseFloat(products[i].total);
-      cgst_tax += products[i].cgst_tax
-        ? parseFloat(products[i].cgst_tax)
-        : 0;
-      sgst_tax += products[i].sgst_tax
-        ? parseFloat(products[i].sgst_tax)
-        : 0;
-      igst_tax += products[i].igst_tax
-        ? parseFloat(products[i].igst_tax)
-        : 0;
+      cgst_tax += products[i].cgst_tax ? parseFloat(products[i].cgst_tax) : 0;
+      sgst_tax += products[i].sgst_tax ? parseFloat(products[i].sgst_tax) : 0;
+      igst_tax += products[i].igst_tax ? parseFloat(products[i].igst_tax) : 0;
       total_sub_total += parseFloat(products[i].sub_price);
       total_sub_total += parseFloat(products[i].making_charge);
     }
@@ -2431,7 +2448,9 @@ class PurchaseForm extends React.Component {
       return false;
     }
     if (!hasErr && formValues.products.length) {
-      const calculatedTotals = this.getCalculatedPurchaseTotals(formValues.products);
+      const calculatedTotals = this.getCalculatedPurchaseTotals(
+        formValues.products,
+      );
       this.setState({
         submitting: true,
       });
@@ -2453,7 +2472,8 @@ class PurchaseForm extends React.Component {
           ...calculatedTotals,
           // Filter out source, is_new_product, and pre_store_id fields before sending to API
           products: this.state.formValues.products.map((product) => {
-            const { source, is_new_product, pre_store_id, ...cleanProduct } = product;
+            const { source, is_new_product, pre_store_id, ...cleanProduct } =
+              product;
             return cleanProduct;
           }),
         };
@@ -2465,15 +2485,20 @@ class PurchaseForm extends React.Component {
         );
         console.log("Products detail before cleaning:");
         this.state.formValues.products.forEach((p, idx) => {
-          console.log(`  [${idx}] id=${p.id}, source=${p.source}, pre_store_id=${p.pre_store_id}`);
+          console.log(
+            `  [${idx}] id=${p.id}, source=${p.source}, pre_store_id=${p.pre_store_id}`,
+          );
         });
-        
+
         console.log("Products detail after cleaning:");
         updateData.products.forEach((p, idx) => {
           console.log(`  [${idx}] id=${p.id}`);
         });
-        
-        console.log("Product IDs being sent to API:", updateData.products.map(p => p.id));
+
+        console.log(
+          "Product IDs being sent to API:",
+          updateData.products.map((p) => p.id),
+        );
         console.log("Products by source:", {
           edit: this.state.formValues.products.filter(
             (p) => p.source === "edit",
@@ -2482,7 +2507,10 @@ class PurchaseForm extends React.Component {
             (p) => p.source === "pre-store",
           ).length,
         });
-        console.log("Final cleaned products count:", updateData.products.length);
+        console.log(
+          "Final cleaned products count:",
+          updateData.products.length,
+        );
 
         this.props.actions.purchaseUpdate(this.state.formData.id, updateData);
       }
