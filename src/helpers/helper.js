@@ -95,7 +95,7 @@ const compressImageFile = async (file) => {
     maxSizeMB: 2,
     maxWidthOrHeight: 1920,
     useWebWorker: true,
-    initialQuality: 0.85,
+    initialQuality: 0.90,
     fileType: file.type === "image/png" ? "image/png" : "image/jpeg",
     alwaysKeepResolution: false,
     exifOrientation: 1,
@@ -154,9 +154,9 @@ const compressVideoFile = async (file) => {
     }
 
     const isLargeVideo = file.size > 15 * 1024 * 1024;
-    const resolution = isLargeVideo ? "480" : "720";
-    const fps = isLargeVideo ? "20" : "24";
-    const crf = isLargeVideo ? "28" : "24";
+    const resolution = isLargeVideo ? "720" : "1080";
+    const fps = isLargeVideo ? "24" : "30";
+    const crf = isLargeVideo ? "20" : "18";
 
     await ffmpegInstance.writeFile(inputName, await fetchFile(file));
     await ffmpegInstance.exec([
