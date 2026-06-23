@@ -28,11 +28,12 @@ class PurchaseEditPage extends Component {
 
     this.state = {
       id: this.props.params.id,
-      purchase: this.props.purchase,
+      purchase: null,
     };
   }
 
   componentDidMount() {
+    this.props.dispatch({ type: RESET_PURCHASE });
     this.props.actions.purchaseEdit(this.state.id);
   }
 
