@@ -111,5 +111,9 @@ module.exports = {
     port: 8888,
     historyApiFallback: true,
     hot: true,
+    headers: {
+      "Cross-Origin-Opener-Policy": "same-origin",
+      "Cross-Origin-Embedder-Policy": "credentialless",
+    },
   },
 };

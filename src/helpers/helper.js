@@ -92,11 +92,13 @@ const compressImageFile = async (file) => {
   }
 
   const options = {
-    maxSizeMB: 1,
-    maxWidthOrHeight: 1600,
+    maxSizeMB: 2,
+    maxWidthOrHeight: 1920,
     useWebWorker: true,
-    initialQuality: 1,
+    initialQuality: 0.85,
     fileType: file.type === "image/png" ? "image/png" : "image/jpeg",
+    alwaysKeepResolution: false,
+    exifOrientation: 1,
   };
 
   try {
@@ -109,6 +111,7 @@ const compressImageFile = async (file) => {
 };
 
 let ffmpegInstance = null;
+let ffmpegUtils = null;
 
 const compressVideoFile = async (file) => {
   if (!file || !file.type || !file.type.startsWith("video/")) {
@@ -119,13 +122,21 @@ const compressVideoFile = async (file) => {
     return file;
   }
 
+  const ts = Date.now();
+  const inputExt = file.name.split(".").pop() || "mp4";
+  const inputName = `input-${ts}.${inputExt}`;
+  const outputName = `output-${ts}.mp4`;
+
   try {
-    if (!ffmpegInstance) {
-      const [{ FFmpeg }, { fetchFile, toBlobURL }] = await Promise.all([
+    if (!ffmpegUtils) {
+      ffmpegUtils = await Promise.all([
         import("@ffmpeg/ffmpeg"),
         import("@ffmpeg/util"),
       ]);
+    }
+    const [{ FFmpeg }, { fetchFile, toBlobURL }] = ffmpegUtils;
 
+    if (!ffmpegInstance) {
       const ffmpeg = new FFmpeg();
       const baseURL =
         "https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/umd";
@@ -142,49 +153,45 @@ const compressVideoFile = async (file) => {
       ffmpegInstance = ffmpeg;
     }
 
-    const inputName = `input-${Date.now()}.mp4`;
-    const outputName = `output-${Date.now()}.mp4`;
     const isLargeVideo = file.size > 15 * 1024 * 1024;
     const resolution = isLargeVideo ? "480" : "720";
     const fps = isLargeVideo ? "20" : "24";
+    const crf = isLargeVideo ? "28" : "24";
 
     await ffmpegInstance.writeFile(inputName, await fetchFile(file));
     await ffmpegInstance.exec([
-      "-i",
-      inputName,
-      "-vf",
-      `scale=-2:${resolution},fps=${fps}`,
-      "-c:v",
-      "libx264",
-      "-preset",
-      "medium",
-      "-crf",
-      isLargeVideo ? "32" : "28",
-      "-pix_fmt",
-      "yuv420p",
-      "-c:a",
-      "aac",
-      "-b:a",
-      "64k",
-      "-movflags",
-      "+faststart",
+      "-i", inputName,
+      "-vf", `scale=-2:${resolution},fps=${fps}`,
+      "-c:v", "libx264",
+      "-preset", "fast",
+      "-crf", crf,
+      "-pix_fmt", "yuv420p",
+      "-c:a", "aac",
+      "-b:a", "96k",
+      "-movflags", "+faststart",
       outputName,
     ]);
 
     const data = await ffmpegInstance.readFile(outputName);
-    const blob = new Blob([data], { type: "video/mp4" });
+    const blob = new Blob([data.buffer], { type: "video/mp4" });
     const compressedFile = new File(
       [blob],
       file.name.replace(/\.[^.]+$/, ".mp4"),
-      {
-        type: "video/mp4",
-        lastModified: Date.now(),
-      },
+      { type: "video/mp4", lastModified: Date.now() },
     );
+
+    try {
+      await ffmpegInstance.deleteFile(inputName);
+      await ffmpegInstance.deleteFile(outputName);
+    } catch (_) {}
 
     return compressedFile.size < file.size ? compressedFile : file;
   } catch (error) {
-    console.warn("Video compression skipped, using original file:", error);
+    console.error("Video compression failed:", error);
+    try {
+      await ffmpegInstance?.deleteFile(inputName);
+      await ffmpegInstance?.deleteFile(outputName);
+    } catch (_) {}
     return file;
   }
 };
