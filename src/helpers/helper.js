@@ -108,11 +108,18 @@ const compressImageFile = async (file) => {
       return file;
     }
     if (compressedBlob.size < file.size) {
-      return new File([compressedBlob], file.name, {
+      const compressedFile = new File([compressedBlob], file.name, {
         type: compressedBlob.type || file.type,
         lastModified: Date.now(),
       });
+      console.log("Image compressed successfully", {
+        original: file.size,
+        compressed: compressedFile.size,
+        ratio: ((1 - compressedFile.size / file.size) * 100).toFixed(2) + "%",
+      });
+      return compressedFile;
     }
+    console.log("Image compression not beneficial, using original");
     return file;
   } catch (error) {
     console.error("Image compression failed:", error);
@@ -192,7 +199,16 @@ const compressVideoFile = async (file) => {
       return file;
     }
 
-    const blob = new Blob([data.buffer], { type: "video/mp4" });
+    const blob = new Blob([data], { type: "video/mp4" });
+    if (blob.size === 0) {
+      console.warn("Blob size is 0, using original");
+      try {
+        await ffmpegInstance.deleteFile(inputName);
+        await ffmpegInstance.deleteFile(outputName);
+      } catch (_) {}
+      return file;
+    }
+
     const compressedFile = new File(
       [blob],
       file.name.replace(/\.[^.]+$/, ".mp4"),
@@ -204,10 +220,11 @@ const compressVideoFile = async (file) => {
       await ffmpegInstance.deleteFile(outputName);
     } catch (_) {}
 
-    if (compressedFile.size === 0) {
-      console.warn("Compressed file is empty, using original");
-      return file;
-    }
+    console.log("Video compressed successfully", {
+      original: file.size,
+      compressed: compressedFile.size,
+      ratio: ((1 - compressedFile.size / file.size) * 100).toFixed(2) + "%",
+    });
 
     return compressedFile.size < file.size ? compressedFile : file;
   } catch (error) {
@@ -225,6 +242,11 @@ const toBase64 = async (file) => {
     return "";
   }
 
+  if (!(file instanceof File) && !(file instanceof Blob)) {
+    console.error("Invalid file object:", file);
+    return "";
+  }
+
   let uploadFile = file;
 
   if (file.type && file.type.startsWith("image/")) {
@@ -234,12 +256,22 @@ const toBase64 = async (file) => {
   }
 
   return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = (error) => reject(error);
     try {
+      const reader = new FileReader();
+      reader.onload = () => {
+        resolve(reader.result);
+      };
+      reader.onerror = (error) => {
+        console.error("FileReader error:", error);
+        reject(error);
+      };
+      reader.onabort = () => {
+        console.error("FileReader aborted");
+        reject(new Error("FileReader was aborted"));
+      };
       reader.readAsDataURL(uploadFile);
     } catch (error) {
+      console.error("Error in toBase64:", error);
       reject(error);
     }
   });
