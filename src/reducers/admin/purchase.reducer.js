@@ -73,6 +73,7 @@ export default function (state = initialState, action) {
         case ADMIN_RESET_PURCHASE:
             return {
                 ...state,
+                purchase: null,
                 actionCalled: false,
                 createSuccess: false,
                 deleteSuccess: false,
