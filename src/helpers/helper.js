@@ -119,14 +119,6 @@ const compressVideoFile = async (file) => {
     return file;
   }
 
-  const isMp4 =
-    file.type === "video/mp4" ||
-    (file.name && file.name.toLowerCase().endsWith(".mp4"));
-
-  if (!isMp4) {
-    return file;
-  }
-
   try {
     if (!ffmpegInstance) {
       const [{ FFmpeg }, { fetchFile, toBlobURL }] = await Promise.all([
@@ -135,7 +127,8 @@ const compressVideoFile = async (file) => {
       ]);
 
       const ffmpeg = new FFmpeg();
-      const baseURL = "https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm";
+      const baseURL =
+        "https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.6/dist/umd";
       await ffmpeg.load({
         coreURL: await toBlobURL(
           `${baseURL}/ffmpeg-core.js`,
@@ -149,31 +142,30 @@ const compressVideoFile = async (file) => {
       ffmpegInstance = ffmpeg;
     }
 
-    const inputName = "input.mp4";
-    const outputName = "output.mp4";
+    const inputName = `input-${Date.now()}.mp4`;
+    const outputName = `output-${Date.now()}.mp4`;
+    const isLargeVideo = file.size > 15 * 1024 * 1024;
+    const resolution = isLargeVideo ? "480" : "720";
+    const fps = isLargeVideo ? "20" : "24";
 
     await ffmpegInstance.writeFile(inputName, await fetchFile(file));
     await ffmpegInstance.exec([
       "-i",
       inputName,
       "-vf",
-      "scale=-2:720,fps=24",
+      `scale=-2:${resolution},fps=${fps}`,
       "-c:v",
       "libx264",
       "-preset",
-      "slow",
+      "medium",
       "-crf",
-      "30",
-      "-b:v",
-      "1200k",
-      "-maxrate",
-      "1600k",
-      "-bufsize",
-      "2400k",
+      isLargeVideo ? "32" : "28",
+      "-pix_fmt",
+      "yuv420p",
       "-c:a",
       "aac",
       "-b:a",
-      "96k",
+      "64k",
       "-movflags",
       "+faststart",
       outputName,
