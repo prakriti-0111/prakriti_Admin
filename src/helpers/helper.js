@@ -1,5 +1,6 @@
 import _, { isArray } from 'lodash';
 import secureLocalStorage from "react-secure-storage";
+import imageCompression from 'browser-image-compression';
 
 /**
  * get auth token
@@ -66,14 +67,108 @@ const convertToFormData = (data, formData, parentKey) => {
 }
 
 /**
- * Convert file to base64
+ * Compress images before converting to base64 while keeping quality as high as possible.
  */
-const toBase64 = file => new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = error => reject(error);
-});
+const compressImageFile = async (file) => {
+    if (!file || !file.type || !file.type.startsWith('image/')) {
+        return file;
+    }
+
+    const options = {
+        maxSizeMB: 1,
+        maxWidthOrHeight: 1600,
+        useWebWorker: true,
+        initialQuality: 1,
+        fileType: file.type === 'image/png' ? 'image/png' : 'image/jpeg',
+    };
+
+    try {
+        const compressedFile = await imageCompression(file, options);
+        return compressedFile.size < file.size ? compressedFile : file;
+    } catch (error) {
+        console.error('Image compression failed:', error);
+        return file;
+    }
+};
+
+let ffmpegInstance = null;
+
+const compressVideoFile = async (file) => {
+    if (!file || !file.type || !file.type.startsWith('video/')) {
+        return file;
+    }
+
+    try {
+        if (!ffmpegInstance) {
+            const [{ FFmpeg }, { fetchFile, toBlobURL }] = await Promise.all([
+                import('@ffmpeg/ffmpeg'),
+                import('@ffmpeg/util')
+            ]);
+
+            const ffmpeg = new FFmpeg();
+            const baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm';
+            await ffmpeg.load({
+                coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, 'text/javascript'),
+                wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, 'application/wasm'),
+            });
+            ffmpegInstance = ffmpeg;
+        }
+
+        const inputExtension = file.name.split('.').pop() || 'mp4';
+        const inputName = `input.${inputExtension}`;
+        const outputName = 'output.mp4';
+
+        await ffmpegInstance.writeFile(inputName, await fetchFile(file));
+        await ffmpegInstance.exec([
+            '-i',
+            inputName,
+            '-vf',
+            'scale=-2:720',
+            '-c:v',
+            'libx264',
+            '-preset',
+            'medium',
+            '-crf',
+            '28',
+            '-c:a',
+            'aac',
+            '-b:a',
+            '128k',
+            '-movflags',
+            '+faststart',
+            outputName,
+        ]);
+
+        const data = await ffmpegInstance.readFile(outputName);
+        const blob = new Blob([data], { type: 'video/mp4' });
+        return new File([blob], file.name.replace(/\.[^.]+$/, '.mp4'), {
+            type: 'video/mp4',
+            lastModified: Date.now(),
+        });
+    } catch (error) {
+        console.error('Video compression failed:', error);
+        return file;
+    }
+};
+
+const toBase64 = async (file) => {
+    if (!file) {
+        return '';
+    }
+
+    const uploadFile = file.type && file.type.startsWith('image/')
+        ? await compressImageFile(file)
+        : file.type && file.type.startsWith('video/')
+            ? await compressVideoFile(file)
+            : file;
+
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(uploadFile);
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = error => reject(error);
+    });
+};
 
 /**
  * get only values from array by specefic column
