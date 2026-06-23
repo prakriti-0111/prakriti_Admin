@@ -102,8 +102,18 @@ const compressImageFile = async (file) => {
   };
 
   try {
-    const compressedFile = await imageCompression(file, options);
-    return compressedFile.size < file.size ? compressedFile : file;
+    const compressedBlob = await imageCompression(file, options);
+    if (!compressedBlob || compressedBlob.size === 0) {
+      console.warn("Compression resulted in empty file, using original");
+      return file;
+    }
+    if (compressedBlob.size < file.size) {
+      return new File([compressedBlob], file.name, {
+        type: compressedBlob.type || file.type,
+        lastModified: Date.now(),
+      });
+    }
+    return file;
   } catch (error) {
     console.error("Image compression failed:", error);
     return file;
@@ -173,6 +183,15 @@ const compressVideoFile = async (file) => {
     ]);
 
     const data = await ffmpegInstance.readFile(outputName);
+    if (!data || data.length === 0) {
+      console.warn("Video compression resulted in empty file, using original");
+      try {
+        await ffmpegInstance.deleteFile(inputName);
+        await ffmpegInstance.deleteFile(outputName);
+      } catch (_) {}
+      return file;
+    }
+
     const blob = new Blob([data.buffer], { type: "video/mp4" });
     const compressedFile = new File(
       [blob],
@@ -184,6 +203,11 @@ const compressVideoFile = async (file) => {
       await ffmpegInstance.deleteFile(inputName);
       await ffmpegInstance.deleteFile(outputName);
     } catch (_) {}
+
+    if (compressedFile.size === 0) {
+      console.warn("Compressed file is empty, using original");
+      return file;
+    }
 
     return compressedFile.size < file.size ? compressedFile : file;
   } catch (error) {
@@ -201,18 +225,23 @@ const toBase64 = async (file) => {
     return "";
   }
 
-  const uploadFile =
-    file.type && file.type.startsWith("image/")
-      ? await compressImageFile(file)
-      : file.type && file.type.startsWith("video/")
-        ? await compressVideoFile(file)
-        : file;
+  let uploadFile = file;
+
+  if (file.type && file.type.startsWith("image/")) {
+    uploadFile = await compressImageFile(file);
+  } else if (file.type && file.type.startsWith("video/")) {
+    uploadFile = await compressVideoFile(file);
+  }
 
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
-    reader.readAsDataURL(uploadFile);
     reader.onload = () => resolve(reader.result);
     reader.onerror = (error) => reject(error);
+    try {
+      reader.readAsDataURL(uploadFile);
+    } catch (error) {
+      reject(error);
+    }
   });
 };
 
