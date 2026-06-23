@@ -240,26 +240,13 @@ export const purchaseDelete = (id, data) => {
 }
 
 export const prePurchaseDelete = (id, data) => {
-    return (dispatch) => {
-        axios.delete(`/superadmin/purchases/pre-purchase-delete/${id}`, data)
-        .then(response => {
-            
-        })
-        .catch(error => {
-        })
-    }
+    // Return the axios promise so callers can await the result
+    return axios.delete(`/superadmin/purchases/pre-purchase-delete/${id}`, data);
 }
 
 export const purchaseProductDelete = (purchaseId, productId) => {
-    return (dispatch) => {
-        axios.delete(`/superadmin/purchases/${purchaseId}/products/${productId}`)
-        .then(response => {
-            console.log("Purchase product deleted:", response);
-        })
-        .catch(error => {
-            console.error("Error deleting purchase product:", error);
-        })
-    }
+    // Return the axios promise so callers can await the deletion
+    return axios.delete(`/superadmin/purchases/${purchaseId}/products/${productId}`);
 }
 
 export const purchaseNewInvoiceNumber = () => {
