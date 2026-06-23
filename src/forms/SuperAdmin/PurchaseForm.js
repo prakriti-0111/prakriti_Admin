@@ -309,11 +309,76 @@ class PurchaseForm extends React.Component {
     this.debouncedFetchData = _.debounce(this.fetchData, 500); // Debounce API calls with a 500ms delay
   }
 
+  // Reset local component state related to the form when entering with
+  // a new `formData` (or when mounting). This avoids stale values
+  // persisting when navigating between edit pages.
+  resetLocalFormState = (formData) => {
+    const normalizedType = resolvePurchaseType(formData, formData);
+    const normalizedFormData = formData
+      ? {
+          ...formData,
+          type: normalizedType,
+        }
+      : null;
+
+    const defaultFormValues = normalizedFormData != null
+      ? { ...normalizedFormData }
+      : {
+          supplier_id: "",
+          invoice_number: "",
+          invoice_date: moment().format("DD/MM/YYYY"),
+          products: this.props.prePurchaseItems || [],
+          notes: "",
+          payment_mode: "cash",
+          transaction_no: "",
+          cheque_no: "",
+          taxable_amount: "",
+          tax_percentage: "",
+          tax: "",
+          cgst_tax: "",
+          sgst_tax: "",
+          igst_tax: "",
+          total_amount: "",
+          discount: "",
+          total_payable: "",
+          paid_amount: "",
+          due_amount: "",
+          due_date: "",
+          total_sub_total: "",
+          type: "product",
+          advance_amount: 0,
+          pay_from_advance: false,
+        };
+
+    const defaults = this.getDefaultProductFormData();
+
+    // Only reset form-specific pieces; keep lists fetched from props intact.
+    this.setState({
+      formData: normalizedFormData,
+      isCreateFrom: !normalizedFormData,
+      formValues: defaultFormValues,
+      productFormValues: defaults.productFormValues,
+      productFormErrors: defaults.productFormErrors,
+      materialFormErrors: defaults.materialFormErrors,
+      deleteDialogOpen: false,
+      deletingIndex: 0,
+      submitting: false,
+      deleteLoading: false,
+      return_products: [],
+      qrScannerOpen: false,
+      qrScanner: null,
+      qrScannerError: null,
+      scannedFields: { certificate_no: false },
+    });
+  };
+
   resolvePurchaseType = (source = {}, fallback = null) => {
     return resolvePurchaseType(source, fallback);
   };
 
   componentDidMount() {
+    // Ensure local state is reset for the incoming props.formData on mount
+    this.resetLocalFormState(this.props.formData);
     this.props.actions.purchasePreStoreList({ all: 1 });
     this.props.actions.productList({ all: 1, purity_price: 1 });
     this.props.actions.categoryList({ all: 1 });
@@ -321,7 +386,8 @@ class PurchaseForm extends React.Component {
     this.props.actions.employeeList({ all: 1, role_id: 10 });
     this.props.actions.unitList({ all: 1 });
     this.props.actions.materialList({ all: 1 });
-    if (this.state.formData) {
+    if (this.props.formData) {
+      // initialize from props (resetLocalFormState already set formValues)
       this.initializeFormData();
     }
 
@@ -385,6 +451,15 @@ class PurchaseForm extends React.Component {
       if (scannerState.video && scannerState.video.srcObject) {
         scannerState.video.srcObject = null;
       }
+    }
+    // Reset purchase-related Redux state when unmounting so that
+    // reopening the form with a different id doesn't retain old data.
+    try {
+      if (this.props && this.props.dispatch) {
+        this.props.dispatch({ type: RESET_PURCHASE });
+      }
+    } catch (e) {
+      console.error('Failed to dispatch RESET_PURCHASE on unmount', e);
     }
   }
 
@@ -1002,6 +1077,11 @@ class PurchaseForm extends React.Component {
         },
       },
       () => {
+        // Recalculate totals immediately after initializing form values
+        if (typeof this.handleCalculateMainPrice === "function") {
+          this.handleCalculateMainPrice();
+        }
+        // Fetch supplier details shortly after mount
         setTimeout(() => {
           this.getSupplierDetails();
         }, 1000);
@@ -1010,10 +1090,16 @@ class PurchaseForm extends React.Component {
   };
 
   componentDidUpdate(prevProps, prevState) {
-    // Only initialize when formData reference actually changed
-    if (this.props.formData != prevProps.formData) {
-      console.log("=== FORM DATA CHANGED ===");
+    // If incoming formData id changed (navigated to a different purchase),
+    // reset local state and reinitialize to avoid stale values.
+    const incomingId = this.props.formData && this.props.formData.id;
+    const prevId = prevProps.formData && prevProps.formData.id;
+    if (incomingId !== prevId) {
+      console.log("=== FORM DATA ID CHANGED (or mounted) ===");
       console.log("New formData:", this.props.formData);
+      // Reset local pieces of state to defaults for the new formData
+      this.resetLocalFormState(this.props.formData);
+      // Then initialize merged products etc.
       this.initializeFormData();
     }
 
@@ -1117,12 +1203,20 @@ class PurchaseForm extends React.Component {
       if (!_.isEqual(this.state.formValues.products, incomingProducts)) {
         console.log("=== FIXING MISSING PRODUCTS ===");
         console.log("formData.products:", incomingProducts);
-        this.setState({
-          formValues: {
-            ...this.state.formValues,
-            products: filteredIncoming,
+        this.setState(
+          {
+            formValues: {
+              ...this.state.formValues,
+              products: filteredIncoming,
+            },
           },
-        });
+          () => {
+            // Ensure totals recalc after injecting products
+            if (typeof this.handleCalculateMainPrice === "function") {
+              this.handleCalculateMainPrice();
+            }
+          },
+        );
       } else {
         console.log(
           "Products already match incoming formData, skipping setState.",

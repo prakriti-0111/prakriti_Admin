@@ -532,8 +532,8 @@ class StockPage extends Component {
       });*/
       const res = await downloadCurrentStockReport(this.state.queryParams);
       console.log("Report response:", res);
-      if (!res.statusText || res.statusText.toLowerCase() !== "ok") {
-        this.props.enqueueSnackbar("Failed to download report", { variant: "error" });
+      if (!res.status || res.status != 200) {
+        this.props.enqueueSnackbar("Failed to download report, Response Status issue.", { variant: "error" });
         return;
       }
       const contentType = res.headers.get("content-type") || "";
@@ -554,7 +554,7 @@ class StockPage extends Component {
             a.remove();
           }
         } else {
-          this.props.enqueueSnackbar("Failed to download report", { variant: "error" });
+          this.props.enqueueSnackbar("Failed to download report, data url not found.", { variant: "error" });
         }
       } else {
         this.props.enqueueSnackbar("Invalid content type. Failed to download report", { variant: "error" });
