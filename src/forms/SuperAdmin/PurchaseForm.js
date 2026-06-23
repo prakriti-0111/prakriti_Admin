@@ -257,6 +257,17 @@ class PurchaseForm extends React.Component {
       deleteDialogOpen: false,
       deletingIndex: 0,
       submitting: false,
+      deleteLoading: false,
+      // restore any locally deleted ids from sessionStorage so optimistic
+      // deletions survive a hot-reload/refresh until server confirms.
+      locallyDeletedProductIds: (() => {
+        try {
+          const raw = window.sessionStorage.getItem("locallyDeletedProductIds");
+          return raw ? JSON.parse(raw) : [];
+        } catch (e) {
+          return [];
+        }
+      })(),
       ...this.getDefaultProductFormData(),
       actionCalled: this.props.actionCalled,
       createSuccess: this.props.createSuccess,
@@ -298,11 +309,76 @@ class PurchaseForm extends React.Component {
     this.debouncedFetchData = _.debounce(this.fetchData, 500); // Debounce API calls with a 500ms delay
   }
 
+  // Reset local component state related to the form when entering with
+  // a new `formData` (or when mounting). This avoids stale values
+  // persisting when navigating between edit pages.
+  resetLocalFormState = (formData) => {
+    const normalizedType = resolvePurchaseType(formData, formData);
+    const normalizedFormData = formData
+      ? {
+          ...formData,
+          type: normalizedType,
+        }
+      : null;
+
+    const defaultFormValues = normalizedFormData != null
+      ? { ...normalizedFormData }
+      : {
+          supplier_id: "",
+          invoice_number: "",
+          invoice_date: moment().format("DD/MM/YYYY"),
+          products: this.props.prePurchaseItems || [],
+          notes: "",
+          payment_mode: "cash",
+          transaction_no: "",
+          cheque_no: "",
+          taxable_amount: "",
+          tax_percentage: "",
+          tax: "",
+          cgst_tax: "",
+          sgst_tax: "",
+          igst_tax: "",
+          total_amount: "",
+          discount: "",
+          total_payable: "",
+          paid_amount: "",
+          due_amount: "",
+          due_date: "",
+          total_sub_total: "",
+          type: "product",
+          advance_amount: 0,
+          pay_from_advance: false,
+        };
+
+    const defaults = this.getDefaultProductFormData();
+
+    // Only reset form-specific pieces; keep lists fetched from props intact.
+    this.setState({
+      formData: normalizedFormData,
+      isCreateFrom: !normalizedFormData,
+      formValues: defaultFormValues,
+      productFormValues: defaults.productFormValues,
+      productFormErrors: defaults.productFormErrors,
+      materialFormErrors: defaults.materialFormErrors,
+      deleteDialogOpen: false,
+      deletingIndex: 0,
+      submitting: false,
+      deleteLoading: false,
+      return_products: [],
+      qrScannerOpen: false,
+      qrScanner: null,
+      qrScannerError: null,
+      scannedFields: { certificate_no: false },
+    });
+  };
+
   resolvePurchaseType = (source = {}, fallback = null) => {
     return resolvePurchaseType(source, fallback);
   };
 
   componentDidMount() {
+    // Ensure local state is reset for the incoming props.formData on mount
+    this.resetLocalFormState(this.props.formData);
     this.props.actions.purchasePreStoreList({ all: 1 });
     this.props.actions.productList({ all: 1, purity_price: 1 });
     this.props.actions.categoryList({ all: 1 });
@@ -310,12 +386,48 @@ class PurchaseForm extends React.Component {
     this.props.actions.employeeList({ all: 1, role_id: 10 });
     this.props.actions.unitList({ all: 1 });
     this.props.actions.materialList({ all: 1 });
-    if (this.state.formData) {
+    if (this.props.formData) {
+      // initialize from props (resetLocalFormState already set formValues)
       this.initializeFormData();
     }
 
     this.getNewInvoiceNumber();
   }
+
+  // Return a canonical deletion key for a product depending on its source
+  getDeletedKey = (product) => {
+    if (!product) return null;
+    const id = product.pre_store_id || product.id || product.product_id || 0;
+    if (product.source === "pre-store" || product.is_new_product) return `pre_${id}`;
+    if (product.source === "edit" || (product.id && !product.is_new_product)) return `edit_${id}`;
+    return `product_${id}`;
+  };
+
+  // Check whether a product (or id) is present in the locallyDeletedProductIds list.
+  // The list may contain numeric ids or prefixed keys like 'edit_123' or 'pre_456'.
+  isLocallyDeleted = (productOrId) => {
+    const list = this.state.locallyDeletedProductIds || [];
+    if (!productOrId) return false;
+    // Accept either an object or a primitive id
+    if (typeof productOrId === "object") {
+      const p = productOrId || {};
+      const ids = [p.id, p.pre_store_id, p.product_id].filter((x) => x !== undefined && x !== null && x !== 0);
+      for (const id of ids) {
+        if (list.includes(id)) return true;
+        if (list.includes(`edit_${id}`)) return true;
+        if (list.includes(`pre_${id}`)) return true;
+        if (list.includes(`product_${id}`)) return true;
+      }
+      return false;
+    }
+    // primitive id
+    const id = productOrId;
+    if (list.includes(id)) return true;
+    if (list.includes(`edit_${id}`)) return true;
+    if (list.includes(`pre_${id}`)) return true;
+    if (list.includes(`product_${id}`)) return true;
+    return false;
+  };
 
   componentWillUnmount() {
     // Stop and clear QR scanner if it exists
@@ -339,6 +451,15 @@ class PurchaseForm extends React.Component {
       if (scannerState.video && scannerState.video.srcObject) {
         scannerState.video.srcObject = null;
       }
+    }
+    // Reset purchase-related Redux state when unmounting so that
+    // reopening the form with a different id doesn't retain old data.
+    try {
+      if (this.props && this.props.dispatch) {
+        this.props.dispatch({ type: RESET_PURCHASE });
+      }
+    } catch (e) {
+      console.error('Failed to dispatch RESET_PURCHASE on unmount', e);
     }
   }
 
@@ -732,6 +853,24 @@ class PurchaseForm extends React.Component {
   };
 
   static getDerivedStateFromProps(props, state) {
+    // helper to check whether a product (by edit id, product_id or pre_store_id)
+    // has been locally deleted (supports prefixed keys in sessionStorage).
+    const isLocallyDeleted = (p) => {
+      const ld = state.locallyDeletedProductIds || [];
+      if (!p) return false;
+      const editKey = p.id ? `edit_${p.id}` : null;
+      const prodKey = p.product_id ? `product_${p.product_id}` : null;
+      const preKey = p.pre_store_id ? `pre_${p.pre_store_id}` : null;
+      return (
+        (editKey && ld.includes(editKey)) ||
+        (prodKey && ld.includes(prodKey)) ||
+        (preKey && ld.includes(preKey)) ||
+        // fallback for legacy numeric ids
+        (p.id && ld.includes(p.id)) ||
+        (p.product_id && ld.includes(p.product_id)) ||
+        (p.pre_store_id && ld.includes(p.pre_store_id))
+      );
+    };
     let update = {};
 
     if (props.supplierList !== state.supplierList) {
@@ -773,7 +912,13 @@ class PurchaseForm extends React.Component {
     if (props.subCategoryList !== state.subCategoryList) {
       update.subCategoryList = props.subCategoryList;
     }
-    if (props.formData !== state.formData) {
+    // Only treat incoming formData as changed when the purchase id differs
+    // from the current state.formData. This avoids overwriting optimistic
+    // state updates (like deletions) that temporarily modify state.formData
+    // but are not yet reflected in props from Redux.
+    const incomingFormId = props.formData && props.formData.id;
+    const currentFormId = state.formData && state.formData.id;
+    if (incomingFormId !== currentFormId) {
       const normalizedType = resolvePurchaseType(
         props.formData,
         props.formData,
@@ -790,12 +935,14 @@ class PurchaseForm extends React.Component {
         console.log("props.formData.products:", props.formData.products);
         console.log("state.prePurchaseItems:", state.prePurchaseItems);
 
-        // Mark products from edit API with source
-        let editProducts = (props.formData.products || []).map((product) => ({
-          ...product,
-          source: "edit",
-          is_new_product: false,
-        }));
+        // Mark products from edit API with source, but exclude any IDs deleted locally
+        let editProducts = (props.formData.products || [])
+          .filter((product) => !isLocallyDeleted(product))
+          .map((product) => ({
+            ...product,
+            source: "edit",
+            is_new_product: false,
+          }));
 
         // Mark pre-store items with source
         let preStoreProducts = (state.prePurchaseItems || []).map(
@@ -809,8 +956,11 @@ class PurchaseForm extends React.Component {
         );
 
         // Preserve any existing pre-store items already present in state.formValues
-        const existingProducts = (state.formValues && state.formValues.products) || [];
-        const existingPreStore = existingProducts.filter((p) => p && p.source === "pre-store");
+        const existingProducts =
+          (state.formValues && state.formValues.products) || [];
+        const existingPreStore = existingProducts.filter(
+          (p) => p && p.source === "pre-store",
+        );
 
         // Build a map of combined pre-store items keyed by pre_store_id to avoid duplicates
         const combinedPreStoreMap = {};
@@ -826,6 +976,21 @@ class PurchaseForm extends React.Component {
 
         // Merge edit products with the combined pre-store list
         let mergedProducts = [...editProducts, ...combinedPreStore];
+
+        // Exclude any products that were deleted locally (by id or pre_store_id)
+        mergedProducts = mergedProducts.filter((p) => !isLocallyDeleted(p));
+
+        // Deduplicate mergedProducts by preferring edit items over pre-store items
+        const seen = new Set();
+        const deduped = [];
+        mergedProducts.forEach((p) => {
+          const key = p && (p.pre_store_id ? `pre_${p.pre_store_id}` : `edit_${p.id || p.product_id || 0}`);
+          if (!seen.has(key)) {
+            seen.add(key);
+            deduped.push(p);
+          }
+        });
+        mergedProducts = deduped;
 
         console.log("Merged products:", mergedProducts);
 
@@ -875,16 +1040,16 @@ class PurchaseForm extends React.Component {
       return product;
     });
 
-    // Merge with pre-store items
-    let preStoreProducts = (this.state.prePurchaseItems || []).map(
-      (product) => ({
+    // Merge with pre-store items (skip any locally deleted pre-store ids)
+    let preStoreProducts = (this.state.prePurchaseItems || [])
+      .filter((product) => product && !this.isLocallyDeleted(product))
+      .map((product) => ({
         ...product,
         pre_store_id: product.id,
         id: 0,
         source: "pre-store",
         is_new_product: true,
-      }),
-    );
+      }));
 
     formValues.products = [...formValues.products, ...preStoreProducts];
 
@@ -912,6 +1077,11 @@ class PurchaseForm extends React.Component {
         },
       },
       () => {
+        // Recalculate totals immediately after initializing form values
+        if (typeof this.handleCalculateMainPrice === "function") {
+          this.handleCalculateMainPrice();
+        }
+        // Fetch supplier details shortly after mount
         setTimeout(() => {
           this.getSupplierDetails();
         }, 1000);
@@ -920,18 +1090,28 @@ class PurchaseForm extends React.Component {
   };
 
   componentDidUpdate(prevProps, prevState) {
-    // Only initialize when formData reference actually changed
-    if (this.props.formData != prevProps.formData) {
-      console.log("=== FORM DATA CHANGED ===");
+    // If incoming formData id changed (navigated to a different purchase),
+    // reset local state and reinitialize to avoid stale values.
+    const incomingId = this.props.formData && this.props.formData.id;
+    const prevId = prevProps.formData && prevProps.formData.id;
+    if (incomingId !== prevId) {
+      console.log("=== FORM DATA ID CHANGED (or mounted) ===");
       console.log("New formData:", this.props.formData);
+      // Reset local pieces of state to defaults for the new formData
+      this.resetLocalFormState(this.props.formData);
+      // Then initialize merged products etc.
       this.initializeFormData();
     }
 
     // When pre-purchase items change in props or state, merge them with
     // existing products. Prefer checking props change (Redux update) so we
     // always incorporate the latest server response.
-    if (this.props.prePurchaseItems != prevProps.prePurchaseItems || this.state.prePurchaseItems != prevState.prePurchaseItems) {
-      const latestPreStore = this.props.prePurchaseItems || this.state.prePurchaseItems || [];
+    if (
+      this.props.prePurchaseItems != prevProps.prePurchaseItems ||
+      this.state.prePurchaseItems != prevState.prePurchaseItems
+    ) {
+      const latestPreStore =
+        this.props.prePurchaseItems || this.state.prePurchaseItems || [];
       console.log("=== PRE-PURCHASE ITEMS UPDATED ===");
       console.log("Latest prePurchaseItems (props/state):", latestPreStore);
 
@@ -946,6 +1126,8 @@ class PurchaseForm extends React.Component {
 
       // Convert latest pre-store items into product items and merge into map
       latestPreStore.forEach((product) => {
+        // skip any pre-store item that was locally deleted
+        if (product && this.isLocallyDeleted(product)) return;
         const key = product.id;
         if (!existingMap[key]) {
           existingMap[key] = {
@@ -962,7 +1144,11 @@ class PurchaseForm extends React.Component {
       const mergedProducts = [...currentProducts];
       // Append any new pre-store items that were not present
       Object.values(existingMap).forEach((p) => {
-        if (!mergedProducts.find((mp) => (mp.pre_store_id || mp.id) === (p.pre_store_id || p.id))) {
+        if (
+          !mergedProducts.find(
+            (mp) => (mp.pre_store_id || mp.id) === (p.pre_store_id || p.id),
+          )
+        ) {
           mergedProducts.push(p);
         }
       });
@@ -978,7 +1164,8 @@ class PurchaseForm extends React.Component {
             prePurchaseItems: latestPreStore,
           },
           () => {
-            this.handleCalculateMainPrice();
+            // ensure totals recalculated after merge
+            this.handleCalculateMainPrice(mergedProducts);
           },
         );
       } else {
@@ -1011,18 +1198,29 @@ class PurchaseForm extends React.Component {
         this.state.formValues.products.length === 0)
     ) {
       const incomingProducts = this.props.formData.products || [];
+      const filteredIncoming = incomingProducts.filter((p) => p && !this.isLocallyDeleted(p));
       // Only setState if the current products are actually different
       if (!_.isEqual(this.state.formValues.products, incomingProducts)) {
         console.log("=== FIXING MISSING PRODUCTS ===");
         console.log("formData.products:", incomingProducts);
-        this.setState({
-          formValues: {
-            ...this.state.formValues,
-            products: incomingProducts,
+        this.setState(
+          {
+            formValues: {
+              ...this.state.formValues,
+              products: filteredIncoming,
+            },
           },
-        });
+          () => {
+            // Ensure totals recalc after injecting products
+            if (typeof this.handleCalculateMainPrice === "function") {
+              this.handleCalculateMainPrice();
+            }
+          },
+        );
       } else {
-        console.log("Products already match incoming formData, skipping setState.");
+        console.log(
+          "Products already match incoming formData, skipping setState.",
+        );
       }
     }
 
@@ -2222,6 +2420,7 @@ class PurchaseForm extends React.Component {
     this.setState({
       deleteDialogOpen: false,
       deletingIndex: 0,
+      deleteLoading: false,
     });
   };
 
@@ -2232,6 +2431,8 @@ class PurchaseForm extends React.Component {
   };
 
   handleDeleteConfirm = async () => {
+    // show loader and prevent multiple clicks
+    this.setState({ deleteLoading: true });
     let formValues = this.state.formValues;
     let proIdxData = formValues.products[this.state.deletingIndex];
 
@@ -2241,59 +2442,110 @@ class PurchaseForm extends React.Component {
     console.log("Product source:", proIdxData.source);
     console.log("Pre-store ID:", proIdxData.pre_store_id);
 
-    // Delete from pre-store API if it's from pre-store list
+    // Start with optimistic updatedProducts (remove by index)
+    let updatedProducts = formValues.products.filter(
+      (_, index) => index !== this.state.deletingIndex,
+    );
+
+    // If it's a pre-store item, call pre-store delete and refresh list later
     if (proIdxData.source === "pre-store" || proIdxData.is_new_product) {
       const preStoreId = proIdxData.pre_store_id || proIdxData.id;
       console.log("Deleting from pre-store with ID:", preStoreId);
       try {
-        // Delete from pre-store first
         await this.props.actions.prePurchaseDelete(preStoreId);
         console.log("Pre-store product deleted successfully");
       } catch (error) {
         console.error("Error deleting pre-store product:", error);
       }
-    } else if (proIdxData.source === "edit") {
-      // For existing products, call the delete API immediately
-      console.log("This is an existing product (source=edit), calling delete API with ID:", proIdxData.id);
+    } else if (
+      proIdxData.source === "edit" ||
+      (proIdxData.id && !proIdxData.is_new_product)
+    ) {
+      // For existing products, call the delete API immediately and prefer
+      // the server-returned product list (so totals come from authoritative data)
+      console.log(
+        "This is an existing product (source=edit), calling delete API with ID:",
+        proIdxData.id,
+      );
+      // Add a prefixed deletion key to locally deleted ids immediately
+      // to prevent server re-introducing it during merges.
+      const addKey = this.getDeletedKey(proIdxData) || proIdxData.id;
+      this.setState((prevState) => {
+        const next = [...(prevState.locallyDeletedProductIds || []), addKey];
+        try {
+          window.sessionStorage.setItem(
+            "locallyDeletedProductIds",
+            JSON.stringify(next),
+          );
+        } catch (e) {}
+        return { locallyDeletedProductIds: next };
+      });
+
       try {
-        await this.props.actions.purchaseProductDelete(this.state.formData.id, proIdxData.id);
+        await this.props.actions.purchaseProductDelete(
+          this.state.formData.id,
+          proIdxData.id,
+        );
         console.log("Existing purchase product deleted successfully via API");
 
-        // Fetch the latest purchase data and update the form values so UI refreshes
+        // Fetch the latest purchase data and use it as the source of truth
         try {
           const res = await purchaseRawEdit(this.state.formData.id);
           if (res.data && res.data.success) {
             const latest = res.data.data || {};
-            // mark edit products
             const editProducts = (latest.products || []).map((p) => ({
               ...p,
               source: "edit",
               is_new_product: false,
             }));
 
-            // include current pre-store items (if any)
-            const preStoreProducts = (this.state.prePurchaseItems || []).map((product) => ({
-              ...product,
-              pre_store_id: product.id,
-              id: 0,
-              source: "pre-store",
-              is_new_product: true,
-            }));
+            const preStoreProducts = (this.state.prePurchaseItems || []).map(
+              (product) => ({
+                ...product,
+                pre_store_id: product.id,
+                id: 0,
+                source: "pre-store",
+                is_new_product: true,
+              }),
+            );
 
             const merged = [...editProducts, ...preStoreProducts];
 
-            this.setState({
-              formValues: {
-                ...this.state.formValues,
-                ...latest,
-                products: merged,
-              },
-            });
-            // Refresh pre-store list in Redux so other parts of the UI stay in sync
+            // If the server still reports the deleted product (API lag), keep our optimistic removal
+            const deletedId = proIdxData.id;
+            const serverHasDeletedId = merged.some((p) => p && p.id === deletedId);
+            if (serverHasDeletedId) {
+              console.warn(
+                "Server returned product list that still contains deleted product. Keeping optimistic removal.",
+                deletedId,
+              );
+              // keep the locally deleted id in the list so future server updates don't reintroduce it
+            } else {
+              // Server reflects deletion; use server list and remove id from locallyDeletedProductIds
+              updatedProducts = merged;
+              this.setState((prevState) => {
+                const deletedKey = this.getDeletedKey(proIdxData) || deletedId;
+                const next = (prevState.locallyDeletedProductIds || []).filter(
+                  (i) => i !== deletedKey && i !== deletedId && i !== String(deletedId),
+                );
+                try {
+                  window.sessionStorage.setItem(
+                    "locallyDeletedProductIds",
+                    JSON.stringify(next),
+                  );
+                } catch (e) {}
+                return { locallyDeletedProductIds: next };
+              });
+            }
+
+            // Trigger a refresh of pre-store list in Redux so other UI stays in sync
             try {
               this.props.actions.purchasePreStoreList({ all: 1 });
             } catch (err) {
-              console.error('Error refreshing pre-store list after delete:', err);
+              console.error(
+                "Error refreshing pre-store list after delete:",
+                err,
+              );
             }
           }
         } catch (err) {
@@ -2304,39 +2556,150 @@ class PurchaseForm extends React.Component {
       }
     }
 
-    // Create new array without mutating the original state
-    const updatedProducts = formValues.products.filter(
-      (_, index) => index !== this.state.deletingIndex
-    );
-
     console.log("Products before deletion:", formValues.products.length);
     console.log("Products after deletion:", updatedProducts.length);
     console.log("Remaining product IDs:", updatedProducts.map((p) => p.id));
 
-    this.setState(
-      {
-        formValues: {
-          ...formValues,
-          products: updatedProducts,
+    // Compute totals now (before state update) so UI updates immediately.
+    const totalsNow = this.getCalculatedPurchaseTotals(updatedProducts);
+
+    // Also remove the deleted product from formData (edit-mode source of truth)
+    const newFormData = { ...(this.state.formData || {}) };
+    if (newFormData.products && Array.isArray(newFormData.products)) {
+      newFormData.products = newFormData.products.filter((p) => {
+        const pid = p && (p.id || p.pre_store_id || 0);
+        const removedId = proIdxData && (proIdxData.id || proIdxData.pre_store_id || 0);
+        return pid !== removedId;
+      });
+    }
+
+    // Update state a single time with products + recalculated totals. Ensure loader cleared.
+    try {
+      this.setState(
+        {
+          formValues: {
+            ...formValues,
+            products: updatedProducts,
+            ...totalsNow,
+          },
+          formData: newFormData,
+          deleteDialogOpen: false,
         },
-        deleteDialogOpen: false,
-      },
-      () => {
-        // Only refresh pre-store list if it was a pre-store product
-        if (proIdxData.source === "pre-store" || proIdxData.is_new_product) {
-          setTimeout(() => {
-            console.log("Refreshing pre-purchase list after deletion");
-            this.props.actions.purchasePreStoreList({ all: 1 });
-          }, 500); // Wait a bit to ensure delete has processed on backend
-        }
-        this.handleCalculateMainPrice();
-      },
-    );
+        async () => {
+          // Immediate recalculation to ensure UI updates before any server responses
+          try {
+            this.handleCalculateMainPrice(updatedProducts);
+          } catch (e) {
+            console.error('Error during immediate recalculation:', e);
+          }
+          // Only refresh pre-store list if it was a pre-store product
+          if (proIdxData.source === "pre-store" || proIdxData.is_new_product) {
+            setTimeout(() => {
+              console.log("Refreshing pre-purchase list after deletion");
+              this.props.actions.purchasePreStoreList({ all: 1 });
+            }, 500); // Wait to ensure backend processed delete
+          }
+
+          // If we deleted an existing product and fetched the latest server list,
+          // ensure we update totals from the authoritative server response.
+          if (
+            proIdxData.source === "edit" ||
+            (proIdxData.id && !proIdxData.is_new_product)
+          ) {
+            try {
+              const res = await purchaseRawEdit(this.state.formData.id);
+              if (res.data && res.data.success) {
+                const latest = res.data.data || {};
+                const editProducts = (latest.products || []).map((p) => ({
+                  ...p,
+                  source: "edit",
+                  is_new_product: false,
+                }));
+
+                const preStoreProducts = (this.state.prePurchaseItems || []).map(
+                  (product) => ({
+                    ...product,
+                    pre_store_id: product.id,
+                    id: 0,
+                    source: "pre-store",
+                    is_new_product: true,
+                  }),
+                );
+
+                const merged = [...editProducts, ...preStoreProducts];
+
+                // If server still contains deleted ID, keep our optimistic removal.
+                const deletedId = proIdxData.id;
+                const serverHasDeletedId = merged.some((p) => p && p.id === deletedId);
+                if (serverHasDeletedId) {
+                  console.warn(
+                    "Server returned product list that still contains deleted product. Keeping optimistic removal.",
+                    deletedId,
+                  );
+                } else {
+                  // Server reflects deletion; update with server list and recompute totals
+                  const serverTotals = this.getCalculatedPurchaseTotals(merged);
+                  const cleanedFormData = { ...(this.state.formData || {}) };
+                  if (cleanedFormData.products && Array.isArray(cleanedFormData.products)) {
+                    cleanedFormData.products = cleanedFormData.products.filter((p) => p && p.id && p.id !== deletedId);
+                  }
+                  this.setState((prevState) => ({
+                    formValues: {
+                      ...prevState.formValues,
+                      products: merged,
+                      ...serverTotals,
+                    },
+                    formData: cleanedFormData,
+                  }), () => {
+                    // ensure totals are recalculated (defensive)
+                    this.handleCalculateMainPrice(merged);
+                  });
+                  // remove id from locallyDeletedProductIds
+                  this.setState((prevState) => {
+                    const deletedKey = this.getDeletedKey(proIdxData) || deletedId;
+                    const next = (prevState.locallyDeletedProductIds || []).filter(
+                      (i) => i !== deletedKey && i !== deletedId && i !== String(deletedId),
+                    );
+                    try {
+                      window.sessionStorage.setItem(
+                        "locallyDeletedProductIds",
+                        JSON.stringify(next),
+                      );
+                    } catch (e) {}
+                    return { locallyDeletedProductIds: next };
+                  });
+                }
+
+                // Trigger a refresh of pre-store list in Redux so other UI stays in sync
+                try {
+                  this.props.actions.purchasePreStoreList({ all: 1 });
+                } catch (err) {
+                  console.error("Error refreshing pre-store list after delete:", err);
+                }
+              }
+            } catch (err) {
+              console.error("Error fetching latest purchase after delete:", err);
+            }
+          }
+        },
+      );
+    } finally {
+      this.setState({ deleteLoading: false });
+    }
   };
 
-  handleCalculateMainPrice = () => {
-    let formValues = this.state.formValues;
-    let return_products = this.state.return_products;
+  getCalculatedPurchaseTotals = (products = this.state.formValues.products) => {
+    const currentFormValues = this.state.formValues;
+    // helper to safely parse numbers and treat NaN/undefined as 0
+    // Accepts formatted strings like "₹1,234.00" or "1,234.00" and returns numeric value
+    const toNum = (v) => {
+      if (v === undefined || v === null) return 0;
+      if (typeof v === "number") return isNaN(v) ? 0 : v;
+      const s = String(v).replace(/[^0-9.-]+/g, "");
+      const n = parseFloat(s);
+      return isNaN(n) ? 0 : n;
+    };
+
     let taxable_amount = 0,
       tax = 0,
       total_amount = 0,
@@ -2348,64 +2711,71 @@ class PurchaseForm extends React.Component {
       sgst_tax = 0,
       igst_tax = 0,
       total_sub_total = 0;
-    for (let i = 0; i < formValues.products.length; i++) {
-      /*if(return_products[i].is_return){
-                continue;
-            }*/
-      taxable_amount +=
-        parseFloat(formValues.products[i].sub_price) +
-        parseFloat(formValues.products[i].making_charge) +
-        (formValues.products[i].rep
-          ? parseFloat(formValues.products[i].rep)
-          : 0);
-      tax += formValues.products[i].tax
-        ? parseFloat(formValues.products[i].tax)
-        : 0;
-      total_amount += parseFloat(formValues.products[i].total);
-      cgst_tax += formValues.products[i].cgst_tax
-        ? parseFloat(formValues.products[i].cgst_tax)
-        : 0;
-      sgst_tax += formValues.products[i].sgst_tax
-        ? parseFloat(formValues.products[i].sgst_tax)
-        : 0;
-      igst_tax += formValues.products[i].igst_tax
-        ? parseFloat(formValues.products[i].igst_tax)
-        : 0;
-      total_sub_total += parseFloat(formValues.products[i].sub_price);
-      total_sub_total += parseFloat(formValues.products[i].making_charge);
+
+    products = products || [];
+    for (let i = 0; i < products.length; i++) {
+      const p = products[i] || {};
+      const sub = toNum(p.sub_price);
+      const making = toNum(p.making_charge);
+      const rep = toNum(p.rep);
+      const t = toNum(p.tax);
+      const total = toNum(p.total);
+      const cgst = toNum(p.cgst_tax);
+      const sgst = toNum(p.sgst_tax);
+      const igst = toNum(p.igst_tax);
+
+      taxable_amount += sub + making + rep;
+      tax += t;
+      total_amount += total;
+      cgst_tax += cgst;
+      sgst_tax += sgst;
+      igst_tax += igst;
+      total_sub_total += sub + making;
     }
+
     taxable_amount = priceFormat(taxable_amount, true);
     tax = priceFormat(tax, true);
     total_amount = priceFormat(total_amount, true);
-    if (!isEmpty(formValues.discount)) {
-      discount = parseFloat(formValues.discount);
+
+    if (!isEmpty(currentFormValues.discount)) {
+      discount = toNum(currentFormValues.discount);
     }
-    total_payable = priceFormat(
-      total_amount - discount - this.state.return_amount,
-      true,
-    );
-    if (!isEmpty(formValues.paid_amount)) {
-      paid_amount = parseFloat(formValues.paid_amount);
+
+    // ensure return_amount is numeric
+    const returnAmt = toNum(this.state.return_amount);
+
+    total_payable = priceFormat(total_amount - discount - returnAmt, true);
+
+    if (!isEmpty(currentFormValues.paid_amount)) {
+      paid_amount = toNum(currentFormValues.paid_amount);
     }
-    let advance_amount = formValues.advance_amount
-      ? parseFloat(formValues.advance_amount)
-      : 0;
-    due_amount = priceFormat(total_payable - paid_amount, true);
-    if (formValues.pay_from_advance) {
-      due_amount =
-        advance_amount > due_amount
-          ? 0
-          : priceFormat(due_amount - advance_amount, true);
+
+    let advance_amount = toNum(currentFormValues.advance_amount);
+
+    due_amount = priceFormat(toNum(total_payable) - paid_amount, true);
+    if (currentFormValues.pay_from_advance) {
+      due_amount = advance_amount > due_amount ? 0 : priceFormat(toNum(due_amount) - advance_amount, true);
     }
-    formValues.taxable_amount = taxable_amount;
-    formValues.tax = tax;
-    formValues.total_amount = total_amount;
-    formValues.total_payable = total_payable;
-    formValues.due_amount = due_amount;
-    formValues.cgst_tax = priceFormat(cgst_tax, true);
-    formValues.sgst_tax = priceFormat(sgst_tax, true);
-    formValues.igst_tax = priceFormat(igst_tax, true);
-    formValues.total_sub_total = priceFormat(total_sub_total);
+
+    return {
+      taxable_amount,
+      tax,
+      total_amount,
+      total_payable,
+      due_amount,
+      cgst_tax: priceFormat(cgst_tax, true),
+      sgst_tax: priceFormat(sgst_tax, true),
+      igst_tax: priceFormat(igst_tax, true),
+      total_sub_total: priceFormat(total_sub_total),
+    };
+  };
+
+  handleCalculateMainPrice = (products = this.state.formValues.products) => {
+    let formValues = {
+      ...this.state.formValues,
+      products: [...products],
+      ...this.getCalculatedPurchaseTotals(products),
+    };
     this.setState({
       formValues: formValues,
     });
@@ -2422,12 +2792,16 @@ class PurchaseForm extends React.Component {
       return false;
     }
     if (!hasErr && formValues.products.length) {
+      const calculatedTotals = this.getCalculatedPurchaseTotals(
+        formValues.products,
+      );
       this.setState({
         submitting: true,
       });
       if (this.state.isCreateFrom) {
         let data = {
           ...this.state.formValues,
+          ...calculatedTotals,
           current_image: this.state.current_image[0]?.data_url,
           on_approval:
             this.props.query.get("purchase_on_approval") == 0 ? true : false,
@@ -2439,9 +2813,11 @@ class PurchaseForm extends React.Component {
         // For edit mode, prepare data with all products (edit + pre-store)
         let updateData = {
           ...this.state.formValues,
+          ...calculatedTotals,
           // Filter out source, is_new_product, and pre_store_id fields before sending to API
           products: this.state.formValues.products.map((product) => {
-            const { source, is_new_product, pre_store_id, ...cleanProduct } = product;
+            const { source, is_new_product, pre_store_id, ...cleanProduct } =
+              product;
             return cleanProduct;
           }),
         };
@@ -2453,15 +2829,20 @@ class PurchaseForm extends React.Component {
         );
         console.log("Products detail before cleaning:");
         this.state.formValues.products.forEach((p, idx) => {
-          console.log(`  [${idx}] id=${p.id}, source=${p.source}, pre_store_id=${p.pre_store_id}`);
+          console.log(
+            `  [${idx}] id=${p.id}, source=${p.source}, pre_store_id=${p.pre_store_id}`,
+          );
         });
-        
+
         console.log("Products detail after cleaning:");
         updateData.products.forEach((p, idx) => {
           console.log(`  [${idx}] id=${p.id}`);
         });
-        
-        console.log("Product IDs being sent to API:", updateData.products.map(p => p.id));
+
+        console.log(
+          "Product IDs being sent to API:",
+          updateData.products.map((p) => p.id),
+        );
         console.log("Products by source:", {
           edit: this.state.formValues.products.filter(
             (p) => p.source === "edit",
@@ -2470,7 +2851,10 @@ class PurchaseForm extends React.Component {
             (p) => p.source === "pre-store",
           ).length,
         });
-        console.log("Final cleaned products count:", updateData.products.length);
+        console.log(
+          "Final cleaned products count:",
+          updateData.products.length,
+        );
 
         this.props.actions.purchaseUpdate(this.state.formData.id, updateData);
       }
@@ -2950,10 +3334,12 @@ class PurchaseForm extends React.Component {
     } = this.state;
 
     // Ensure products are available - use formValues.products, fallback to formData.products
-    const products =
-      (formValues && formValues.products) ||
-      (formData && formData.products) ||
-      [];
+    const rawProducts =
+      (formValues && formValues.products) || (formData && formData.products) || [];
+    const products = rawProducts.filter((p) => {
+      if (!p) return false;
+      return !this.isLocallyDeleted(p);
+    });
 
     // Debug logging to understand data flow
     console.log("=== RENDER DEBUG ===");
@@ -5732,15 +6118,24 @@ class PurchaseForm extends React.Component {
           </DialogContent>
           <DialogActions>
             <Stack spacing={2} direction="row" justifyContent="flex-end">
-              <Button variant="outlined" onClick={this.handleDialogClose}>
+              <Button
+                variant="outlined"
+                onClick={this.handleDialogClose}
+                disabled={this.state.deleteLoading}
+              >
                 Cancel
               </Button>
               <Button
                 variant="contained"
                 type="button"
                 onClick={this.handleDeleteConfirm}
+                disabled={this.state.deleteLoading}
               >
-                Yes, Confirm
+                {this.state.deleteLoading ? (
+                  <CircularProgress size={20} color="inherit" />
+                ) : (
+                  "Yes, Confirm"
+                )}
               </Button>
             </Stack>
           </DialogActions>
