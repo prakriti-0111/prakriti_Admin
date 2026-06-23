@@ -25,6 +25,7 @@ const getAuthData = (key, fromUser) => {
 /**
  * get query params from object
  */
+
 const objectToQuery = (obj, addQuestion) => {
   return obj
     ? (addQuestion ? "?" : "") +
@@ -114,6 +115,22 @@ const compressVideoFile = async (file) => {
     return file;
   }
 
+  if (typeof window === "undefined" || typeof FileReader === "undefined") {
+    return file;
+  }
+
+  if (file.size > 25 * 1024 * 1024) {
+    return file;
+  }
+
+  const isMp4 =
+    file.type === "video/mp4" ||
+    (file.name && file.name.toLowerCase().endsWith(".mp4"));
+
+  if (!isMp4) {
+    return file;
+  }
+
   try {
     if (!ffmpegInstance) {
       const [{ FFmpeg }, { fetchFile, toBlobURL }] = await Promise.all([
@@ -136,8 +153,7 @@ const compressVideoFile = async (file) => {
       ffmpegInstance = ffmpeg;
     }
 
-    const inputExtension = file.name.split(".").pop() || "mp4";
-    const inputName = `input.${inputExtension}`;
+    const inputName = "input.mp4";
     const outputName = "output.mp4";
 
     await ffmpegInstance.writeFile(inputName, await fetchFile(file));
@@ -168,7 +184,7 @@ const compressVideoFile = async (file) => {
       lastModified: Date.now(),
     });
   } catch (error) {
-    console.error("Video compression failed:", error);
+    console.warn("Video compression skipped, using original file:", error);
     return file;
   }
 };
