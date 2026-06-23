@@ -119,10 +119,6 @@ const compressVideoFile = async (file) => {
     return file;
   }
 
-  if (file.size > 25 * 1024 * 1024) {
-    return file;
-  }
-
   const isMp4 =
     file.type === "video/mp4" ||
     (file.name && file.name.toLowerCase().endsWith(".mp4"));
@@ -161,17 +157,23 @@ const compressVideoFile = async (file) => {
       "-i",
       inputName,
       "-vf",
-      "scale=-2:720",
+      "scale=-2:720,fps=24",
       "-c:v",
       "libx264",
       "-preset",
-      "medium",
+      "slow",
       "-crf",
-      "28",
+      "30",
+      "-b:v",
+      "1200k",
+      "-maxrate",
+      "1600k",
+      "-bufsize",
+      "2400k",
       "-c:a",
       "aac",
       "-b:a",
-      "128k",
+      "96k",
       "-movflags",
       "+faststart",
       outputName,
@@ -179,10 +181,16 @@ const compressVideoFile = async (file) => {
 
     const data = await ffmpegInstance.readFile(outputName);
     const blob = new Blob([data], { type: "video/mp4" });
-    return new File([blob], file.name.replace(/\.[^.]+$/, ".mp4"), {
-      type: "video/mp4",
-      lastModified: Date.now(),
-    });
+    const compressedFile = new File(
+      [blob],
+      file.name.replace(/\.[^.]+$/, ".mp4"),
+      {
+        type: "video/mp4",
+        lastModified: Date.now(),
+      },
+    );
+
+    return compressedFile.size < file.size ? compressedFile : file;
   } catch (error) {
     console.warn("Video compression skipped, using original file:", error);
     return file;
