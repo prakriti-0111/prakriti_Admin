@@ -767,7 +767,7 @@ class DataTable extends React.Component {
                   <div>
                     {this.state.certificateDetails.certificateData.jewelry
                       .type && (
-                      <div style={{ marginBottom: "24px" }}>
+                      <div style={{ marginBottom: "24px", marginTop: "10px" }}>
                         <div
                           style={{
                             fontSize: "13px",
