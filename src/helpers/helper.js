@@ -739,77 +739,171 @@ const extractCertificateJSON = (rawText) => {
     raw_text: rawText
   };
 
+  // Split without normalization to preserve line structure
   const lines = rawText.split('\n');
+
+  // Track if we've found the report type
+  let foundReportType = false;
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i].trim();
     const lowerLine = line.toLowerCase();
 
-    if (lowerLine.includes('report no') || lowerLine.includes('certificate no')) {
-      const match = line.match(/([0-9A-Z]+)$/);
-      if (match) data.report_number = match[1];
+    // Extract report type (look for E-COPY first)
+    if (!foundReportType && (lowerLine.includes('e-copy') || lowerLine.includes('jewelry report'))) {
+      data.report_type = 'E-COPY JEWELRY REPORT';
+      foundReportType = true;
     }
 
-    if (lowerLine.includes('jewelry report') || lowerLine.includes('gemological')) {
-      data.report_type = 'Jewelry Report';
+    // Extract report number
+    if (lowerLine.includes('report no')) {
+      // Check if value is on same line or next line
+      let reportNumber = null;
+      if (line.includes(':')) {
+        const match = line.match(/:\s*([0-9A-Z]+)/);
+        if (match) reportNumber = match[1].trim();
+      } else if (i + 1 < lines.length) {
+        const nextLine = lines[i + 1].trim();
+        const match = nextLine.match(/:\s*([0-9A-Z]+)/);
+        if (match) reportNumber = match[1].trim();
+      }
+      if (reportNumber) data.report_number = reportNumber;
     }
 
+    // Extract jewelry description
     if (lowerLine.includes('description')) {
-      const descLine = lines[i + 1] || '';
-      data.jewelry.type = descLine.trim() || null;
+      // Get description from current line or next line
+      let descText = line.includes(':') ? line.substring(line.indexOf(':') + 1) : (lines[i + 1] || '');
 
-      if (descLine.includes('gold')) data.jewelry.metal = 'Gold';
-      if (descLine.includes('platinum')) data.jewelry.metal = 'Platinum';
-      if (descLine.includes('silver')) data.jewelry.metal = 'Silver';
+      // Continue reading until we hit next section
+      let j = i + 1;
+      while (j < lines.length && !lines[j].trim().match(/^[A-Z][a-z]+\s+and/) && !lines[j].trim().match(/^Tot\.|^Color|^Clarity|^Comments/)) {
+        if (lines[j].trim() && !line.includes('description')) {
+          descText += ' ' + lines[j].trim();
+        }
+        j++;
+      }
 
-      if (descLine.includes('yellow')) data.jewelry.color = 'Yellow';
-      if (descLine.includes('white')) data.jewelry.color = 'White';
-      if (descLine.includes('rose')) data.jewelry.color = 'Rose';
+      descText = descText.trim();
+
+      // Extract jewelry type (e.g., "One Yellow Gold Ring")
+      const typeMatch = descText.match(/One\s+([A-Za-z\s]+?)(?:,|weighing)/i);
+      if (typeMatch) {
+        data.jewelry.type = typeMatch[1].trim();
+      }
+
+      // Extract metal type
+      if (descText.toLowerCase().includes('yellow gold')) {
+        data.jewelry.metal = 'Yellow Gold';
+      } else if (descText.toLowerCase().includes('white gold')) {
+        data.jewelry.metal = 'White Gold';
+      } else if (descText.toLowerCase().includes('platinum')) {
+        data.jewelry.metal = 'Platinum';
+      } else if (descText.toLowerCase().includes('rose gold')) {
+        data.jewelry.metal = 'Rose Gold';
+      } else if (descText.toLowerCase().includes('silver')) {
+        data.jewelry.metal = 'Silver';
+      }
+
+      // Extract finish (e.g., "Partly Rhodium Plated")
+      const finishMatch = descText.match(/(Partly\s+[A-Za-z\s]+?)(,|weighing|$)/i);
+      if (finishMatch) {
+        data.jewelry.finish = finishMatch[1].trim();
+      }
+
+      // Extract weight in grams
+      const weightMatch = descText.match(/weighing\s+in\s+total\s+([\d.]+)\s*g/i);
+      if (weightMatch) {
+        data.jewelry.weight_grams = parseFloat(weightMatch[1]);
+      }
+
+      // Extract diamond quantity from description
+      const diamondQtyMatch = descText.match(/\((\d+)\)\s+Natural\s+Diamonds/i);
+      if (diamondQtyMatch) {
+        data.diamonds.quantity = parseInt(diamondQtyMatch[1]);
+      }
     }
 
+    // Extract shape and cut
     if (lowerLine.includes('shape and cut')) {
-      const cutLine = lines[i + 1] || '';
-      const match = cutLine.match(/\((\d+)\)\s+(\w+\s+\w+)/);
+      const cutText = line.includes(':') ? line.substring(line.indexOf(':') + 1) : (lines[i + 1] || '');
+      const match = cutText.match(/\((\d+)\)\s+([A-Za-z\s]+)/);
       if (match) {
         data.diamonds.quantity = parseInt(match[1]);
-        data.diamonds.shape = match[2].trim();
-        data.diamonds.cut = match[2].trim();
+        const shapeAndCut = match[2].trim();
+        const words = shapeAndCut.split(/\s+/);
+        data.diamonds.shape = words[0];
+        data.diamonds.cut = shapeAndCut;
       }
     }
 
+    // Extract total carat weight, color, and clarity
     if (lowerLine.includes('tot. est. weight') || lowerLine.includes('total est. weight')) {
-      const weightLine = lines[i + 1] || '';
-      const match = weightLine.match(/([\d.]+)\s*(carat|ct|gram|g)/i);
-      if (match) {
-        data.diamonds.total_carat_weight = parseFloat(match[1]);
-      }
-    }
-
-    if (lowerLine.includes('color') && !lowerLine.includes('jewelry')) {
-      const colorLine = line.match(/:\s*([A-Z\-]+)$/);
-      if (colorLine) data.diamonds.color_grade = colorLine[1].trim();
-    }
-
-    if (lowerLine.includes('clarity')) {
-      const clarityLine = line.match(/:\s*([A-Z]+)$/);
-      if (clarityLine) data.diamonds.clarity_grade = clarityLine[1].trim();
-    }
-
-    if (lowerLine.includes('comments')) {
+      // Look forward for the values on subsequent lines starting with ":"
       let j = i + 1;
-      while (j < lines.length && lines[j].trim() && !lines[j].match(/^[A-Z\s]+:/)) {
-        const comment = lines[j].trim();
-        if (comment) data.comments.push(comment);
+      let valueIdx = 0; // 0 = weight, 1 = color, 2 = clarity
+
+      while (j < lines.length && valueIdx < 3) {
+        const currentLine = lines[j].trim();
+
+        if (currentLine === '') {
+          j++;
+          continue;
+        }
+
+        if (currentLine.startsWith(':')) {
+          const value = currentLine.substring(1).trim();
+
+          if (valueIdx === 0) { // Weight
+            const match = value.match(/([\d.]+)\s*(carat|ct)/i);
+            if (match) {
+              data.diamonds.total_carat_weight = parseFloat(match[1]);
+            }
+          } else if (valueIdx === 1) { // Color
+            if (!value.includes('Carat')) {
+              data.diamonds.color_grade = value;
+            }
+          } else if (valueIdx === 2) { // Clarity
+            if (!value.includes('Carat')) {
+              data.diamonds.clarity_grade = value;
+            }
+          }
+
+          valueIdx++;
+        }
         j++;
       }
     }
 
-    if (lowerLine.includes('disclaimer')) {
-      data.disclaimer = lines[i + 1]?.trim() || null;
+    // Extract comments
+    if (lowerLine.includes('comments')) {
+      let j = i + 1;
+      let inComments = false;
+
+      while (j < lines.length) {
+        const currentLine = lines[j].trim();
+
+        if (!inComments && currentLine.startsWith(':')) {
+          // First comment line
+          const commentValue = currentLine.substring(1).trim();
+          if (commentValue) {
+            data.comments.push(commentValue);
+            inComments = true;
+          }
+        } else if (inComments && currentLine && !currentLine.match(/^Important|^Note|^[A-Z][a-z]+\s*:/) && !currentLine.startsWith(':')) {
+          // Continuation of comments
+          data.comments.push(currentLine);
+        } else if (inComments && (currentLine.match(/^Important|^Note/i) || !currentLine)) {
+          // End of comments section
+          break;
+        }
+        j++;
+      }
     }
 
-    if (lowerLine.includes('engraved') || lowerLine.includes('engraving')) {
-      data.engraving = line.split(':')[1]?.trim() || 'Yes';
+    // Extract engraving info
+    if (lowerLine.includes('engraved')) {
+      data.engraving = true;
     }
   }
 
