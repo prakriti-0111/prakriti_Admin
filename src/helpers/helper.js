@@ -707,6 +707,270 @@ const validateInteger = (event) => {
   }
 };
 
+const extractCertificateJSON = (rawText) => {
+  const data = {
+    report_type: null,
+    report_number: null,
+    issue_date: null,
+    jewelry: {
+      type: null,
+      metal: null,
+      color: null,
+      finish: null,
+      weight_grams: null
+    },
+    diamonds: {
+      quantity: null,
+      shape: null,
+      cut: null,
+      color_grade: null,
+      clarity_grade: null,
+      total_carat_weight: null,
+      origin: null
+    },
+    comments: [],
+    engraving: null,
+    verification: {
+      qr_code_present: null,
+      website: null,
+      certificate_url: null
+    },
+    disclaimer: null,
+    raw_text: rawText
+  };
+
+  // Split without normalization to preserve line structure
+  const lines = rawText.split('\n');
+
+  // Track if we've found the report type
+  let foundReportType = false;
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+    const lowerLine = line.toLowerCase();
+
+    // Extract report type (look for E-COPY first)
+    if (!foundReportType && (lowerLine.includes('e-copy') || lowerLine.includes('jewelry report'))) {
+      data.report_type = 'E-COPY JEWELRY REPORT';
+      foundReportType = true;
+    }
+
+    // Extract report number
+    if (lowerLine.includes('report no')) {
+      // Check if value is on same line or next line
+      let reportNumber = null;
+      if (line.includes(':')) {
+        const match = line.match(/:\s*([0-9A-Z]+)/);
+        if (match) reportNumber = match[1].trim();
+      } else if (i + 1 < lines.length) {
+        const nextLine = lines[i + 1].trim();
+        const match = nextLine.match(/:\s*([0-9A-Z]+)/);
+        if (match) reportNumber = match[1].trim();
+      }
+      if (reportNumber) data.report_number = reportNumber;
+    }
+
+    // Extract jewelry description
+    if (lowerLine.includes('description')) {
+      // Get description from current line or next line
+      let descText = line.includes(':') ? line.substring(line.indexOf(':') + 1) : (lines[i + 1] || '');
+
+      // Continue reading until we hit next section
+      let j = i + 1;
+      while (j < lines.length && !lines[j].trim().match(/^[A-Z][a-z]+\s+and/) && !lines[j].trim().match(/^Tot\.|^Color|^Clarity|^Comments/)) {
+        if (lines[j].trim() && !line.includes('description')) {
+          descText += ' ' + lines[j].trim();
+        }
+        j++;
+      }
+
+      descText = descText.trim();
+
+      // Extract jewelry type (e.g., "One Yellow Gold Ring")
+      const typeMatch = descText.match(/One\s+([A-Za-z\s]+?)(?:,|weighing)/i);
+      if (typeMatch) {
+        data.jewelry.type = typeMatch[1].trim();
+      }
+
+      // Extract metal type
+      if (descText.toLowerCase().includes('yellow gold')) {
+        data.jewelry.metal = 'Yellow Gold';
+      } else if (descText.toLowerCase().includes('white gold')) {
+        data.jewelry.metal = 'White Gold';
+      } else if (descText.toLowerCase().includes('platinum')) {
+        data.jewelry.metal = 'Platinum';
+      } else if (descText.toLowerCase().includes('rose gold')) {
+        data.jewelry.metal = 'Rose Gold';
+      } else if (descText.toLowerCase().includes('silver')) {
+        data.jewelry.metal = 'Silver';
+      }
+
+      // Extract finish (e.g., "Partly Rhodium Plated")
+      const finishMatch = descText.match(/(Partly\s+[A-Za-z\s]+?)(,|weighing|$)/i);
+      if (finishMatch) {
+        data.jewelry.finish = finishMatch[1].trim();
+      }
+
+      // Extract weight in grams
+      const weightMatch = descText.match(/weighing\s+in\s+total\s+([\d.]+)\s*g/i);
+      if (weightMatch) {
+        data.jewelry.weight_grams = parseFloat(weightMatch[1]);
+      }
+
+      // Extract diamond quantity from description
+      const diamondQtyMatch = descText.match(/\((\d+)\)\s+Natural\s+Diamonds/i);
+      if (diamondQtyMatch) {
+        data.diamonds.quantity = parseInt(diamondQtyMatch[1]);
+      }
+    }
+
+    // Extract shape and cut
+    if (lowerLine.includes('shape and cut')) {
+      const cutText = line.includes(':') ? line.substring(line.indexOf(':') + 1) : (lines[i + 1] || '');
+      const match = cutText.match(/\((\d+)\)\s+([A-Za-z\s]+)/);
+      if (match) {
+        data.diamonds.quantity = parseInt(match[1]);
+        const shapeAndCut = match[2].trim();
+        const words = shapeAndCut.split(/\s+/);
+        data.diamonds.shape = words[0];
+        data.diamonds.cut = shapeAndCut;
+      }
+    }
+
+    // Extract total carat weight, color, and clarity
+    if (lowerLine.includes('tot. est. weight') || lowerLine.includes('total est. weight')) {
+      // Look forward for the values on subsequent lines starting with ":"
+      let j = i + 1;
+      let valueIdx = 0; // 0 = weight, 1 = color, 2 = clarity
+
+      while (j < lines.length && valueIdx < 3) {
+        const currentLine = lines[j].trim();
+
+        if (currentLine === '') {
+          j++;
+          continue;
+        }
+
+        if (currentLine.startsWith(':')) {
+          const value = currentLine.substring(1).trim();
+
+          if (valueIdx === 0) { // Weight
+            const match = value.match(/([\d.]+)\s*(carat|ct)/i);
+            if (match) {
+              data.diamonds.total_carat_weight = parseFloat(match[1]);
+            }
+          } else if (valueIdx === 1) { // Color
+            if (!value.includes('Carat')) {
+              data.diamonds.color_grade = value;
+            }
+          } else if (valueIdx === 2) { // Clarity
+            if (!value.includes('Carat')) {
+              data.diamonds.clarity_grade = value;
+            }
+          }
+
+          valueIdx++;
+        }
+        j++;
+      }
+    }
+
+    // Extract comments
+    if (lowerLine.includes('comments')) {
+      let j = i + 1;
+      let inComments = false;
+
+      while (j < lines.length) {
+        const currentLine = lines[j].trim();
+
+        if (!inComments && currentLine.startsWith(':')) {
+          // First comment line
+          const commentValue = currentLine.substring(1).trim();
+          if (commentValue) {
+            data.comments.push(commentValue);
+            inComments = true;
+          }
+        } else if (inComments && currentLine && !currentLine.match(/^Important|^Note|^[A-Z][a-z]+\s*:/) && !currentLine.startsWith(':')) {
+          // Continuation of comments
+          data.comments.push(currentLine);
+        } else if (inComments && (currentLine.match(/^Important|^Note/i) || !currentLine)) {
+          // End of comments section
+          break;
+        }
+        j++;
+      }
+    }
+
+    // Extract engraving info
+    if (lowerLine.includes('engraved')) {
+      data.engraving = true;
+    }
+  }
+
+  return data;
+};
+
+const fetchCertificateDetails = async (certificateNo) => {
+  if (!certificateNo) {
+    return "Invalid certificate number";
+  }
+
+  // Remove last 2 digits from certificate number
+  const certificateForPdf = certificateNo.slice(0, -2);
+  const pdfUrl = `https://pdf.igi.org/${certificateForPdf}.pdf`;
+
+  try {
+    const response = await fetch(pdfUrl);
+
+    if (response.status === 404) {
+      return `Certificate #${certificateNo} not found in IGI database. Please verify the certificate number is correct.`;
+    }
+
+    if (!response.ok) {
+      return `Error: Server returned status ${response.status}. Please try again later.`;
+    }
+
+    const arrayBuffer = await response.arrayBuffer();
+    if (arrayBuffer.byteLength === 0) {
+      return "Empty certificate data received from server";
+    }
+
+    if (!window.pdfjsLib) {
+      const script = document.createElement('script');
+      script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+      await new Promise((resolve, reject) => {
+        script.onload = resolve;
+        script.onerror = reject;
+        document.head.appendChild(script);
+      });
+      window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    }
+
+    const pdf = await window.pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    let fullText = '';
+
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const page = await pdf.getPage(i);
+      const textContent = await page.getTextContent();
+      const pageText = textContent.items.map(item => item.str).join(' ');
+      fullText += pageText + '\n';
+    }
+
+    const certificateData = extractCertificateJSON(fullText);
+
+    return {
+      success: true,
+      data: arrayBuffer,
+      certificateNo,
+      certificateData,
+      pageCount: pdf.numPages
+    };
+  } catch (error) {
+    console.error("Error fetching certificate:", error);
+    return `Failed to fetch certificate: ${error.message}`;
+  }
+};
+
 export {
   getAuthData,
   objectToQuery,
@@ -742,4 +1006,5 @@ export {
   ucWords,
   validateNumber,
   validateInteger,
+  fetchCertificateDetails,
 };
