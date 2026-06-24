@@ -707,6 +707,176 @@ const validateInteger = (event) => {
   }
 };
 
+const extractCertificateJSON = (rawText) => {
+  const data = {
+    report_type: null,
+    report_number: null,
+    issue_date: null,
+    jewelry: {
+      type: null,
+      metal: null,
+      color: null,
+      finish: null,
+      weight_grams: null
+    },
+    diamonds: {
+      quantity: null,
+      shape: null,
+      cut: null,
+      color_grade: null,
+      clarity_grade: null,
+      total_carat_weight: null,
+      origin: null
+    },
+    comments: [],
+    engraving: null,
+    verification: {
+      qr_code_present: null,
+      website: null,
+      certificate_url: null
+    },
+    disclaimer: null,
+    raw_text: rawText
+  };
+
+  const lines = rawText.split('\n');
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+    const lowerLine = line.toLowerCase();
+
+    if (lowerLine.includes('report no') || lowerLine.includes('certificate no')) {
+      const match = line.match(/([0-9A-Z]+)$/);
+      if (match) data.report_number = match[1];
+    }
+
+    if (lowerLine.includes('jewelry report') || lowerLine.includes('gemological')) {
+      data.report_type = 'Jewelry Report';
+    }
+
+    if (lowerLine.includes('description')) {
+      const descLine = lines[i + 1] || '';
+      data.jewelry.type = descLine.trim() || null;
+
+      if (descLine.includes('gold')) data.jewelry.metal = 'Gold';
+      if (descLine.includes('platinum')) data.jewelry.metal = 'Platinum';
+      if (descLine.includes('silver')) data.jewelry.metal = 'Silver';
+
+      if (descLine.includes('yellow')) data.jewelry.color = 'Yellow';
+      if (descLine.includes('white')) data.jewelry.color = 'White';
+      if (descLine.includes('rose')) data.jewelry.color = 'Rose';
+    }
+
+    if (lowerLine.includes('shape and cut')) {
+      const cutLine = lines[i + 1] || '';
+      const match = cutLine.match(/\((\d+)\)\s+(\w+\s+\w+)/);
+      if (match) {
+        data.diamonds.quantity = parseInt(match[1]);
+        data.diamonds.shape = match[2].trim();
+        data.diamonds.cut = match[2].trim();
+      }
+    }
+
+    if (lowerLine.includes('tot. est. weight') || lowerLine.includes('total est. weight')) {
+      const weightLine = lines[i + 1] || '';
+      const match = weightLine.match(/([\d.]+)\s*(carat|ct|gram|g)/i);
+      if (match) {
+        data.diamonds.total_carat_weight = parseFloat(match[1]);
+      }
+    }
+
+    if (lowerLine.includes('color') && !lowerLine.includes('jewelry')) {
+      const colorLine = line.match(/:\s*([A-Z\-]+)$/);
+      if (colorLine) data.diamonds.color_grade = colorLine[1].trim();
+    }
+
+    if (lowerLine.includes('clarity')) {
+      const clarityLine = line.match(/:\s*([A-Z]+)$/);
+      if (clarityLine) data.diamonds.clarity_grade = clarityLine[1].trim();
+    }
+
+    if (lowerLine.includes('comments')) {
+      let j = i + 1;
+      while (j < lines.length && lines[j].trim() && !lines[j].match(/^[A-Z\s]+:/)) {
+        const comment = lines[j].trim();
+        if (comment) data.comments.push(comment);
+        j++;
+      }
+    }
+
+    if (lowerLine.includes('disclaimer')) {
+      data.disclaimer = lines[i + 1]?.trim() || null;
+    }
+
+    if (lowerLine.includes('engraved') || lowerLine.includes('engraving')) {
+      data.engraving = line.split(':')[1]?.trim() || 'Yes';
+    }
+  }
+
+  return data;
+};
+
+const fetchCertificateDetails = async (certificateNo) => {
+  if (!certificateNo) {
+    return "Invalid certificate number";
+  }
+
+  // Remove last 2 digits from certificate number
+  const certificateForPdf = certificateNo.slice(0, -2);
+  const pdfUrl = `https://pdf.igi.org/${certificateForPdf}.pdf`;
+
+  try {
+    const response = await fetch(pdfUrl);
+
+    if (response.status === 404) {
+      return `Certificate #${certificateNo} not found in IGI database. Please verify the certificate number is correct.`;
+    }
+
+    if (!response.ok) {
+      return `Error: Server returned status ${response.status}. Please try again later.`;
+    }
+
+    const arrayBuffer = await response.arrayBuffer();
+    if (arrayBuffer.byteLength === 0) {
+      return "Empty certificate data received from server";
+    }
+
+    if (!window.pdfjsLib) {
+      const script = document.createElement('script');
+      script.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+      await new Promise((resolve, reject) => {
+        script.onload = resolve;
+        script.onerror = reject;
+        document.head.appendChild(script);
+      });
+      window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    }
+
+    const pdf = await window.pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    let fullText = '';
+
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const page = await pdf.getPage(i);
+      const textContent = await page.getTextContent();
+      const pageText = textContent.items.map(item => item.str).join(' ');
+      fullText += pageText + '\n';
+    }
+
+    const certificateData = extractCertificateJSON(fullText);
+
+    return {
+      success: true,
+      data: arrayBuffer,
+      certificateNo,
+      certificateData,
+      pageCount: pdf.numPages
+    };
+  } catch (error) {
+    console.error("Error fetching certificate:", error);
+    return `Failed to fetch certificate: ${error.message}`;
+  }
+};
+
 export {
   getAuthData,
   objectToQuery,
@@ -742,4 +912,5 @@ export {
   ucWords,
   validateNumber,
   validateInteger,
+  fetchCertificateDetails,
 };

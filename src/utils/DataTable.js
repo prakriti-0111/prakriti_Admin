@@ -39,7 +39,7 @@ import DialogActions from "@mui/material/DialogActions";
 import DialogContent from "@mui/material/DialogContent";
 import DialogContentText from "@mui/material/DialogContentText";
 import DialogTitle from "@mui/material/DialogTitle";
-import { getNewlineText, getStatusColor } from "src/helpers/helper";
+import { getNewlineText, getStatusColor, fetchCertificateDetails } from "src/helpers/helper";
 import DeleteIcon from "@mui/icons-material/Delete";
 import EditIcon from "@mui/icons-material/Edit";
 import RemoveRedEyeIcon from "@mui/icons-material/RemoveRedEye";
@@ -83,6 +83,10 @@ class DataTable extends React.Component {
       imagePath: "",
       crID: "",
       CrfunResult: "Loading...",
+      certificateModalOpen: false,
+      certificateNo: "",
+      certificateDetails: null,
+      certificateLoading: false,
     };
   }
 
@@ -467,6 +471,36 @@ class DataTable extends React.Component {
     });
   };
 
+  handleCertificateClick = async (certificateNo) => {
+    this.setState({
+      certificateModalOpen: true,
+      certificateNo: certificateNo,
+      certificateLoading: true,
+      certificateDetails: null,
+    });
+
+    const result = await fetchCertificateDetails(certificateNo);
+    if (result.success) {
+      this.setState({
+        certificateDetails: result,
+        certificateLoading: false,
+      });
+    } else {
+      this.setState({
+        certificateDetails: result,
+        certificateLoading: false,
+      });
+    }
+  };
+
+  handleCertificateModalClose = () => {
+    this.setState({
+      certificateModalOpen: false,
+      certificateNo: "",
+      certificateDetails: null,
+    });
+  };
+
   crFunction = async (item) => {
     if (this.state.CrfunResult !== "Loading...") {
       this.setState({ CrfunResult: "Loading..." });
@@ -639,6 +673,163 @@ class DataTable extends React.Component {
             </div>
           </div>
         </div>
+
+        <Dialog
+          open={this.state.certificateModalOpen}
+          onClose={this.handleCertificateModalClose}
+          maxWidth="md"
+          fullWidth
+        >
+          <DialogTitle>
+            Certificate Details: <span className="fw-bold">{this.state.certificateNo}</span>
+          </DialogTitle>
+          <DialogContent>
+            {this.state.certificateLoading ? (
+              <div className="loading-animation d-flex justify-content-center" style={{ padding: "20px" }}>
+                <div className="spinner-grow" role="status">
+                  <span className="visually-hidden">Loading...</span>
+                </div>
+              </div>
+            ) : typeof this.state.certificateDetails === "string" ? (
+              <p style={{ color: "#dc3545" }}>{this.state.certificateDetails}</p>
+            ) : this.state.certificateDetails?.success ? (
+              <div style={{ maxHeight: "500px", overflowY: "auto" }}>
+                {this.state.certificateDetails.certificateData && (
+                  <div>
+                    <div style={{ marginBottom: "20px" }}>
+                      <h6 style={{ fontWeight: "bold", marginBottom: "10px" }}>Report Information</h6>
+                      <table style={{ width: "100%", fontSize: "13px" }}>
+                        <tbody>
+                          {this.state.certificateDetails.certificateData.report_type && (
+                            <tr>
+                              <td style={{ fontWeight: "bold", width: "40%", paddingBottom: "5px" }}>Report Type:</td>
+                              <td>{this.state.certificateDetails.certificateData.report_type}</td>
+                            </tr>
+                          )}
+                          {this.state.certificateDetails.certificateData.report_number && (
+                            <tr>
+                              <td style={{ fontWeight: "bold", paddingBottom: "5px" }}>Report Number:</td>
+                              <td>{this.state.certificateDetails.certificateData.report_number}</td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {this.state.certificateDetails.certificateData.jewelry.type && (
+                      <div style={{ marginBottom: "20px" }}>
+                        <h6 style={{ fontWeight: "bold", marginBottom: "10px" }}>Jewelry Details</h6>
+                        <table style={{ width: "100%", fontSize: "13px" }}>
+                          <tbody>
+                            {this.state.certificateDetails.certificateData.jewelry.type && (
+                              <tr>
+                                <td style={{ fontWeight: "bold", width: "40%", paddingBottom: "5px" }}>Type:</td>
+                                <td>{this.state.certificateDetails.certificateData.jewelry.type}</td>
+                              </tr>
+                            )}
+                            {this.state.certificateDetails.certificateData.jewelry.metal && (
+                              <tr>
+                                <td style={{ fontWeight: "bold", paddingBottom: "5px" }}>Metal:</td>
+                                <td>{this.state.certificateDetails.certificateData.jewelry.metal}</td>
+                              </tr>
+                            )}
+                            {this.state.certificateDetails.certificateData.jewelry.color && (
+                              <tr>
+                                <td style={{ fontWeight: "bold", paddingBottom: "5px" }}>Color:</td>
+                                <td>{this.state.certificateDetails.certificateData.jewelry.color}</td>
+                              </tr>
+                            )}
+                            {this.state.certificateDetails.certificateData.jewelry.weight_grams && (
+                              <tr>
+                                <td style={{ fontWeight: "bold", paddingBottom: "5px" }}>Weight:</td>
+                                <td>{this.state.certificateDetails.certificateData.jewelry.weight_grams}</td>
+                              </tr>
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+
+                    {(this.state.certificateDetails.certificateData.diamonds.quantity ||
+                      this.state.certificateDetails.certificateData.diamonds.total_carat_weight) && (
+                      <div style={{ marginBottom: "20px" }}>
+                        <h6 style={{ fontWeight: "bold", marginBottom: "10px" }}>Diamond/Gemstone Details</h6>
+                        <table style={{ width: "100%", fontSize: "13px" }}>
+                          <tbody>
+                            {this.state.certificateDetails.certificateData.diamonds.quantity && (
+                              <tr>
+                                <td style={{ fontWeight: "bold", width: "40%", paddingBottom: "5px" }}>Quantity:</td>
+                                <td>{this.state.certificateDetails.certificateData.diamonds.quantity}</td>
+                              </tr>
+                            )}
+                            {this.state.certificateDetails.certificateData.diamonds.shape && (
+                              <tr>
+                                <td style={{ fontWeight: "bold", paddingBottom: "5px" }}>Shape:</td>
+                                <td>{this.state.certificateDetails.certificateData.diamonds.shape}</td>
+                              </tr>
+                            )}
+                            {this.state.certificateDetails.certificateData.diamonds.cut && (
+                              <tr>
+                                <td style={{ fontWeight: "bold", paddingBottom: "5px" }}>Cut:</td>
+                                <td>{this.state.certificateDetails.certificateData.diamonds.cut}</td>
+                              </tr>
+                            )}
+                            {this.state.certificateDetails.certificateData.diamonds.color_grade && (
+                              <tr>
+                                <td style={{ fontWeight: "bold", paddingBottom: "5px" }}>Color Grade:</td>
+                                <td>{this.state.certificateDetails.certificateData.diamonds.color_grade}</td>
+                              </tr>
+                            )}
+                            {this.state.certificateDetails.certificateData.diamonds.clarity_grade && (
+                              <tr>
+                                <td style={{ fontWeight: "bold", paddingBottom: "5px" }}>Clarity Grade:</td>
+                                <td>{this.state.certificateDetails.certificateData.diamonds.clarity_grade}</td>
+                              </tr>
+                            )}
+                            {this.state.certificateDetails.certificateData.diamonds.total_carat_weight && (
+                              <tr>
+                                <td style={{ fontWeight: "bold", paddingBottom: "5px" }}>Total Carat Weight:</td>
+                                <td>{this.state.certificateDetails.certificateData.diamonds.total_carat_weight}</td>
+                              </tr>
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+
+                    {this.state.certificateDetails.certificateData.comments.length > 0 && (
+                      <div style={{ marginBottom: "20px" }}>
+                        <h6 style={{ fontWeight: "bold", marginBottom: "10px" }}>Comments</h6>
+                        <p style={{ fontSize: "13px" }}>
+                          {this.state.certificateDetails.certificateData.comments.join(" ")}
+                        </p>
+                      </div>
+                    )}
+
+                    <div style={{ marginTop: "15px" }}>
+                      <button
+                        className="btn btn-primary btn-sm"
+                        onClick={() => {
+                          const blob = new Blob([this.state.certificateDetails.data], { type: "application/pdf" });
+                          const url = window.URL.createObjectURL(blob);
+                          window.open(url, "_blank");
+                        }}
+                      >
+                        Open Full PDF
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ) : null}
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={this.handleCertificateModalClose} color="primary">
+              Close
+            </Button>
+          </DialogActions>
+        </Dialog>
+
         <TableContainer
           component={Paper}
           className="ratn-table-wrapper"
@@ -683,16 +874,17 @@ class DataTable extends React.Component {
                   ) : null}
                   {this.getData(row).map((item, index) => {
                     if (index === 2) {
+                      // Get the certificate number from the original row data (column index 2)
+                      const certificateNo = row[this.state.columns[2]?.name] || '';
                       return (
                         <TableCell
                           align={rowAlign}
                           key={i + index}
-                          data-bs-toggle="modal"
-                          data-bs-target="#exampleModal"
                         >
                           <span
                             className="btn"
-                            onClick={() => this.crFunction(item)}
+                            style={{ cursor: "pointer", color: "#007bff", textDecoration: "underline" }}
+                            onClick={() => this.handleCertificateClick(certificateNo)}
                           >
                             {item}
                           </span>
