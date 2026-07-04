@@ -20,6 +20,7 @@ import MainCard from "ui-component/cards/MainCard";
 import withRouter from "src/helpers/withRouter";
 import { withSnackbar } from "notistack";
 import { purchaseEdit } from "actions/admin/purchase.actions";
+import { ADMIN_RESET_PURCHASE } from "actionTypes/admin/purchase.types";
 
 class PurchaseEditPage extends Component {
   constructor(props) {
@@ -27,11 +28,12 @@ class PurchaseEditPage extends Component {
 
     this.state = {
       id: this.props.params.id,
-      purchase: this.props.purchase,
+      purchase: null,
     };
   }
 
   componentDidMount() {
+    this.props.dispatch({ type: ADMIN_RESET_PURCHASE });
     this.props.actions.purchaseEdit(this.state.id);
   }
 

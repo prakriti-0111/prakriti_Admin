@@ -142,6 +142,7 @@ class StockPage extends Component {
       imageViewDialogOpen: false,
       imageViewPath: "",
       downloadingReport: false,
+      downloadingCategoryId: null,
     };
 
     this.columns = [
@@ -522,18 +523,28 @@ class StockPage extends Component {
     this.props.actions.stocksList(this.state.queryParams);
   };
 
-  downloadCurrentStockReport = async () => {
+  downloadCurrentStockReport = async (categoryId = null) => {
+    const reportQuery = categoryId
+      ? {
+          ...this.state.queryParams,
+          category_id: categoryId,
+          sub_category_id: "",
+          page: 1,
+          limit: 50,
+        }
+      : this.state.queryParams;
+
     try {
-      this.setState({ downloadingReport: true });
+      this.setState({ downloadingReport: true, downloadingCategoryId: categoryId });
       /*const token = getAuthData("access_token");
-      const query = objectToQuery(this.state.queryParams, true);
+      const query = objectToQuery(reportQuery, true);
       const res = await fetch(`/api/superadmin/stocks/current-stock-report${query}`, {
         headers: { Authorization: token ? "Bearer " + token : "" },
       });*/
-      const res = await downloadCurrentStockReport(this.state.queryParams);
+      const res = await downloadCurrentStockReport(reportQuery);
       console.log("Report response:", res);
-      if (!res.statusText || res.statusText.toLowerCase() !== "ok") {
-        this.props.enqueueSnackbar("Failed to download report", { variant: "error" });
+      if (!res.status || res.status != 200) {
+        this.props.enqueueSnackbar("Failed to download report, Response Status issue.", { variant: "error" });
         return;
       }
       const contentType = res.headers.get("content-type") || "";
@@ -554,7 +565,7 @@ class StockPage extends Component {
             a.remove();
           }
         } else {
-          this.props.enqueueSnackbar("Failed to download report", { variant: "error" });
+          this.props.enqueueSnackbar("Failed to download report, data url not found.", { variant: "error" });
         }
       } else {
         this.props.enqueueSnackbar("Invalid content type. Failed to download report", { variant: "error" });
@@ -563,7 +574,7 @@ class StockPage extends Component {
       console.error(err);
       this.props.enqueueSnackbar("Download failed", { variant: "error" });
     } finally {
-      this.setState({ downloadingReport: false });
+      this.setState({ downloadingReport: false, downloadingCategoryId: null });
     }
   };
 
@@ -1818,21 +1829,47 @@ class StockPage extends Component {
             {this.state.price_by_categories.map((item, key) => (
               <CardContent
                 className={`dashboard_card_content bg-color-1`}
-                sx={{ display: "flex", justifyContent: "space-between" }}
+                sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}
                 key={key}
                 onClick={() => this.handleCardClick(item.category_id)}
               >
-                <Typography
-                  sx={{ fontSize: 14, margin: 0 }}
-                  color="text.secondary"
-                  gutterBottom
-                  component="span"
-                >
-                  <h1>{item.category_name}</h1>
-                  <h2>{displayAmount(item.total_amount)}</h2>
-                  <h3>{item.quantity} Piece(s)</h3>
-                </Typography>
-                <div className="card-icon">{/* <DiamondIcon /> */}</div>
+                <Box sx={{ flex: 1 }}>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap" }}>
+                    <Typography
+                      sx={{ fontSize: 14, margin: 0 }}
+                      color="text.secondary"
+                      gutterBottom
+                      component="div"
+                    >
+                      <h1>{item.category_name}</h1>
+                      <h2>{displayAmount(item.total_amount)}</h2>
+                      <h3>{item.quantity} Piece(s)</h3>
+                    </Typography>
+                    
+                  </Box>
+                </Box>
+                <div className="card-icon">{(isMainSuperAdmin() || isAdmin()) && (
+                      <IconButton
+                        size="small"
+                        color="primary"
+                        aria-label={`Download stock report for ${item.category_name}`}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          this.downloadCurrentStockReport(item.category_id);
+                        }}
+                        disabled={
+                          this.state.downloadingReport &&
+                          this.state.downloadingCategoryId === item.category_id
+                        }
+                      >
+                        {this.state.downloadingReport &&
+                        this.state.downloadingCategoryId === item.category_id ? (
+                          <CircularProgress size={18} />
+                        ) : (
+                          <FileDownloadIcon />
+                        )}
+                      </IconButton>
+                    )}</div>
               </CardContent>
             ))}
           </Card>
@@ -2044,21 +2081,6 @@ class StockPage extends Component {
                   </div>
                 </FormControl>
               </Grid>
-              {(isMainSuperAdmin() || isAdmin()) && (
-                <Grid item xs={12} md={12} sx={{ mb: 1 }} className="create-input">
-                  
-                  {this.state.downloadingReport ? (
-                    <CircularProgress size={30} />
-                  ) : (
-                    <Button
-                      variant="contained"
-                      onClick={this.downloadCurrentStockReport}
-                    >
-                      <span className="download-text">Current Stock Report</span><FileDownloadIcon />
-                    </Button>
-                  )}
-                </Grid>
-              )}
               {/*<Grid item xs={6} md={3} className='create-input'>
                 <FormControl fullWidth>
                   <TextField

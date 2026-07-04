@@ -104,9 +104,16 @@ module.exports = {
     maxEntrypointSize: 512000,
     maxAssetSize: 512000,
   },
+  ignoreWarnings: [
+    /Critical dependency: the request of a dependency is an expression/,
+  ],
   devServer: {
     port: 8888,
     historyApiFallback: true,
     hot: true,
+    headers: {
+      "Cross-Origin-Opener-Policy": "same-origin",
+      "Cross-Origin-Embedder-Policy": "credentialless",
+    },
   },
 };
