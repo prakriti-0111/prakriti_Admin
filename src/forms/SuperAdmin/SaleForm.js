@@ -369,6 +369,8 @@ class SaleForm extends React.Component {
 
       common_making_discount: "",
 
+      common_making_discount_type: "discount",
+
       unique_materials: [],
 
       admin_details: {
@@ -935,6 +937,11 @@ class SaleForm extends React.Component {
           making_charge: cart.making_charge,
 
           making_charge_discount_percent: cart.making_charge_discount_percent,
+
+          making_charge_discount_type:
+            cart.making_charge_discount_type || "discount",
+
+          making_charge_flat: cart.making_charge_flat || "",
 
           max_making_charge_discount_percent:
             cart.max_making_charge_discount_percent,
@@ -1817,13 +1824,39 @@ class SaleForm extends React.Component {
         );
       }
 
-      let discount_amount = !isAssign
-        ? priceFormat(
-            (making_charge *
-              parseFloat(products[x].making_charge_discount_percent)) /
-              100,
+      let making_disc_type =
+        products[x].making_charge_discount_type || "discount";
+
+      let discount_amount = 0;
+
+      if (!isAssign) {
+        if (making_disc_type == "rate") {
+          /* flat rate: the entered value replaces the making charge directly,
+             mirroring the material flat-rate case. No percentage discount applies. */
+          let flat_raw = products[x].making_charge_flat;
+
+          if (
+            flat_raw !== "" &&
+            flat_raw !== null &&
+            flat_raw !== undefined &&
+            !isNaN(parseFloat(flat_raw))
+          ) {
+            making_charge = priceFormat(parseFloat(flat_raw));
+          }
+
+          products[x].making_charge_discount_percent = 0;
+        } else {
+          let making_disc_value = parseFloat(
+            products[x].making_charge_discount_percent,
           )
-        : 0;
+            ? parseFloat(products[x].making_charge_discount_percent)
+            : 0;
+
+          discount_amount = priceFormat(
+            (making_charge * making_disc_value) / 100,
+          );
+        }
+      }
 
       let total_making_charge = priceFormat(making_charge - discount_amount);
 
@@ -2645,8 +2678,13 @@ class SaleForm extends React.Component {
 
     let { value, max } = event.target;
 
+    /* super admin can give the full 0 - 100 %, others are capped at the per-row max */
     if (value != "") {
-      value = Math.max(Number(0), Math.min(Number(max), Number(value)));
+      if (!this.isSuperAdmin) {
+        value = Math.max(Number(0), Math.min(Number(max), Number(value)));
+      } else {
+        value = Math.max(Number(0), Math.min(Number(100), Number(value)));
+      }
     }
 
     formValues.products[productKey].making_charge_discount_percent = value;
@@ -2797,19 +2835,36 @@ class SaleForm extends React.Component {
   };
 
   handleCommonMakingDis = (event) => {
+    let type = this.state.common_making_discount_type;
+
+    let vl = event.target.value;
+
+    /* percentage discount is allowed only in the 0 - 100 range */
+    if (type != "rate" && vl !== "") {
+      vl = Math.max(Number(0), Math.min(Number(100), Number(vl)));
+    }
+
     this.setState({
-      common_making_discount: event.target.value,
+      common_making_discount: vl,
     });
 
     let formValues = this.state.formValues;
 
-    let vl = event.target.value;
-
     for (let i = 0; i < formValues.products.length; i++) {
-      if (!vl) {
-        formValues.products[i].making_charge_discount_percent = "";
-      } else {
-        if (formValues.products[i].max_making_charge_discount_percent > 0) {
+      formValues.products[i].making_charge_discount_type = type;
+
+      if (formValues.products[i].max_making_charge_discount_percent > 0) {
+        if (type == "rate") {
+          /* flat rate replaces the making charge directly; percentage box shows 0 */
+          formValues.products[i].making_charge_flat = vl;
+          formValues.products[i].making_charge_discount_percent = 0;
+        } else if (!vl) {
+          formValues.products[i].making_charge_discount_percent = "";
+        } else if (this.isSuperAdmin) {
+          /* super admin: reflect the full 0 - 100 value into every row box */
+          formValues.products[i].making_charge_discount_percent = vl;
+        } else {
+          /* others: reflect the entered value but never above the per-row max */
           formValues.products[i].making_charge_discount_percent =
             formValues.products[i].max_making_charge_discount_percent >=
             parseFloat(vl)
@@ -2821,6 +2876,33 @@ class SaleForm extends React.Component {
 
     this.setState(
       {
+        formValues: formValues,
+      },
+
+      () => {
+        this.calculateProductPrice();
+      },
+    );
+  };
+
+  handleCommonMakingDisType = (event) => {
+    let type = event.target.value;
+
+    let formValues = this.state.formValues;
+
+    /* switching the discount mode resets the entered value for every product */
+    for (let i = 0; i < formValues.products.length; i++) {
+      formValues.products[i].making_charge_discount_type = type;
+      formValues.products[i].making_charge_flat = "";
+      /* flat rate forces the row percentage box to 0 */
+      formValues.products[i].making_charge_discount_percent =
+        type == "rate" ? 0 : "";
+    }
+
+    this.setState(
+      {
+        common_making_discount_type: type,
+        common_making_discount: "",
         formValues: formValues,
       },
 
@@ -5214,7 +5296,12 @@ class SaleForm extends React.Component {
                                     max={
                                       item.max_making_charge_discount_percent
                                     }
-                                    disabled={isReturn ? "disabled" : ""}
+                                    disabled={
+                                      isReturn ||
+                                      item.making_charge_discount_type == "rate"
+                                        ? "disabled"
+                                        : ""
+                                    }
                                   />
 
                                   <span
@@ -5436,6 +5523,8 @@ class SaleForm extends React.Component {
                                                             value={item.making_charge_discount_percent}
 
                                                             onChange={(event) => this.handleMakingDiscount(event, index)}
+
+                                                            disabled={item.making_charge_discount_type == "rate"}
 
                                                             InputProps={{
 
@@ -5824,7 +5913,7 @@ class SaleForm extends React.Component {
                                   }
                                   className="custom_input"
                                   style={{
-                                    width: "90%",
+                                    width: "100%",
 
                                     height: "40px",
 
@@ -5843,7 +5932,19 @@ class SaleForm extends React.Component {
                                   }}
                                 >
                                   {" "}
-                                  %
+                                  <select
+                                    value={
+                                      this.state.common_making_discount_type
+                                    }
+                                    onChange={(event) =>
+                                      this.handleCommonMakingDisType(event)
+                                    }
+                                    disabled={isReturn ? "disabled" : ""}
+                                  >
+                                    <option value="discount">Discount %</option>
+
+                                    <option value="rate">Flat rate</option>
+                                  </select>
                                 </span>
                               </span>
                             </div>
