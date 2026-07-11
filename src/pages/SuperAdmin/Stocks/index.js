@@ -196,7 +196,7 @@ class StockPage extends Component {
         display_name: "Price",
       },
       {
-        name: "tax_prize",
+        name: "tax_prize_display",
         display_name: "Tax Price",
       },
       {
