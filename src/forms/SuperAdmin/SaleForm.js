@@ -1831,8 +1831,10 @@ class SaleForm extends React.Component {
 
       if (!isAssign) {
         if (making_disc_type == "rate") {
-          /* flat rate: the entered value replaces the making charge directly,
-             mirroring the material flat-rate case. No percentage discount applies. */
+          /* flat rate: the entered value is applied according to the item's
+             sub-category making charge type — multiplied by the total weight
+             for "per_gram" items and by the item quantity for "per_piece"
+             items. No percentage discount applies. */
           let flat_raw = products[x].making_charge_flat;
 
           if (
@@ -1841,7 +1843,17 @@ class SaleForm extends React.Component {
             flat_raw !== undefined &&
             !isNaN(parseFloat(flat_raw))
           ) {
-            making_charge = priceFormat(parseFloat(flat_raw));
+            let flat_rate = parseFloat(flat_raw);
+
+            if (products[x].sub_cat_making_charge_type == "per_gram") {
+              making_charge = priceFormat(
+                flat_rate * parseFloat(products[x].total_weight),
+              );
+            } else if (products[x].sub_cat_making_charge_type == "per_piece") {
+              making_charge = priceFormat(flat_rate * parseFloat(quantity));
+            } else {
+              making_charge = priceFormat(flat_rate);
+            }
           }
 
           products[x].making_charge_discount_percent = 0;
@@ -2855,7 +2867,8 @@ class SaleForm extends React.Component {
 
       if (formValues.products[i].max_making_charge_discount_percent > 0) {
         if (type == "rate") {
-          /* flat rate replaces the making charge directly; percentage box shows 0 */
+          /* flat rate is applied per the item's making charge type (per gram /
+             per piece) during calculation; percentage box shows 0 */
           formValues.products[i].making_charge_flat = vl;
           formValues.products[i].making_charge_discount_percent = 0;
         } else if (!vl) {
@@ -3100,6 +3113,38 @@ class SaleForm extends React.Component {
     }
 
     return haveDis;
+  };
+
+  /* total weight the making discount applies to — the making charge is
+     weight-based only for "per_gram" items, so sum their total weight. */
+  getMakingApplicableWeight = () => {
+    const { formValues } = this.state;
+
+    let weight = 0;
+
+    for (let item of formValues.products) {
+      if (item.sub_cat_making_charge_type == "per_gram") {
+        weight += parseFloat(item.total_weight) || 0;
+      }
+    }
+
+    return weight;
+  };
+
+  /* total quantity the making discount applies to — the making charge is
+     quantity-based only for "per_piece" items, so sum their quantity. */
+  getMakingApplicableQuantity = () => {
+    const { formValues } = this.state;
+
+    let quantity = 0;
+
+    for (let item of formValues.products) {
+      if (item.sub_cat_making_charge_type == "per_piece") {
+        quantity += !isEmpty(item.quantity) ? parseFloat(item.quantity) : 1;
+      }
+    }
+
+    return quantity;
   };
 
   handleCheckBox = (e, index) => {
@@ -5899,9 +5944,12 @@ class SaleForm extends React.Component {
                                 style={{
                                   fontSize: "smaller",
                                   color: "#000000",
+                                  whiteSpace: "nowrap",
                                 }}
                               >
-                                Making Disc
+                                Making Disc (
+                                {this.getMakingApplicableWeight().toFixed(3)} gm
+                                | {this.getMakingApplicableQuantity()} pcs)
                               </p>
 
                               <span style={{ position: "relative" }}>
