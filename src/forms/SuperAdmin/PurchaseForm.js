@@ -113,8 +113,6 @@ import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import { cartList } from "actions/superadmin/cart.actions";
 import { formValues } from "redux-form";
 
-var GroseData = 0;
-
 // Add this debounce utility function at the top of the file
 const debounce = (func, wait) => {
   let timeout;
@@ -1983,6 +1981,7 @@ class PurchaseForm extends React.Component {
         size_name: "",
         materials: [],
         tax_info: null,
+        gross_weight: "",
         total_weight: 0,
         rate: 0,
         sub_price: 0,
@@ -2073,29 +2072,50 @@ class PurchaseForm extends React.Component {
     }
     productFormValues.materials = [...materials];
 
-    if (key == "weight") {
+    if (key == "weight" && materials.length > 1) {
+      // Gold (index 0) is always displayed net of every other material's weight.
+      // "Gross" is tracked explicitly in productFormValues.gross_weight (per-dialog
+      // state, reset for every new product) so the split stays correct no matter
+      // which field - gold or a stone - is typed first or edited again later.
       if (index == 0) {
-        GroseData = event.target.value;
-      } else {
-        // console.log(materials);
+        // Just remember the typed value as gross - don't rewrite the field the
+        // user is actively typing into here, or every keystroke gets reformatted
+        // out from under them (see handleGoldWeightBlur for the net recompute).
+        productFormValues.gross_weight = materials[0].weight;
 
-        let weight = GroseData;
-        let total_value = 0;
-        for (let index = 1; index < materials.length; index++) {
-          // total_value += Number(materials[index].weight);
-          total_value += convertUnitToGram(
-            productFormValues.materials[index].unit_name,
-            productFormValues.materials[index].weight,
-          );
-          // console.log("------------total value is ", total_value);
+        // Gold weight changed, so the stones' weight (and hence value) that were
+        // entered against the old gross no longer add up - reset them and force
+        // re-entry rather than silently keeping a now-inconsistent total price.
+        for (let i = 1; i < materials.length; i++) {
+          materials[i] = { ...materials[i], weight: "", pakka_weight: "", amount: 0 };
+        }
+        productFormValues.materials = [...materials];
+      } else {
+        if (isEmpty(productFormValues.gross_weight)) {
+          // First stone weight entered before gold's own field was ever typed into:
+          // treat gold's current (pre-edit) display as the implicit gross baseline.
+          let priorOthersTotal = 0;
+          for (let i = 1; i < materials.length; i++) {
+            priorOthersTotal += convertUnitToGram(
+              this.state.productFormValues.materials[i].unit_name,
+              this.state.productFormValues.materials[i].weight,
+            );
+          }
+          productFormValues.gross_weight =
+            (parseFloat(this.state.productFormValues.materials[0].weight) || 0) +
+            priorOthersTotal;
         }
 
-        materials[0].weight = (weight - total_value).toFixed(3);
+        let othersTotal = 0;
+        for (let i = 1; i < materials.length; i++) {
+          othersTotal += convertUnitToGram(materials[i].unit_name, materials[i].weight);
+        }
+        let gross = parseFloat(productFormValues.gross_weight) || 0;
+        materials[0].weight = (gross - othersTotal).toFixed(3);
 
         let prioritySelected = materials[0].purities.filter(
           (itm) => itm.id == materials[0].purity_id,
         );
-        console.log("prioritySelected : ", prioritySelected);
 
         if (productFormValues.product_type == "material") {
           materials[0].pakka_weight =
@@ -2119,6 +2139,42 @@ class PurchaseForm extends React.Component {
         this.calculatePrice();
       },
     );
+  };
+
+  // Gold's own Total Weight field holds whatever the user typed (gross) while
+  // they're still typing. Once they leave the field, net it against every
+  // other material's current weight - deferred to blur so reformatting to
+  // .toFixed(3) on every keystroke doesn't fight the user mid-edit.
+  handleGoldWeightBlur = () => {
+    let productFormValues = { ...this.state.productFormValues };
+    let materials = [...productFormValues.materials];
+    if (materials.length <= 1) return;
+
+    let othersTotal = 0;
+    for (let i = 1; i < materials.length; i++) {
+      othersTotal += convertUnitToGram(materials[i].unit_name, materials[i].weight);
+    }
+    let gross = parseFloat(productFormValues.gross_weight) || 0;
+    materials[0] = { ...materials[0], weight: (gross - othersTotal).toFixed(3) };
+
+    if (productFormValues.product_type == "material") {
+      let prioritySelected = materials[0].purities.filter(
+        (itm) => itm.id == materials[0].purity_id,
+      );
+      materials[0].pakka_weight =
+        prioritySelected[0] && prioritySelected[0].value != ""
+          ? parseFloat(
+              (parseFloat(materials[0].weight) *
+                parseFloat(prioritySelected[0].value)) /
+                100,
+            ).toFixed(3)
+          : parseFloat(materials[0].weight).toFixed(3);
+    }
+
+    productFormValues.materials = materials;
+    this.setState({ productFormValues: productFormValues }, () => {
+      this.calculatePrice();
+    });
   };
 
   updateProductMakingCharge = (event) => {
@@ -4304,6 +4360,11 @@ class PurchaseForm extends React.Component {
                                                     "weight",
                                                   )
                                                 }
+                                                onBlur={
+                                                  materialIndex === 0
+                                                    ? this.handleGoldWeightBlur
+                                                    : undefined
+                                                }
                                                 error={
                                                   materialFormErrors[
                                                     materialIndex
@@ -4528,6 +4589,11 @@ class PurchaseForm extends React.Component {
                                             "weight",
                                           )
                                         }
+                                        onBlur={
+                                          index === 0
+                                            ? this.handleGoldWeightBlur
+                                            : undefined
+                                        }
                                         error={materialFormErrors[index].weight}
                                         disabled={this.isMaterialFormDisabled()}
                                       />
@@ -4656,7 +4722,7 @@ class PurchaseForm extends React.Component {
                         label="TOT.WT(IN GRAM)"
                         variant="outlined"
                         fullWidth
-                        value={GroseData}
+                        value={productFormValues.total_weight}
                         disabled
                       />
                     </Grid>
