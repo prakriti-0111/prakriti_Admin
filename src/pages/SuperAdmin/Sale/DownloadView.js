@@ -1040,7 +1040,7 @@ class SaleViewPage extends React.Component {
                               const saleTotal =
                                 parseAmt(sale.total_amount) || grandTotal;
                               const discount = saleTotal - totalPayable;
-                              if (discount === 0) return null;
+                              if (discount <= 0) return null;
                               return (
                                 <TableRow>
                                   <TableCell
@@ -1064,8 +1064,7 @@ class SaleViewPage extends React.Component {
                                       borderBottom: "none",
                                     }}
                                   >
-                                    {discount < 0 ? "- " : ""}₹
-                                    {Math.abs(discount).toFixed(2)}
+                                    - ₹{discount.toFixed(2)}
                                   </TableCell>
                                 </TableRow>
                               );
@@ -1142,10 +1141,10 @@ class SaleViewPage extends React.Component {
                         <span>{sale.igst_tax}</span>
                       </div>
                     )}
-                    {parseFloat(sale.discount) > 0 && (
+                    {Math.abs(parseFloat(sale.discount) || 0) > 0 && (
                       <div className="invoice-totals-line">
                         <span>Discount</span>
-                        <span>{sale.discount}</span>
+                        <span style={{ color: "#1E2746" }}>- ₹{Math.abs(parseFloat(sale.discount) || 0).toFixed(2)}</span>
                       </div>
                     )}
                     <div className="invoice-totals-line invoice-totals-line-final">
