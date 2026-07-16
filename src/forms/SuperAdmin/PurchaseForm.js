@@ -2487,260 +2487,143 @@ class PurchaseForm extends React.Component {
   };
 
   handleDeleteConfirm = async () => {
-    // show loader and prevent multiple clicks
     this.setState({ deleteLoading: true });
     let formValues = this.state.formValues;
     let proIdxData = formValues.products[this.state.deletingIndex];
 
-    console.log("=== DELETE PRODUCT DEBUG ===");
-    console.log("Product to delete:", proIdxData);
-    console.log("Product ID:", proIdxData.id);
-    console.log("Product source:", proIdxData.source);
-    console.log("Pre-store ID:", proIdxData.pre_store_id);
-
-    // Start with optimistic updatedProducts (remove by index)
-    let updatedProducts = formValues.products.filter(
-      (_, index) => index !== this.state.deletingIndex,
-    );
-
-    // If it's a pre-store item, call pre-store delete and refresh list later
     if (proIdxData.source === "pre-store" || proIdxData.is_new_product) {
       const preStoreId = proIdxData.pre_store_id || proIdxData.id;
-      console.log("Deleting from pre-store with ID:", preStoreId);
       try {
-        await this.props.actions.prePurchaseDelete(preStoreId);
-        console.log("Pre-store product deleted successfully");
+        const res = await this.props.actions.prePurchaseDelete(preStoreId);
+        if (res && res.data && !res.data.success) {
+          this.props.enqueueSnackbar(res.data.message || "Failed to delete product.", { variant: "error" });
+          this.setState({ deleteLoading: false });
+          return;
+        }
       } catch (error) {
-        console.error("Error deleting pre-store product:", error);
+        const errMsg = error?.response?.data?.message || error?.message || "Failed to delete product. Please try again.";
+        this.props.enqueueSnackbar(errMsg, { variant: "error" });
+        this.setState({ deleteLoading: false });
+        return;
       }
+
+      // API succeeded — now remove from UI
+      let updatedProducts = formValues.products.filter(
+        (_, index) => index !== this.state.deletingIndex,
+      );
+      const totalsNow = this.getCalculatedPurchaseTotals(updatedProducts);
+      this.setState(
+        {
+          formValues: { ...formValues, products: updatedProducts, ...totalsNow },
+          deleteDialogOpen: false,
+          deleteLoading: false,
+        },
+        () => {
+          this.handleCalculateMainPrice(updatedProducts);
+          setTimeout(() => {
+            this.props.actions.purchasePreStoreList({ all: 1 });
+          }, 500);
+        },
+      );
     } else if (
       proIdxData.source === "edit" ||
       (proIdxData.id && !proIdxData.is_new_product)
     ) {
-      // For existing products, call the delete API immediately and prefer
-      // the server-returned product list (so totals come from authoritative data)
-      console.log(
-        "This is an existing product (source=edit), calling delete API with ID:",
-        proIdxData.id,
+      try {
+        const deleteRes = await this.props.actions.purchaseProductDelete(
+          this.state.formData.id,
+          proIdxData.id,
+        );
+        if (deleteRes && deleteRes.data && !deleteRes.data.success) {
+          this.props.enqueueSnackbar(deleteRes.data.message || "Failed to delete product.", { variant: "error" });
+          this.setState({ deleteLoading: false });
+          return;
+        }
+      } catch (error) {
+        const errMsg = error?.response?.data?.message || error?.message || "Failed to delete product. Please try again.";
+        this.props.enqueueSnackbar(errMsg, { variant: "error" });
+        this.setState({ deleteLoading: false });
+        return;
+      }
+
+      // API succeeded — fetch latest data from server
+      let updatedProducts = formValues.products.filter(
+        (_, index) => index !== this.state.deletingIndex,
       );
-      // Add a prefixed deletion key to locally deleted ids immediately
-      // to prevent server re-introducing it during merges.
-      const addKey = this.getDeletedKey(proIdxData) || proIdxData.id;
-      this.setState((prevState) => {
-        const next = [...(prevState.locallyDeletedProductIds || []), addKey];
-        try {
-          window.sessionStorage.setItem(
-            "locallyDeletedProductIds",
-            JSON.stringify(next),
+
+      try {
+        const res = await purchaseRawEdit(this.state.formData.id);
+        if (res.data && res.data.success) {
+          const latest = res.data.data || {};
+          const editProducts = (latest.products || []).map((p) => ({
+            ...p,
+            source: "edit",
+            is_new_product: false,
+          }));
+          const preStoreProducts = (this.state.prePurchaseItems || []).map(
+            (product) => ({
+              ...product,
+              pre_store_id: product.id,
+              id: 0,
+              source: "pre-store",
+              is_new_product: true,
+            }),
           );
+          updatedProducts = [...editProducts, ...preStoreProducts];
+        }
+      } catch (err) {
+        console.error("Error fetching latest purchase after delete:", err);
+      }
+
+      // Remove from formData
+      const newFormData = { ...(this.state.formData || {}) };
+      if (newFormData.products && Array.isArray(newFormData.products)) {
+        newFormData.products = newFormData.products.filter((p) => {
+          const pid = p && (p.id || p.pre_store_id || 0);
+          const removedId = proIdxData && (proIdxData.id || proIdxData.pre_store_id || 0);
+          return pid !== removedId;
+        });
+      }
+
+      // Clean up locallyDeletedProductIds
+      const deletedKey = this.getDeletedKey(proIdxData) || proIdxData.id;
+      this.setState((prevState) => {
+        const next = (prevState.locallyDeletedProductIds || []).filter(
+          (i) => i !== deletedKey && i !== proIdxData.id && i !== String(proIdxData.id),
+        );
+        try {
+          window.sessionStorage.setItem("locallyDeletedProductIds", JSON.stringify(next));
         } catch (e) {}
         return { locallyDeletedProductIds: next };
       });
 
-      try {
-        await this.props.actions.purchaseProductDelete(
-          this.state.formData.id,
-          proIdxData.id,
-        );
-        console.log("Existing purchase product deleted successfully via API");
-
-        // Fetch the latest purchase data and use it as the source of truth
-        try {
-          const res = await purchaseRawEdit(this.state.formData.id);
-          if (res.data && res.data.success) {
-            const latest = res.data.data || {};
-            const editProducts = (latest.products || []).map((p) => ({
-              ...p,
-              source: "edit",
-              is_new_product: false,
-            }));
-
-            const preStoreProducts = (this.state.prePurchaseItems || []).map(
-              (product) => ({
-                ...product,
-                pre_store_id: product.id,
-                id: 0,
-                source: "pre-store",
-                is_new_product: true,
-              }),
-            );
-
-            const merged = [...editProducts, ...preStoreProducts];
-
-            // If the server still reports the deleted product (API lag), keep our optimistic removal
-            const deletedId = proIdxData.id;
-            const serverHasDeletedId = merged.some((p) => p && p.id === deletedId);
-            if (serverHasDeletedId) {
-              console.warn(
-                "Server returned product list that still contains deleted product. Keeping optimistic removal.",
-                deletedId,
-              );
-              // keep the locally deleted id in the list so future server updates don't reintroduce it
-            } else {
-              // Server reflects deletion; use server list and remove id from locallyDeletedProductIds
-              updatedProducts = merged;
-              this.setState((prevState) => {
-                const deletedKey = this.getDeletedKey(proIdxData) || deletedId;
-                const next = (prevState.locallyDeletedProductIds || []).filter(
-                  (i) => i !== deletedKey && i !== deletedId && i !== String(deletedId),
-                );
-                try {
-                  window.sessionStorage.setItem(
-                    "locallyDeletedProductIds",
-                    JSON.stringify(next),
-                  );
-                } catch (e) {}
-                return { locallyDeletedProductIds: next };
-              });
-            }
-
-            // Trigger a refresh of pre-store list in Redux so other UI stays in sync
-            try {
-              this.props.actions.purchasePreStoreList({ all: 1 });
-            } catch (err) {
-              console.error(
-                "Error refreshing pre-store list after delete:",
-                err,
-              );
-            }
-          }
-        } catch (err) {
-          console.error("Error fetching latest purchase after delete:", err);
-        }
-      } catch (error) {
-        console.error("Error deleting existing purchase product:", error);
-      }
-    }
-
-    console.log("Products before deletion:", formValues.products.length);
-    console.log("Products after deletion:", updatedProducts.length);
-    console.log("Remaining product IDs:", updatedProducts.map((p) => p.id));
-
-    // Compute totals now (before state update) so UI updates immediately.
-    const totalsNow = this.getCalculatedPurchaseTotals(updatedProducts);
-
-    // Also remove the deleted product from formData (edit-mode source of truth)
-    const newFormData = { ...(this.state.formData || {}) };
-    if (newFormData.products && Array.isArray(newFormData.products)) {
-      newFormData.products = newFormData.products.filter((p) => {
-        const pid = p && (p.id || p.pre_store_id || 0);
-        const removedId = proIdxData && (proIdxData.id || proIdxData.pre_store_id || 0);
-        return pid !== removedId;
-      });
-    }
-
-    // Update state a single time with products + recalculated totals. Ensure loader cleared.
-    try {
+      const totalsNow = this.getCalculatedPurchaseTotals(updatedProducts);
       this.setState(
         {
-          formValues: {
-            ...formValues,
-            products: updatedProducts,
-            ...totalsNow,
-          },
+          formValues: { ...formValues, products: updatedProducts, ...totalsNow },
           formData: newFormData,
           deleteDialogOpen: false,
+          deleteLoading: false,
         },
-        async () => {
-          // Immediate recalculation to ensure UI updates before any server responses
-          try {
-            this.handleCalculateMainPrice(updatedProducts);
-          } catch (e) {
-            console.error('Error during immediate recalculation:', e);
-          }
-          // Only refresh pre-store list if it was a pre-store product
-          if (proIdxData.source === "pre-store" || proIdxData.is_new_product) {
-            setTimeout(() => {
-              console.log("Refreshing pre-purchase list after deletion");
-              this.props.actions.purchasePreStoreList({ all: 1 });
-            }, 500); // Wait to ensure backend processed delete
-          }
-
-          // If we deleted an existing product and fetched the latest server list,
-          // ensure we update totals from the authoritative server response.
-          if (
-            proIdxData.source === "edit" ||
-            (proIdxData.id && !proIdxData.is_new_product)
-          ) {
-            try {
-              const res = await purchaseRawEdit(this.state.formData.id);
-              if (res.data && res.data.success) {
-                const latest = res.data.data || {};
-                const editProducts = (latest.products || []).map((p) => ({
-                  ...p,
-                  source: "edit",
-                  is_new_product: false,
-                }));
-
-                const preStoreProducts = (this.state.prePurchaseItems || []).map(
-                  (product) => ({
-                    ...product,
-                    pre_store_id: product.id,
-                    id: 0,
-                    source: "pre-store",
-                    is_new_product: true,
-                  }),
-                );
-
-                const merged = [...editProducts, ...preStoreProducts];
-
-                // If server still contains deleted ID, keep our optimistic removal.
-                const deletedId = proIdxData.id;
-                const serverHasDeletedId = merged.some((p) => p && p.id === deletedId);
-                if (serverHasDeletedId) {
-                  console.warn(
-                    "Server returned product list that still contains deleted product. Keeping optimistic removal.",
-                    deletedId,
-                  );
-                } else {
-                  // Server reflects deletion; update with server list and recompute totals
-                  const serverTotals = this.getCalculatedPurchaseTotals(merged);
-                  const cleanedFormData = { ...(this.state.formData || {}) };
-                  if (cleanedFormData.products && Array.isArray(cleanedFormData.products)) {
-                    cleanedFormData.products = cleanedFormData.products.filter((p) => p && p.id && p.id !== deletedId);
-                  }
-                  this.setState((prevState) => ({
-                    formValues: {
-                      ...prevState.formValues,
-                      products: merged,
-                      ...serverTotals,
-                    },
-                    formData: cleanedFormData,
-                  }), () => {
-                    // ensure totals are recalculated (defensive)
-                    this.handleCalculateMainPrice(merged);
-                  });
-                  // remove id from locallyDeletedProductIds
-                  this.setState((prevState) => {
-                    const deletedKey = this.getDeletedKey(proIdxData) || deletedId;
-                    const next = (prevState.locallyDeletedProductIds || []).filter(
-                      (i) => i !== deletedKey && i !== deletedId && i !== String(deletedId),
-                    );
-                    try {
-                      window.sessionStorage.setItem(
-                        "locallyDeletedProductIds",
-                        JSON.stringify(next),
-                      );
-                    } catch (e) {}
-                    return { locallyDeletedProductIds: next };
-                  });
-                }
-
-                // Trigger a refresh of pre-store list in Redux so other UI stays in sync
-                try {
-                  this.props.actions.purchasePreStoreList({ all: 1 });
-                } catch (err) {
-                  console.error("Error refreshing pre-store list after delete:", err);
-                }
-              }
-            } catch (err) {
-              console.error("Error fetching latest purchase after delete:", err);
-            }
-          }
+        () => {
+          this.handleCalculateMainPrice(updatedProducts);
+          this.props.actions.purchasePreStoreList({ all: 1 });
         },
       );
-    } finally {
-      this.setState({ deleteLoading: false });
+    } else {
+      // Unknown source — just remove locally
+      let updatedProducts = formValues.products.filter(
+        (_, index) => index !== this.state.deletingIndex,
+      );
+      const totalsNow = this.getCalculatedPurchaseTotals(updatedProducts);
+      this.setState(
+        {
+          formValues: { ...formValues, products: updatedProducts, ...totalsNow },
+          deleteDialogOpen: false,
+          deleteLoading: false,
+        },
+        () => this.handleCalculateMainPrice(updatedProducts),
+      );
     }
   };
 
