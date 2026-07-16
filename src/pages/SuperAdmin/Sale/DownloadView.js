@@ -1144,7 +1144,10 @@ class SaleViewPage extends React.Component {
                     {Math.abs(parseFloat(sale.discount) || 0) > 0 && (
                       <div className="invoice-totals-line">
                         <span>Discount</span>
-                        <span style={{ color: "#1E2746" }}>- ₹{Math.abs(parseFloat(sale.discount) || 0).toFixed(2)}</span>
+                        <span style={{ color: "#1E2746" }}>
+                          - ₹
+                          {Math.abs(parseFloat(sale.discount) || 0).toFixed(2)}
+                        </span>
                       </div>
                     )}
                     <div className="invoice-totals-line invoice-totals-line-final">
