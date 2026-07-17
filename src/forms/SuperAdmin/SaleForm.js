@@ -5152,7 +5152,7 @@ class SaleForm extends React.Component {
 
                     <TableCell sx={{ width: 225 }}>Product Name</TableCell>
 
-                    <TableCell sx={{ width: 90 }}>Size</TableCell>
+                    <TableCell sx={{ width: 100, paddingLeft: '12px', paddingRight: '12px' }}>Size</TableCell>
 
                     <TableCell sx={{ width: 120 }}>Certificate No</TableCell>
 
@@ -5228,7 +5228,7 @@ class SaleForm extends React.Component {
                                 : item.materials[0].avl_qty}
                           </TableCell>
 
-                          <TableCell>{item.size_name}</TableCell>
+                          <TableCell style={{ paddingLeft: '12px', paddingRight: '12px' }}>{item.size_name}</TableCell>
 
                           <TableCell>{item.certificate_no}</TableCell>
 
