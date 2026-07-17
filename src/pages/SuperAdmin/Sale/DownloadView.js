@@ -50,14 +50,9 @@ import Dialog from "@mui/material/Dialog";
 import DialogContent from "@mui/material/DialogContent";
 import DialogContentText from "@mui/material/DialogContentText";
 import DialogTitle from "@mui/material/DialogTitle";
-import { isEmpty, isSuperAdmin, isAdmin } from "src/helpers/helper";
+import { isEmpty, isSuperAdmin, isAdmin, formatIndianNumber, getRoleName, getUserDashboardRoute, getApprovalColor } from "src/helpers/helper";
 import { paymentStore, paymentList } from "actions/superadmin/payment.actions";
 import { SUPERADMIN_RESET_PAYMENT } from "../../../actionTypes/superadmin/payment.types";
-import {
-  getRoleName,
-  getUserDashboardRoute,
-  getApprovalColor,
-} from "src/helpers/helper";
 import { getNotifiactions } from "actions/superadmin/notification.actions";
 import FileDownloadIcon from "@mui/icons-material/FileDownload";
 import { stocksList } from "actions/superadmin/stocks.actions";
@@ -836,8 +831,11 @@ class SaleViewPage extends React.Component {
                           (reportAmt *
                             (parseFloat(sale.report_tax_percentage) || 0)) /
                           100;
-                        const grandTotal =
-                          totalTaxableAmt + reportAmt + totalTax + reportTax;
+                        const parseAmt = (v) => parseFloat(String(v || "").replace(/[^0-9.-]+/g, "")) || 0;
+                        const totalBeforeDiscount = totalTaxableAmt + reportAmt + totalTax + reportTax;
+                        const totalPayable = parseAmt(sale.total_payable);
+                        const discountAmt = Math.round((totalBeforeDiscount - totalPayable) * 100) / 100;
+                        const grandTotal = totalPayable;
                         return (
                           <>
                             <TableRow>
@@ -1028,19 +1026,11 @@ class SaleViewPage extends React.Component {
                                   borderBottom: "none",
                                 }}
                               >
-                                ₹{totalTax.toFixed(2)}
+                                ₹{formatIndianNumber(totalTax)}
                               </TableCell>
                             </TableRow>
                             {(() => {
-                              const parseAmt = (v) =>
-                                parseFloat(
-                                  String(v || "").replace(/[^0-9.-]+/g, ""),
-                                ) || 0;
-                              const totalPayable = parseAmt(sale.total_payable);
-                              const saleTotal =
-                                parseAmt(sale.total_amount) || grandTotal;
-                              const discount = saleTotal - totalPayable;
-                              if (discount <= 0) return null;
+                              const discount = discountAmt > 0 ? discountAmt : 0;
                               return (
                                 <TableRow>
                                   <TableCell
@@ -1064,7 +1054,7 @@ class SaleViewPage extends React.Component {
                                       borderBottom: "none",
                                     }}
                                   >
-                                    - ₹{discount.toFixed(2)}
+                                    - ₹{formatIndianNumber(discount)}
                                   </TableCell>
                                 </TableRow>
                               );
@@ -1098,7 +1088,7 @@ class SaleViewPage extends React.Component {
                                   textAlign: "right",
                                 }}
                               >
-                                ₹{grandTotal.toFixed(2)}
+                                ₹{formatIndianNumber(grandTotal)}
                               </TableCell>
                             </TableRow>
                           </>
@@ -1415,11 +1405,14 @@ class SaleViewPage extends React.Component {
                               });
                               const entries = Object.entries(materialTotals);
                               if (entries.length === 0) return null;
-                              const grandTotal =
-                                entries.reduce(
+                              const totalBeforeDiscount2 = entries.reduce(
                                   (sum, [, d]) => sum + d.amount,
                                   0,
                                 ) + totalTax;
+                              const parseAmt2 = (v) => parseFloat(String(v || "").replace(/[^0-9.-]+/g, "")) || 0;
+                              const totalPayable2 = parseAmt2(sale.total_payable);
+                              const discountAmt2 = Math.round((totalBeforeDiscount2 - totalPayable2) * 100) / 100;
+                              const grandTotal = totalPayable2;
                               return (
                                 <>
                                   <TableRow>
