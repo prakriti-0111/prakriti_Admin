@@ -237,13 +237,17 @@ class ProductForm extends React.Component {
     const size_materials = this.state.size_materials;
     if (!size_materials.length) return;
 
-    const startIndex = this.getGapStartIndex(material_key);
-    const anchorMaterial = size_materials[startIndex]?.materials?.[material_key];
+    // The base weight always lives on the first size row, regardless of
+    // which size is chosen as the Start Size for this material's gap.
+    const anchorMaterial = size_materials[0]?.materials?.[material_key];
     if (!anchorMaterial) return;
 
     const baseWeight =
       baseWeightOverride !== undefined ? baseWeightOverride : anchorMaterial.weight;
     if (baseWeight === undefined || baseWeight === "") return;
+
+    // Start Size only controls where the gap-based increase kicks in.
+    const startIndex = this.getGapStartIndex(material_key);
 
     let percValue = 0;
     for (let i = 0; i < this.state.percentage.length; i++) {
@@ -259,26 +263,16 @@ class ProductForm extends React.Component {
       }
     }
 
-    if (gapvalueData) {
-      let weightvalue = baseWeight;
-      for (let i = startIndex + 1; i < size_materials.length; i++) {
-        const distance = i - startIndex;
-        if (distance % gapvalueData == 0) {
-          weightvalue = this.normalizeDecimalValue(
-            Number(baseWeight) +
-              (percValue / 100) * Number(baseWeight) * (distance / gapvalueData),
-          );
-        }
-        size_materials[i].materials[material_key].weight = weightvalue;
-      }
-    } else {
-      for (let i = startIndex + 1; i < size_materials.length; i++) {
+    for (let i = 1; i < size_materials.length; i++) {
+      if (i < startIndex || !gapvalueData) {
         size_materials[i].materials[material_key].weight = baseWeight;
+        continue;
       }
-    }
-
-    for (let i = 0; i < startIndex; i++) {
-      size_materials[i].materials[material_key].weight = baseWeight;
+      const distance = i - startIndex;
+      const steps = Math.floor(distance / gapvalueData);
+      size_materials[i].materials[material_key].weight = this.normalizeDecimalValue(
+        Number(baseWeight) + (percValue / 100) * Number(baseWeight) * steps,
+      );
     }
 
     this.setState({ size_materials });
@@ -1321,8 +1315,7 @@ class ProductForm extends React.Component {
       let size_materials = this.state.size_materials;
       size_materials[size_key].materials[material_key].weight = e.target.value;
 
-      const startIndex = this.getGapStartIndex(material_key);
-      if (size_key == startIndex && size_materials.length > 1) {
+      if (size_key == 0 && size_materials.length > 1) {
         this.applyGapCascade(material_key, e.target.value);
       } else {
         this.setState({
