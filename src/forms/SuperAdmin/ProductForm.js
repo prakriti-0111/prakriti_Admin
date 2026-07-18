@@ -176,14 +176,15 @@ class ProductForm extends React.Component {
         }
       });
     }
+    const afterUpdate = () => this.applyGapCascade(index);
     if (condition) {
       this.setState(() => ({
         percentage: valueData,
-      }));
+      }), afterUpdate);
     } else {
       this.setState((prevState) => ({
         percentage: [...prevState.percentage, obj],
-      }));
+      }), afterUpdate);
     }
   };
 
