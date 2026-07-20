@@ -3549,7 +3549,11 @@ th.banner_img {
       grid-gap: 6px;
     }
     .card-icon {
-      display: none;
+      display: flex;
+
+      svg {
+        font-size: 24px;
+      }
     }
     .dashboard_card_content {
       h1 {

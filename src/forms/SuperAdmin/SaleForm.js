@@ -5249,33 +5249,38 @@ class SaleForm extends React.Component {
                           ) : null}
 
                           <TableCell colSpan={2}>
-                            {item.materials.map((m, key) => (
-                              <div
-                                className="products-data-container"
-                                key={key}
-                              >
-                                <div className="products-data-row">
-                                  <div
-                                    className="products-data"
-                                    key={key}
-                                    style={{ position: "relative" }}
-                                  >
-                                    {m.material_name} &nbsp;({m.purity}) &nbsp;
-                                    {m.weight} &nbsp;{m.unit_name} &nbsp; x
-                                    &nbsp; {m.rate}{" "}
-                                  </div>
+                            {item.materials.map((m, key) =>
+                              parseFloat(m.weight || 0) > 0 ||
+                              parseFloat(m.amount || 0) > 0 ? (
+                                <div
+                                  className="products-data-container"
+                                  key={key}
+                                >
+                                  <div className="products-data-row">
+                                    <div
+                                      className="products-data"
+                                      key={key}
+                                      style={{ position: "relative" }}
+                                    >
+                                      {m.material_name} &nbsp;({m.purity}) &nbsp;
+                                      {m.weight} &nbsp;{m.unit_name} &nbsp; x
+                                      &nbsp; {m.rate}{" "}
+                                    </div>
 
-                                  <div className="products-amount">
-                                    {" "}
-                                    = &nbsp; &nbsp;{m.amount}
+                                    <div className="products-amount">
+                                      {" "}
+                                      = &nbsp; &nbsp;{m.amount}
+                                    </div>
                                   </div>
                                 </div>
-                              </div>
-                            ))}
+                              ) : null,
+                            )}
                           </TableCell>
 
                           <TableCell>
-                            {item.materials.map((m, key) => (
+                            {item.materials.map((m, key) =>
+                              parseFloat(m.weight || 0) > 0 ||
+                              parseFloat(m.amount || 0) > 0 ? (
                               <div className="sale-discount-wrapper" key={key}>
                                 <>
                                   {m.max_discount_percent > 0 &&
@@ -5312,15 +5317,19 @@ class SaleForm extends React.Component {
                                   )}
                                 </>
                               </div>
-                            ))}
+                              ) : null,
+                            )}
                           </TableCell>
 
                           <TableCell>
-                            {item.materials.map((m, key) => (
-                              <p key={key}>
-                                {priceFormat(m.amount - m.discount_amount)}
-                              </p>
-                            ))}
+                            {item.materials.map((m, key) =>
+                              parseFloat(m.weight || 0) > 0 ||
+                              parseFloat(m.amount || 0) > 0 ? (
+                                <p key={key}>
+                                  {priceFormat(m.amount - m.discount_amount)}
+                                </p>
+                              ) : null,
+                            )}
                           </TableCell>
 
                           <TableCell>
@@ -5683,8 +5692,7 @@ class SaleForm extends React.Component {
 
           {report_charge &&
             formValues.report_qty > 0 &&
-            !this.state.isAssign &&
-            formValues.user_id && (
+            !this.state.isAssign && (
               <Grid
                 item
                 xs={12}
@@ -6038,7 +6046,7 @@ class SaleForm extends React.Component {
                         </b>
                       </TableCell>
 
-                      <TableCell className=" align-items-center mob-hide">
+                      <TableCell className=" align-items-center note-cell">
                         <div className="sticky-note">
                           <i
                             class="bi bi-pencil-square fs-4 "
