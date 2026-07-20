@@ -438,12 +438,7 @@ class SalePage extends Component {
                   this.isDistributor ||
                   this.isSalesExecutive,
               },
-              {
-                label: "View",
-                onClick: this.handleView,
-                color: "primary",
-                show: hasPermission(this.state.permissions, "sales", "view"),
-              },
+
               /*{
                 label: 'Delete',
                 onClick: this.handleDelete,
