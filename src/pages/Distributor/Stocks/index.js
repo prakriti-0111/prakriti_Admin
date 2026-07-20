@@ -1,7 +1,7 @@
 import { React, Component } from 'react';
 import { matchRoutes, useLocation } from "react-router-dom"
 import { connect } from 'react-redux';
-import { Select, Stack, InputLabel, Box, Typography, FormControl, Card, CardContent, TextField, Grid, Button, MenuItem } from '@mui/material';
+import { Select, Stack, InputLabel, Box, Typography, FormControl, Card, CardContent, TextField, Grid, Button, MenuItem, CircularProgress } from '@mui/material';
 import { bindActionCreators } from 'redux';
 import { gridSpacing } from 'store/constant';
 import MainCard from 'ui-component/cards/MainCard';
@@ -37,7 +37,9 @@ class StockPage extends Component {
         limit: 50,
         category_id: '',
         sub_category_id: '',
-        search: ''
+        search: '',
+        certificate_no: '',
+        total_weight: ''
       },
       cart_actionCalled: this.props.cart_actionCalled,
       cart_createSuccess: this.props.cart_createSuccess,
@@ -50,7 +52,8 @@ class StockPage extends Component {
       cart_stock: null,
       categories: this.props.categories,
       sub_categories: this.props.sub_categories,
-      price_by_categories: []
+      price_by_categories: [],
+      searching: false
     }
 
     this.columns = [
@@ -125,6 +128,7 @@ class StockPage extends Component {
     let update = {};
     if (props.items !== state.items) {
       update.items = props.items;
+      update.searching = false;
     }
 
     if (props.total !== state.total) {
@@ -184,7 +188,14 @@ class StockPage extends Component {
   }
 
   loadListData = () => {
-    this.props.actions.stocksList(this.state.queryParams);
+    const params = { ...this.state.queryParams };
+    const search = (params.search || '').trim();
+    // ponytail: numeric search text is treated as a total-weight filter; add a dedicated field if numeric codes ever need text search
+    if (/^\d+(\.\d+)?$/.test(search)) {
+      params.total_weight = search;
+      params.search = '';
+    }
+    this.props.actions.stocksList(params);
   }
 
   handleView = (row) => {
@@ -290,16 +301,21 @@ class StockPage extends Component {
   }
 
   handleSearchChange = (event) => {
+    const value = event.target.value;
     this.setState({
       queryParams: {
         ...this.state.queryParams,
-        search: event.target.value
+        search: value,
+        certificate_no: '',
+        total_weight: ''
       }
     })
   }
 
   handleSearch = () => {
-    this.loadListData();
+    this.setState({ searching: true }, () => {
+      this.loadListData();
+    });
   }
 
 
@@ -378,7 +394,9 @@ class StockPage extends Component {
                 </FormControl>
               </Grid>
               <Grid item xs={12} md={2} className='create-input order-input button-right'>
-                <Button variant="contained" className='search-btn' onClick={this.handleSearch}>Search</Button>
+                <Button variant="contained" className='search-btn' onClick={this.handleSearch} disabled={this.state.searching}>
+                  {this.state.searching ? <CircularProgress size={20} color="inherit" /> : 'Search'}
+                </Button>
               </Grid>
             </Grid>
           </Box>

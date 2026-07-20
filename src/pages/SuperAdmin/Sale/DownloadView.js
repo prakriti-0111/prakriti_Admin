@@ -50,13 +50,23 @@ import Dialog from "@mui/material/Dialog";
 import DialogContent from "@mui/material/DialogContent";
 import DialogContentText from "@mui/material/DialogContentText";
 import DialogTitle from "@mui/material/DialogTitle";
-import { isEmpty, isSuperAdmin, isAdmin, formatIndianNumber, getRoleName, getUserDashboardRoute, getApprovalColor, convertUnitToGram } from "src/helpers/helper";
+import {
+  isEmpty,
+  isSuperAdmin,
+  isAdmin,
+  formatIndianNumber,
+  getRoleName,
+  getUserDashboardRoute,
+  getApprovalColor,
+  convertUnitToGram,
+} from "src/helpers/helper";
 import { paymentStore, paymentList } from "actions/superadmin/payment.actions";
 import { SUPERADMIN_RESET_PAYMENT } from "../../../actionTypes/superadmin/payment.types";
 import { getNotifiactions } from "actions/superadmin/notification.actions";
 import FileDownloadIcon from "@mui/icons-material/FileDownload";
 import { stocksList } from "actions/superadmin/stocks.actions";
 import { stocksTransferHistoryStore } from "actions/superadmin/stockHistory.actions";
+import { purityList } from "actions/superadmin/purity.actions";
 import "./style.css";
 
 class SaleViewPage extends React.Component {
@@ -122,6 +132,7 @@ class SaleViewPage extends React.Component {
   componentDidMount() {
     this.loadViewData();
     this.loadListData();
+    this.props.actions.purityList({ all: 1 });
   }
 
   loadListData = () => {
@@ -452,12 +463,7 @@ class SaleViewPage extends React.Component {
     } else {
       formErros.payment_mode = false;
     }
-    if (
-      this.state.materialStocks.length > 0 &&
-      isSuperAdmin &&
-      isAdmin &&
-      formValues.payment_mode == "metal"
-    ) {
+    if (formValues.payment_mode == "metal") {
       if (isEmpty(formValues.purity_id)) {
         formErros.purity_id = true;
         hasErr = true;
@@ -551,26 +557,16 @@ class SaleViewPage extends React.Component {
     } = this.state;
     let metalPurityList = [];
     if (
-      this.state.materialStocks.length > 0 &&
-      isSuperAdmin &&
-      isAdmin &&
-      formValues.payment_mode == "metal"
+      formValues.payment_mode == "metal" &&
+      this.props.purityItems &&
+      this.props.purityItems.length > 0
     ) {
-      this.state.materialStocks.map((item) => {
-        if (item.stock_materials.length > 0) {
-          item.stock_materials.map((subItem) => {
-            subItem.purities.map((priority) => {
-              metalPurityList.push({
-                id: priority.id,
-                unit_id: subItem.unit_id,
-                value: priority.value,
-                name:
-                  priority.name +
-                  `${priority.value ? "(" + priority.value + "%)" : ""}`,
-              });
-            });
-          });
-        }
+      this.props.purityItems.forEach((item) => {
+        metalPurityList.push({
+          id: item.id,
+          value: item.value,
+          name: item.name + `${item.value ? "(" + item.value + "%)" : ""}`,
+        });
       });
     }
     console.log("sale : ", sale);
@@ -772,7 +768,9 @@ class SaleViewPage extends React.Component {
                             const key = p.sub_category_hsn || "";
                             if (!makingChargeMap[key]) makingChargeMap[key] = 0;
                             makingChargeMap[key] +=
-                              (parseFloat(p.making_charge) || 0) - (parseFloat(p.making_charge_discount_amount) || 0);
+                              (parseFloat(p.making_charge) || 0) -
+                              (parseFloat(p.making_charge_discount_amount) ||
+                                0);
                           });
                         }
                         return sale.subCatItems.map((row, i) => {
@@ -795,7 +793,10 @@ class SaleViewPage extends React.Component {
                         if (sale.products) {
                           sale.products.forEach((product) => {
                             totalMakingCharge +=
-                              (parseFloat(product.making_charge) || 0) - (parseFloat(product.making_charge_discount_amount) || 0);
+                              (parseFloat(product.making_charge) || 0) -
+                              (parseFloat(
+                                product.making_charge_discount_amount,
+                              ) || 0);
                           });
                         }
                         let totalTax = 0;
@@ -823,11 +824,17 @@ class SaleViewPage extends React.Component {
                             materialTotals[key].amount += amt;
                           });
                         });
-                        const entries = Object.entries(materialTotals).sort((a, b) => {
-                          const aIsGold = a[0].toLowerCase().includes("gold") ? 1 : 0;
-                          const bIsGold = b[0].toLowerCase().includes("gold") ? 1 : 0;
-                          return aIsGold - bIsGold;
-                        });
+                        const entries = Object.entries(materialTotals).sort(
+                          (a, b) => {
+                            const aIsGold = a[0].toLowerCase().includes("gold")
+                              ? 1
+                              : 0;
+                            const bIsGold = b[0].toLowerCase().includes("gold")
+                              ? 1
+                              : 0;
+                            return aIsGold - bIsGold;
+                          },
+                        );
                         if (entries.length === 0) return null;
                         const reportAmt =
                           (parseFloat(sale.report_qty) || 0) *
@@ -836,16 +843,20 @@ class SaleViewPage extends React.Component {
                           (reportAmt *
                             (parseFloat(sale.report_tax_percentage) || 0)) /
                           100;
-                        const parseAmt = (v) => parseFloat(String(v || "").replace(/[^0-9.-]+/g, "")) || 0;
-                        const totalBeforeDiscount = totalTaxableAmt + reportAmt + totalTax + reportTax;
-                        const totalPayable = parseAmt(sale.total_payable);
-                        const discountAmt = Math.round((totalBeforeDiscount - totalPayable) * 100) / 100;
+                        const parseAmt = (v) =>
+                          parseFloat(
+                            String(v || "").replace(/[^0-9.-]+/g, ""),
+                          ) || 0;
+                        const discountAmt = parseAmt(sale.discount);
                         // Calculate total Gross Weight with unit conversion
                         let totalGrossWeight = 0;
                         if (sale.subCatItems) {
                           sale.subCatItems.forEach((item) => {
                             item.material.forEach((mat) => {
-                              totalGrossWeight += convertUnitToGram(mat.unit, mat.weight);
+                              totalGrossWeight += convertUnitToGram(
+                                mat.unit,
+                                mat.weight,
+                              );
                             });
                           });
                         }
@@ -888,41 +899,59 @@ class SaleViewPage extends React.Component {
                               <TableCell colSpan={5} />
                             </TableRow>
                             {entries.map(([name, data], idx) => {
-                              const isGold = name.toLowerCase().includes("gold");
+                              const isGold = name
+                                .toLowerCase()
+                                .includes("gold");
                               return (
-                              <TableRow
-                                key={idx}
-                                sx={{
-                                  "& td": {
-                                    borderBottom: "none",
-                                    padding: "2px 16px",
-                                  },
-                                }}
-                              >
-                                <TableCell
-                                  colSpan={5}
-                                  style={{ fontSize: "13px", color: isGold ? "#1E2746" : "#555", fontWeight: isGold ? 600 : 400 }}
+                                <TableRow
+                                  key={idx}
+                                  sx={{
+                                    "& td": {
+                                      borderBottom: "none",
+                                      padding: "2px 16px",
+                                    },
+                                  }}
                                 >
-                                  {name}
-                                </TableCell>
-                                <TableCell
-                                  style={{ fontSize: "13px", color: isGold ? "#1E2746" : "#555", fontWeight: isGold ? 600 : 400 }}
-                                >
-                                  {data.weight.toFixed(3)} {data.unit}
-                                </TableCell>
-                                <TableCell
-                                  colSpan={2}
-                                  style={{ fontSize: "13px", color: isGold ? "#1E2746" : "#555", fontWeight: isGold ? 600 : 400 }}
-                                >
-                                  × ₹{formatIndianNumber(data.rate)}
-                                </TableCell>
-                                <TableCell
-                                  colSpan={4}
-                                  style={{ fontSize: "13px", color: isGold ? "#1E2746" : "#555", fontWeight: isGold ? 600 : 400 }}
-                                >
-                                  ₹{formatIndianNumber(data.amount)}
-                                </TableCell>
-                              </TableRow>
+                                  <TableCell
+                                    colSpan={5}
+                                    style={{
+                                      fontSize: "13px",
+                                      color: isGold ? "#1E2746" : "#555",
+                                      fontWeight: isGold ? 600 : 400,
+                                    }}
+                                  >
+                                    {name}
+                                  </TableCell>
+                                  <TableCell
+                                    style={{
+                                      fontSize: "13px",
+                                      color: isGold ? "#1E2746" : "#555",
+                                      fontWeight: isGold ? 600 : 400,
+                                    }}
+                                  >
+                                    {data.weight.toFixed(3)} {data.unit}
+                                  </TableCell>
+                                  <TableCell
+                                    colSpan={2}
+                                    style={{
+                                      fontSize: "13px",
+                                      color: isGold ? "#1E2746" : "#555",
+                                      fontWeight: isGold ? 600 : 400,
+                                    }}
+                                  >
+                                    × ₹{formatIndianNumber(data.rate)}
+                                  </TableCell>
+                                  <TableCell
+                                    colSpan={4}
+                                    style={{
+                                      fontSize: "13px",
+                                      color: isGold ? "#1E2746" : "#555",
+                                      fontWeight: isGold ? 600 : 400,
+                                    }}
+                                  >
+                                    ₹{formatIndianNumber(data.amount)}
+                                  </TableCell>
+                                </TableRow>
                               );
                             })}
                             {totalMakingCharge > 0 && (
@@ -1017,7 +1046,8 @@ class SaleViewPage extends React.Component {
                               </TableRow>
                             )}
                             {(() => {
-                              const discount = discountAmt > 0 ? discountAmt : 0;
+                              const discount =
+                                discountAmt > 0 ? discountAmt : 0;
                               return (
                                 <TableRow>
                                   <TableCell
@@ -1065,61 +1095,107 @@ class SaleViewPage extends React.Component {
                 <Grid item xs={12} sm={6}>
                   <div className="invoice-totals-box">
                     {(() => {
-                      const reportAmt = (parseFloat(sale.report_qty) || 0) * (parseFloat(sale.report_charge) || 0);
-                      const taxableAmt = parseFloat(String(sale.taxable_amount || "").replace(/[^0-9.-]+/g, "")) || 0;
+                      const reportAmt =
+                        (parseFloat(sale.report_qty) || 0) *
+                        (parseFloat(sale.report_charge) || 0);
+                      const taxableAmt =
+                        parseFloat(
+                          String(sale.taxable_amount || "").replace(
+                            /[^0-9.-]+/g,
+                            "",
+                          ),
+                        ) || 0;
                       const subTotal = taxableAmt;
-                      const rTax = (reportAmt * (parseFloat(sale.report_tax_percentage) || 0)) / 100;
+                      const rTax =
+                        (reportAmt *
+                          (parseFloat(sale.report_tax_percentage) || 0)) /
+                        100;
                       const igst = parseFloat(sale.igst_tax) || 0;
                       const cgst = parseFloat(sale.cgst_tax) || 0;
                       const sgst = parseFloat(sale.sgst_tax) || 0;
                       const productTax = (igst > 0 ? igst : cgst + sgst) - rTax;
-                      const reportTaxPerc = parseFloat(sale.report_tax_percentage) || 0;
-                      const totalPayableAmt = parseFloat(String(sale.total_payable || "").replace(/[^0-9.-]+/g, "")) || 0;
+                      const reportTaxPerc =
+                        parseFloat(sale.report_tax_percentage) || 0;
+                      const totalPayableAmt =
+                        parseFloat(
+                          String(sale.total_payable || "").replace(
+                            /[^0-9.-]+/g,
+                            "",
+                          ),
+                        ) || 0;
                       const totalTaxAmt = igst > 0 ? igst : cgst + sgst;
-                      const finalDiscount = Math.round((subTotal + reportAmt + totalTaxAmt - totalPayableAmt) * 100) / 100;
+                      const finalDiscount =
+                        parseFloat(
+                          String(sale.discount || "0").replace(
+                            /[^0-9.-]+/g,
+                            "",
+                          ),
+                        ) || 0;
                       return (
                         <>
                           <div className="invoice-totals-line">
                             <span style={{ fontWeight: 700 }}>Sub Total</span>
-                            <span style={{ fontWeight: 700 }}>₹{formatIndianNumber(subTotal)}</span>
+                            <span style={{ fontWeight: 700 }}>
+                              ₹{formatIndianNumber(subTotal)}
+                            </span>
                           </div>
                           {rTax > 0 && (
                             <div className="invoice-totals-line">
-                              <span>Report Tax ({reportTaxPerc.toFixed(2)}%)</span>
+                              <span>
+                                Report Tax ({reportTaxPerc.toFixed(2)}%)
+                              </span>
                               <span>₹{formatIndianNumber(rTax)}</span>
                             </div>
                           )}
                           <div className="invoice-totals-line">
                             <span>Tax</span>
-                            <span>₹{formatIndianNumber(productTax > 0 ? productTax : 0)}</span>
+                            <span>
+                              ₹
+                              {formatIndianNumber(
+                                productTax > 0 ? productTax : 0,
+                              )}
+                            </span>
                           </div>
                           {igst > 0 ? (
                             <div className="invoice-totals-line">
                               <span style={{ fontWeight: 700 }}>IGST</span>
-                              <span style={{ fontWeight: 700 }}>₹{formatIndianNumber(igst)}</span>
+                              <span style={{ fontWeight: 700 }}>
+                                ₹{formatIndianNumber(igst)}
+                              </span>
                             </div>
                           ) : cgst > 0 || sgst > 0 ? (
                             <>
                               <div className="invoice-totals-line">
                                 <span style={{ fontWeight: 700 }}>CGST</span>
-                                <span style={{ fontWeight: 700 }}>₹{formatIndianNumber(cgst)}</span>
+                                <span style={{ fontWeight: 700 }}>
+                                  ₹{formatIndianNumber(cgst)}
+                                </span>
                               </div>
                               <div className="invoice-totals-line">
                                 <span style={{ fontWeight: 700 }}>SGST</span>
-                                <span style={{ fontWeight: 700 }}>₹{formatIndianNumber(sgst)}</span>
+                                <span style={{ fontWeight: 700 }}>
+                                  ₹{formatIndianNumber(sgst)}
+                                </span>
                               </div>
                             </>
                           ) : null}
                           <div className="invoice-totals-line">
                             <span>Discount</span>
-                            <span>- ₹{formatIndianNumber(finalDiscount > 0 ? finalDiscount : 0)}</span>
+                            <span>
+                              - ₹
+                              {formatIndianNumber(
+                                finalDiscount > 0 ? finalDiscount : 0,
+                              )}
+                            </span>
                           </div>
                         </>
                       );
                     })()}
                     <div className="invoice-totals-line invoice-totals-line-final">
                       <span style={{ fontWeight: 700 }}>Total Payable</span>
-                      <span style={{ fontWeight: 700 }}>{sale.total_payable}</span>
+                      <span style={{ fontWeight: 700 }}>
+                        {sale.total_payable}
+                      </span>
                     </div>
                   </div>
                 </Grid>
@@ -1382,14 +1458,17 @@ class SaleViewPage extends React.Component {
                               });
                               const entries = Object.entries(materialTotals);
                               if (entries.length === 0) return null;
-                              const totalBeforeDiscount2 = entries.reduce(
+                              const totalBeforeDiscount2 =
+                                entries.reduce(
                                   (sum, [, d]) => sum + d.amount,
                                   0,
                                 ) + totalTax;
-                              const parseAmt2 = (v) => parseFloat(String(v || "").replace(/[^0-9.-]+/g, "")) || 0;
-                              const totalPayable2 = parseAmt2(sale.total_payable);
-                              const discountAmt2 = Math.round((totalBeforeDiscount2 - totalPayable2) * 100) / 100;
-                              const grandTotal = totalPayable2;
+                              const parseAmt2 = (v) =>
+                                parseFloat(
+                                  String(v || "").replace(/[^0-9.-]+/g, ""),
+                                ) || 0;
+                              const discountAmt2 = parseAmt2(sale.discount);
+                              const grandTotal = parseAmt2(sale.total_payable);
                               return (
                                 <>
                                   <TableRow>
@@ -1627,9 +1706,7 @@ class SaleViewPage extends React.Component {
                     />
                   </Grid>
                 ) : null}
-                {isSuperAdmin &&
-                isAdmin &&
-                formValues.payment_mode == "metal" ? (
+                {formValues.payment_mode == "metal" ? (
                   <>
                     <Grid item md={4} xs={12} className="create-input">
                       <FormControl fullWidth error={formErros.payment_mode}>
@@ -1662,7 +1739,7 @@ class SaleViewPage extends React.Component {
                               formValues: {
                                 ...this.state.formValues,
                                 effective_weight: effective_weight,
-                                unit_id: selected_purity.unit_id,
+                                unit_id: selected_purity.unit_id || "",
                                 purity_id: selected_purity.id,
                               },
                             });
@@ -1726,7 +1803,9 @@ class SaleViewPage extends React.Component {
                             formValues: {
                               ...this.state.formValues,
                               weight: event.target.value,
-                              unit_id: selected_purity.unit_id,
+                              unit_id: selected_purity
+                                ? selected_purity.unit_id || ""
+                                : "",
                               effective_weight: effective_weight,
                             },
                           });
@@ -1806,6 +1885,7 @@ class SaleViewPage extends React.Component {
 
 const mapStateToProps = (state) => ({
   materialStocks: state.superadmin.stocks.items,
+  purityItems: state.superadmin.purity.items,
   actionCalled: state.superadmin.payment.actionCalled,
   createSuccess: state.superadmin.payment.createSuccess,
   successMessage: state.superadmin.payment.successMessage,
@@ -1824,6 +1904,7 @@ const mapDispatchToProps = (dispatch) => {
         paymentList,
         getNotifiactions,
         stocksList,
+        purityList,
       },
       dispatch,
     ),
@@ -1881,7 +1962,9 @@ function SubCatRow(props) {
           dangerouslySetInnerHTML={{ __html: materialWts }}
         ></TableCell>
         <TableCell style={{ fontWeight: 600 }}>
-          {row.material.reduce((sum, m) => sum + convertUnitToGram(m.unit, m.weight), 0).toFixed(3)}
+          {row.material
+            .reduce((sum, m) => sum + convertUnitToGram(m.unit, m.weight), 0)
+            .toFixed(3)}
         </TableCell>
         <TableCell
           dangerouslySetInnerHTML={{ __html: materialUnits }}
