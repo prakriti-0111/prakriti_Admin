@@ -90,6 +90,7 @@ class StockPage extends Component {
         sub_category_id: "",
         search: "",
         certificate_no: "",
+        total_weight: "",
         qty: "",
         unit: "",
         pcode: "",
@@ -143,6 +144,7 @@ class StockPage extends Component {
       imageViewPath: "",
       downloadingReport: false,
       downloadingCategoryId: null,
+      searching: false,
     };
 
     this.columns = [
@@ -289,6 +291,7 @@ class StockPage extends Component {
     let update = {};
     if (props.items !== state.items) {
       update.items = props.items;
+      update.searching = false;
     }
 
     if (props.total !== state.total) {
@@ -519,8 +522,14 @@ class StockPage extends Component {
   }
 
   loadListData = () => {
-    console.log("loadListData", this.state.queryParams);
-    this.props.actions.stocksList(this.state.queryParams);
+    const params = { ...this.state.queryParams };
+    const search = (params.search || "").trim();
+    // ponytail: numeric search text is treated as a total-weight filter; add a dedicated field if numeric codes ever need text search
+    if (/^\d+(\.\d+)?$/.test(search)) {
+      params.total_weight = search;
+      params.search = "";
+    }
+    this.props.actions.stocksList(params);
   };
 
   downloadCurrentStockReport = async (categoryId = null) => {
@@ -749,7 +758,9 @@ class StockPage extends Component {
 
   handleSearch = () => {
     // Load the search results and show them in the list
-    this.loadListData();
+    this.setState({ searching: true }, () => {
+      this.loadListData();
+    });
   };
 
   handleCertificateNoChange = (event) => {
@@ -758,6 +769,16 @@ class StockPage extends Component {
       queryParams: {
         ...prevState.queryParams,
         certificate_no: value,
+      },
+    }));
+  };
+
+  handleTotalWeightChange = (event) => {
+    const value = event.target.value;
+    this.setState((prevState) => ({
+      queryParams: {
+        ...prevState.queryParams,
+        total_weight: value,
       },
     }));
   };
@@ -1434,10 +1455,13 @@ class StockPage extends Component {
   };
 
   handleSearchChange = (event) => {
+    const value = event.target.value;
     this.setState({
       queryParams: {
         ...this.state.queryParams,
-        search: event.target.value,
+        search: value,
+        certificate_no: '',
+        total_weight: '',
         page: 1,
         limit: 50,
       },
@@ -1927,12 +1951,18 @@ class StockPage extends Component {
                     variant="outlined"
                     value={this.state.queryParams.search}
                     onChange={this.handleSearchChange}
+                    onKeyPress={(event) => {
+                      if (event.key === "Enter") {
+                        this.handleSearch();
+                      }
+                    }}
                     InputProps={{
                       endAdornment: (
                         <Button
                           variant=""
                           color="primary"
                           onClick={this.handleSearch}
+                          disabled={this.state.searching}
                           sx={{
                             minWidth: "40px",
                             width: "40px",
@@ -1949,7 +1979,7 @@ class StockPage extends Component {
                             },
                           }}
                         >
-                          <SearchIcon />
+                          {this.state.searching ? <CircularProgress size={20} /> : <SearchIcon />}
                         </Button>
                       ),
                     }}
@@ -1965,21 +1995,6 @@ class StockPage extends Component {
                       gap: "8px",
                     }}
                   >
-                    {/* <div style={{ display: "flex", gap: "8px" }}>
-                      <TextField
-                        label="Certificate Number"
-                        variant="outlined"
-                        value={this.state.queryParams.certificate_no}
-                        onChange={this.handleCertificateNoChange}
-                        onKeyPress={(event) => {
-                          if (event.key === "Enter") {
-                            this.handleAddCertificate();
-                          }
-                        }}
-                        fullWidth
-                      />
-                    </div> */}
-
                     {/* Manual Input Box */}
                     <TextField
                       label="Certificate Entry"
