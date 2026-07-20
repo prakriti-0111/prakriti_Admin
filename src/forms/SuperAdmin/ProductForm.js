@@ -88,6 +88,18 @@ import { RESET_PRODUCT_LIST } from "../../actionTypes/superadmin/product.types";
 
 const filter = createFilterOptions();
 
+const hideNumberSpinner = {
+  "& input[type=number]": { MozAppearance: "textfield" },
+  "& input[type=number]::-webkit-outer-spin-button": {
+    WebkitAppearance: "none",
+    margin: 0,
+  },
+  "& input[type=number]::-webkit-inner-spin-button": {
+    WebkitAppearance: "none",
+    margin: 0,
+  },
+};
+
 const validate = (values) => {
   const errors = {};
   const requiredFields = [
@@ -139,6 +151,7 @@ class ProductForm extends React.Component {
       is_ceritified: true,
       percentage: [],
       gap: [],
+      gapStartSize: [],
     };
 
     this.imageFileRef = React.createRef();
@@ -163,14 +176,15 @@ class ProductForm extends React.Component {
         }
       });
     }
+    const afterUpdate = () => this.applyGapCascade(index);
     if (condition) {
       this.setState(() => ({
         percentage: valueData,
-      }));
+      }), afterUpdate);
     } else {
       this.setState((prevState) => ({
         percentage: [...prevState.percentage, obj],
-      }));
+      }), afterUpdate);
     }
   };
 
@@ -179,7 +193,6 @@ class ProductForm extends React.Component {
     const obj = { gap, indexValue };
     const valueData = this.state.gap;
 
-    console.log("------------- value data of gap", valueData);
     if (valueData.length > 0) {
       valueData.map((item, index) => {
         if (item.indexValue === indexValue) {
@@ -188,18 +201,99 @@ class ProductForm extends React.Component {
         }
       });
     }
+    const afterUpdate = () => this.applyGapCascade(indexValue);
     if (condition) {
-      this.setState(() => ({
-        gap: valueData,
-      }));
+      this.setState(() => ({ gap: valueData }), afterUpdate);
     } else {
-      this.setState((prevState) => ({
-        gap: [...prevState.gap, obj],
-      }));
+      this.setState(
+        (prevState) => ({ gap: [...prevState.gap, obj] }),
+        afterUpdate,
+      );
+    }
+  };
+
+  changeGapStartSize = (sizeId, indexValue) => {
+    let condition = false;
+    const obj = { sizeId, indexValue };
+    const valueData = this.state.gapStartSize;
+
+    valueData.map((item, index) => {
+      if (item.indexValue === indexValue) {
+        valueData[index].sizeId = sizeId;
+        condition = true;
+      }
+    });
+    const afterUpdate = () => this.applyGapCascade(indexValue);
+    if (condition) {
+      this.setState(() => ({ gapStartSize: valueData }), afterUpdate);
+    } else {
+      this.setState(
+        (prevState) => ({ gapStartSize: [...prevState.gapStartSize, obj] }),
+        afterUpdate,
+      );
+    }
+  };
+
+  applyGapCascade = (material_key, baseWeightOverride) => {
+    const size_materials = this.state.size_materials;
+    if (!size_materials.length) return;
+
+    // The base weight always lives on the first size row, regardless of
+    // which size is chosen as the Start Size for this material's gap.
+    const anchorMaterial = size_materials[0]?.materials?.[material_key];
+    if (!anchorMaterial) return;
+
+    const baseWeight =
+      baseWeightOverride !== undefined ? baseWeightOverride : anchorMaterial.weight;
+    if (baseWeight === undefined || baseWeight === "") return;
+
+    // Start Size only controls where the gap-based increase kicks in.
+    const startIndex = this.getGapStartIndex(material_key);
+
+    let percValue = 0;
+    for (let i = 0; i < this.state.percentage.length; i++) {
+      if (this.state.percentage[i].index == material_key) {
+        percValue = Number(this.state.percentage[i].percentageData);
+      }
     }
 
-    console.log("-------------", this.state.gap);
-    console.log("------------", this.state.percentage);
+    let gapvalueData = 0;
+    for (let i = 0; i < this.state.gap.length; i++) {
+      if (this.state.gap[i].indexValue == material_key) {
+        gapvalueData = Number(this.state.gap[i].gap);
+      }
+    }
+
+    for (let i = 1; i < size_materials.length; i++) {
+      if (i < startIndex || !gapvalueData) {
+        size_materials[i].materials[material_key].weight = baseWeight;
+        continue;
+      }
+      const distance = i - startIndex;
+      const steps = Math.floor(distance / gapvalueData);
+      size_materials[i].materials[material_key].weight = this.normalizeDecimalValue(
+        Number(baseWeight) + (percValue / 100) * Number(baseWeight) * steps,
+      );
+    }
+
+    this.setState({ size_materials });
+  };
+
+  getGapStartSizeId = (indexValue) => {
+    for (let i = 0; i < this.state.gapStartSize.length; i++) {
+      if (this.state.gapStartSize[i].indexValue == indexValue) {
+        return this.state.gapStartSize[i].sizeId;
+      }
+    }
+    return this.state.size_materials[0]
+      ? this.state.size_materials[0].size_id
+      : "";
+  };
+
+  getGapStartIndex = (indexValue) => {
+    const sizeId = this.getGapStartSizeId(indexValue);
+    const idx = _.findIndex(this.state.size_materials, { size_id: sizeId });
+    return idx === -1 ? 0 : idx;
   };
 
   onEditorStateChange = (description) => {
@@ -1218,58 +1312,17 @@ class ProductForm extends React.Component {
   };
 
   handleWeightChange = (e, size_key, material_key) => {
-    const re = /^[0-9\b]+$/;
     if (e.target.value === "" || e.target.value.match(/^\d{1,}(\.\d{0,3})?$/)) {
       let size_materials = this.state.size_materials;
+      size_materials[size_key].materials[material_key].weight = e.target.value;
 
       if (size_key == 0 && size_materials.length > 1) {
-        let weightvalue = e.target.value;
-
-        for (let i = 1; i < size_materials.length; i++) {
-          let percValue = 0;
-          let gapvalueData = 0;
-
-          for (let i = 0; i < this.state.percentage.length; i++) {
-            if (this.state.percentage[i].index == material_key) {
-              percValue = Number(this.state.percentage[i].percentageData);
-            }
-          }
-
-          //gap get and store let variable ---------------------------------------------------------------------------------------------------------------------------------------
-          let weigthIncrement = 1;
-          for (let i = 0; i < this.state.gap.length; i++) {
-            if (this.state.gap[i].indexValue == material_key) {
-              gapvalueData = Number(this.state.gap[i].gap);
-            }
-          }
-          let add_percantage = 0;
-
-          if (i % gapvalueData == 0) {
-            weightvalue =
-              Number(e.target.value) +
-              (percValue / 100) *
-                Number(e.target.value) *
-                ((i / gapvalueData) % 1 == 0 ? i / gapvalueData : 1);
-
-            console.log((i / gapvalueData) % 1 == 0 ? i / gapvalueData : 1);
-          }
-
-          size_materials[i].materials[material_key].weight =
-            i % gapvalueData == 0
-              ? this.normalizeDecimalValue(
-                  Number(e.target.value) +
-                    (percValue / 100) *
-                      Number(e.target.value) *
-                      ((i / gapvalueData) % 1 == 0 ? i / gapvalueData : 1),
-                )
-              : weightvalue;
-        }
+        this.applyGapCascade(material_key, e.target.value);
+      } else {
+        this.setState({
+          size_materials: size_materials,
+        });
       }
-
-      size_materials[size_key].materials[material_key].weight = e.target.value;
-      this.setState({
-        size_materials: size_materials,
-      });
     }
   };
 
@@ -1611,6 +1664,7 @@ class ProductForm extends React.Component {
                         label={items.material_name + " % "}
                         variant="outlined"
                         type="number"
+                        sx={hideNumberSpinner}
                         InputProps={{ inputProps: { min: 0, max: 10 } }}
                         value={this.state.percentage[index]?.percentage}
                         onChange={(e) =>
@@ -1631,11 +1685,33 @@ class ProductForm extends React.Component {
                     >
                       <TextField
                         id="outlined-basic"
-                        label="Size Gap "
+                        label="Size Gap"
                         variant="outlined"
                         type="number"
+                        fullWidth
+                        sx={hideNumberSpinner}
                         value={this.state.gap[index]?.gap}
                         onChange={(e) => this.changeGap(e.target.value, index)}
+                        InputProps={{
+                          endAdornment: (
+                            <Select
+                              variant="standard"
+                              disableUnderline
+                              value={this.getGapStartSizeId(index)}
+                              onChange={(e) =>
+                                this.changeGapStartSize(e.target.value, index)
+                              }
+                              onClick={(e) => e.stopPropagation()}
+                              sx={{ minWidth: 56, ml: 1, flexShrink: 0 }}
+                            >
+                              {this.state.size_materials.map((sm, sIndex) => (
+                                <MenuItem value={sm.size_id} key={sIndex}>
+                                  {sm.size_name}
+                                </MenuItem>
+                              ))}
+                            </Select>
+                          ),
+                        }}
                       />
                     </Grid>
                   </>

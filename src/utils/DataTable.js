@@ -476,24 +476,55 @@ class DataTable extends React.Component {
   };
 
   handleCertificateClick = async (certificateNo) => {
+    const hasAlphabet = /[a-zA-Z]/.test(certificateNo);
+
     this.setState({
       certificateModalOpen: true,
       certificateNo: certificateNo,
       certificateLoading: true,
       certificateDetails: null,
+      certificateType: hasAlphabet ? 'igi' : 'iigl',
     });
 
-    const result = await fetchCertificateDetails(certificateNo);
-    if (result.success) {
+    if (hasAlphabet) {
+      const result = await fetchCertificateDetails(certificateNo);
       this.setState({
         certificateDetails: result,
         certificateLoading: false,
       });
     } else {
-      this.setState({
-        certificateDetails: result,
-        certificateLoading: false,
-      });
+      try {
+        const url = `https://www.iigl.org/verify-report?_token=9qeXaecEEQxpc6lxgetMVYbRspPDeAI93byemKfw&report_no=${certificateNo}&mobile=9874445612`;
+        const response = await fetch(url);
+        const result = await response.text();
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(result, 'text/html');
+        const table = doc.querySelector('table');
+
+        if (table) {
+          const rows = Array.from(table.rows).map((row) =>
+            Array.from(row.cells).map((cell) => {
+              const img = cell.querySelector('img');
+              return img ? img.src : cell.textContent.trim();
+            })
+          );
+          this.setState({
+            certificateDetails: { success: true, iiglData: rows },
+            certificateLoading: false,
+          });
+        } else {
+          this.setState({
+            certificateDetails: 'No certificate data found from IIGL',
+            certificateLoading: false,
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching IIGL certificate:', error);
+        this.setState({
+          certificateDetails: `Failed to fetch IIGL certificate: ${error.message}`,
+          certificateLoading: false,
+        });
+      }
     }
   };
 
@@ -761,6 +792,24 @@ class DataTable extends React.Component {
               >
                 ⚠️ {this.state.certificateDetails}
               </p>
+            ) : this.state.certificateDetails?.success && this.state.certificateDetails?.iiglData ? (
+              <div>
+                <div style={{ marginBottom: "10px", marginTop: "10px" }}>
+                  <div style={{ fontSize: "13px", fontWeight: 700, color: "#000", marginBottom: "10px", textTransform: "uppercase", letterSpacing: "0.8px" }}>IIGL Certificate Details</div>
+                  <div style={{ background: "#f5f5f5", border: "1px solid #000", padding: "14px" }}>
+                    {this.state.certificateDetails.iiglData.map(([key, value], idx) => (
+                      <div key={idx} style={{ display: "flex", justifyContent: "space-between", paddingBottom: "12px", borderBottom: idx < this.state.certificateDetails.iiglData.length - 1 ? "1px solid #ddd" : "none", marginBottom: idx < this.state.certificateDetails.iiglData.length - 1 ? "12px" : "0" }}>
+                        <span style={{ fontWeight: 700, color: "#000", fontSize: "13px" }}>{key}</span>
+                        <span style={{ color: "#000", fontSize: "14px" }}>
+                          {value && value.startsWith && value.startsWith("http") ? (
+                            <img src={value} alt={key} style={{ maxWidth: "100px", maxHeight: "100px" }} />
+                          ) : value}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
             ) : this.state.certificateDetails?.success ? (
               <div>
                 {this.state.certificateDetails.certificateData && (

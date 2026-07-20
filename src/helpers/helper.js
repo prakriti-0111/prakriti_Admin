@@ -514,11 +514,27 @@ const getRoleName = (auth) => {
     : "";
 };
 
+const formatIndianNumber = (num) => {
+  num = parseFloat(num);
+  if (isNaN(num)) return "0.00";
+  const isNegative = num < 0;
+  num = Math.abs(num);
+  const parts = num.toFixed(2).split(".");
+  let intPart = parts[0];
+  const decPart = parts[1];
+  if (intPart.length > 3) {
+    const last3 = intPart.slice(-3);
+    const rest = intPart.slice(0, -3);
+    intPart = rest.replace(/\B(?=(\d{2})+(?!\d))/g, ",") + "," + last3;
+  }
+  return (isNegative ? "-" : "") + intPart + "." + decPart;
+};
+
 const displayAmount = (amount, currencyText, showCurrency) => {
   amount = amount === null ? 0 : amount;
   currencyText = currencyText === true ? "Rs. " : "₹ ";
   currencyText = showCurrency === false ? "" : currencyText;
-  return currencyText + priceFormat(amount, true).toFixed(2);
+  return currencyText + formatIndianNumber(priceFormat(amount, true));
 };
 
 const isSuperAdmin = () => {
@@ -1007,4 +1023,5 @@ export {
   validateNumber,
   validateInteger,
   fetchCertificateDetails,
+  formatIndianNumber,
 };

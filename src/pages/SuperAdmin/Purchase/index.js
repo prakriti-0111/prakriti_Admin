@@ -19,6 +19,7 @@ import withRouter from "src/helpers/withRouter";
 import {
   purchaseList,
   purchaseDelete,
+  purchaseDownloadInvoiceInfo,
 } from "actions/superadmin/purchase.actions";
 import { subCategoryList } from "actions/superadmin/subCategory.actions";
 import DataTable from "src/utils/DataTable";
@@ -132,7 +133,7 @@ class PurchasePage extends Component {
       const items = props.items.map((item) => {
         return {
           ...item,
-          invoice_number: `${item.invoice_number} (${item.no_of_products})`
+          invoice_number: `${item.invoice_number} (${item.no_of_products})`,
         };
       });
       update.items = items;
@@ -178,25 +179,9 @@ class PurchasePage extends Component {
   };
 
   handleDownload = async (row) => {
-    let response = await salesDownloadInvoice(row.id);
+    let response = await purchaseDownloadInvoiceInfo(row.id);
     if (response.data.success) {
       window.open(response.data.data.url, "_blank").focus();
-
-      /*var xhr = new XMLHttpRequest();
-      xhr.responseType = 'blob';
-      xhr.onload = (event) => {
-        var blob = xhr.response;
-        var downloaded = document.createElement('a');
-        var downloadedurl = window.URL.createObjectURL(blob);
-        downloaded.href = downloadedurl;
-        downloaded.download = response.data.data.file_name;
-        document.body.append(downloaded);
-        downloaded.click();
-        downloaded.remove();
-        window.URL.revokeObjectURL(downloadedurl);
-      };
-      xhr.open('GET', response.data.data.url);
-      xhr.send();*/
     }
   };
 
@@ -383,7 +368,6 @@ class PurchasePage extends Component {
           </Grid>
         </Box>
         <Grid container spacing={gridSpacing}>
-          {console.log("page", this.state)}
           <DataTable
             columns={this.columns}
             rows={this.state.items}
