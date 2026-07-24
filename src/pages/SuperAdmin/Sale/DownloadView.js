@@ -1045,37 +1045,7 @@ class SaleViewPage extends React.Component {
                                 </TableCell>
                               </TableRow>
                             )}
-                            {(() => {
-                              const discount =
-                                discountAmt > 0 ? discountAmt : 0;
-                              return (
-                                <TableRow>
-                                  <TableCell
-                                    colSpan={9}
-                                    style={{
-                                      fontSize: "15px",
-                                      fontWeight: 700,
-                                      color: "#1E2746",
-                                      borderBottom: "none",
-                                    }}
-                                  >
-                                    Discount
-                                  </TableCell>
-                                  <TableCell
-                                    colSpan={3}
-                                    style={{
-                                      fontSize: "15px",
-                                      fontWeight: 700,
-                                      color: "#1E2746",
-                                      textAlign: "right",
-                                      borderBottom: "none",
-                                    }}
-                                  >
-                                    - ₹{formatIndianNumber(discount)}
-                                  </TableCell>
-                                </TableRow>
-                              );
-                            })()}
+
                           </>
                         );
                       })()}
@@ -1085,13 +1055,7 @@ class SaleViewPage extends React.Component {
               </TableContainer>
 
               <Grid container className="invoice-totals-row">
-                <Grid item xs={12} sm={6}>
-                  {sale.notes && (
-                    <Typography className="invoice-info-line invoice-notes">
-                      Notes: {sale.notes}
-                    </Typography>
-                  )}
-                </Grid>
+                <Grid item xs={12} sm={6} />
                 <Grid item xs={12} sm={6}>
                   <div className="invoice-totals-box">
                     {(() => {
@@ -1200,6 +1164,12 @@ class SaleViewPage extends React.Component {
                   </div>
                 </Grid>
               </Grid>
+
+              {sale.notes && (
+                <Typography className="invoice-info-line invoice-notes" style={{ marginTop: "8px" }}>
+                  Notes: {sale.notes}
+                </Typography>
+              )}
 
               <Grid container className="invoice-footer-band">
                 <Grid item xs={6} sm={3}>
