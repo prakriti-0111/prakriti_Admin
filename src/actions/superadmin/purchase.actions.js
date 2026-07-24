@@ -163,6 +163,10 @@ export const purchaseViewRaw = (id) => {
   return axios.get(`/superadmin/purchases/view/${id}`);
 };
 
+export const purchaseOnApprovalViewRaw = (id) => {
+  return axios.get(`/superadmin/purchases-on-approve/view/${id}`);
+};
+
 export const purchaseView = (id) => {
   return (dispatch) => {
     axios
