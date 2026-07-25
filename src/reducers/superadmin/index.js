@@ -50,6 +50,7 @@ import my_performanceReducer from './my_performance.reducer';
 import returnOrdersReducer from './returnOrders.reducer';
 import holidayReducer from './holiday.reducer';
 import homepageSettingReducer from './homepageSetting.reducer';
+import companyDetailsReducer from './companyDetails.reducer';
 import stockProductReducer from './stockProduct.reducer';
 import reportChargeReducer from './reportCharge.reducer';
 
@@ -104,6 +105,7 @@ export const SUPERADMIN_REDUCERS = {
     returnOrders: returnOrdersReducer,
     holiday: holidayReducer,
     homepagesetting: homepageSettingReducer,
+    companyDetails: companyDetailsReducer,
     stockProduct: stockProductReducer,
     reportCharge: reportChargeReducer
 }

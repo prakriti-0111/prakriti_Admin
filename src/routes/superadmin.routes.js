@@ -228,6 +228,7 @@ const SubscriberPage =Loadable(lazy(() => import('../pages/SuperAdmin/Subscriber
 
 //homepage settings
 const HomepageSettingPage = Loadable(lazy(() => import('../pages/SuperAdmin/HomepageSetting')));
+const CompanyDetailsPage = Loadable(lazy(() => import('../pages/SuperAdmin/CompanyDetails')));
 
 const routePrefix = '/super-admin';
 const SuperAdminRoutes = (isLoggedIn) => [
@@ -342,6 +343,10 @@ const SuperAdminRoutes = (isLoggedIn) => [
       {
         path: 'homepage-settings',
         element: <HomepageSettingPage />
+      },
+      {
+        path: 'company-details',
+        element: <CompanyDetailsPage />
       },
       {
         path: 'countries',
