@@ -349,6 +349,13 @@ const superadminMenus = [
             url: urlPrefix + '/homepage-settings',
             breadcrumbs: false
           },
+          {
+            id: 'company-details',
+            title: 'Company Details',
+            type: 'item',
+            url: urlPrefix + '/company-details',
+            breadcrumbs: false
+          },
         ]
       },
       {

@@ -221,6 +221,10 @@ export const salesViewRaw = (id) => {
     return axios.get(`/superadmin/sales/view/${id}`)
 }
 
+export const salesOnApproveViewRaw = (id) => {
+    return axios.get(`/superadmin/sales-on-approve/view/${id}`)
+}
+
 export const salesEditRaw = (id) => {
     return axios.get(`/superadmin/sales/edit/${id}`)
 }

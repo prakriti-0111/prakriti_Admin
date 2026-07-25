@@ -572,29 +572,21 @@ class SaleViewPage extends React.Component {
     console.log("sale : ", sale);
 
     return (
-      <MainCard
-        id="downloadViewSale"
-        border={false}
-        title={
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "8px",
-              flexWrap: "wrap",
-            }}
-          >
-            <span>{"Sale Details"}</span>
+      <>
+        {/* Sticky header — plain divs, not Box: global .MuiBox-root in
+            style.scss forces padding/margin 0 !important */}
+        <div className="ratn-sticky-header">
+          {/* Left: title + chip + tabs */}
+          <div className="ratn-sticky-header-left">
+            <span className="ratn-sticky-header-title">Sale Details</span>
             {sale && (
-              <div>
-                <Chip
-                  label={sale.approve_status}
-                  color={getApprovalColor(sale.is_approved)}
-                />
-              </div>
+              <Chip
+                label={sale.approve_status}
+                color={getApprovalColor(sale.is_approved)}
+              />
             )}
             {sale && (
-              <div style={{ display: "flex", gap: "4px", marginLeft: "12px" }}>
+              <div className="ratn-sticky-header-tabs">
                 {[
                   { id: "section-sale-details", label: "Sales Details" },
                   { id: "section-payment", label: "Payment" },
@@ -610,17 +602,8 @@ class SaleViewPage extends React.Component {
                       textTransform: "none",
                       backgroundColor:
                         this.state.activeTab === tab.id ? "#1E2746" : "#9e9e9e",
-                      color:
-                        this.state.activeTab === tab.id
-                          ? "#ffffff !important"
-                          : "#1E2746",
+                      color: "#ffffff !important",
                       fontWeight: this.state.activeTab === tab.id ? 700 : 400,
-                      "& .download-text": {
-                        color:
-                          this.state.activeTab === tab.id
-                            ? "#ffffff !important"
-                            : "#1E2746",
-                      },
                       "&:hover": {
                         backgroundColor:
                           this.state.activeTab === tab.id
@@ -629,52 +612,45 @@ class SaleViewPage extends React.Component {
                       },
                     }}
                   >
-                    <span className="download-text">{tab.label}</span>
+                    {tab.label}
                   </Button>
                 ))}
               </div>
             )}
           </div>
-        }
-        secondary={
-          <>
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "8px",
-                marginLeft: "10px",
-                flexWrap: "wrap",
-              }}
-            >
-              {downloadingInfo ? (
-                <CircularProgress size="30px" />
-              ) : (
-                <Button
-                  variant="contained"
-                  onClick={() => this.handleDownloadInfo(this.props.params.id)}
-                >
-                  <span className="download-text">Invoice</span>
-                  <FileDownloadIcon />
-                </Button>
-              )}
+
+          {/* Right: Invoice + Back */}
+          <div className="ratn-sticky-header-actions">
+            {downloadingInfo ? (
+              <CircularProgress size="28px" />
+            ) : (
               <Button
                 variant="contained"
-                onClick={() => this.props.navigate(-1)}
+                onClick={() => this.handleDownloadInfo(this.props.params.id)}
+                sx={{ color: "#fff !important" }}
               >
-                Back
+                Invoice
+                <FileDownloadIcon sx={{ ml: 0.5 }} />
               </Button>
-            </div>
-          </>
-        }
-      >
-        {!sale ? (
-          <Grid container justifyContent="center">
-            <CircularProgress size="30px" />
-          </Grid>
-        ) : (
-          <>
-            {/* <Grid
+            )}
+            <Button
+              variant="contained"
+              onClick={() => this.props.navigate(-1)}
+              sx={{ color: "#fff !important" }}
+            >
+              Back
+            </Button>
+          </div>
+        </div>
+
+        <MainCard id="downloadViewSale" border={false}>
+          {!sale ? (
+            <Grid container justifyContent="center">
+              <CircularProgress size="30px" />
+            </Grid>
+          ) : (
+            <>
+              {/* <Grid
               container
               spacing={{ xs: 2, md: 3 }}
               columns={{ xs: 4, sm: 8, md: 12 }}>
@@ -697,264 +673,186 @@ class SaleViewPage extends React.Component {
               </Grid>
             </Grid> */}
 
-            <Box id="section-sale-details" className="invoice-block">
-              <Grid container className="invoice-info-bar">
-                <Grid item xs={12} sm={6}>
-                  <Typography className="invoice-company-name">
-                    {sale?.user_details?.company_name}
-                  </Typography>
-                  {sale?.user_details?.mobile && (
-                    <Typography className="invoice-info-line">
-                      Contact: {sale.user_details.mobile}
+              <Box id="section-sale-details" className="invoice-block">
+                <Grid container className="invoice-info-bar">
+                  <Grid item xs={12} sm={6}>
+                    <Typography className="invoice-company-name">
+                      {sale?.user_details?.company_name}
                     </Typography>
-                  )}
-                  {sale?.user_details?.gst && (
+                    {sale?.user_details?.mobile && (
+                      <Typography className="invoice-info-line">
+                        Contact: {sale.user_details.mobile}
+                      </Typography>
+                    )}
+                    {sale?.user_details?.gst && (
+                      <Typography className="invoice-info-line">
+                        GST: {sale.user_details.gst}
+                      </Typography>
+                    )}
+                    {sale?.user_details?.city && (
+                      <Typography className="invoice-info-line">
+                        City: {sale.user_details.city}
+                      </Typography>
+                    )}
+                  </Grid>
+                  <Grid item xs={12} sm={6} className="invoice-info-right">
+                    {sale.invoice_number && (
+                      <Typography className="invoice-info-line">
+                        Invoice No: <b>{sale.invoice_number}</b>
+                      </Typography>
+                    )}
                     <Typography className="invoice-info-line">
-                      GST: {sale.user_details.gst}
+                      Invoice Date: {sale.invoice_date}
                     </Typography>
-                  )}
-                  {sale?.user_details?.city && (
                     <Typography className="invoice-info-line">
-                      City: {sale.user_details.city}
+                      Sold By: {sale.user_name}
                     </Typography>
-                  )}
+                  </Grid>
                 </Grid>
-                <Grid item xs={12} sm={6} className="invoice-info-right">
-                  {sale.invoice_number && (
-                    <Typography className="invoice-info-line">
-                      Invoice No: <b>{sale.invoice_number}</b>
-                    </Typography>
-                  )}
-                  <Typography className="invoice-info-line">
-                    Invoice Date: {sale.invoice_date}
-                  </Typography>
-                  <Typography className="invoice-info-line">
-                    Sold By: {sale.user_name}
-                  </Typography>
-                </Grid>
-              </Grid>
 
-              <TableContainer
-                component={Paper}
-                className="invoice-table-wrapper"
-              >
-                <div className="ratn-table-purchase-wrapper">
-                  <Table
-                    aria-label="collapsible table"
-                    className="invoice_product_list table-bordered"
-                  >
-                    <TableHead className="ratn-table-header">
-                      <TableRow>
-                        <TableCell>SL</TableCell>
-                        <TableCell>Product Name</TableCell>
-                        <TableCell>QTY</TableCell>
-                        <TableCell>HSN</TableCell>
-                        <TableCell>Material</TableCell>
-                        <TableCell>WT</TableCell>
-                        <TableCell>GW</TableCell>
-                        <TableCell>Unit</TableCell>
-                        <TableCell>Rate</TableCell>
-                        <TableCell>Making(-Dis.)</TableCell>
-                        <TableCell>Tax@</TableCell>
-                        <TableCell>Taxable Amt.</TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {(() => {
-                        // Build making charge (after discount) lookup from products by sub_category_hsn
-                        const makingChargeMap = {};
-                        if (sale.products) {
-                          sale.products.forEach((p) => {
-                            const key = p.sub_category_hsn || "";
-                            if (!makingChargeMap[key]) makingChargeMap[key] = 0;
-                            makingChargeMap[key] +=
-                              (parseFloat(p.making_charge) || 0) -
-                              (parseFloat(p.making_charge_discount_amount) ||
-                                0);
+                <TableContainer
+                  component={Paper}
+                  className="invoice-table-wrapper"
+                >
+                  <div className="ratn-table-purchase-wrapper">
+                    <Table
+                      aria-label="collapsible table"
+                      className="invoice_product_list table-bordered"
+                    >
+                      <TableHead className="ratn-table-header">
+                        <TableRow>
+                          <TableCell>SL</TableCell>
+                          <TableCell>Product Name</TableCell>
+                          <TableCell>QTY</TableCell>
+                          <TableCell>HSN</TableCell>
+                          <TableCell>Material</TableCell>
+                          <TableCell>WT</TableCell>
+                          <TableCell>GW</TableCell>
+                          <TableCell>Unit</TableCell>
+                          <TableCell>Rate</TableCell>
+                          <TableCell>Making(-Dis.)</TableCell>
+                          <TableCell>Tax@</TableCell>
+                          <TableCell>Taxable Amt.</TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {(() => {
+                          // Build making charge (after discount) lookup from products by sub_category_hsn
+                          const makingChargeMap = {};
+                          if (sale.products) {
+                            sale.products.forEach((p) => {
+                              const key = p.sub_category_hsn || "";
+                              if (!makingChargeMap[key])
+                                makingChargeMap[key] = 0;
+                              makingChargeMap[key] +=
+                                (parseFloat(p.making_charge) || 0) -
+                                (parseFloat(p.making_charge_discount_amount) ||
+                                  0);
+                            });
+                          }
+                          return sale.subCatItems.map((row, i) => {
+                            const makingCharge = makingChargeMap[row.hsn] || 0;
+                            return (
+                              <SubCatRow
+                                key={i}
+                                row={row}
+                                index={i}
+                                makingCharge={makingCharge}
+                              />
+                            );
                           });
-                        }
-                        return sale.subCatItems.map((row, i) => {
-                          const makingCharge = makingChargeMap[row.hsn] || 0;
-                          return (
-                            <SubCatRow
-                              key={i}
-                              row={row}
-                              index={i}
-                              makingCharge={makingCharge}
-                            />
-                          );
-                        });
-                      })()}
-                      {(() => {
-                        const materialTotals = {};
-                        let totalTaxableAmt = 0;
-                        let totalMakingCharge = 0;
-                        // Sum making_charge after discount from products
-                        if (sale.products) {
-                          sale.products.forEach((product) => {
-                            totalMakingCharge +=
-                              (parseFloat(product.making_charge) || 0) -
-                              (parseFloat(
-                                product.making_charge_discount_amount,
-                              ) || 0);
-                          });
-                        }
-                        let totalTax = 0;
-                        sale.subCatItems.forEach((item) => {
-                          const taxableAmt =
-                            parseFloat(item.taxableAmount) || 0;
-                          const taxPercent = parseFloat(item.tax) || 0;
-                          totalTaxableAmt += taxableAmt;
-                          totalTax += (taxableAmt * taxPercent) / 100;
-                          item.material.forEach((mat) => {
-                            const key = mat.name;
-                            if (!materialTotals[key]) {
-                              materialTotals[key] = {
-                                weight: 0,
-                                unit: mat.unit,
-                                rate: parseFloat(mat.rate) || 0,
-                                amount: 0,
-                              };
-                            }
-                            materialTotals[key].weight +=
-                              parseFloat(mat.weight) || 0;
-                            const amt =
-                              (parseFloat(mat.weight) || 0) *
-                              (parseFloat(mat.rate) || 0);
-                            materialTotals[key].amount += amt;
-                          });
-                        });
-                        const entries = Object.entries(materialTotals).sort(
-                          (a, b) => {
-                            const aIsGold = a[0].toLowerCase().includes("gold")
-                              ? 1
-                              : 0;
-                            const bIsGold = b[0].toLowerCase().includes("gold")
-                              ? 1
-                              : 0;
-                            return aIsGold - bIsGold;
-                          },
-                        );
-                        if (entries.length === 0) return null;
-                        const reportAmt =
-                          (parseFloat(sale.report_qty) || 0) *
-                          (parseFloat(sale.report_charge) || 0);
-                        const reportTax =
-                          (reportAmt *
-                            (parseFloat(sale.report_tax_percentage) || 0)) /
-                          100;
-                        const parseAmt = (v) =>
-                          parseFloat(
-                            String(v || "").replace(/[^0-9.-]+/g, ""),
-                          ) || 0;
-                        const discountAmt = parseAmt(sale.discount);
-                        // Calculate total Gross Weight with unit conversion
-                        let totalGrossWeight = 0;
-                        if (sale.subCatItems) {
+                        })()}
+                        {(() => {
+                          const materialTotals = {};
+                          let totalTaxableAmt = 0;
+                          let totalMakingCharge = 0;
+                          // Sum making_charge after discount from products
+                          if (sale.products) {
+                            sale.products.forEach((product) => {
+                              totalMakingCharge +=
+                                (parseFloat(product.making_charge) || 0) -
+                                (parseFloat(
+                                  product.making_charge_discount_amount,
+                                ) || 0);
+                            });
+                          }
+                          let totalTax = 0;
                           sale.subCatItems.forEach((item) => {
+                            const taxableAmt =
+                              parseFloat(item.taxableAmount) || 0;
+                            const taxPercent = parseFloat(item.tax) || 0;
+                            totalTaxableAmt += taxableAmt;
+                            totalTax += (taxableAmt * taxPercent) / 100;
                             item.material.forEach((mat) => {
-                              totalGrossWeight += convertUnitToGram(
-                                mat.unit,
-                                mat.weight,
-                              );
+                              const key = mat.name;
+                              if (!materialTotals[key]) {
+                                materialTotals[key] = {
+                                  weight: 0,
+                                  unit: mat.unit,
+                                  rate: parseFloat(mat.rate) || 0,
+                                  amount: 0,
+                                };
+                              }
+                              materialTotals[key].weight +=
+                                parseFloat(mat.weight) || 0;
+                              const amt =
+                                (parseFloat(mat.weight) || 0) *
+                                (parseFloat(mat.rate) || 0);
+                              materialTotals[key].amount += amt;
                             });
                           });
-                        }
-
-                        return (
-                          <>
-                            <TableRow>
-                              <TableCell
-                                colSpan={12}
-                                style={{ borderBottom: "none", padding: "4px" }}
-                              />
-                            </TableRow>
-                            <TableRow
-                              sx={{
-                                "& td": {
-                                  borderBottom: "none",
-                                  padding: "2px 16px",
-                                },
-                              }}
-                            >
-                              <TableCell
-                                colSpan={6}
-                                style={{
-                                  fontSize: "13px",
-                                  fontWeight: 600,
-                                  color: "#1E2746",
-                                }}
-                              >
-                                Total Gross Weight (GW)
-                              </TableCell>
-                              <TableCell
-                                style={{
-                                  fontSize: "13px",
-                                  fontWeight: 600,
-                                  color: "#1E2746",
-                                }}
-                              >
-                                {totalGrossWeight.toFixed(3)} gm
-                              </TableCell>
-                              <TableCell colSpan={5} />
-                            </TableRow>
-                            {entries.map(([name, data], idx) => {
-                              const isGold = name
+                          const entries = Object.entries(materialTotals).sort(
+                            (a, b) => {
+                              const aIsGold = a[0]
                                 .toLowerCase()
-                                .includes("gold");
-                              return (
-                                <TableRow
-                                  key={idx}
-                                  sx={{
-                                    "& td": {
-                                      borderBottom: "none",
-                                      padding: "2px 16px",
-                                    },
+                                .includes("gold")
+                                ? 1
+                                : 0;
+                              const bIsGold = b[0]
+                                .toLowerCase()
+                                .includes("gold")
+                                ? 1
+                                : 0;
+                              return aIsGold - bIsGold;
+                            },
+                          );
+                          if (entries.length === 0) return null;
+                          const reportAmt =
+                            (parseFloat(sale.report_qty) || 0) *
+                            (parseFloat(sale.report_charge) || 0);
+                          const reportTax =
+                            (reportAmt *
+                              (parseFloat(sale.report_tax_percentage) || 0)) /
+                            100;
+                          const parseAmt = (v) =>
+                            parseFloat(
+                              String(v || "").replace(/[^0-9.-]+/g, ""),
+                            ) || 0;
+                          const discountAmt = parseAmt(sale.discount);
+                          // Calculate total Gross Weight with unit conversion
+                          let totalGrossWeight = 0;
+                          if (sale.subCatItems) {
+                            sale.subCatItems.forEach((item) => {
+                              item.material.forEach((mat) => {
+                                totalGrossWeight += convertUnitToGram(
+                                  mat.unit,
+                                  mat.weight,
+                                );
+                              });
+                            });
+                          }
+
+                          return (
+                            <>
+                              <TableRow>
+                                <TableCell
+                                  colSpan={12}
+                                  style={{
+                                    borderBottom: "none",
+                                    padding: "4px",
                                   }}
-                                >
-                                  <TableCell
-                                    colSpan={5}
-                                    style={{
-                                      fontSize: "13px",
-                                      color: isGold ? "#1E2746" : "#555",
-                                      fontWeight: isGold ? 600 : 400,
-                                    }}
-                                  >
-                                    {name}
-                                  </TableCell>
-                                  <TableCell
-                                    style={{
-                                      fontSize: "13px",
-                                      color: isGold ? "#1E2746" : "#555",
-                                      fontWeight: isGold ? 600 : 400,
-                                    }}
-                                  >
-                                    {data.weight.toFixed(3)} {data.unit}
-                                  </TableCell>
-                                  <TableCell
-                                    colSpan={2}
-                                    style={{
-                                      fontSize: "13px",
-                                      color: isGold ? "#1E2746" : "#555",
-                                      fontWeight: isGold ? 600 : 400,
-                                    }}
-                                  >
-                                    × ₹{formatIndianNumber(data.rate)}
-                                  </TableCell>
-                                  <TableCell
-                                    colSpan={4}
-                                    style={{
-                                      fontSize: "13px",
-                                      color: isGold ? "#1E2746" : "#555",
-                                      fontWeight: isGold ? 600 : 400,
-                                    }}
-                                  >
-                                    ₹{formatIndianNumber(data.amount)}
-                                  </TableCell>
-                                </TableRow>
-                              );
-                            })}
-                            {totalMakingCharge > 0 && (
+                                />
+                              </TableRow>
                               <TableRow
                                 sx={{
                                   "& td": {
@@ -964,72 +862,117 @@ class SaleViewPage extends React.Component {
                                 }}
                               >
                                 <TableCell
-                                  colSpan={9}
-                                  style={{ fontSize: "13px", color: "#555" }}
+                                  colSpan={6}
+                                  style={{
+                                    fontSize: "13px",
+                                    fontWeight: 600,
+                                    color: "#1E2746",
+                                  }}
                                 >
-                                  Making Charge
+                                  Total Gross Weight (GW)
                                 </TableCell>
                                 <TableCell
-                                  colSpan={3}
-                                  style={{ fontSize: "13px", color: "#555" }}
+                                  style={{
+                                    fontSize: "13px",
+                                    fontWeight: 600,
+                                    color: "#1E2746",
+                                  }}
                                 >
-                                  ₹{totalMakingCharge.toFixed(2)}
+                                  {totalGrossWeight.toFixed(3)} gm
                                 </TableCell>
+                                <TableCell colSpan={5} />
                               </TableRow>
-                            )}
-                            <TableRow>
-                              <TableCell
-                                colSpan={9}
-                                style={{
-                                  fontSize: "15px",
-                                  fontWeight: 700,
-                                  color: "#1E2746",
-                                  borderTop: "2px solid #90caf9",
-                                  borderBottom: "none",
-                                }}
-                              >
-                                Taxable Amt.
-                              </TableCell>
-                              <TableCell
-                                colSpan={3}
-                                style={{
-                                  fontSize: "15px",
-                                  fontWeight: 700,
-                                  color: "#1E2746",
-                                  textAlign: "right",
-                                  borderTop: "2px solid #90caf9",
-                                  borderBottom: "none",
-                                }}
-                              >
-                                ₹{totalTaxableAmt.toFixed(2)}
-                              </TableCell>
-                            </TableRow>
-                            {reportAmt > 0 && (
+                              {entries.map(([name, data], idx) => {
+                                const isGold = name
+                                  .toLowerCase()
+                                  .includes("gold");
+                                return (
+                                  <TableRow
+                                    key={idx}
+                                    sx={{
+                                      "& td": {
+                                        borderBottom: "none",
+                                        padding: "2px 16px",
+                                      },
+                                    }}
+                                  >
+                                    <TableCell
+                                      colSpan={5}
+                                      style={{
+                                        fontSize: "13px",
+                                        color: isGold ? "#1E2746" : "#555",
+                                        fontWeight: isGold ? 600 : 400,
+                                      }}
+                                    >
+                                      {name}
+                                    </TableCell>
+                                    <TableCell
+                                      style={{
+                                        fontSize: "13px",
+                                        color: isGold ? "#1E2746" : "#555",
+                                        fontWeight: isGold ? 600 : 400,
+                                      }}
+                                    >
+                                      {data.weight.toFixed(3)} {data.unit}
+                                    </TableCell>
+                                    <TableCell
+                                      colSpan={2}
+                                      style={{
+                                        fontSize: "13px",
+                                        color: isGold ? "#1E2746" : "#555",
+                                        fontWeight: isGold ? 600 : 400,
+                                      }}
+                                    >
+                                      × ₹{formatIndianNumber(data.rate)}
+                                    </TableCell>
+                                    <TableCell
+                                      colSpan={4}
+                                      style={{
+                                        fontSize: "13px",
+                                        color: isGold ? "#1E2746" : "#555",
+                                        fontWeight: isGold ? 600 : 400,
+                                      }}
+                                    >
+                                      ₹{formatIndianNumber(data.amount)}
+                                    </TableCell>
+                                  </TableRow>
+                                );
+                              })}
+                              {totalMakingCharge > 0 && (
+                                <TableRow
+                                  sx={{
+                                    "& td": {
+                                      borderBottom: "none",
+                                      padding: "2px 16px",
+                                    },
+                                  }}
+                                >
+                                  <TableCell
+                                    colSpan={9}
+                                    style={{ fontSize: "13px", color: "#555" }}
+                                  >
+                                    Making Charge
+                                  </TableCell>
+                                  <TableCell
+                                    colSpan={3}
+                                    style={{ fontSize: "13px", color: "#555" }}
+                                  >
+                                    ₹{totalMakingCharge.toFixed(2)}
+                                  </TableCell>
+                                </TableRow>
+                              )}
                               <TableRow>
                                 <TableCell
-                                  colSpan={2}
+                                  colSpan={9}
                                   style={{
                                     fontSize: "15px",
                                     fontWeight: 700,
                                     color: "#1E2746",
+                                    borderTop: "2px solid #90caf9",
                                     borderBottom: "none",
                                   }}
                                 >
-                                  Report Charges :
-                                </TableCell>
-                                <TableCell
-                                  colSpan={7}
-                                  style={{
-                                    fontSize: "13px",
-                                    color: "#555",
-                                    borderBottom: "none",
-                                  }}
-                                >
-                                  {parseFloat(sale.report_qty) || 0} Pics x{" "}
-                                  {(
-                                    parseFloat(sale.report_charge) || 0
-                                  ).toFixed(2)}{" "}
-                                  =
+                                  Taxable Amt.
                                 </TableCell>
                                 <TableCell
                                   colSpan={3}
@@ -1038,20 +981,17 @@ class SaleViewPage extends React.Component {
                                     fontWeight: 700,
                                     color: "#1E2746",
                                     textAlign: "right",
+                                    borderTop: "2px solid #90caf9",
                                     borderBottom: "none",
                                   }}
                                 >
-                                  ₹{formatIndianNumber(reportAmt)}
+                                  ₹{totalTaxableAmt.toFixed(2)}
                                 </TableCell>
                               </TableRow>
-                            )}
-                            {(() => {
-                              const discount =
-                                discountAmt > 0 ? discountAmt : 0;
-                              return (
+                              {reportAmt > 0 && (
                                 <TableRow>
                                   <TableCell
-                                    colSpan={9}
+                                    colSpan={2}
                                     style={{
                                       fontSize: "15px",
                                       fontWeight: 700,
@@ -1059,7 +999,21 @@ class SaleViewPage extends React.Component {
                                       borderBottom: "none",
                                     }}
                                   >
-                                    Discount
+                                    Report Charges :
+                                  </TableCell>
+                                  <TableCell
+                                    colSpan={7}
+                                    style={{
+                                      fontSize: "13px",
+                                      color: "#555",
+                                      borderBottom: "none",
+                                    }}
+                                  >
+                                    {parseFloat(sale.report_qty) || 0} Pics x{" "}
+                                    {(
+                                      parseFloat(sale.report_charge) || 0
+                                    ).toFixed(2)}{" "}
+                                    =
                                   </TableCell>
                                   <TableCell
                                     colSpan={3}
@@ -1071,418 +1025,453 @@ class SaleViewPage extends React.Component {
                                       borderBottom: "none",
                                     }}
                                   >
-                                    - ₹{formatIndianNumber(discount)}
+                                    ₹{formatIndianNumber(reportAmt)}
                                   </TableCell>
                                 </TableRow>
-                              );
-                            })()}
+                              )}
+                            </>
+                          );
+                        })()}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </TableContainer>
+
+                <Grid container className="invoice-totals-row">
+                  <Grid item xs={12} sm={6}>
+                    {sale.notes && (
+                      <Typography className="invoice-info-line invoice-notes">
+                        Notes: {sale.notes}
+                      </Typography>
+                    )}
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <div className="invoice-totals-box">
+                      {(() => {
+                        const reportAmt =
+                          (parseFloat(sale.report_qty) || 0) *
+                          (parseFloat(sale.report_charge) || 0);
+                        const taxableAmt =
+                          parseFloat(
+                            String(sale.taxable_amount || "").replace(
+                              /[^0-9.-]+/g,
+                              "",
+                            ),
+                          ) || 0;
+                        const subTotal = taxableAmt;
+                        const rTax =
+                          (reportAmt *
+                            (parseFloat(sale.report_tax_percentage) || 0)) /
+                          100;
+                        const igst = parseFloat(sale.igst_tax) || 0;
+                        const cgst = parseFloat(sale.cgst_tax) || 0;
+                        const sgst = parseFloat(sale.sgst_tax) || 0;
+                        const productTax =
+                          (igst > 0 ? igst : cgst + sgst) - rTax;
+                        const reportTaxPerc =
+                          parseFloat(sale.report_tax_percentage) || 0;
+                        const totalPayableAmt =
+                          parseFloat(
+                            String(sale.total_payable || "").replace(
+                              /[^0-9.-]+/g,
+                              "",
+                            ),
+                          ) || 0;
+                        const totalTaxAmt = igst > 0 ? igst : cgst + sgst;
+                        return (
+                          <>
+                            <div className="invoice-totals-line">
+                              <span style={{ fontWeight: 700 }}>Sub Total</span>
+                              <span style={{ fontWeight: 700 }}>
+                                ₹{formatIndianNumber(subTotal)}
+                              </span>
+                            </div>
+                            {rTax > 0 && (
+                              <div className="invoice-totals-line">
+                                <span>
+                                  Report Tax ({reportTaxPerc.toFixed(2)}%)
+                                </span>
+                                <span>₹{formatIndianNumber(rTax)}</span>
+                              </div>
+                            )}
+                            <div className="invoice-totals-line">
+                              <span>Tax</span>
+                              <span>
+                                ₹
+                                {formatIndianNumber(
+                                  productTax > 0 ? productTax : 0,
+                                )}
+                              </span>
+                            </div>
+                            {igst > 0 ? (
+                              <div className="invoice-totals-line">
+                                <span style={{ fontWeight: 700 }}>IGST</span>
+                                <span style={{ fontWeight: 700 }}>
+                                  ₹{formatIndianNumber(igst)}
+                                </span>
+                              </div>
+                            ) : cgst > 0 || sgst > 0 ? (
+                              <>
+                                <div className="invoice-totals-line">
+                                  <span style={{ fontWeight: 700 }}>CGST</span>
+                                  <span style={{ fontWeight: 700 }}>
+                                    ₹{formatIndianNumber(cgst)}
+                                  </span>
+                                </div>
+                                <div className="invoice-totals-line">
+                                  <span style={{ fontWeight: 700 }}>SGST</span>
+                                  <span style={{ fontWeight: 700 }}>
+                                    ₹{formatIndianNumber(sgst)}
+                                  </span>
+                                </div>
+                              </>
+                            ) : null}
                           </>
                         );
                       })()}
-                    </TableBody>
-                  </Table>
-                </div>
-              </TableContainer>
-
-              <Grid container className="invoice-totals-row">
-                <Grid item xs={12} sm={6}>
-                  {sale.notes && (
-                    <Typography className="invoice-info-line invoice-notes">
-                      Notes: {sale.notes}
-                    </Typography>
-                  )}
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <div className="invoice-totals-box">
-                    {(() => {
-                      const reportAmt =
-                        (parseFloat(sale.report_qty) || 0) *
-                        (parseFloat(sale.report_charge) || 0);
-                      const taxableAmt =
-                        parseFloat(
-                          String(sale.taxable_amount || "").replace(
-                            /[^0-9.-]+/g,
-                            "",
-                          ),
-                        ) || 0;
-                      const subTotal = taxableAmt;
-                      const rTax =
-                        (reportAmt *
-                          (parseFloat(sale.report_tax_percentage) || 0)) /
-                        100;
-                      const igst = parseFloat(sale.igst_tax) || 0;
-                      const cgst = parseFloat(sale.cgst_tax) || 0;
-                      const sgst = parseFloat(sale.sgst_tax) || 0;
-                      const productTax = (igst > 0 ? igst : cgst + sgst) - rTax;
-                      const reportTaxPerc =
-                        parseFloat(sale.report_tax_percentage) || 0;
-                      const totalPayableAmt =
-                        parseFloat(
-                          String(sale.total_payable || "").replace(
-                            /[^0-9.-]+/g,
-                            "",
-                          ),
-                        ) || 0;
-                      const totalTaxAmt = igst > 0 ? igst : cgst + sgst;
-                      const finalDiscount =
-                        parseFloat(
-                          String(sale.discount || "0").replace(
-                            /[^0-9.-]+/g,
-                            "",
-                          ),
-                        ) || 0;
-                      return (
-                        <>
-                          <div className="invoice-totals-line">
-                            <span style={{ fontWeight: 700 }}>Sub Total</span>
-                            <span style={{ fontWeight: 700 }}>
-                              ₹{formatIndianNumber(subTotal)}
-                            </span>
-                          </div>
-                          {rTax > 0 && (
-                            <div className="invoice-totals-line">
-                              <span>
-                                Report Tax ({reportTaxPerc.toFixed(2)}%)
-                              </span>
-                              <span>₹{formatIndianNumber(rTax)}</span>
-                            </div>
-                          )}
-                          <div className="invoice-totals-line">
-                            <span>Tax</span>
-                            <span>
-                              ₹
-                              {formatIndianNumber(
-                                productTax > 0 ? productTax : 0,
-                              )}
-                            </span>
-                          </div>
-                          {igst > 0 ? (
-                            <div className="invoice-totals-line">
-                              <span style={{ fontWeight: 700 }}>IGST</span>
-                              <span style={{ fontWeight: 700 }}>
-                                ₹{formatIndianNumber(igst)}
-                              </span>
-                            </div>
-                          ) : cgst > 0 || sgst > 0 ? (
-                            <>
-                              <div className="invoice-totals-line">
-                                <span style={{ fontWeight: 700 }}>CGST</span>
-                                <span style={{ fontWeight: 700 }}>
-                                  ₹{formatIndianNumber(cgst)}
-                                </span>
-                              </div>
-                              <div className="invoice-totals-line">
-                                <span style={{ fontWeight: 700 }}>SGST</span>
-                                <span style={{ fontWeight: 700 }}>
-                                  ₹{formatIndianNumber(sgst)}
-                                </span>
-                              </div>
-                            </>
-                          ) : null}
-                          <div className="invoice-totals-line">
-                            <span>Discount</span>
-                            <span>
-                              - ₹
-                              {formatIndianNumber(
-                                finalDiscount > 0 ? finalDiscount : 0,
-                              )}
-                            </span>
-                          </div>
-                        </>
-                      );
-                    })()}
-                    <div className="invoice-totals-line invoice-totals-line-final">
-                      <span style={{ fontWeight: 700 }}>Total Payable</span>
-                      <span style={{ fontWeight: 700 }}>
-                        {sale.total_payable}
-                      </span>
+                      <div className="invoice-totals-line invoice-totals-line-final">
+                        <span style={{ fontWeight: 700 }}>Total Payable</span>
+                        <span style={{ fontWeight: 700 }}>
+                          {sale.total_payable}
+                        </span>
+                      </div>
                     </div>
-                  </div>
-                </Grid>
-              </Grid>
-
-              <Grid container className="invoice-footer-band">
-                <Grid item xs={6} sm={3}>
-                  <span className="invoice-footer-label">Due Date</span>
-                  <br />
-                  {sale.due_date}
-                </Grid>
-                <Grid item xs={6} sm={3}>
-                  <span className="invoice-footer-label">Settlement Date</span>
-                  <br />
-                  {sale.settlement_date}
-                </Grid>
-                <Grid item xs={6} sm={3}>
-                  <span className="invoice-footer-label">Paid Amount</span>
-                  <br />
-                  {sale.paid_amount_display}
-                </Grid>
-                <Grid item xs={6} sm={3}>
-                  <span className="invoice-footer-label">Due Amount</span>
-                  <br />
-                  {sale.due_amount_display}
-                </Grid>
-              </Grid>
-            </Box>
-
-            <Divider
-              sx={{ my: 2, borderColor: "#1E2746", borderWidth: "1px" }}
-            />
-
-            {/* Payment Section */}
-            <div id="section-payment">
-              <Grid
-                container
-                spacing={{ xs: 2, md: 2 }}
-                style={{ paddingBottom: "1%", cursor: "pointer" }}
-                onClick={this.togglePaymentSection}
-                alignItems="center"
-              >
-                <Grid item xs={4} md={6} sm={5}>
-                  <h3
-                    className="p_heading_list"
-                    style={{ margin: 0, fontSize: "20px" }}
-                  >
-                    Payment Details
-                  </h3>
-                </Grid>
-                <Grid
-                  item
-                  xs={8}
-                  md={6}
-                  sm={7}
-                  style={{
-                    display: "flex",
-                    justifyContent: "flex-end",
-                    alignItems: "center",
-                    gap: "8px",
-                  }}
-                >
-                  {sale && parseFloat(sale.due_amount) > 0 ? (
-                    <div className="action_btn">
-                      <Button
-                        variant="contained"
-                        className=""
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          this.handlePayNow();
-                        }}
-                      >
-                        Pay Now
-                      </Button>
-                    </div>
-                  ) : null}
-                  <IconButton size="small">
-                    {this.state.paymentOpen ? (
-                      <KeyboardArrowUpIcon />
-                    ) : (
-                      <KeyboardArrowDownIcon />
-                    )}
-                  </IconButton>
-                </Grid>
-              </Grid>
-
-              <Collapse
-                in={this.state.paymentOpen}
-                timeout="auto"
-                unmountOnExit
-              >
-                {!sale.is_assigned ? (
-                  <Grid
-                    item
-                    xs={12}
-                    className="p-add-product create-input button-right"
-                  >
-                    <DataTable
-                      columns={this.columns}
-                      rows={this.state.items}
-                      page={this.state.queryParams.page}
-                      limit={this.state.queryParams.limit}
-                      total={this.state.total}
-                      handlePagination={this.handlePagination}
-                      actions={[]}
-                      actionValue={"action_value"}
-                      actionValueColorConditions={[
-                        {
-                          value: "Accepted",
-                          color: "green",
-                        },
-                        {
-                          value: "Declined",
-                          color: "red",
-                        },
-                      ]}
-                    />
                   </Grid>
-                ) : null}
-              </Collapse>
-            </div>
-
-            <Divider
-              sx={{ my: 2, borderColor: "#1E2746", borderWidth: "1px" }}
-            />
-
-            {/* Product List Section */}
-            <div id="section-product-list">
-              <Grid
-                container
-                spacing={{ xs: 2, md: 3 }}
-                style={{ cursor: "pointer" }}
-                onClick={this.toggleProductListSection}
-                alignItems="center"
-              >
-                <Grid item xs={4} md={6} sm={5}>
-                  <h3
-                    className="p_heading_list"
-                    style={{ margin: 0, fontSize: "20px" }}
-                  >
-                    Product List
-                  </h3>
                 </Grid>
-                <Grid
-                  item
-                  xs={8}
-                  md={6}
-                  sm={7}
-                  style={{
-                    display: "flex",
-                    justifyContent: "flex-end",
-                    alignItems: "center",
-                    gap: "8px",
-                  }}
-                >
-                  <div className="action_btn">
-                    {downloadingList ? (
-                      <CircularProgress size="30px" />
-                    ) : (
-                      <Button
-                        variant="contained"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          this.handleDownloadList(this.props.params.id);
-                        }}
-                      >
-                        <span className="download-text">List</span>
-                        <FileDownloadIcon size="20px" />
-                      </Button>
-                    )}
-                  </div>
-                  <div className="action_btn">
-                    {downloadingItem ? (
-                      <CircularProgress size="30px" />
-                    ) : (
-                      <Button
-                        variant="contained"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          this.handleDownloadItems(this.props.params.id);
-                        }}
-                      >
-                        <span className="download-text">Details</span>
-                        <FileDownloadIcon size="20px" />
-                      </Button>
-                    )}
-                  </div>
-                  <IconButton size="small">
-                    {this.state.productListOpen ? (
-                      <KeyboardArrowUpIcon />
-                    ) : (
-                      <KeyboardArrowDownIcon />
-                    )}
-                  </IconButton>
-                </Grid>
-              </Grid>
 
-              <Collapse
-                in={this.state.productListOpen}
-                timeout="auto"
-                unmountOnExit
-              >
+                <Grid container className="invoice-footer-band">
+                  <Grid item xs={6} sm={3}>
+                    <span className="invoice-footer-label">Due Date</span>
+                    <br />
+                    {sale.due_date}
+                  </Grid>
+                  <Grid item xs={6} sm={3}>
+                    <span className="invoice-footer-label">
+                      Settlement Date
+                    </span>
+                    <br />
+                    {sale.settlement_date}
+                  </Grid>
+                  <Grid item xs={6} sm={3}>
+                    <span className="invoice-footer-label">Paid Amount</span>
+                    <br />
+                    {sale.paid_amount_display}
+                  </Grid>
+                  <Grid item xs={6} sm={3}>
+                    <span className="invoice-footer-label">Due Amount</span>
+                    <br />
+                    {sale.due_amount_display}
+                  </Grid>
+                </Grid>
+              </Box>
+
+              <Divider
+                sx={{ my: 2, borderColor: "#1E2746", borderWidth: "1px" }}
+              />
+
+              {/* Payment Section */}
+              <div id="section-payment">
                 <Grid
                   container
-                  spacing={gridSpacing}
-                  className="details-header ratn-pur-wrapper loans_view"
+                  spacing={{ xs: 2, md: 2 }}
+                  style={{ paddingBottom: "1%", cursor: "pointer" }}
+                  onClick={this.togglePaymentSection}
+                  alignItems="center"
                 >
-                  <Grid item xs={12}>
-                    <TableContainer component={Paper}>
-                      <div className="ratn-table-purchase-wrapper">
-                        <Table
-                          aria-label="collapsible table"
-                          className="invoice_product_list"
+                  <Grid item xs={4} md={6} sm={5}>
+                    <h3
+                      className="p_heading_list"
+                      style={{ margin: 0, fontSize: "20px" }}
+                    >
+                      Payment Details
+                    </h3>
+                  </Grid>
+                  <Grid
+                    item
+                    xs={8}
+                    md={6}
+                    sm={7}
+                    style={{
+                      display: "flex",
+                      justifyContent: "flex-end",
+                      alignItems: "center",
+                      gap: "8px",
+                    }}
+                  >
+                    {sale && parseFloat(sale.due_amount) > 0 ? (
+                      <div className="action_btn">
+                        <Button
+                          variant="contained"
+                          className=""
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            this.handlePayNow();
+                          }}
                         >
-                          <TableHead className="ratn-table-header">
-                            <TableRow>
-                              <TableCell />
-                              <TableCell>#</TableCell>
-                              <TableCell>Product Name</TableCell>
-                              <TableCell>Category Name</TableCell>
-                              <TableCell>Certificate Number</TableCell>
-                              <TableCell>Total Weight</TableCell>
-                              <TableCell>Size</TableCell>
-                              <TableCell>Making Charge</TableCell>
-                              <TableCell>Sub Total</TableCell>
-                              <TableCell>Dist</TableCell>
-                              <TableCell>Tax</TableCell>
-                              <TableCell>Total</TableCell>
-                            </TableRow>
-                          </TableHead>
-                          <TableBody>
-                            {sale.products.map((row, i) => (
-                              <Row key={i} row={row} index={i} />
-                            ))}
-                            {(() => {
-                              const materialTotals = {};
-                              let totalTax = 0;
-                              sale.products.forEach((product) => {
-                                const taxPercent = parseFloat(product.tax) || 0;
-                                product.materials.forEach((item) => {
-                                  if (item.weight == 0 && item.quantity == 0)
-                                    return;
-                                  const key = item.material_name;
-                                  if (!materialTotals[key]) {
-                                    materialTotals[key] = {
-                                      weight: 0,
-                                      unit: item.unit_name,
-                                      rate: parseFloat(item.rate) || 0,
-                                      amount: 0,
-                                    };
-                                  }
-                                  materialTotals[key].weight +=
-                                    parseFloat(item.weight) || 0;
-                                  const amt =
-                                    (parseFloat(item.weight) || 0) *
-                                    (parseFloat(item.rate) || 0);
-                                  materialTotals[key].amount += amt;
-                                  totalTax += (amt * taxPercent) / 100;
+                          Pay Now
+                        </Button>
+                      </div>
+                    ) : null}
+                    <IconButton size="small">
+                      {this.state.paymentOpen ? (
+                        <KeyboardArrowUpIcon />
+                      ) : (
+                        <KeyboardArrowDownIcon />
+                      )}
+                    </IconButton>
+                  </Grid>
+                </Grid>
+
+                <Collapse
+                  in={this.state.paymentOpen}
+                  timeout="auto"
+                  unmountOnExit
+                >
+                  {!sale.is_assigned ? (
+                    <Grid
+                      item
+                      xs={12}
+                      className="p-add-product create-input button-right"
+                    >
+                      <DataTable
+                        columns={this.columns}
+                        rows={this.state.items}
+                        page={this.state.queryParams.page}
+                        limit={this.state.queryParams.limit}
+                        total={this.state.total}
+                        handlePagination={this.handlePagination}
+                        actions={[]}
+                        actionValue={"action_value"}
+                        actionValueColorConditions={[
+                          {
+                            value: "Accepted",
+                            color: "green",
+                          },
+                          {
+                            value: "Declined",
+                            color: "red",
+                          },
+                        ]}
+                      />
+                    </Grid>
+                  ) : null}
+                </Collapse>
+              </div>
+
+              <Divider
+                sx={{ my: 2, borderColor: "#1E2746", borderWidth: "1px" }}
+              />
+
+              {/* Product List Section */}
+              <div id="section-product-list">
+                <Grid
+                  container
+                  spacing={{ xs: 2, md: 3 }}
+                  style={{ cursor: "pointer" }}
+                  onClick={this.toggleProductListSection}
+                  alignItems="center"
+                >
+                  <Grid item xs={4} md={6} sm={5}>
+                    <h3
+                      className="p_heading_list"
+                      style={{ margin: 0, fontSize: "20px" }}
+                    >
+                      Product List
+                    </h3>
+                  </Grid>
+                  <Grid
+                    item
+                    xs={8}
+                    md={6}
+                    sm={7}
+                    style={{
+                      display: "flex",
+                      justifyContent: "flex-end",
+                      alignItems: "center",
+                      gap: "8px",
+                    }}
+                  >
+                    <div className="action_btn">
+                      {downloadingList ? (
+                        <CircularProgress size="30px" />
+                      ) : (
+                        <Button
+                          variant="contained"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            this.handleDownloadList(this.props.params.id);
+                          }}
+                        >
+                          <span className="download-text">List</span>
+                          <FileDownloadIcon size="20px" />
+                        </Button>
+                      )}
+                    </div>
+                    <div className="action_btn">
+                      {downloadingItem ? (
+                        <CircularProgress size="30px" />
+                      ) : (
+                        <Button
+                          variant="contained"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            this.handleDownloadItems(this.props.params.id);
+                          }}
+                        >
+                          <span className="download-text">Details</span>
+                          <FileDownloadIcon size="20px" />
+                        </Button>
+                      )}
+                    </div>
+                    <IconButton size="small">
+                      {this.state.productListOpen ? (
+                        <KeyboardArrowUpIcon />
+                      ) : (
+                        <KeyboardArrowDownIcon />
+                      )}
+                    </IconButton>
+                  </Grid>
+                </Grid>
+
+                <Collapse
+                  in={this.state.productListOpen}
+                  timeout="auto"
+                  unmountOnExit
+                >
+                  <Grid
+                    container
+                    spacing={gridSpacing}
+                    className="details-header ratn-pur-wrapper loans_view"
+                  >
+                    <Grid item xs={12}>
+                      <TableContainer component={Paper}>
+                        <div className="ratn-table-purchase-wrapper">
+                          <Table
+                            aria-label="collapsible table"
+                            className="invoice_product_list"
+                          >
+                            <TableHead className="ratn-table-header">
+                              <TableRow>
+                                <TableCell />
+                                <TableCell>#</TableCell>
+                                <TableCell>Product Name</TableCell>
+                                <TableCell>Category Name</TableCell>
+                                <TableCell>Certificate Number</TableCell>
+                                <TableCell>Total Weight</TableCell>
+                                <TableCell>Size</TableCell>
+                                <TableCell>Making Charge</TableCell>
+                                <TableCell>Sub Total</TableCell>
+                                <TableCell>Dist</TableCell>
+                                <TableCell>Tax</TableCell>
+                                <TableCell>Total</TableCell>
+                              </TableRow>
+                            </TableHead>
+                            <TableBody>
+                              {sale.products.map((row, i) => (
+                                <Row key={i} row={row} index={i} />
+                              ))}
+                              {(() => {
+                                const materialTotals = {};
+                                let totalTax = 0;
+                                sale.products.forEach((product) => {
+                                  const taxPercent =
+                                    parseFloat(product.tax) || 0;
+                                  product.materials.forEach((item) => {
+                                    if (item.weight == 0 && item.quantity == 0)
+                                      return;
+                                    const key = item.material_name;
+                                    if (!materialTotals[key]) {
+                                      materialTotals[key] = {
+                                        weight: 0,
+                                        unit: item.unit_name,
+                                        rate: parseFloat(item.rate) || 0,
+                                        amount: 0,
+                                      };
+                                    }
+                                    materialTotals[key].weight +=
+                                      parseFloat(item.weight) || 0;
+                                    const amt =
+                                      (parseFloat(item.weight) || 0) *
+                                      (parseFloat(item.rate) || 0);
+                                    materialTotals[key].amount += amt;
+                                    totalTax += (amt * taxPercent) / 100;
+                                  });
                                 });
-                              });
-                              const entries = Object.entries(materialTotals);
-                              if (entries.length === 0) return null;
-                              const totalBeforeDiscount2 =
-                                entries.reduce(
-                                  (sum, [, d]) => sum + d.amount,
-                                  0,
-                                ) + totalTax;
-                              const parseAmt2 = (v) =>
-                                parseFloat(
-                                  String(v || "").replace(/[^0-9.-]+/g, ""),
-                                ) || 0;
-                              const discountAmt2 = parseAmt2(sale.discount);
-                              const grandTotal = parseAmt2(sale.total_payable);
-                              return (
-                                <>
-                                  <TableRow>
-                                    <TableCell
-                                      colSpan={12}
-                                      style={{
-                                        borderBottom: "none",
-                                        padding: "4px",
-                                      }}
-                                    />
-                                  </TableRow>
-                                  {entries.map(([name, data], idx) => (
+                                const entries = Object.entries(materialTotals);
+                                if (entries.length === 0) return null;
+                                const totalBeforeDiscount2 =
+                                  entries.reduce(
+                                    (sum, [, d]) => sum + d.amount,
+                                    0,
+                                  ) + totalTax;
+                                const parseAmt2 = (v) =>
+                                  parseFloat(
+                                    String(v || "").replace(/[^0-9.-]+/g, ""),
+                                  ) || 0;
+                                const discountAmt2 = parseAmt2(sale.discount);
+                                const grandTotal = parseAmt2(
+                                  sale.total_payable,
+                                );
+                                return (
+                                  <>
+                                    <TableRow>
+                                      <TableCell
+                                        colSpan={12}
+                                        style={{
+                                          borderBottom: "none",
+                                          padding: "4px",
+                                        }}
+                                      />
+                                    </TableRow>
+                                    {entries.map(([name, data], idx) => (
+                                      <TableRow
+                                        key={idx}
+                                        sx={{
+                                          "& td": {
+                                            borderBottom: "none",
+                                            padding: "2px 16px",
+                                          },
+                                        }}
+                                      >
+                                        <TableCell
+                                          colSpan={5}
+                                          style={{
+                                            fontSize: "13px",
+                                            color: "#555",
+                                          }}
+                                        >
+                                          {name}
+                                        </TableCell>
+                                        <TableCell
+                                          style={{
+                                            fontSize: "13px",
+                                            color: "#555",
+                                          }}
+                                        >
+                                          {data.weight.toFixed(2)} {data.unit}
+                                        </TableCell>
+                                        <TableCell
+                                          colSpan={2}
+                                          style={{
+                                            fontSize: "13px",
+                                            color: "#555",
+                                          }}
+                                        >
+                                          × ₹{data.rate.toFixed(2)}
+                                        </TableCell>
+                                        <TableCell
+                                          colSpan={4}
+                                          style={{
+                                            fontSize: "13px",
+                                            color: "#555",
+                                            textAlign: "right",
+                                          }}
+                                        >
+                                          ₹{data.amount.toFixed(2)}
+                                        </TableCell>
+                                      </TableRow>
+                                    ))}
                                     <TableRow
-                                      key={idx}
                                       sx={{
                                         "& td": {
                                           borderBottom: "none",
@@ -1491,30 +1480,13 @@ class SaleViewPage extends React.Component {
                                       }}
                                     >
                                       <TableCell
-                                        colSpan={5}
+                                        colSpan={8}
                                         style={{
                                           fontSize: "13px",
                                           color: "#555",
                                         }}
                                       >
-                                        {name}
-                                      </TableCell>
-                                      <TableCell
-                                        style={{
-                                          fontSize: "13px",
-                                          color: "#555",
-                                        }}
-                                      >
-                                        {data.weight.toFixed(2)} {data.unit}
-                                      </TableCell>
-                                      <TableCell
-                                        colSpan={2}
-                                        style={{
-                                          fontSize: "13px",
-                                          color: "#555",
-                                        }}
-                                      >
-                                        × ₹{data.rate.toFixed(2)}
+                                        Tax
                                       </TableCell>
                                       <TableCell
                                         colSpan={4}
@@ -1524,236 +1496,213 @@ class SaleViewPage extends React.Component {
                                           textAlign: "right",
                                         }}
                                       >
-                                        ₹{data.amount.toFixed(2)}
+                                        ₹{totalTax.toFixed(2)}
                                       </TableCell>
                                     </TableRow>
-                                  ))}
-                                  <TableRow
-                                    sx={{
-                                      "& td": {
-                                        borderBottom: "none",
-                                        padding: "2px 16px",
-                                      },
-                                    }}
-                                  >
-                                    <TableCell
-                                      colSpan={8}
-                                      style={{
-                                        fontSize: "13px",
-                                        color: "#555",
+                                    <TableRow
+                                      sx={{
+                                        "& td": {
+                                          padding: "4px 16px",
+                                          borderTop: "1px solid #ccc",
+                                        },
                                       }}
                                     >
-                                      Tax
-                                    </TableCell>
-                                    <TableCell
-                                      colSpan={4}
-                                      style={{
-                                        fontSize: "13px",
-                                        color: "#555",
-                                        textAlign: "right",
-                                      }}
-                                    >
-                                      ₹{totalTax.toFixed(2)}
-                                    </TableCell>
-                                  </TableRow>
-                                  <TableRow
-                                    sx={{
-                                      "& td": {
-                                        padding: "4px 16px",
-                                        borderTop: "1px solid #ccc",
-                                      },
-                                    }}
-                                  >
-                                    <TableCell
-                                      colSpan={8}
-                                      style={{
-                                        fontSize: "13px",
-                                        fontWeight: 700,
-                                        color: "#1E2746",
-                                      }}
-                                    >
-                                      Total
-                                    </TableCell>
-                                    <TableCell
-                                      colSpan={4}
-                                      style={{
-                                        fontSize: "13px",
-                                        fontWeight: 700,
-                                        color: "#1E2746",
-                                        textAlign: "right",
-                                      }}
-                                    >
-                                      ₹{grandTotal.toFixed(2)}
-                                    </TableCell>
-                                  </TableRow>
-                                </>
-                              );
-                            })()}
-                          </TableBody>
-                        </Table>
-                      </div>
-                    </TableContainer>
-                  </Grid>
-                </Grid>
-              </Collapse>
-            </div>
-          </>
-        )}
-
-        <Dialog
-          className="ratn-dialog-wrapper"
-          open={this.state.openDialog}
-          onClose={this.handleDialogClose}
-          fullWidth
-          maxWidth="md"
-        >
-          <DialogTitle>Pay Now</DialogTitle>
-          <DialogContent>
-            <DialogContentText></DialogContentText>
-            <Box sx={{ flexGrow: 1, m: 0.5 }}>
-              <Grid container spacing={2}>
-                <Grid
-                  item
-                  md={4}
-                  xs={12}
-                  className="p-invoice-date create-input"
-                >
-                  <LocalizationProvider dateAdapter={AdapterDayjs}>
-                    <DatePicker
-                      label="Payment Date"
-                      value={formValues.payment_date}
-                      inputFormat="DD/MM/YYYY"
-                      onChange={(newValue) =>
-                        this.updateFormValue(newValue, "payment_date")
-                      }
-                      renderInput={(params) => (
-                        <TextField
-                          {...params}
-                          fullWidth
-                          error={formErros.payment_date}
-                          className="non_disable_text"
-                        />
-                      )}
-                      disabled
-                    />
-                  </LocalizationProvider>
-                </Grid>
-                <Grid item md={4} xs={12} className="create-input">
-                  <TextField
-                    label="Amount"
-                    variant="outlined"
-                    fullWidth
-                    value={formValues.amount}
-                    InputProps={{
-                      startAdornment: (
-                        <InputAdornment position="start">₹</InputAdornment>
-                      ),
-                    }}
-                    error={formErros.amount}
-                    onChange={(event) =>
-                      this.updateFormValue(event.target.value, "amount")
-                    }
-                  />
-                </Grid>
-
-                <Grid item md={4} xs={12} className="create-input">
-                  <FormControl fullWidth error={formErros.payment_mode}>
-                    <InputLabel>Payment Mode</InputLabel>
-                    <Select
-                      className="input-inner"
-                      value={formValues.payment_mode}
-                      fullWidth
-                      label="Payment Mode"
-                      onChange={(event) =>
-                        this.updateFormValue(event.target.value, "payment_mode")
-                      }
-                    >
-                      <MenuItem value=""></MenuItem>
-                      <MenuItem value="cash">Cash</MenuItem>
-                      <MenuItem value="cheque">Cheque</MenuItem>
-                      <MenuItem value="imps_neft">BANKING/RTGS/NEFT</MenuItem>
-                      <MenuItem value="online">UPI/PhonePe/Gpay</MenuItem>
-                      {isSuperAdmin && isAdmin && (
-                        <MenuItem value="metal">Metal</MenuItem>
-                      )}
-                    </Select>
-                  </FormControl>
-                </Grid>
-                {formValues.payment_mode == "cheque" ? (
-                  <Grid item md={4} xs={12} className="create-input">
-                    <TextField
-                      label="Cheque No"
-                      variant="outlined"
-                      fullWidth
-                      value={formValues.cheque_no}
-                      onChange={(event) =>
-                        this.updateFormValue(event.target.value, "cheque_no")
-                      }
-                    />
-                  </Grid>
-                ) : null}
-                {formValues.payment_mode == "imps_neft" ||
-                formValues.payment_mode == "upi" ? (
-                  <Grid item md={4} xs={12} className="create-input">
-                    <TextField
-                      label="Transaction #"
-                      variant="outlined"
-                      fullWidth
-                      value={formValues.txn_id}
-                      onChange={(event) =>
-                        this.updateFormValue(event.target.value, "txn_id")
-                      }
-                    />
-                  </Grid>
-                ) : null}
-                {formValues.payment_mode == "metal" ? (
-                  <>
-                    <Grid item md={4} xs={12} className="create-input">
-                      <FormControl fullWidth error={formErros.payment_mode}>
-                        <InputLabel>Purity</InputLabel>
-                        <Select
-                          className="input-inner"
-                          value={formValues.purity_id}
-                          fullWidth
-                          label="Purity"
-                          error={formErros.purity_id}
-                          onChange={(event) => {
-                            let effective_weight = 0;
-                            let selected_purity = metalPurityList.find(
-                              (item) => item.id == event.target.value,
-                            );
-                            if (
-                              selected_purity &&
-                              parseFloat(formValues.weight) > 0
-                            ) {
-                              effective_weight = selected_purity.value
-                                ? (parseFloat(formValues.weight) *
-                                    parseFloat(selected_purity.value)) /
-                                  100
-                                : parseFloat(formValues.weight);
-                            }
-
-                            console.log(" selected_purity : ", selected_purity);
-
-                            this.setState({
-                              formValues: {
-                                ...this.state.formValues,
-                                effective_weight: effective_weight,
-                                unit_id: selected_purity.unit_id || "",
-                                purity_id: selected_purity.id,
-                              },
-                            });
-                          }}
-                        >
-                          {metalPurityList.map((item, i) => (
-                            <MenuItem key={i} value={item.id}>
-                              {item.name}
-                            </MenuItem>
-                          ))}
-                        </Select>
-                      </FormControl>
+                                      <TableCell
+                                        colSpan={8}
+                                        style={{
+                                          fontSize: "13px",
+                                          fontWeight: 700,
+                                          color: "#1E2746",
+                                        }}
+                                      >
+                                        Total
+                                      </TableCell>
+                                      <TableCell
+                                        colSpan={4}
+                                        style={{
+                                          fontSize: "13px",
+                                          fontWeight: 700,
+                                          color: "#1E2746",
+                                          textAlign: "right",
+                                        }}
+                                      >
+                                        ₹{grandTotal.toFixed(2)}
+                                      </TableCell>
+                                    </TableRow>
+                                  </>
+                                );
+                              })()}
+                            </TableBody>
+                          </Table>
+                        </div>
+                      </TableContainer>
                     </Grid>
-                    {/* <Grid item md={4} xs={12} className='create-input'>
+                  </Grid>
+                </Collapse>
+              </div>
+            </>
+          )}
+
+          <Dialog
+            className="ratn-dialog-wrapper"
+            open={this.state.openDialog}
+            onClose={this.handleDialogClose}
+            fullWidth
+            maxWidth="md"
+          >
+            <DialogTitle>Pay Now</DialogTitle>
+            <DialogContent>
+              <DialogContentText></DialogContentText>
+              <Box sx={{ flexGrow: 1, m: 0.5 }}>
+                <Grid container spacing={2}>
+                  <Grid
+                    item
+                    md={4}
+                    xs={12}
+                    className="p-invoice-date create-input"
+                  >
+                    <LocalizationProvider dateAdapter={AdapterDayjs}>
+                      <DatePicker
+                        label="Payment Date"
+                        value={formValues.payment_date}
+                        inputFormat="DD/MM/YYYY"
+                        onChange={(newValue) =>
+                          this.updateFormValue(newValue, "payment_date")
+                        }
+                        renderInput={(params) => (
+                          <TextField
+                            {...params}
+                            fullWidth
+                            error={formErros.payment_date}
+                            className="non_disable_text"
+                          />
+                        )}
+                        disabled
+                      />
+                    </LocalizationProvider>
+                  </Grid>
+                  <Grid item md={4} xs={12} className="create-input">
+                    <TextField
+                      label="Amount"
+                      variant="outlined"
+                      fullWidth
+                      value={formValues.amount}
+                      InputProps={{
+                        startAdornment: (
+                          <InputAdornment position="start">₹</InputAdornment>
+                        ),
+                      }}
+                      error={formErros.amount}
+                      onChange={(event) =>
+                        this.updateFormValue(event.target.value, "amount")
+                      }
+                    />
+                  </Grid>
+
+                  <Grid item md={4} xs={12} className="create-input">
+                    <FormControl fullWidth error={formErros.payment_mode}>
+                      <InputLabel>Payment Mode</InputLabel>
+                      <Select
+                        className="input-inner"
+                        value={formValues.payment_mode}
+                        fullWidth
+                        label="Payment Mode"
+                        onChange={(event) =>
+                          this.updateFormValue(
+                            event.target.value,
+                            "payment_mode",
+                          )
+                        }
+                      >
+                        <MenuItem value=""></MenuItem>
+                        <MenuItem value="cash">Cash</MenuItem>
+                        <MenuItem value="cheque">Cheque</MenuItem>
+                        <MenuItem value="imps_neft">BANKING/RTGS/NEFT</MenuItem>
+                        <MenuItem value="online">UPI/PhonePe/Gpay</MenuItem>
+                        {isSuperAdmin && isAdmin && (
+                          <MenuItem value="metal">Metal</MenuItem>
+                        )}
+                      </Select>
+                    </FormControl>
+                  </Grid>
+                  {formValues.payment_mode == "cheque" ? (
+                    <Grid item md={4} xs={12} className="create-input">
+                      <TextField
+                        label="Cheque No"
+                        variant="outlined"
+                        fullWidth
+                        value={formValues.cheque_no}
+                        onChange={(event) =>
+                          this.updateFormValue(event.target.value, "cheque_no")
+                        }
+                      />
+                    </Grid>
+                  ) : null}
+                  {formValues.payment_mode == "imps_neft" ||
+                  formValues.payment_mode == "upi" ? (
+                    <Grid item md={4} xs={12} className="create-input">
+                      <TextField
+                        label="Transaction #"
+                        variant="outlined"
+                        fullWidth
+                        value={formValues.txn_id}
+                        onChange={(event) =>
+                          this.updateFormValue(event.target.value, "txn_id")
+                        }
+                      />
+                    </Grid>
+                  ) : null}
+                  {formValues.payment_mode == "metal" ? (
+                    <>
+                      <Grid item md={4} xs={12} className="create-input">
+                        <FormControl fullWidth error={formErros.payment_mode}>
+                          <InputLabel>Purity</InputLabel>
+                          <Select
+                            className="input-inner"
+                            value={formValues.purity_id}
+                            fullWidth
+                            label="Purity"
+                            error={formErros.purity_id}
+                            onChange={(event) => {
+                              let effective_weight = 0;
+                              let selected_purity = metalPurityList.find(
+                                (item) => item.id == event.target.value,
+                              );
+                              if (
+                                selected_purity &&
+                                parseFloat(formValues.weight) > 0
+                              ) {
+                                effective_weight = selected_purity.value
+                                  ? (parseFloat(formValues.weight) *
+                                      parseFloat(selected_purity.value)) /
+                                    100
+                                  : parseFloat(formValues.weight);
+                              }
+
+                              console.log(
+                                " selected_purity : ",
+                                selected_purity,
+                              );
+
+                              this.setState({
+                                formValues: {
+                                  ...this.state.formValues,
+                                  effective_weight: effective_weight,
+                                  unit_id: selected_purity.unit_id || "",
+                                  purity_id: selected_purity.id,
+                                },
+                              });
+                            }}
+                          >
+                            {metalPurityList.map((item, i) => (
+                              <MenuItem key={i} value={item.id}>
+                                {item.name}
+                              </MenuItem>
+                            ))}
+                          </Select>
+                        </FormControl>
+                      </Grid>
+                      {/* <Grid item md={4} xs={12} className='create-input'>
                       <FormControl fullWidth error={formErros.payment_mode}>
                         <InputLabel>Material</InputLabel>
                         <Select
@@ -1774,111 +1723,119 @@ class SaleViewPage extends React.Component {
                         </Select>
                       </FormControl>
                     </Grid> */}
-                    <Grid item md={4} xs={12} className="create-input">
-                      <TextField
-                        label="Weight(GM)"
-                        variant="outlined"
-                        fullWidth
-                        error={formErros.weight}
-                        value={formValues.weight}
-                        onChange={(event) => {
-                          let effective_weight = 0;
-                          let selected_purity = metalPurityList.find(
-                            (item) => item.id == formValues.purity_id,
-                          );
-                          if (
-                            selected_purity &&
-                            parseFloat(event.target.value) > 0
-                          ) {
-                            effective_weight = selected_purity.value
-                              ? (parseFloat(event.target.value) *
-                                  parseFloat(selected_purity.value)) /
-                                100
-                              : parseFloat(event.target.value);
-                          }
-
-                          console.log(" selected_purity : ", selected_purity);
-
-                          this.setState({
-                            formValues: {
-                              ...this.state.formValues,
-                              weight: event.target.value,
-                              unit_id: selected_purity
-                                ? selected_purity.unit_id || ""
-                                : "",
-                              effective_weight: effective_weight,
-                            },
-                          });
-                        }}
-                      />
-                      {formValues.effective_weight > 0 ? (
-                        <Typography
-                          variant="h6"
-                          gutterBottom
-                          component="div"
-                        >{`Effective weight : ${formValues.effective_weight} GM`}</Typography>
-                      ) : (
-                        <></>
-                      )}
-                    </Grid>
-                  </>
-                ) : null}
-                <Grid item md={4} xs={12} className="create-input">
-                  <TextareaAutosize
-                    className="description"
-                    minRows={1}
-                    placeholder="Notes"
-                    style={{ width: "100%", height: "51px" }}
-                    value={formValues.notes}
-                    onChange={(event) =>
-                      this.updateFormValue(event.target.value, "notes")
-                    }
-                  />
-                </Grid>
-                <Grid
-                  item
-                  md={4}
-                  xs={12}
-                  className="p-invoice-date create-input"
-                >
-                  <LocalizationProvider dateAdapter={AdapterDayjs}>
-                    <DatePicker
-                      label="Due Date"
-                      value={formValues.due_date}
-                      inputFormat="DD/MM/YYYY"
-                      onChange={(newValue) =>
-                        this.updateFormValue(newValue, "due_date")
-                      }
-                      renderInput={(params) => (
+                      <Grid item md={4} xs={12} className="create-input">
                         <TextField
-                          {...params}
+                          label="Weight(GM)"
+                          variant="outlined"
                           fullWidth
-                          error={formErros.due_date}
+                          error={formErros.weight}
+                          value={formValues.weight}
+                          onChange={(event) => {
+                            let effective_weight = 0;
+                            let selected_purity = metalPurityList.find(
+                              (item) => item.id == formValues.purity_id,
+                            );
+                            if (
+                              selected_purity &&
+                              parseFloat(event.target.value) > 0
+                            ) {
+                              effective_weight = selected_purity.value
+                                ? (parseFloat(event.target.value) *
+                                    parseFloat(selected_purity.value)) /
+                                  100
+                                : parseFloat(event.target.value);
+                            }
+
+                            console.log(" selected_purity : ", selected_purity);
+
+                            this.setState({
+                              formValues: {
+                                ...this.state.formValues,
+                                weight: event.target.value,
+                                unit_id: selected_purity
+                                  ? selected_purity.unit_id || ""
+                                  : "",
+                                effective_weight: effective_weight,
+                              },
+                            });
+                          }}
                         />
-                      )}
+                        {formValues.effective_weight > 0 ? (
+                          <Typography
+                            variant="h6"
+                            gutterBottom
+                            component="div"
+                          >{`Effective weight : ${formValues.effective_weight} GM`}</Typography>
+                        ) : (
+                          <></>
+                        )}
+                      </Grid>
+                    </>
+                  ) : null}
+                  <Grid item md={4} xs={12} className="create-input">
+                    <TextareaAutosize
+                      className="description"
+                      minRows={1}
+                      placeholder="Notes"
+                      style={{ width: "100%", height: "51px" }}
+                      value={formValues.notes}
+                      onChange={(event) =>
+                        this.updateFormValue(event.target.value, "notes")
+                      }
                     />
-                  </LocalizationProvider>
-                </Grid>
-                <Grid item xs={12}>
-                  <Stack spacing={1} direction="row" justifyContent="flex-end">
-                    <Button
-                      variant="contained"
-                      type="button"
-                      disabled={this.state.processing}
-                      onClick={this.handleSubmit}
+                  </Grid>
+                  <Grid
+                    item
+                    md={4}
+                    xs={12}
+                    className="p-invoice-date create-input"
+                  >
+                    <LocalizationProvider dateAdapter={AdapterDayjs}>
+                      <DatePicker
+                        label="Due Date"
+                        value={formValues.due_date}
+                        inputFormat="DD/MM/YYYY"
+                        onChange={(newValue) =>
+                          this.updateFormValue(newValue, "due_date")
+                        }
+                        renderInput={(params) => (
+                          <TextField
+                            {...params}
+                            fullWidth
+                            error={formErros.due_date}
+                          />
+                        )}
+                      />
+                    </LocalizationProvider>
+                  </Grid>
+                  <Grid item xs={12}>
+                    <Stack
+                      spacing={1}
+                      direction="row"
+                      justifyContent="flex-end"
                     >
-                      {this.state.processing ? "Processing" : "Submit"}
-                    </Button>
-                    <Button variant="outlined" onClick={this.handleDialogClose}>
-                      Cancel
-                    </Button>
-                  </Stack>
+                      <Button
+                        variant="contained"
+                        type="button"
+                        disabled={this.state.processing}
+                        onClick={this.handleSubmit}
+                      >
+                        {this.state.processing ? "Processing" : "Submit"}
+                      </Button>
+                      <Button
+                        variant="outlined"
+                        onClick={this.handleDialogClose}
+                      >
+                        Cancel
+                      </Button>
+                    </Stack>
+                  </Grid>
                 </Grid>
-              </Grid>
-            </Box>
-          </DialogContent>
-        </Dialog>
-      </MainCard>
+              </Box>
+            </DialogContent>
+          </Dialog>
+        </MainCard>
+      </>
     );
   }
 }

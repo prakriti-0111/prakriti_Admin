@@ -493,78 +493,7 @@ class SaleViewPage extends React.Component {
                   </div>
 
                 </div> */}
-            <div className='return-wrapper'>
-              <div className='return-header'>
-                <p>Sale Details</p>
-                <p>Invoice Date: {sale.invoice_date}</p>
-                <p>Dues Date:{sale.due_date}</p>
-                {sale.notes ? <p>Notes: {sale.notes}</p> : null}
-              </div>
-              <div className=''>
-                {sale && parseFloat(sale.due_amount) > 0 ? (
-                  <Button
-                    variant='contained'
-                    className='add-button'
-                    onClick={() => this.handlePayNow()}>
-                    Pay Now
-                  </Button>
-                ) : null}
-                <Button
-                  className='add-button'
-                  variant='contained'
-                  onClick={() => this.props.navigate(-1)}>
-                  Back
-                </Button>
-              </div>
-            </div>
-            <Grid
-              container
-              spacing={gridSpacing}
-              className='details-header ratn-pur-wrapper loans_view'>
-              <Grid item xs={12}>
-                <TableContainer component={Paper}>
-                  <div className='ratn-table-purchase-wrapper'>
-                    <Table
-                      aria-label='collapsible table'
-                      className='invoice_product_list'>
-                      <TableHead className='ratn-table-header'>
-                        <TableRow>
-                          <TableCell>Company Name</TableCell>
-                          <TableCell>Total Amt</TableCell>
-                          <TableCell>Cash Disc</TableCell>
-                          <TableCell>Bill Amount</TableCell>
-                          <TableCell>Return Amt</TableCell>
-                          <TableCell>Paid Amt</TableCell>
-                          <TableCell>Due Amt</TableCell>
-                          <TableCell>Invoice No</TableCell>
-                          <TableCell>Status</TableCell>
-                        </TableRow>
-                      </TableHead>
-                      <TableBody className='pur-details-table-body'>
-                        <TableRow>
-                          <TableCell component='th' scope='row'>
-                            {sale?.user_details?.company_name}
-                          </TableCell>
-                          <TableCell>{sale.total_amount}</TableCell>
-                          <TableCell>{sale.discount}</TableCell>
-                          <TableCell>{sale.bill_amount}</TableCell>
-                          <TableCell>{sale.return_amount}</TableCell>
-                          <TableCell>{sale.paid_amount_display}</TableCell>
-                          <TableCell>{sale.due_amount_display}</TableCell>
-                          <TableCell>{sale.invoice_number}</TableCell>
-                          <TableCell className='sales-status'>
-                            <Chip
-                              label={sale.approve_status}
-                              color={getApprovalColor(sale.is_approved)}
-                            />
-                          </TableCell>
-                        </TableRow>
-                      </TableBody>
-                    </Table>
-                  </div>
-                </TableContainer>
-              </Grid>
-            </Grid>
+
             {sale.report_qty > 0 && <Grid
               container
               spacing={gridSpacing}
