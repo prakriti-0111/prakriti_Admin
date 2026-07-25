@@ -65,6 +65,7 @@ import {
   isMainSuperAdmin,
   objectToQuery,
   getAuthData,
+  applyStockSearch,
 } from "src/helpers/helper";
 import _ from "lodash";
 import jsQR from "jsqr";
@@ -522,14 +523,7 @@ class StockPage extends Component {
   }
 
   loadListData = () => {
-    const params = { ...this.state.queryParams };
-    const search = (params.search || "").trim();
-    // ponytail: numeric search text is treated as a total-weight filter; add a dedicated field if numeric codes ever need text search
-    if (/^\d+(\.\d+)?$/.test(search)) {
-      params.total_weight = search;
-      params.search = "";
-    }
-    this.props.actions.stocksList(params);
+    this.props.actions.stocksList(applyStockSearch({ ...this.state.queryParams }));
   };
 
   downloadCurrentStockReport = async (categoryId = null) => {
