@@ -36,13 +36,13 @@ const objectToQuery = (obj, addQuestion) => {
 };
 
 /**
- * Stock list search box: input longer than 6 chars is a certificate no,
- * anything shorter is a gross weight filter. Mutates nothing, returns new params.
+ * Stock list search box: a plain number is a weight filter, but a long number
+ * (> 6 digits) is a certificate no. Mutates nothing, returns new params.
  */
 const applyStockSearch = (params) => {
   const search = (params.search || "").trim();
-  if (!search) return params;
-  const key = search.length > 6 ? "certificate_no" : "total_weight";
+  if (!/^\d+(\.\d+)?$/.test(search)) return params;
+  const key = /^\d{7,}$/.test(search) ? "certificate_no" : "total_weight";
   return { ...params, [key]: search, search: "" };
 };
 
