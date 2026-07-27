@@ -57,6 +57,7 @@ import {
   salesStore,
   salesUpdate,
   salesViewRaw,
+  salesOnApproveTransferItemsRaw,
   saleReturn,
 } from "actions/superadmin/sales.actions";
 
@@ -686,7 +687,13 @@ class SaleForm extends React.Component {
   };
 
   loadSaleOnApproval = async () => {
-    if (!isEmpty(this.props.query.get("sale_on_approval"))) {
+    if (
+      !isEmpty(this.props.query.get("sale_on_approval")) &&
+      !this.loadingSaleOnApproval
+    ) {
+      /* componentDidUpdate can fire again before the state flag is set */
+      this.loadingSaleOnApproval = true;
+
       let res = await salesViewRaw(this.props.query.get("sale_on_approval"));
 
       if (res.data.success) {
@@ -738,13 +745,12 @@ class SaleForm extends React.Component {
           () => {
             this.handleCalculateMainPrice();
 
-            setTimeout(() => {
-              this.handleAdminChange("", saleOnApprovalData.user_id);
-            }, 1000);
+            /* the user list is already loaded when we get here, see componentDidUpdate */
+            this.handleAdminChange("", saleOnApprovalData.user_id);
           },
         );
-
-        //}, 3000);
+      } else {
+        this.loadingSaleOnApproval = false;
       }
     }
   };
@@ -776,48 +782,21 @@ class SaleForm extends React.Component {
   };
 
   loadCart = async () => {
-    let response = await cartListRaw({
-      from_order_price: this.props.query.get("from_order_price"),
+    let onApprovalId = this.props.query.get("sale_on_approval");
 
-      order_id: this.props.query.get("order_id"),
-    });
+    /* a sale on approval brings its own items, the cart stays untouched */
+    let response = !isEmpty(onApprovalId)
+      ? await salesOnApproveTransferItemsRaw(onApprovalId)
+      : await cartListRaw({
+          from_order_price: this.props.query.get("from_order_price"),
+
+          order_id: this.props.query.get("order_id"),
+        });
 
     if (response.data.success) {
       let cartList = response.data.data.items;
 
       let products = [];
-
-      let unique_materials = [];
-
-      let report_qty = 0;
-
-      let material_total_by_unit = [];
-
-      for (let i = 0; i < cartList.length; i++) {
-        let cart = cartList[i];
-
-        for (let item of cart.materials) {
-          //let m_unit_name = item.unit_name.toLowerCase();
-
-          if (typeof material_total_by_unit[item.material_id] === "undefined") {
-            material_total_by_unit[item.material_id] = 0.0;
-          }
-
-          // if (item.purity_id == 4 || item.purity_id == 18) {
-
-          //   material_total_by_unit[item.material_id] += parseFloat(
-
-          //     cart.total_weight
-
-          //   );
-
-          // } else {
-
-          material_total_by_unit[item.material_id] += parseFloat(item.weight);
-
-          //}
-        }
-      }
 
       for (let i = 0; i < cartList.length; i++) {
         let cart = cartList[i];
@@ -825,12 +804,6 @@ class SaleForm extends React.Component {
         let materials = [];
 
         //quantity = 1;
-
-        /* for those product with certificate no */
-
-        if (!isEmpty(cart.certificate_no)) {
-          report_qty += 1;
-        }
 
         for (let item of cart.materials) {
           materials.push({
@@ -872,33 +845,6 @@ class SaleForm extends React.Component {
 
             org_discount_percent: item.discount_percent,
           });
-
-          let m_unit_name = item.unit_name.toLowerCase();
-
-          let index = _.findIndex(
-            unique_materials,
-
-            (p) => p.material_id == item.material_id,
-          );
-
-          if (index == -1 && item.max_discount_percent > 0) {
-            unique_materials.push({
-              material_id: item.material_id,
-
-              material_name: item.material_name,
-
-              disc_type: "discount",
-
-              amount: "",
-
-              max_discount: item.max_discount_percent,
-
-              unit: m_unit_name,
-
-              ["total_" + item.material_id]:
-                material_total_by_unit[item.material_id],
-            });
-          }
         }
 
         let result2 = calculateGST(
@@ -994,52 +940,22 @@ class SaleForm extends React.Component {
         });
       }
 
-      /* report charge calculation */
-
-      let total_report_charge_amount = 0;
-
-      let total_report_charge_tax_amount = 0;
-
-      let total_report_charge_amount_after_tax = 0;
-
-      if (!this.state.isAssign) {
-        total_report_charge_amount =
-          report_qty * parseFloat(this.state.report_charge.amount);
-
-        total_report_charge_tax_amount =
-          (total_report_charge_amount *
-            parseFloat(this.state.report_charge.tax)) /
-          100;
-
-        total_report_charge_amount_after_tax =
-          total_report_charge_amount + total_report_charge_tax_amount;
-      }
-
       let formValues = this.state.formValues;
 
       formValues.products = [...products];
 
       formValues.invoice_number = response.data.data.next_invoice;
 
-      formValues.report_qty = report_qty;
-
+      /* the qty and the totals are derived in calculateProductPrice below */
       formValues.report_charge_amount = parseFloat(
         this.state.report_charge.amount,
       );
-
-      formValues.total_report_charge_amount = total_report_charge_amount;
-
-      formValues.total_report_charge_tax_amount =
-        total_report_charge_tax_amount;
-
-      formValues.total_report_charge_amount_after_tax =
-        total_report_charge_amount_after_tax;
 
       this.setState(
         {
           formValues: formValues,
 
-          unique_materials: unique_materials,
+          unique_materials: this.buildUniqueMaterials(products),
         },
 
         () => {
@@ -1047,6 +963,121 @@ class SaleForm extends React.Component {
         },
       );
     }
+  };
+
+  /**
+   * Material totals shown with the common discount inputs. Derived from the
+   * product list so a cart load and a product removal stay in sync.
+   */
+  buildUniqueMaterials = (products) => {
+    let material_total_by_unit = {};
+
+    for (let product of products) {
+      for (let item of product.materials) {
+        material_total_by_unit[item.material_id] =
+          (material_total_by_unit[item.material_id] || 0) +
+          parseFloat(item.weight);
+      }
+    }
+
+    let unique_materials = [];
+
+    for (let product of products) {
+      for (let item of product.materials) {
+        let index = _.findIndex(
+          unique_materials,
+
+          (p) => p.material_id == item.material_id,
+        );
+
+        if (index == -1 && item.max_discount_percent > 0) {
+          unique_materials.push({
+            material_id: item.material_id,
+
+            material_name: item.material_name,
+
+            disc_type: "discount",
+
+            amount: "",
+
+            max_discount: item.max_discount_percent,
+
+            unit: item.unit_name.toLowerCase(),
+
+            ["total_" + item.material_id]:
+              material_total_by_unit[item.material_id],
+          });
+        }
+      }
+    }
+
+    return unique_materials;
+  };
+
+  /**
+   * Single removal path: cart rows are dropped server side, sale on approval
+   * items only live in this form so they are dropped locally.
+   */
+  removeProductAt = async (index) => {
+    let products = [...this.state.formValues.products];
+
+    let product = products[index];
+
+    if (!product) {
+      return;
+    }
+
+    if (isEmpty(this.props.query.get("sale_on_approval"))) {
+      let response = await cartDelete(product.id, true);
+
+      if (!response.data.success) {
+        this.props.enqueueSnackbar(response.data.message, { variant: "error" });
+
+        return;
+      }
+
+      this.notifyProductRemoved(product.certificate_no, response.data.message);
+
+      this.loadCart();
+
+      this.props.actions.cartList();
+
+      return;
+    }
+
+    products.splice(index, 1);
+
+    this.setState(
+      {
+        formValues: { ...this.state.formValues, products: products },
+
+        unique_materials: this.buildUniqueMaterials(products),
+      },
+
+      () => {
+        this.calculateProductPrice();
+      },
+    );
+
+    this.notifyProductRemoved(
+      product.certificate_no,
+      "Product removed successfully.",
+    );
+  };
+
+  /* the scanner can fire twice for the same certificate, notify once */
+  notifyProductRemoved = (certificate_no, message) => {
+    if (this.lastRemovedCert && this.lastRemovedCert === certificate_no) {
+      return;
+    }
+
+    this.lastRemovedCert = certificate_no;
+
+    this.props.enqueueSnackbar(message, { variant: "success" });
+
+    setTimeout(() => {
+      this.lastRemovedCert = null;
+    }, 1000);
   };
 
   static getDerivedStateFromProps(props, state) {
@@ -1160,64 +1191,16 @@ class SaleForm extends React.Component {
 
     if (this.props.formData != prevProps.formData) {
       this.initializeFormData();
-    } else {
-      let canLoadSaleOnApproval = false;
-
-      if (this.isSuperAdmin) {
-        if (
-          this.state.adminList.length > 0 &&
-          this.state.employeeList.length > 0
-        ) {
-          canLoadSaleOnApproval = true;
-        }
-      } else if (this.isAdmin) {
-        if (
-          this.state.distributorList.length > 0 &&
-          this.state.salesExecutiveList.length > 0 &&
-          this.state.supplierList.length > 0
-        ) {
-          canLoadSaleOnApproval = true;
-        }
-      } else if (this.isDistributor) {
-        if (
-          this.state.retailerList.length > 0 &&
-          this.state.salesExecutiveList.length > 0 &&
-          this.state.supplierList.length > 0
-        ) {
-          canLoadSaleOnApproval = true;
-        }
-      } else if (this.isSalesExecutive) {
-        console.log(
-          "this.state.adminListApiCall : ",
-          this.state.adminListApiCall,
-          " this.state.retailerListApiCall : ",
-          this.state.retailerListApiCall,
-          " this.state.distributorListApiCall : ",
-          this.state.distributorListApiCall,
-          " this.state.salesExecutiveListApiCall : ",
-          this.state.salesExecutiveListApiCall,
-        );
-        //alert("componentDidUpdate");
-
-        if (
-          this.state.adminListApiCall &&
-          this.state.retailerListApiCall &&
-          this.state.distributorListApiCall &&
-          this.state.salesExecutiveListApiCall
-        ) {
-          canLoadSaleOnApproval = true;
-        }
-      }
-
-      if (canLoadSaleOnApproval) {
-        //alert("loadSaleOnApproval");
-        if (
-          !isEmpty(this.props.query.get("sale_on_approval")) &&
-          !this.state.loadSaleOnApprovalApiCall
-        ) {
-          await this.loadSaleOnApproval();
-        }
-      }
+    } else if (
+      !isEmpty(this.props.query.get("sale_on_approval")) &&
+      !this.state.loadSaleOnApprovalApiCall &&
+      this.getUserList().length > 0
+    ) {
+      /**
+       * The company can only be preselected once the list it has to be picked
+       * from is there, whichever role list that is for the logged in user.
+       */
+      await this.loadSaleOnApproval();
     }
 
     if (this.state.actionCalled) {
@@ -1432,7 +1415,9 @@ class SaleForm extends React.Component {
           (this.isSuperAdmin || this.isAdmin || this.isDistributor) &&
           /* (this.isAdmin && this.state.profile && this.state.profile.own) */ selectedUser &&
           selectedUser.own &&
-          !(this.isAdmin && isSelectedAdmin)
+          !(this.isAdmin && isSelectedAdmin) &&
+          /* a sale on approval is transferred to a sale, never to an assignment */
+          isEmpty(this.props.query.get("sale_on_approval"))
         ) {
           this.handleTransfer(val);
         } else {
@@ -2467,38 +2452,7 @@ class SaleForm extends React.Component {
   };
 
   handleDeleteConfirm = async () => {
-    let products = this.state.formValues.products;
-
-    let response = await cartDelete(
-      products[this.state.deletingIndex].id,
-
-      true,
-    );
-
-    if (response.data.success) {
-      if (
-        !this.lastRemovedCert ||
-        this.lastRemovedCert !==
-          products[this.state.deletingIndex].certificate_no
-      ) {
-        this.lastRemovedCert =
-          products[this.state.deletingIndex].certificate_no;
-
-        this.props.enqueueSnackbar(response.data.message, {
-          variant: "success",
-        });
-
-        setTimeout(() => {
-          this.lastRemovedCert = null;
-        }, 1000);
-      }
-
-      this.loadCart();
-
-      this.props.actions.cartList();
-    } else {
-      this.props.enqueueSnackbar(response.data.message, { variant: "error" });
-    }
+    await this.removeProductAt(this.state.deletingIndex);
 
     this.setState(
       {
@@ -4359,29 +4313,7 @@ class SaleForm extends React.Component {
     );
 
     if (idx !== -1) {
-      let product = formValues.products[idx];
-
-      let response = await cartDelete(product.id, true);
-
-      if (response.data.success) {
-        if (!this.lastRemovedCert || this.lastRemovedCert !== certificate_no) {
-          this.lastRemovedCert = certificate_no;
-
-          this.props.enqueueSnackbar(response.data.message, {
-            variant: "success",
-          });
-
-          setTimeout(() => {
-            this.lastRemovedCert = null;
-          }, 1000);
-        }
-
-        this.loadCart();
-
-        this.props.actions.cartList();
-      } else {
-        this.props.enqueueSnackbar(response.data.message, { variant: "error" });
-      }
+      await this.removeProductAt(idx);
 
       this.setState(
         {

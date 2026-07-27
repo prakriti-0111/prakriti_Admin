@@ -225,6 +225,11 @@ export const salesOnApproveViewRaw = (id) => {
     return axios.get(`/superadmin/sales-on-approve/view/${id}`)
 }
 
+/* items of a sale on approval, cart shaped, without touching the cart */
+export const salesOnApproveTransferItemsRaw = (id) => {
+    return axios.get(`/superadmin/sales-on-approve/transfer-items/${id}`)
+}
+
 export const salesEditRaw = (id) => {
     return axios.get(`/superadmin/sales/edit/${id}`)
 }
