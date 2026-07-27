@@ -77,6 +77,10 @@ import DeleteIcon from "@mui/icons-material/Delete";
 
 import CloseIcon from "@mui/icons-material/Close";
 
+import AddIcon from "@mui/icons-material/Add";
+
+import AdminForm from "forms/SuperAdmin/AdminForm";
+
 import { withSnackbar } from "notistack";
 
 const { updateSyncErrors } = require("redux-form/lib/actions").default;
@@ -388,6 +392,10 @@ class SaleForm extends React.Component {
       },
 
       isAssign: false,
+
+      showAddAdminDialog: false,
+
+      pendingAdminSelectId: null,
 
       isOnApprove: false,
 
@@ -1134,6 +1142,22 @@ class SaleForm extends React.Component {
   }
 
   async componentDidUpdate(prevProps, prevState) {
+    if (
+      this.state.pendingAdminSelectId &&
+      this.state.adminList !== prevState.adminList
+    ) {
+      let newlyCreatedAdmin = _.find(
+        this.state.adminList,
+        (item) => String(item.id) === String(this.state.pendingAdminSelectId),
+      );
+      if (newlyCreatedAdmin) {
+        let pendingId = this.state.pendingAdminSelectId;
+        this.setState({ pendingAdminSelectId: null }, () =>
+          this.handleAdminChange(null, pendingId),
+        );
+      }
+    }
+
     if (this.props.formData != prevProps.formData) {
       this.initializeFormData();
     } else {
@@ -1418,6 +1442,17 @@ class SaleForm extends React.Component {
         this.setAdminDetails();
       },
     );
+  };
+
+  handleAdminCreated = (newAdmin) => {
+    // adminList is resynced from props on every render (see
+    // getDerivedStateFromProps), so selecting the new admin has to wait
+    // for the refreshed list to actually arrive — see componentDidUpdate
+    this.setState({
+      showAddAdminDialog: false,
+      pendingAdminSelectId: newAdmin && newAdmin.id ? newAdmin.id : null,
+    });
+    this.props.actions.adminList({ all: 1 });
   };
 
   setAdminDetails = () => {
@@ -4446,6 +4481,13 @@ class SaleForm extends React.Component {
 
     let userIdValue = user.length ? user[0] : null;
 
+    // only the plain admin picker (Super Admin, not assigning) creates admins inline
+    const canAddAdmin = this.isSuperAdmin && !this.state.isAssign;
+    const ADD_ADMIN_OPTION = { id: "__add_admin__", company_name: "Add New Admin" };
+    let userListWithAddOption = canAddAdmin
+      ? [...userList, ADD_ADMIN_OPTION]
+      : userList;
+
     let hasReturn = this.hasReturn();
 
     let will_return_charge_apply = hasReturn.will_return_charge_apply;
@@ -4666,33 +4708,40 @@ class SaleForm extends React.Component {
                   <Autocomplete
                     className="autocomplete-selectbox"
                     fullWidth
-                    options={userList}
+                    options={userListWithAddOption}
                     value={userIdValue}
                     autoHighlight
                     getOptionLabel={(option) =>
                       this.state.isAssign ? option.name : option.company_name
                     }
-                    renderOption={(props, option) => (
-                      <li {...props} key={option.id}>
-                        {" "}
-                        {this.state.isAssign
-                          ? option.name +
-                            " - " +
-                            (option.user_name.search("RVE") != -1
-                              ? "SE "
-                              : "") +
-                            (option.user_name.search("RVA") != -1
-                              ? "Admin "
-                              : "") +
-                            (option.user_name.search("RVD") != -1
-                              ? "Distributor"
-                              : "") +
-                            (option.user_name.search("RVR") != -1
-                              ? "Retailer"
-                              : "")
-                          : option.company_name + "( " + option.city + " )"}
-                      </li>
-                    )}
+                    renderOption={(props, option) =>
+                      option.id === ADD_ADMIN_OPTION.id ? (
+                        <li {...props} key={option.id}>
+                          <AddIcon fontSize="small" sx={{ mr: 1 }} />
+                          Add New Admin
+                        </li>
+                      ) : (
+                        <li {...props} key={option.id}>
+                          {" "}
+                          {this.state.isAssign
+                            ? option.name +
+                              " - " +
+                              (option.user_name.search("RVE") != -1
+                                ? "SE "
+                                : "") +
+                              (option.user_name.search("RVA") != -1
+                                ? "Admin "
+                                : "") +
+                              (option.user_name.search("RVD") != -1
+                                ? "Distributor"
+                                : "") +
+                              (option.user_name.search("RVR") != -1
+                                ? "Retailer"
+                                : "")
+                            : option.company_name + "( " + option.city + " )"}
+                        </li>
+                      )
+                    }
                     renderInput={(params) => (
                       <TextField
                         style={{ margin: "auto" }}
@@ -4711,6 +4760,10 @@ class SaleForm extends React.Component {
                       />
                     )}
                     onChange={(event, newValue) => {
+                      if (newValue && newValue.id === ADD_ADMIN_OPTION.id) {
+                        this.setState({ showAddAdminDialog: true });
+                        return;
+                      }
                       this.handleAdminChange(
                         event,
 
@@ -4723,6 +4776,30 @@ class SaleForm extends React.Component {
                   />
                 )}
               </FormControl>
+              <Dialog
+                className="ratn-dialog-wrapper"
+                open={this.state.showAddAdminDialog}
+                onClose={() => this.setState({ showAddAdminDialog: false })}
+                fullWidth
+                maxWidth="xl"
+              >
+                <DialogTitle>
+                  Add Admin
+                  <IconButton
+                    onClick={() =>
+                      this.setState({ showAddAdminDialog: false })
+                    }
+                    sx={{ position: "absolute", right: 8, top: 8 }}
+                  >
+                    <CloseIcon />
+                  </IconButton>
+                </DialogTitle>
+                <DialogContent dividers>
+                  {this.state.showAddAdminDialog ? (
+                    <AdminForm onCreateSuccess={this.handleAdminCreated} />
+                  ) : null}
+                </DialogContent>
+              </Dialog>
             </Grid>
 
             {isMobile ? (

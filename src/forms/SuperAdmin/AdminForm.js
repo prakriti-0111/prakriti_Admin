@@ -226,11 +226,16 @@ class AdminForm extends React.Component {
         if(this.state.actionCalled){
             if(this.state.isCreateFrom){
                 if(this.state.createSuccess){
+                    let createdAdmin = this.props.newAdmin;
                     this.props.enqueueSnackbar(this.state.successMessage, {variant: 'success'});
                     this.props.dispatch({
                         type: SUPERADMIN_RESET_ADMIN
                     });
-                    this.props.navigate(getUserDashboardRoute(getRoleName(this.state.auth)) + '/admins');
+                    if(this.props.onCreateSuccess){
+                        this.props.onCreateSuccess(createdAdmin);
+                    }else{
+                        this.props.navigate(getUserDashboardRoute(getRoleName(this.state.auth)) + '/admins');
+                    }
                 }else{
                     this.setState({
                         submitting: false
@@ -799,9 +804,8 @@ class AdminForm extends React.Component {
                     </Grid>
                 </Grid>
 
-                <div className='custom-container ml-10'>
-                    <div className='custom-row pl-0'>
-                        <div className='custom-col-2'>
+                <Grid container spacing={2} sx={{ mt: 0 }}>
+                    <Grid item xs={12} sm={6} md={2}>
                             <div className="admin-buttons">
                                 <div className='p-single-image-wrapper'>
                                     <div className='p-single-image'>
@@ -838,8 +842,8 @@ class AdminForm extends React.Component {
                                     </Button>
                                 </div>
                             </div>
-                        </div>
-                        <div className='custom-col-2'>
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={2}>
                             <div className="admin-buttons">
                                 <div className='p-single-image-wrapper'>
                                     <div className='p-single-image'>
@@ -876,8 +880,8 @@ class AdminForm extends React.Component {
                                     </Button>
                                 </div>
                             </div>
-                        </div>
-                        <div className='custom-col-8'>
+                    </Grid>
+                    <Grid item xs={12} md={8}>
                             <div className='all-image-wrapper'>
                                 <div className='all-single-image'>
                                     <div>
@@ -930,10 +934,9 @@ class AdminForm extends React.Component {
                                     ))
                                 }
                             </div>
-                        </div>
-                    </div>
-                </div>
-                   
+                    </Grid>
+                </Grid>
+
                     {/*<Grid item xs={12}>
                         <Grid container spacing={2}>
                             <Grid item xs={3} className="admin-buttons">
@@ -1164,6 +1167,7 @@ class AdminForm extends React.Component {
 const mapStateToProps = (state) => ({
     actionCalled: state.superadmin.admin.actionCalled,
     createSuccess: state.superadmin.admin.createSuccess,
+    newAdmin: state.superadmin.admin.newAdmin,
     editSuccess: state.superadmin.admin.editSuccess,
     successMessage: state.superadmin.admin.successMessage,
     errorMessage: state.superadmin.admin.errorMessage,
