@@ -988,182 +988,156 @@ class SaleViewPage extends React.Component {
                                   ₹{totalTaxableAmt.toFixed(2)}
                                 </TableCell>
                               </TableRow>
-                              {reportAmt > 0 && (
-                                <TableRow>
-                                  <TableCell
-                                    colSpan={2}
-                                    style={{
-                                      fontSize: "15px",
-                                      fontWeight: 700,
-                                      color: "#1E2746",
-                                      borderBottom: "none",
-                                    }}
-                                  >
-                                    Report Charges :
-                                  </TableCell>
-                                  <TableCell
-                                    colSpan={7}
-                                    style={{
-                                      fontSize: "13px",
-                                      color: "#555",
-                                      borderBottom: "none",
-                                    }}
-                                  >
-                                    {parseFloat(sale.report_qty) || 0} Pics x{" "}
-                                    {(
-                                      parseFloat(sale.report_charge) || 0
-                                    ).toFixed(2)}{" "}
-                                    =
-                                  </TableCell>
-                                  <TableCell
-                                    colSpan={3}
-                                    style={{
-                                      fontSize: "15px",
-                                      fontWeight: 700,
-                                      color: "#1E2746",
-                                      textAlign: "right",
-                                      borderBottom: "none",
-                                    }}
-                                  >
-                                    ₹{formatIndianNumber(reportAmt)}
-                                  </TableCell>
-                                </TableRow>
-                              )}
-                            </>
-                          );
-                        })()}
-                      </TableBody>
-                    </Table>
-                  </div>
-                </TableContainer>
-
-                <Grid container className="invoice-totals-row">
-                  <Grid item xs={12} sm={6}>
-                    {sale.notes && (
-                      <Typography className="invoice-info-line invoice-notes">
-                        Notes: {sale.notes}
-                      </Typography>
-                    )}
-                  </Grid>
-                  <Grid item xs={12} sm={6}>
-                    <div className="invoice-totals-box">
-                      {(() => {
-                        const reportAmt =
-                          (parseFloat(sale.report_qty) || 0) *
-                          (parseFloat(sale.report_charge) || 0);
-                        const taxableAmt =
-                          parseFloat(
-                            String(sale.taxable_amount || "").replace(
-                              /[^0-9.-]+/g,
-                              "",
-                            ),
-                          ) || 0;
-                        const subTotal = taxableAmt;
-                        const rTax =
-                          (reportAmt *
-                            (parseFloat(sale.report_tax_percentage) || 0)) /
-                          100;
-                        const igst = parseFloat(sale.igst_tax) || 0;
-                        const cgst = parseFloat(sale.cgst_tax) || 0;
-                        const sgst = parseFloat(sale.sgst_tax) || 0;
-                        const productTax =
-                          (igst > 0 ? igst : cgst + sgst) - rTax;
-                        const reportTaxPerc =
-                          parseFloat(sale.report_tax_percentage) || 0;
-                        const totalPayableAmt =
-                          parseFloat(
-                            String(sale.total_payable || "").replace(
-                              /[^0-9.-]+/g,
-                              "",
-                            ),
-                          ) || 0;
-                        const totalTaxAmt = igst > 0 ? igst : cgst + sgst;
-                        return (
-                          <>
-                            <div className="invoice-totals-line">
-                              <span style={{ fontWeight: 700 }}>Sub Total</span>
-                              <span style={{ fontWeight: 700 }}>
-                                ₹{formatIndianNumber(subTotal)}
-                              </span>
-                            </div>
-                            {rTax > 0 && (
-                              <div className="invoice-totals-line">
-                                <span>
-                                  Report Tax ({reportTaxPerc.toFixed(2)}%)
-                                </span>
-                                <span>₹{formatIndianNumber(rTax)}</span>
-                              </div>
                             )}
-                            <div className="invoice-totals-line">
-                              <span>Tax</span>
-                              <span>
-                                ₹
-                                {formatIndianNumber(
-                                  productTax > 0 ? productTax : 0,
-                                )}
-                              </span>
-                            </div>
-                            {igst > 0 ? (
-                              <div className="invoice-totals-line">
-                                <span style={{ fontWeight: 700 }}>IGST</span>
-                                <span style={{ fontWeight: 700 }}>
-                                  ₹{formatIndianNumber(igst)}
-                                </span>
-                              </div>
-                            ) : cgst > 0 || sgst > 0 ? (
-                              <>
-                                <div className="invoice-totals-line">
-                                  <span style={{ fontWeight: 700 }}>CGST</span>
-                                  <span style={{ fontWeight: 700 }}>
-                                    ₹{formatIndianNumber(cgst)}
-                                  </span>
-                                </div>
-                                <div className="invoice-totals-line">
-                                  <span style={{ fontWeight: 700 }}>SGST</span>
-                                  <span style={{ fontWeight: 700 }}>
-                                    ₹{formatIndianNumber(sgst)}
-                                  </span>
-                                </div>
-                              </>
-                            ) : null}
+
                           </>
                         );
                       })()}
-                      <div className="invoice-totals-line invoice-totals-line-final">
-                        <span style={{ fontWeight: 700 }}>Total Payable</span>
-                        <span style={{ fontWeight: 700 }}>
-                          {sale.total_payable}
-                        </span>
-                      </div>
-                    </div>
-                  </Grid>
-                </Grid>
+                    </TableBody>
+                  </Table>
+                </div>
+              </TableContainer>
 
-                <Grid container className="invoice-footer-band">
-                  <Grid item xs={6} sm={3}>
-                    <span className="invoice-footer-label">Due Date</span>
-                    <br />
-                    {sale.due_date}
-                  </Grid>
-                  <Grid item xs={6} sm={3}>
-                    <span className="invoice-footer-label">
-                      Settlement Date
-                    </span>
-                    <br />
-                    {sale.settlement_date}
-                  </Grid>
-                  <Grid item xs={6} sm={3}>
-                    <span className="invoice-footer-label">Paid Amount</span>
-                    <br />
-                    {sale.paid_amount_display}
-                  </Grid>
-                  <Grid item xs={6} sm={3}>
-                    <span className="invoice-footer-label">Due Amount</span>
-                    <br />
-                    {sale.due_amount_display}
-                  </Grid>
+              <Grid container className="invoice-totals-row">
+                <Grid item xs={12} sm={6} />
+                <Grid item xs={12} sm={6}>
+                  <div className="invoice-totals-box">
+                    {(() => {
+                      const reportAmt =
+                        (parseFloat(sale.report_qty) || 0) *
+                        (parseFloat(sale.report_charge) || 0);
+                      const taxableAmt =
+                        parseFloat(
+                          String(sale.taxable_amount || "").replace(
+                            /[^0-9.-]+/g,
+                            "",
+                          ),
+                        ) || 0;
+                      const subTotal = taxableAmt;
+                      const rTax =
+                        (reportAmt *
+                          (parseFloat(sale.report_tax_percentage) || 0)) /
+                        100;
+                      const igst = parseFloat(sale.igst_tax) || 0;
+                      const cgst = parseFloat(sale.cgst_tax) || 0;
+                      const sgst = parseFloat(sale.sgst_tax) || 0;
+                      const productTax = (igst > 0 ? igst : cgst + sgst) - rTax;
+                      const reportTaxPerc =
+                        parseFloat(sale.report_tax_percentage) || 0;
+                      const totalPayableAmt =
+                        parseFloat(
+                          String(sale.total_payable || "").replace(
+                            /[^0-9.-]+/g,
+                            "",
+                          ),
+                        ) || 0;
+                      const totalTaxAmt = igst > 0 ? igst : cgst + sgst;
+                      const finalDiscount =
+                        parseFloat(
+                          String(sale.discount || "0").replace(
+                            /[^0-9.-]+/g,
+                            "",
+                          ),
+                        ) || 0;
+                      return (
+                        <>
+                          <div className="invoice-totals-line">
+                            <span style={{ fontWeight: 700 }}>Sub Total</span>
+                            <span style={{ fontWeight: 700 }}>
+                              ₹{formatIndianNumber(subTotal)}
+                            </span>
+                          </div>
+                          {rTax > 0 && (
+                            <div className="invoice-totals-line">
+                              <span>
+                                Report Tax ({reportTaxPerc.toFixed(2)}%)
+                              </span>
+                              <span>₹{formatIndianNumber(rTax)}</span>
+                            </div>
+                          )}
+                          <div className="invoice-totals-line">
+                            <span>Tax</span>
+                            <span>
+                              ₹
+                              {formatIndianNumber(
+                                productTax > 0 ? productTax : 0,
+                              )}
+                            </span>
+                          </div>
+                          {igst > 0 ? (
+                            <div className="invoice-totals-line">
+                              <span style={{ fontWeight: 700 }}>IGST</span>
+                              <span style={{ fontWeight: 700 }}>
+                                ₹{formatIndianNumber(igst)}
+                              </span>
+                            </div>
+                          ) : cgst > 0 || sgst > 0 ? (
+                            <>
+                              <div className="invoice-totals-line">
+                                <span style={{ fontWeight: 700 }}>CGST</span>
+                                <span style={{ fontWeight: 700 }}>
+                                  ₹{formatIndianNumber(cgst)}
+                                </span>
+                              </div>
+                              <div className="invoice-totals-line">
+                                <span style={{ fontWeight: 700 }}>SGST</span>
+                                <span style={{ fontWeight: 700 }}>
+                                  ₹{formatIndianNumber(sgst)}
+                                </span>
+                              </div>
+                            </>
+                          ) : null}
+                          <div className="invoice-totals-line">
+                            <span>Discount</span>
+                            <span>
+                              - ₹
+                              {formatIndianNumber(
+                                finalDiscount > 0 ? finalDiscount : 0,
+                              )}
+                            </span>
+                          </div>
+                        </>
+                      );
+                    })()}
+                    <div className="invoice-totals-line invoice-totals-line-final">
+                      <span style={{ fontWeight: 700 }}>Total Payable</span>
+                      <span style={{ fontWeight: 700 }}>
+                        {sale.total_payable}
+                      </span>
+                    </div>
+                  </div>
                 </Grid>
-              </Box>
+              </Grid>
+
+              {sale.notes && (
+                <Typography className="invoice-info-line invoice-notes" style={{ marginTop: "8px" }}>
+                  Notes: {sale.notes}
+                </Typography>
+              )}
+
+              <Grid container className="invoice-footer-band">
+                <Grid item xs={6} sm={3}>
+                  <span className="invoice-footer-label">Due Date</span>
+                  <br />
+                  {sale.due_date}
+                </Grid>
+                <Grid item xs={6} sm={3}>
+                  <span className="invoice-footer-label">Settlement Date</span>
+                  <br />
+                  {sale.settlement_date}
+                </Grid>
+                <Grid item xs={6} sm={3}>
+                  <span className="invoice-footer-label">Paid Amount</span>
+                  <br />
+                  {sale.paid_amount_display}
+                </Grid>
+                <Grid item xs={6} sm={3}>
+                  <span className="invoice-footer-label">Due Amount</span>
+                  <br />
+                  {sale.due_amount_display}
+                </Grid>
+              </Grid>
+            </Box>
 
               <Divider
                 sx={{ my: 2, borderColor: "#1E2746", borderWidth: "1px" }}
