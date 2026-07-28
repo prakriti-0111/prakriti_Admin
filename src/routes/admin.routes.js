@@ -7,6 +7,9 @@ const LoginPage = Loadable(lazy(() => import("../pages/Admin/Auth/Login")));
 const ForgotPasswordPage = Loadable(
   lazy(() => import("../pages/Admin/Auth/ForgotPassword")),
 );
+const ResetPasswordPage = Loadable(
+  lazy(() => import("../pages/Admin/Auth/ResetPassword")),
+);
 const DashboardPage = Loadable(
   lazy(() => import("../pages/SuperAdmin/Dashboard")),
 );
@@ -671,6 +674,10 @@ const AdminRoutes = (isLoggedIn) => [
   {
     path: `${routePrefix}/forgot-password`,
     element: <ForgotPasswordPage />,
+  },
+  {
+    path: `${routePrefix}/reset-password`,
+    element: <ResetPasswordPage />,
   },
 ];
 

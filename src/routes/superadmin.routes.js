@@ -6,6 +6,7 @@ import MainLayout from 'layout/MainLayout';
 
 const LoginPage = Loadable(lazy(() => import('../pages/SuperAdmin/Auth/Login')));
 const ForgotPasswordPage = Loadable(lazy(() => import('../pages/SuperAdmin/Auth/ForgotPassword')));
+const ResetPasswordPage = Loadable(lazy(() => import('../pages/SuperAdmin/Auth/ResetPassword')));
 const DashboardPage = Loadable(lazy(() => import('../pages/SuperAdmin/Dashboard')));
 const CertificatePage = Loadable(lazy(() => import('../pages/SuperAdmin/Certificate')));
 const CategoryPage = Loadable(lazy(() => import('../pages/SuperAdmin/Category')));
@@ -741,6 +742,10 @@ const SuperAdminRoutes = (isLoggedIn) => [
   {
     path: `${routePrefix}/forgot-password`,
     element: <ForgotPasswordPage />,
+  },
+  {
+    path: `${routePrefix}/reset-password`,
+    element: <ResetPasswordPage />,
   }
 ];
 

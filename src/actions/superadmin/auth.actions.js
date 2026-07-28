@@ -81,3 +81,11 @@ export const forgotPasswordVerifyOtp = (data) => {
 export const forgotPassword = (data) => {
     return axios.post("/superadmin/auth/forgot-password", data)
 }
+
+export const forgotPasswordSendLink = (data) => {
+    return axios.post("/superadmin/auth/forgot-password-send-link", data)
+}
+
+export const resetPassword = (data) => {
+    return axios.post("/superadmin/auth/reset-password", data)
+}
