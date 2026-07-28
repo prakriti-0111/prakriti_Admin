@@ -13,7 +13,6 @@ import ProfileSection from './ProfileSection';
 import NotificationSection from './NotificationSection';
 import CartSection from './CartSection';
 import SaleCartSection from './SaleCartSection';
-import GoldPriceBar from 'src/components/GoldPriceBar';
 
 // assets
 import { IconMenu2 } from '@tabler/icons';
@@ -106,8 +105,6 @@ const Header = ({ handleLeftDrawerToggle }) => {
                     <CartSection />
                     : null
             }*/}
-
-            <GoldPriceBar />
 
             {
                 (!_isSuperAdmin || (_isSuperAdmin && hasPermission(permissions, ['sales'],  ['list', 'view', 'edit']))) && haveSaleCart(user) ?
