@@ -4420,6 +4420,13 @@ class SaleForm extends React.Component {
       ? [...userList, ADD_ADMIN_OPTION]
       : userList;
 
+    /* the company is picked for us, either from a sale on approval or after
+       an inline admin creation, both wait on the user list to arrive */
+    const selectingUser =
+      !!this.state.pendingAdminSelectId ||
+      (!isEmpty(this.props.query.get("sale_on_approval")) &&
+        !this.state.loadSaleOnApprovalApiCall);
+
     let hasReturn = this.hasReturn();
 
     let will_return_charge_apply = hasReturn.will_return_charge_apply;
@@ -4686,6 +4693,14 @@ class SaleForm extends React.Component {
 
                           autoComplete: "new-password",
                         }}
+                        InputProps={{
+                          ...params.InputProps,
+                          endAdornment: selectingUser ? (
+                            <CircularProgress size="20px" />
+                          ) : (
+                            params.InputProps.endAdornment
+                          ),
+                        }}
                         fullWidth
                         error={formErros.user_id}
                         className="non_disable_text"
@@ -4703,7 +4718,9 @@ class SaleForm extends React.Component {
                       );
                     }}
                     disabled={
-                      !this.state.isCreateFrom || (order ? true : false)
+                      !this.state.isCreateFrom ||
+                      (order ? true : false) ||
+                      selectingUser
                     }
                   />
                 )}
@@ -5825,249 +5842,111 @@ class SaleForm extends React.Component {
             className="materialContainerGrid create-input p-add-product border-radius-0"
           >
             {!this.state.isAssign ? (
-              <>
-                <TableContainer component={Paper}>
-                  <Table
-                    sx={{ minWidth: 650 }}
-                    aria-label="simple table"
-                    className="materialContainer"
-                  >
-                    <TableRow
-                      sx={{
-                        width: "100%",
+              <Paper elevation={0} className="sale-summary-bar">
+                <div className="sale-summary-discounts">
+                  {this.state.unique_materials.map((item, index) => (
+                    <div className="sale-summary-field" key={index}>
+                      <label>
+                        {item.material_name} (
+                        {item.unit.toLowerCase() != "gm"
+                          ? item["total_" + item.material_id].toFixed(2)
+                          : item["total_" + item.material_id].toFixed(3)}{" "}
+                        {item.unit})
+                      </label>
 
-                        display: "flex",
+                      <div className="sale-summary-control">
+                        <input
+                          type="text"
+                          value={item.amount}
+                          placeholder="0"
+                          max={item.max_discount}
+                          onChange={(event) =>
+                            this.handleCommonDis(event, index)
+                          }
+                        />
 
-                        flexDirection: { xs: "column", sm: "row" },
+                        <select
+                          onChange={(event) =>
+                            this.handleDiscountType(event, index)
+                          }
+                        >
+                          <option value="discount">Disc %</option>
 
-                        justifyContent: { xs: "flex-start", sm: "flex-start" },
+                          <option value="rate">Flat ₹</option>
+                        </select>
+                      </div>
+                    </div>
+                  ))}
 
-                        gap: { xs: 0, sm: 0 },
-                      }}
-                    >
-                      <TableCell className=" mob-hide"></TableCell>
+                  {this.haveMakingComonDis() ? (
+                    <div className="sale-summary-field">
+                      <label>
+                        Making Disc (
+                        {this.getMakingApplicableWeight().toFixed(3)} gm |{" "}
+                        {this.getMakingApplicableQuantity()} pcs)
+                      </label>
 
-                      <TableCell className="materialDiscSec" colSpan="3">
-                        <div className="unique-wrapper d-flex align-items-center">
-                          {/*  */}
+                      <div className="sale-summary-control">
+                        <input
+                          type="text"
+                          value={this.state.common_making_discount}
+                          placeholder="0"
+                          disabled={isReturn ? true : false}
+                          onChange={(event) =>
+                            this.handleCommonMakingDis(event)
+                          }
+                        />
 
-                          <div className=" d-flex align-items-center ">
-                            {this.state.unique_materials.map((item, index) => (
-                              <React.Fragment key={index}>
-                                <div className="unique_materials ms-3">
-                                  <p
-                                    className="mb-2"
-                                    style={{
-                                      fontSize: "smaller",
-                                      color: "#000000",
-                                    }}
-                                  >
-                                    {item.material_name} (
-                                    {item.unit.toLowerCase() != "gm"
-                                      ? item[
-                                          "total_" + item.material_id
-                                        ].toFixed(2)
-                                      : item[
-                                          "total_" + item.material_id
-                                        ].toFixed(3)}{" "}
-                                    {item.unit})
-                                  </p>
+                        <select
+                          value={this.state.common_making_discount_type}
+                          disabled={isReturn ? true : false}
+                          onChange={(event) =>
+                            this.handleCommonMakingDisType(event)
+                          }
+                        >
+                          <option value="discount">Disc %</option>
 
-                                  <span style={{ position: "relative" }}>
-                                    <input
-                                      type="text"
-                                      value={item.amount}
-                                      onChange={(event) =>
-                                        this.handleCommonDis(event, index)
-                                      }
-                                      className="custom_input"
-                                      style={{
-                                        width: "100%",
+                          <option value="rate">Flat ₹</option>
+                        </select>
+                      </div>
+                    </div>
+                  ) : null}
+                </div>
 
-                                        height: "40px",
+                <div className="sale-summary-stats">
+                  <div className="sale-summary-stat">
+                    <span>Price</span>
 
-                                        padding: "5px 8px",
-                                      }}
-                                      max={item.max_discount}
-                                    />
+                    <b>{priceFormat(formValues.total_tag_price)}</b>
+                  </div>
 
-                                    <span
-                                      style={{
-                                        position: "absolute",
+                  <div className="sale-summary-stat">
+                    <span>Dist</span>
 
-                                        right: "5px",
+                    <b>{priceFormat(formValues.product_discount)}</b>
+                  </div>
 
-                                        top: "0px",
-                                      }}
-                                    >
-                                      {" "}
-                                      <select
-                                        onChange={(event) =>
-                                          this.handleDiscountType(event, index)
-                                        }
-                                      >
-                                        <option value="discount">
-                                          Discount %
-                                        </option>
+                  <div className="sale-summary-stat">
+                    <span>Tax</span>
 
-                                        <option value="rate">Flat rate</option>
-                                      </select>
-                                    </span>
-                                  </span>
-                                </div>
-                              </React.Fragment>
-                            ))}
-                          </div>
-                        </div>
+                    <b>{priceFormat(formValues.total_tax)}</b>
+                  </div>
 
-                        {/**
+                  <div className="sale-summary-stat is-total">
+                    <span>Total</span>
 
-                                                 *  <TextField
+                    <b>{formValues.total_amount}</b>
+                  </div>
+                </div>
 
-                                                            key={index}
-
-                                                            label={item.material_name}
-
-                                                            variant="outlined"
-
-                                                            fullWidth
-
-                                                            value={item.amount}
-
-                                                            onChange={(event) => this.handleCommonDis(event, index)}
-
-                                                            InputProps={{
-
-                                                                endAdornment: <InputAdornment position="start">%</InputAdornment>,
-
-                                                            }}
-
-                                                            sx={{marginBottom: '10px'}}
-
-                                                        />
-
-                                                */}
-                      </TableCell>
-
-                      <TableCell
-                        className="makingDiscSec"
-                        sx={{ verticalAlign: "top" }}
-                      >
-                        {this.haveMakingComonDis() ? (
-                          <>
-                            <div class="unique_materials ms-3">
-                              <p
-                                className="mb-2"
-                                style={{
-                                  fontSize: "smaller",
-                                  color: "#000000",
-                                  whiteSpace: "nowrap",
-                                }}
-                              >
-                                Making Disc (
-                                {this.getMakingApplicableWeight().toFixed(3)} gm
-                                | {this.getMakingApplicableQuantity()} pcs)
-                              </p>
-
-                              <span style={{ position: "relative" }}>
-                                <input
-                                  type="text"
-                                  value={this.state.common_making_discount}
-                                  onChange={(event) =>
-                                    this.handleCommonMakingDis(event)
-                                  }
-                                  className="custom_input"
-                                  style={{
-                                    width: "100%",
-
-                                    height: "40px",
-
-                                    padding: "5px 8px",
-                                  }}
-                                  disabled={isReturn ? "disabled" : ""}
-                                />
-
-                                <span
-                                  style={{
-                                    position: "absolute",
-
-                                    right: "5px",
-
-                                    top: "0px",
-                                  }}
-                                >
-                                  {" "}
-                                  <select
-                                    value={
-                                      this.state.common_making_discount_type
-                                    }
-                                    onChange={(event) =>
-                                      this.handleCommonMakingDisType(event)
-                                    }
-                                    disabled={isReturn ? "disabled" : ""}
-                                  >
-                                    <option value="discount">Discount %</option>
-
-                                    <option value="rate">Flat rate</option>
-                                  </select>
-                                </span>
-                              </span>
-                            </div>
-                          </>
-                        ) : null}
-                      </TableCell>
-
-                      <TableCell className=" align-items-center mob-hide">
-                        <b className="price-cal ">
-                          {" "}
-                          {/*  */}
-                          <span>Price</span>
-                          <br />
-                          {priceFormat(formValues.total_tag_price)}
-                        </b>
-                      </TableCell>
-
-                      <TableCell className=" align-items-center mob-hide">
-                        <b className="price-cal ">
-                          {" "}
-                          {/*  */}
-                          <span>Dist</span>
-                          <br />
-                          {priceFormat(formValues.product_discount)}
-                        </b>
-                      </TableCell>
-
-                      <TableCell className=" align-items-center mob-hide">
-                        <b className="price-cal ">
-                          {" "}
-                          {/*  */}
-                          <span>Tax</span>
-                          <br />
-                          {priceFormat(formValues.total_tax)}
-                        </b>
-                      </TableCell>
-
-                      <TableCell className=" align-items-center mob-hide">
-                        <b className="price-cal">
-                          Total
-                          <br />
-                          {formValues.total_amount}
-                        </b>
-                      </TableCell>
-
-                      <TableCell className=" align-items-center note-cell">
-                        <div className="sticky-note">
-                          <i
-                            class="bi bi-pencil-square fs-4 "
-                            data-bs-toggle="modal"
-                            data-bs-target="#noteModal"
-                          ></i>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  </Table>
-                </TableContainer>
-              </>
+                <div className="sticky-note sale-summary-note">
+                  <i
+                    className="bi bi-pencil-square fs-4"
+                    data-bs-toggle="modal"
+                    data-bs-target="#noteModal"
+                  ></i>
+                </div>
+              </Paper>
             ) : null}
           </Grid>
 

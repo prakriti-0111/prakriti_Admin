@@ -587,7 +587,7 @@ class DistributorForm extends React.Component {
                 <form autoComplete="off" className='ratn-dialog-inner'>
                 <Grid container spacing={2} className='loans_view p_view'>
                     <Grid item xs={12} md={3.5} className='create-input'>
-                        <TextField  
+                        <TextField size="small"  
                             label="Company Name"
                             variant="outlined"
                             fullWidth
@@ -596,8 +596,8 @@ class DistributorForm extends React.Component {
                             error={formErros.company_name}
                         />
                     </Grid>
-                    <Grid item xs={3} className='create-input'>
-                        <TextField  
+                    <Grid item xs={6} md={3} className='create-input'>
+                        <TextField size="small"  
                             label="Owner Name" 
                             variant="outlined"
                             fullWidth
@@ -606,8 +606,8 @@ class DistributorForm extends React.Component {
                             error={formErros.name}
                         />
                     </Grid>
-                    <Grid item xs={2} className='create-input'>
-                        <TextField  
+                    <Grid item xs={6} md={2} className='create-input'>
+                        <TextField size="small"  
                             label="Contact No" 
                             variant="outlined"
                             fullWidth
@@ -617,8 +617,8 @@ class DistributorForm extends React.Component {
                             onInput={(e) => validateInteger(e)}
                         />
                     </Grid>
-                    <Grid item xs={3.5} className='create-input'>
-                        <TextField  
+                    <Grid item xs={12} sm={6} md={3.5} className='create-input'>
+                        <TextField size="small"  
                             label="Email" 
                             variant="outlined"
                             fullWidth
@@ -627,8 +627,8 @@ class DistributorForm extends React.Component {
                             error={formErros.email}
                         />
                     </Grid>
-                    {/*<Grid item xs={3} className='create-input'>
-                        <TextField  
+                    {/*<Grid item xs={6} md={3} className='create-input'>
+                        <TextField size="small"  
                             label="Adhar" 
                             variant="outlined"
                             fullWidth
@@ -637,8 +637,8 @@ class DistributorForm extends React.Component {
                             error={formErros.adhar}
                         />
                     </Grid>
-                    <Grid item xs={3} className='create-input'>
-                        <TextField  
+                    <Grid item xs={6} md={3} className='create-input'>
+                        <TextField size="small"  
                             label="Pan" 
                             variant="outlined"
                             fullWidth
@@ -647,8 +647,8 @@ class DistributorForm extends React.Component {
                             error={formErros.pan}
                         />
                     </Grid>*/}
-                    <Grid item xs={6} className='create-input'>
-                        <TextField  
+                    <Grid item xs={12} sm={6} md={6} className='create-input'>
+                        <TextField size="small"  
                             label="Full Address" 
                             variant="outlined"
                             fullWidth
@@ -657,7 +657,7 @@ class DistributorForm extends React.Component {
                             error={formErros.address}
                         />
 
-                        {/*<FormControl fullWidth error={formErros.address}>
+                        {/*<FormControl fullWidth size="small" error={formErros.address}>
                             <TextareaAutosize
                                 className='description'
                                 minRows={3}
@@ -668,8 +668,8 @@ class DistributorForm extends React.Component {
                             />
                         </FormControl>*/}
                     </Grid>
-                    <Grid item xs={2} className='create-input'>
-                        <TextField  
+                    <Grid item xs={6} md={2} className='create-input'>
+                        <TextField size="small"  
                             label="Landmark" 
                             variant="outlined"
                             fullWidth
@@ -678,8 +678,8 @@ class DistributorForm extends React.Component {
                             error={formErros.landmark}
                         />
                     </Grid>
-                    <Grid item xs={2} className='create-input'>
-                        <TextField  
+                    <Grid item xs={6} md={2} className='create-input'>
+                        <TextField size="small"  
                             label="GST"
                             variant="outlined"
                             fullWidth
@@ -688,8 +688,8 @@ class DistributorForm extends React.Component {
                             error={formErros.gst}
                         />
                     </Grid>
-                    {!isCreateFrom && <Grid item xs={2} className='create-input'>
-                        <TextField  
+                    {!isCreateFrom && <Grid item xs={6} md={2} className='create-input'>
+                        <TextField size="small"  
                             label="Created By"
                             variant="outlined"
                             fullWidth
@@ -699,8 +699,8 @@ class DistributorForm extends React.Component {
                             //error={formErros.gst}
                         />
                     </Grid>}
-                    <Grid item xs={2} className='create-input'>
-                        <FormControl fullWidth>
+                    <Grid item xs={6} md={2} className='create-input'>
+                        <FormControl fullWidth size="small">
                             <InputLabel>Own Distributor</InputLabel>
                             <Select
                                 className='input-inner'
@@ -714,8 +714,8 @@ class DistributorForm extends React.Component {
                             </Select>
                         </FormControl>
                     </Grid>
-                    {/*<Grid item xs={6} className='create-input'>
-                        <FormControl fullWidth error={formErros.p_address}>
+                    {/*<Grid item xs={12} sm={6} md={6} className='create-input'>
+                        <FormControl fullWidth size="small" error={formErros.p_address}>
                             <TextareaAutosize
                                 className='description'
                                 minRows={3}
@@ -726,8 +726,8 @@ class DistributorForm extends React.Component {
                             />
                         </FormControl>
                     </Grid>*/}
-                    <Grid item xs={2.4} className='create-input'>
-                        <FormControl fullWidth error={formErros.country_id}>
+                    <Grid item xs={6} md={2.4} className='create-input'>
+                        <FormControl fullWidth size="small" error={formErros.country_id}>
                             <InputLabel>Country</InputLabel>
                             <Select
                                 className='input-inner'
@@ -746,8 +746,8 @@ class DistributorForm extends React.Component {
                             </Select>
                         </FormControl>
                     </Grid>
-                    <Grid item xs={2.4} className='create-input'>
-                        <FormControl fullWidth error={formErros.state_id}>
+                    <Grid item xs={6} md={2.4} className='create-input'>
+                        <FormControl fullWidth size="small" error={formErros.state_id}>
                             <InputLabel>State</InputLabel>
                             <Select
                                 className='input-inner'
@@ -766,8 +766,8 @@ class DistributorForm extends React.Component {
                             </Select>
                         </FormControl>
                     </Grid>
-                    <Grid item xs={2.4} className='create-input'>
-                        <FormControl fullWidth error={formErros.district_id}>
+                    <Grid item xs={6} md={2.4} className='create-input'>
+                        <FormControl fullWidth size="small" error={formErros.district_id}>
                             <InputLabel>District</InputLabel>
                             <Select
                                 className='input-inner'
@@ -785,8 +785,8 @@ class DistributorForm extends React.Component {
                             </Select>
                         </FormControl>
                     </Grid>
-                    <Grid item xs={2.4} className='create-input'>
-                        <TextField  
+                    <Grid item xs={6} md={2.4} className='create-input'>
+                        <TextField size="small"  
                             label="City"
                             variant="outlined"
                             fullWidth
@@ -795,8 +795,8 @@ class DistributorForm extends React.Component {
                             error={formErros.city}
                         />
                     </Grid>
-                    <Grid item xs={2.4} className='create-input'>
-                        <TextField  
+                    <Grid item xs={6} md={2.4} className='create-input'>
+                        <TextField size="small"  
                             label="Pincode"
                             variant="outlined"
                             fullWidth
@@ -806,8 +806,8 @@ class DistributorForm extends React.Component {
                             onInput={(e) => validateInteger(e)}
                         />
                     </Grid>
-                    {/*<Grid item xs={3} className='create-input'>
-                        <FormControl fullWidth error={formErros.p_country_id}>
+                    {/*<Grid item xs={6} md={3} className='create-input'>
+                        <FormControl fullWidth size="small" error={formErros.p_country_id}>
                             <InputLabel>Permanent Country</InputLabel>
                             <Select
                                 className='input-inner'
@@ -825,8 +825,8 @@ class DistributorForm extends React.Component {
                             </Select>
                         </FormControl>
                     </Grid>
-                    <Grid item xs={3} className='create-input'>
-                        <FormControl fullWidth error={formErros.p_state_id}>
+                    <Grid item xs={6} md={3} className='create-input'>
+                        <FormControl fullWidth size="small" error={formErros.p_state_id}>
                             <InputLabel>Permanent State</InputLabel>
                             <Select
                                 className='input-inner'
@@ -844,8 +844,8 @@ class DistributorForm extends React.Component {
                             </Select>
                         </FormControl>
                     </Grid>
-                    <Grid item xs={3} className='create-input'>
-                        <TextField  
+                    <Grid item xs={6} md={3} className='create-input'>
+                        <TextField size="small"  
                             label="Permanent City"
                             variant="outlined"
                             fullWidth
@@ -854,8 +854,8 @@ class DistributorForm extends React.Component {
                             error={formErros.p_city}
                         />
                     </Grid>
-                    <Grid item xs={3} className='create-input'>
-                        <TextField  
+                    <Grid item xs={6} md={3} className='create-input'>
+                        <TextField size="small"  
                             label="Permanent Pincode"
                             variant="outlined"
                             fullWidth
@@ -866,8 +866,8 @@ class DistributorForm extends React.Component {
                     </Grid>*/}
                     
                     
-                    <Grid item xs={3} className='create-input'>
-                        <TextField  
+                    <Grid item xs={6} md={3} className='create-input'>
+                        <TextField size="small"  
                             label="Bank Name"
                             variant="outlined"
                             fullWidth
@@ -876,8 +876,8 @@ class DistributorForm extends React.Component {
                             error={formErros.bank_name}
                         />
                     </Grid>
-                    <Grid item xs={3} className='create-input'>
-                        <TextField  
+                    <Grid item xs={6} md={3} className='create-input'>
+                        <TextField size="small"  
                             label="Branch Name"
                             variant="outlined"
                             fullWidth
@@ -886,8 +886,8 @@ class DistributorForm extends React.Component {
                             error={formErros.branch_name}
                         />
                     </Grid>
-                    <Grid item xs={3} className='create-input'>
-                        <TextField  
+                    <Grid item xs={6} md={3} className='create-input'>
+                        <TextField size="small"  
                             label="Account Number"
                             variant="outlined"
                             fullWidth
@@ -897,8 +897,8 @@ class DistributorForm extends React.Component {
                             onInput={(e) => validateInteger(e)}
                         />
                     </Grid>
-                    <Grid item xs={3} className='create-input'>
-                        <TextField  
+                    <Grid item xs={6} md={3} className='create-input'>
+                        <TextField size="small"  
                             label="IFSC Code"
                             variant="outlined"
                             fullWidth
@@ -1083,7 +1083,7 @@ class DistributorForm extends React.Component {
                                             : null
                                         }
                                     </ImageList>
-                                    : <Grid item xs={2} className='create-input'>
+                                    : <Grid item xs={6} md={2} className='create-input'>
                                     <img src={noImage} id="logo-img" style={{height: '100px', width: '100px'}} />
                                   </Grid>
                                 }
@@ -1139,7 +1139,7 @@ class DistributorForm extends React.Component {
                                             : null
                                         }
                                     </ImageList>
-                                    : <Grid item xs={2} className='create-input'>
+                                    : <Grid item xs={6} md={2} className='create-input'>
                                     <img src={noImage} id="logo-img" style={{height: '100px', width: '100px'}} />
                                   </Grid>
                                 }
@@ -1183,7 +1183,7 @@ class DistributorForm extends React.Component {
                                         </ImageListItem>
                                         ))}
                                     </ImageList>
-                                    : <Grid item xs={2} className='create-input'>
+                                    : <Grid item xs={6} md={2} className='create-input'>
                                     <img src={noImage} id="logo-img" style={{height: '100px', width: '100px'}} />
                                   </Grid>
                                 }
@@ -1206,8 +1206,8 @@ class DistributorForm extends React.Component {
                         </Grid>
                     </Grid>*/}
                 <Grid container spacing={2} className='loans_view p_view'>
-                    <Grid item xs={3} className='create-input'>
-                        <TextField  
+                    <Grid item xs={6} md={3} className='create-input'>
+                        <TextField size="small"  
                             label="User Name"
                             variant="outlined"
                             fullWidth
@@ -1215,8 +1215,8 @@ class DistributorForm extends React.Component {
                             disabled
                         />
                     </Grid>
-                    <Grid item xs={3} className='create-input'>
-                        <TextField  
+                    <Grid item xs={6} md={3} className='create-input'>
+                        <TextField size="small"  
                             label="Password" 
                             variant="outlined"
                             fullWidth
@@ -1227,8 +1227,8 @@ class DistributorForm extends React.Component {
                             error={formErros.password}
                         />
                     </Grid>
-                    <Grid item xs={2} className='create-input'>
-                        <FormControl fullWidth>
+                    <Grid item xs={6} md={2} className='create-input'>
+                        <FormControl fullWidth size="small">
                             <InputLabel>Status</InputLabel>
                             <Select
                                 className='input-inner'
@@ -1263,10 +1263,10 @@ class DistributorForm extends React.Component {
                     </Grid>
                 </Grid>
                 <Grid container spacing={2} className='loans_view p_view'>
-                    <Grid item xs={9} className='create-input'>
+                    <Grid item md={9} className='create-input' sx={{ display: { xs: 'none', md: 'block' } }}>
                         &nbsp;
                     </Grid>
-                    <Grid item xs={3}>
+                    <Grid item xs={12} md={3}>
                         <Stack spacing={1} direction="row" className='ratn-footer-buttons' justifyContent="flex-end">
                         <LoadingButton
                         className='conf-button'
