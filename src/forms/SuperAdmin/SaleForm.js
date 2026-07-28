@@ -57,6 +57,7 @@ import {
   salesStore,
   salesUpdate,
   salesViewRaw,
+  salesOnApproveTransferItemsRaw,
   saleReturn,
 } from "actions/superadmin/sales.actions";
 
@@ -76,6 +77,10 @@ import { productList } from "actions/superadmin/product.actions";
 import DeleteIcon from "@mui/icons-material/Delete";
 
 import CloseIcon from "@mui/icons-material/Close";
+
+import AddIcon from "@mui/icons-material/Add";
+
+import AdminForm from "forms/SuperAdmin/AdminForm";
 
 import { withSnackbar } from "notistack";
 
@@ -389,6 +394,10 @@ class SaleForm extends React.Component {
 
       isAssign: false,
 
+      showAddAdminDialog: false,
+
+      pendingAdminSelectId: null,
+
       isOnApprove: false,
 
       employeeList: this.props.employeeList,
@@ -678,7 +687,13 @@ class SaleForm extends React.Component {
   };
 
   loadSaleOnApproval = async () => {
-    if (!isEmpty(this.props.query.get("sale_on_approval"))) {
+    if (
+      !isEmpty(this.props.query.get("sale_on_approval")) &&
+      !this.loadingSaleOnApproval
+    ) {
+      /* componentDidUpdate can fire again before the state flag is set */
+      this.loadingSaleOnApproval = true;
+
       let res = await salesViewRaw(this.props.query.get("sale_on_approval"));
 
       if (res.data.success) {
@@ -730,13 +745,12 @@ class SaleForm extends React.Component {
           () => {
             this.handleCalculateMainPrice();
 
-            setTimeout(() => {
-              this.handleAdminChange("", saleOnApprovalData.user_id);
-            }, 1000);
+            /* the user list is already loaded when we get here, see componentDidUpdate */
+            this.handleAdminChange("", saleOnApprovalData.user_id);
           },
         );
-
-        //}, 3000);
+      } else {
+        this.loadingSaleOnApproval = false;
       }
     }
   };
@@ -768,48 +782,21 @@ class SaleForm extends React.Component {
   };
 
   loadCart = async () => {
-    let response = await cartListRaw({
-      from_order_price: this.props.query.get("from_order_price"),
+    let onApprovalId = this.props.query.get("sale_on_approval");
 
-      order_id: this.props.query.get("order_id"),
-    });
+    /* a sale on approval brings its own items, the cart stays untouched */
+    let response = !isEmpty(onApprovalId)
+      ? await salesOnApproveTransferItemsRaw(onApprovalId)
+      : await cartListRaw({
+          from_order_price: this.props.query.get("from_order_price"),
+
+          order_id: this.props.query.get("order_id"),
+        });
 
     if (response.data.success) {
       let cartList = response.data.data.items;
 
       let products = [];
-
-      let unique_materials = [];
-
-      let report_qty = 0;
-
-      let material_total_by_unit = [];
-
-      for (let i = 0; i < cartList.length; i++) {
-        let cart = cartList[i];
-
-        for (let item of cart.materials) {
-          //let m_unit_name = item.unit_name.toLowerCase();
-
-          if (typeof material_total_by_unit[item.material_id] === "undefined") {
-            material_total_by_unit[item.material_id] = 0.0;
-          }
-
-          // if (item.purity_id == 4 || item.purity_id == 18) {
-
-          //   material_total_by_unit[item.material_id] += parseFloat(
-
-          //     cart.total_weight
-
-          //   );
-
-          // } else {
-
-          material_total_by_unit[item.material_id] += parseFloat(item.weight);
-
-          //}
-        }
-      }
 
       for (let i = 0; i < cartList.length; i++) {
         let cart = cartList[i];
@@ -817,12 +804,6 @@ class SaleForm extends React.Component {
         let materials = [];
 
         //quantity = 1;
-
-        /* for those product with certificate no */
-
-        if (!isEmpty(cart.certificate_no)) {
-          report_qty += 1;
-        }
 
         for (let item of cart.materials) {
           materials.push({
@@ -864,33 +845,6 @@ class SaleForm extends React.Component {
 
             org_discount_percent: item.discount_percent,
           });
-
-          let m_unit_name = item.unit_name.toLowerCase();
-
-          let index = _.findIndex(
-            unique_materials,
-
-            (p) => p.material_id == item.material_id,
-          );
-
-          if (index == -1 && item.max_discount_percent > 0) {
-            unique_materials.push({
-              material_id: item.material_id,
-
-              material_name: item.material_name,
-
-              disc_type: "discount",
-
-              amount: "",
-
-              max_discount: item.max_discount_percent,
-
-              unit: m_unit_name,
-
-              ["total_" + item.material_id]:
-                material_total_by_unit[item.material_id],
-            });
-          }
         }
 
         let result2 = calculateGST(
@@ -986,52 +940,22 @@ class SaleForm extends React.Component {
         });
       }
 
-      /* report charge calculation */
-
-      let total_report_charge_amount = 0;
-
-      let total_report_charge_tax_amount = 0;
-
-      let total_report_charge_amount_after_tax = 0;
-
-      if (!this.state.isAssign) {
-        total_report_charge_amount =
-          report_qty * parseFloat(this.state.report_charge.amount);
-
-        total_report_charge_tax_amount =
-          (total_report_charge_amount *
-            parseFloat(this.state.report_charge.tax)) /
-          100;
-
-        total_report_charge_amount_after_tax =
-          total_report_charge_amount + total_report_charge_tax_amount;
-      }
-
       let formValues = this.state.formValues;
 
       formValues.products = [...products];
 
       formValues.invoice_number = response.data.data.next_invoice;
 
-      formValues.report_qty = report_qty;
-
+      /* the qty and the totals are derived in calculateProductPrice below */
       formValues.report_charge_amount = parseFloat(
         this.state.report_charge.amount,
       );
-
-      formValues.total_report_charge_amount = total_report_charge_amount;
-
-      formValues.total_report_charge_tax_amount =
-        total_report_charge_tax_amount;
-
-      formValues.total_report_charge_amount_after_tax =
-        total_report_charge_amount_after_tax;
 
       this.setState(
         {
           formValues: formValues,
 
-          unique_materials: unique_materials,
+          unique_materials: this.buildUniqueMaterials(products),
         },
 
         () => {
@@ -1039,6 +963,121 @@ class SaleForm extends React.Component {
         },
       );
     }
+  };
+
+  /**
+   * Material totals shown with the common discount inputs. Derived from the
+   * product list so a cart load and a product removal stay in sync.
+   */
+  buildUniqueMaterials = (products) => {
+    let material_total_by_unit = {};
+
+    for (let product of products) {
+      for (let item of product.materials) {
+        material_total_by_unit[item.material_id] =
+          (material_total_by_unit[item.material_id] || 0) +
+          parseFloat(item.weight);
+      }
+    }
+
+    let unique_materials = [];
+
+    for (let product of products) {
+      for (let item of product.materials) {
+        let index = _.findIndex(
+          unique_materials,
+
+          (p) => p.material_id == item.material_id,
+        );
+
+        if (index == -1 && item.max_discount_percent > 0) {
+          unique_materials.push({
+            material_id: item.material_id,
+
+            material_name: item.material_name,
+
+            disc_type: "discount",
+
+            amount: "",
+
+            max_discount: item.max_discount_percent,
+
+            unit: item.unit_name.toLowerCase(),
+
+            ["total_" + item.material_id]:
+              material_total_by_unit[item.material_id],
+          });
+        }
+      }
+    }
+
+    return unique_materials;
+  };
+
+  /**
+   * Single removal path: cart rows are dropped server side, sale on approval
+   * items only live in this form so they are dropped locally.
+   */
+  removeProductAt = async (index) => {
+    let products = [...this.state.formValues.products];
+
+    let product = products[index];
+
+    if (!product) {
+      return;
+    }
+
+    if (isEmpty(this.props.query.get("sale_on_approval"))) {
+      let response = await cartDelete(product.id, true);
+
+      if (!response.data.success) {
+        this.props.enqueueSnackbar(response.data.message, { variant: "error" });
+
+        return;
+      }
+
+      this.notifyProductRemoved(product.certificate_no, response.data.message);
+
+      this.loadCart();
+
+      this.props.actions.cartList();
+
+      return;
+    }
+
+    products.splice(index, 1);
+
+    this.setState(
+      {
+        formValues: { ...this.state.formValues, products: products },
+
+        unique_materials: this.buildUniqueMaterials(products),
+      },
+
+      () => {
+        this.calculateProductPrice();
+      },
+    );
+
+    this.notifyProductRemoved(
+      product.certificate_no,
+      "Product removed successfully.",
+    );
+  };
+
+  /* the scanner can fire twice for the same certificate, notify once */
+  notifyProductRemoved = (certificate_no, message) => {
+    if (this.lastRemovedCert && this.lastRemovedCert === certificate_no) {
+      return;
+    }
+
+    this.lastRemovedCert = certificate_no;
+
+    this.props.enqueueSnackbar(message, { variant: "success" });
+
+    setTimeout(() => {
+      this.lastRemovedCert = null;
+    }, 1000);
   };
 
   static getDerivedStateFromProps(props, state) {
@@ -1134,66 +1173,34 @@ class SaleForm extends React.Component {
   }
 
   async componentDidUpdate(prevProps, prevState) {
+    if (
+      this.state.pendingAdminSelectId &&
+      this.state.adminList !== prevState.adminList
+    ) {
+      let newlyCreatedAdmin = _.find(
+        this.state.adminList,
+        (item) => String(item.id) === String(this.state.pendingAdminSelectId),
+      );
+      if (newlyCreatedAdmin) {
+        let pendingId = this.state.pendingAdminSelectId;
+        this.setState({ pendingAdminSelectId: null }, () =>
+          this.handleAdminChange(null, pendingId),
+        );
+      }
+    }
+
     if (this.props.formData != prevProps.formData) {
       this.initializeFormData();
-    } else {
-      let canLoadSaleOnApproval = false;
-
-      if (this.isSuperAdmin) {
-        if (
-          this.state.adminList.length > 0 &&
-          this.state.employeeList.length > 0
-        ) {
-          canLoadSaleOnApproval = true;
-        }
-      } else if (this.isAdmin) {
-        if (
-          this.state.distributorList.length > 0 &&
-          this.state.salesExecutiveList.length > 0 &&
-          this.state.supplierList.length > 0
-        ) {
-          canLoadSaleOnApproval = true;
-        }
-      } else if (this.isDistributor) {
-        if (
-          this.state.retailerList.length > 0 &&
-          this.state.salesExecutiveList.length > 0 &&
-          this.state.supplierList.length > 0
-        ) {
-          canLoadSaleOnApproval = true;
-        }
-      } else if (this.isSalesExecutive) {
-        console.log(
-          "this.state.adminListApiCall : ",
-          this.state.adminListApiCall,
-          " this.state.retailerListApiCall : ",
-          this.state.retailerListApiCall,
-          " this.state.distributorListApiCall : ",
-          this.state.distributorListApiCall,
-          " this.state.salesExecutiveListApiCall : ",
-          this.state.salesExecutiveListApiCall,
-        );
-        //alert("componentDidUpdate");
-
-        if (
-          this.state.adminListApiCall &&
-          this.state.retailerListApiCall &&
-          this.state.distributorListApiCall &&
-          this.state.salesExecutiveListApiCall
-        ) {
-          canLoadSaleOnApproval = true;
-        }
-      }
-
-      if (canLoadSaleOnApproval) {
-        //alert("loadSaleOnApproval");
-        if (
-          !isEmpty(this.props.query.get("sale_on_approval")) &&
-          !this.state.loadSaleOnApprovalApiCall
-        ) {
-          await this.loadSaleOnApproval();
-        }
-      }
+    } else if (
+      !isEmpty(this.props.query.get("sale_on_approval")) &&
+      !this.state.loadSaleOnApprovalApiCall &&
+      this.getUserList().length > 0
+    ) {
+      /**
+       * The company can only be preselected once the list it has to be picked
+       * from is there, whichever role list that is for the logged in user.
+       */
+      await this.loadSaleOnApproval();
     }
 
     if (this.state.actionCalled) {
@@ -1408,7 +1415,9 @@ class SaleForm extends React.Component {
           (this.isSuperAdmin || this.isAdmin || this.isDistributor) &&
           /* (this.isAdmin && this.state.profile && this.state.profile.own) */ selectedUser &&
           selectedUser.own &&
-          !(this.isAdmin && isSelectedAdmin)
+          !(this.isAdmin && isSelectedAdmin) &&
+          /* a sale on approval is transferred to a sale, never to an assignment */
+          isEmpty(this.props.query.get("sale_on_approval"))
         ) {
           this.handleTransfer(val);
         } else {
@@ -1418,6 +1427,17 @@ class SaleForm extends React.Component {
         this.setAdminDetails();
       },
     );
+  };
+
+  handleAdminCreated = (newAdmin) => {
+    // adminList is resynced from props on every render (see
+    // getDerivedStateFromProps), so selecting the new admin has to wait
+    // for the refreshed list to actually arrive — see componentDidUpdate
+    this.setState({
+      showAddAdminDialog: false,
+      pendingAdminSelectId: newAdmin && newAdmin.id ? newAdmin.id : null,
+    });
+    this.props.actions.adminList({ all: 1 });
   };
 
   setAdminDetails = () => {
@@ -2432,38 +2452,7 @@ class SaleForm extends React.Component {
   };
 
   handleDeleteConfirm = async () => {
-    let products = this.state.formValues.products;
-
-    let response = await cartDelete(
-      products[this.state.deletingIndex].id,
-
-      true,
-    );
-
-    if (response.data.success) {
-      if (
-        !this.lastRemovedCert ||
-        this.lastRemovedCert !==
-          products[this.state.deletingIndex].certificate_no
-      ) {
-        this.lastRemovedCert =
-          products[this.state.deletingIndex].certificate_no;
-
-        this.props.enqueueSnackbar(response.data.message, {
-          variant: "success",
-        });
-
-        setTimeout(() => {
-          this.lastRemovedCert = null;
-        }, 1000);
-      }
-
-      this.loadCart();
-
-      this.props.actions.cartList();
-    } else {
-      this.props.enqueueSnackbar(response.data.message, { variant: "error" });
-    }
+    await this.removeProductAt(this.state.deletingIndex);
 
     this.setState(
       {
@@ -4324,29 +4313,7 @@ class SaleForm extends React.Component {
     );
 
     if (idx !== -1) {
-      let product = formValues.products[idx];
-
-      let response = await cartDelete(product.id, true);
-
-      if (response.data.success) {
-        if (!this.lastRemovedCert || this.lastRemovedCert !== certificate_no) {
-          this.lastRemovedCert = certificate_no;
-
-          this.props.enqueueSnackbar(response.data.message, {
-            variant: "success",
-          });
-
-          setTimeout(() => {
-            this.lastRemovedCert = null;
-          }, 1000);
-        }
-
-        this.loadCart();
-
-        this.props.actions.cartList();
-      } else {
-        this.props.enqueueSnackbar(response.data.message, { variant: "error" });
-      }
+      await this.removeProductAt(idx);
 
       this.setState(
         {
@@ -4445,6 +4412,20 @@ class SaleForm extends React.Component {
       : [];
 
     let userIdValue = user.length ? user[0] : null;
+
+    // only the plain admin picker (Super Admin, not assigning) creates admins inline
+    const canAddAdmin = this.isSuperAdmin && !this.state.isAssign;
+    const ADD_ADMIN_OPTION = { id: "__add_admin__", company_name: "Add New Admin" };
+    let userListWithAddOption = canAddAdmin
+      ? [...userList, ADD_ADMIN_OPTION]
+      : userList;
+
+    /* the company is picked for us, either from a sale on approval or after
+       an inline admin creation, both wait on the user list to arrive */
+    const selectingUser =
+      !!this.state.pendingAdminSelectId ||
+      (!isEmpty(this.props.query.get("sale_on_approval")) &&
+        !this.state.loadSaleOnApprovalApiCall);
 
     let hasReturn = this.hasReturn();
 
@@ -4666,33 +4647,40 @@ class SaleForm extends React.Component {
                   <Autocomplete
                     className="autocomplete-selectbox"
                     fullWidth
-                    options={userList}
+                    options={userListWithAddOption}
                     value={userIdValue}
                     autoHighlight
                     getOptionLabel={(option) =>
                       this.state.isAssign ? option.name : option.company_name
                     }
-                    renderOption={(props, option) => (
-                      <li {...props} key={option.id}>
-                        {" "}
-                        {this.state.isAssign
-                          ? option.name +
-                            " - " +
-                            (option.user_name.search("RVE") != -1
-                              ? "SE "
-                              : "") +
-                            (option.user_name.search("RVA") != -1
-                              ? "Admin "
-                              : "") +
-                            (option.user_name.search("RVD") != -1
-                              ? "Distributor"
-                              : "") +
-                            (option.user_name.search("RVR") != -1
-                              ? "Retailer"
-                              : "")
-                          : option.company_name + "( " + option.city + " )"}
-                      </li>
-                    )}
+                    renderOption={(props, option) =>
+                      option.id === ADD_ADMIN_OPTION.id ? (
+                        <li {...props} key={option.id}>
+                          <AddIcon fontSize="small" sx={{ mr: 1 }} />
+                          Add New Admin
+                        </li>
+                      ) : (
+                        <li {...props} key={option.id}>
+                          {" "}
+                          {this.state.isAssign
+                            ? option.name +
+                              " - " +
+                              (option.user_name.search("RVE") != -1
+                                ? "SE "
+                                : "") +
+                              (option.user_name.search("RVA") != -1
+                                ? "Admin "
+                                : "") +
+                              (option.user_name.search("RVD") != -1
+                                ? "Distributor"
+                                : "") +
+                              (option.user_name.search("RVR") != -1
+                                ? "Retailer"
+                                : "")
+                            : option.company_name + "( " + option.city + " )"}
+                        </li>
+                      )
+                    }
                     renderInput={(params) => (
                       <TextField
                         style={{ margin: "auto" }}
@@ -4705,12 +4693,24 @@ class SaleForm extends React.Component {
 
                           autoComplete: "new-password",
                         }}
+                        InputProps={{
+                          ...params.InputProps,
+                          endAdornment: selectingUser ? (
+                            <CircularProgress size="20px" />
+                          ) : (
+                            params.InputProps.endAdornment
+                          ),
+                        }}
                         fullWidth
                         error={formErros.user_id}
                         className="non_disable_text"
                       />
                     )}
                     onChange={(event, newValue) => {
+                      if (newValue && newValue.id === ADD_ADMIN_OPTION.id) {
+                        this.setState({ showAddAdminDialog: true });
+                        return;
+                      }
                       this.handleAdminChange(
                         event,
 
@@ -4718,11 +4718,37 @@ class SaleForm extends React.Component {
                       );
                     }}
                     disabled={
-                      !this.state.isCreateFrom || (order ? true : false)
+                      !this.state.isCreateFrom ||
+                      (order ? true : false) ||
+                      selectingUser
                     }
                   />
                 )}
               </FormControl>
+              <Dialog
+                className="ratn-dialog-wrapper"
+                open={this.state.showAddAdminDialog}
+                onClose={() => this.setState({ showAddAdminDialog: false })}
+                fullWidth
+                maxWidth="xl"
+              >
+                <DialogTitle>
+                  Add Admin
+                  <IconButton
+                    onClick={() =>
+                      this.setState({ showAddAdminDialog: false })
+                    }
+                    sx={{ position: "absolute", right: 8, top: 8 }}
+                  >
+                    <CloseIcon />
+                  </IconButton>
+                </DialogTitle>
+                <DialogContent dividers>
+                  {this.state.showAddAdminDialog ? (
+                    <AdminForm onCreateSuccess={this.handleAdminCreated} />
+                  ) : null}
+                </DialogContent>
+              </Dialog>
             </Grid>
 
             {isMobile ? (
@@ -5816,249 +5842,111 @@ class SaleForm extends React.Component {
             className="materialContainerGrid create-input p-add-product border-radius-0"
           >
             {!this.state.isAssign ? (
-              <>
-                <TableContainer component={Paper}>
-                  <Table
-                    sx={{ minWidth: 650 }}
-                    aria-label="simple table"
-                    className="materialContainer"
-                  >
-                    <TableRow
-                      sx={{
-                        width: "100%",
+              <Paper elevation={0} className="sale-summary-bar">
+                <div className="sale-summary-discounts">
+                  {this.state.unique_materials.map((item, index) => (
+                    <div className="sale-summary-field" key={index}>
+                      <label>
+                        {item.material_name} (
+                        {item.unit.toLowerCase() != "gm"
+                          ? item["total_" + item.material_id].toFixed(2)
+                          : item["total_" + item.material_id].toFixed(3)}{" "}
+                        {item.unit})
+                      </label>
 
-                        display: "flex",
+                      <div className="sale-summary-control">
+                        <input
+                          type="text"
+                          value={item.amount}
+                          placeholder="0"
+                          max={item.max_discount}
+                          onChange={(event) =>
+                            this.handleCommonDis(event, index)
+                          }
+                        />
 
-                        flexDirection: { xs: "column", sm: "row" },
+                        <select
+                          onChange={(event) =>
+                            this.handleDiscountType(event, index)
+                          }
+                        >
+                          <option value="discount">Disc %</option>
 
-                        justifyContent: { xs: "flex-start", sm: "flex-start" },
+                          <option value="rate">Flat ₹</option>
+                        </select>
+                      </div>
+                    </div>
+                  ))}
 
-                        gap: { xs: 0, sm: 0 },
-                      }}
-                    >
-                      <TableCell className=" mob-hide"></TableCell>
+                  {this.haveMakingComonDis() ? (
+                    <div className="sale-summary-field">
+                      <label>
+                        Making Disc (
+                        {this.getMakingApplicableWeight().toFixed(3)} gm |{" "}
+                        {this.getMakingApplicableQuantity()} pcs)
+                      </label>
 
-                      <TableCell className="materialDiscSec" colSpan="3">
-                        <div className="unique-wrapper d-flex align-items-center">
-                          {/*  */}
+                      <div className="sale-summary-control">
+                        <input
+                          type="text"
+                          value={this.state.common_making_discount}
+                          placeholder="0"
+                          disabled={isReturn ? true : false}
+                          onChange={(event) =>
+                            this.handleCommonMakingDis(event)
+                          }
+                        />
 
-                          <div className=" d-flex align-items-center ">
-                            {this.state.unique_materials.map((item, index) => (
-                              <React.Fragment key={index}>
-                                <div className="unique_materials ms-3">
-                                  <p
-                                    className="mb-2"
-                                    style={{
-                                      fontSize: "smaller",
-                                      color: "#000000",
-                                    }}
-                                  >
-                                    {item.material_name} (
-                                    {item.unit.toLowerCase() != "gm"
-                                      ? item[
-                                          "total_" + item.material_id
-                                        ].toFixed(2)
-                                      : item[
-                                          "total_" + item.material_id
-                                        ].toFixed(3)}{" "}
-                                    {item.unit})
-                                  </p>
+                        <select
+                          value={this.state.common_making_discount_type}
+                          disabled={isReturn ? true : false}
+                          onChange={(event) =>
+                            this.handleCommonMakingDisType(event)
+                          }
+                        >
+                          <option value="discount">Disc %</option>
 
-                                  <span style={{ position: "relative" }}>
-                                    <input
-                                      type="text"
-                                      value={item.amount}
-                                      onChange={(event) =>
-                                        this.handleCommonDis(event, index)
-                                      }
-                                      className="custom_input"
-                                      style={{
-                                        width: "100%",
+                          <option value="rate">Flat ₹</option>
+                        </select>
+                      </div>
+                    </div>
+                  ) : null}
+                </div>
 
-                                        height: "40px",
+                <div className="sale-summary-stats">
+                  <div className="sale-summary-stat">
+                    <span>Price</span>
 
-                                        padding: "5px 8px",
-                                      }}
-                                      max={item.max_discount}
-                                    />
+                    <b>{priceFormat(formValues.total_tag_price)}</b>
+                  </div>
 
-                                    <span
-                                      style={{
-                                        position: "absolute",
+                  <div className="sale-summary-stat">
+                    <span>Dist</span>
 
-                                        right: "5px",
+                    <b>{priceFormat(formValues.product_discount)}</b>
+                  </div>
 
-                                        top: "0px",
-                                      }}
-                                    >
-                                      {" "}
-                                      <select
-                                        onChange={(event) =>
-                                          this.handleDiscountType(event, index)
-                                        }
-                                      >
-                                        <option value="discount">
-                                          Discount %
-                                        </option>
+                  <div className="sale-summary-stat">
+                    <span>Tax</span>
 
-                                        <option value="rate">Flat rate</option>
-                                      </select>
-                                    </span>
-                                  </span>
-                                </div>
-                              </React.Fragment>
-                            ))}
-                          </div>
-                        </div>
+                    <b>{priceFormat(formValues.total_tax)}</b>
+                  </div>
 
-                        {/**
+                  <div className="sale-summary-stat is-total">
+                    <span>Total</span>
 
-                                                 *  <TextField
+                    <b>{formValues.total_amount}</b>
+                  </div>
+                </div>
 
-                                                            key={index}
-
-                                                            label={item.material_name}
-
-                                                            variant="outlined"
-
-                                                            fullWidth
-
-                                                            value={item.amount}
-
-                                                            onChange={(event) => this.handleCommonDis(event, index)}
-
-                                                            InputProps={{
-
-                                                                endAdornment: <InputAdornment position="start">%</InputAdornment>,
-
-                                                            }}
-
-                                                            sx={{marginBottom: '10px'}}
-
-                                                        />
-
-                                                */}
-                      </TableCell>
-
-                      <TableCell
-                        className="makingDiscSec"
-                        sx={{ verticalAlign: "top" }}
-                      >
-                        {this.haveMakingComonDis() ? (
-                          <>
-                            <div class="unique_materials ms-3">
-                              <p
-                                className="mb-2"
-                                style={{
-                                  fontSize: "smaller",
-                                  color: "#000000",
-                                  whiteSpace: "nowrap",
-                                }}
-                              >
-                                Making Disc (
-                                {this.getMakingApplicableWeight().toFixed(3)} gm
-                                | {this.getMakingApplicableQuantity()} pcs)
-                              </p>
-
-                              <span style={{ position: "relative" }}>
-                                <input
-                                  type="text"
-                                  value={this.state.common_making_discount}
-                                  onChange={(event) =>
-                                    this.handleCommonMakingDis(event)
-                                  }
-                                  className="custom_input"
-                                  style={{
-                                    width: "100%",
-
-                                    height: "40px",
-
-                                    padding: "5px 8px",
-                                  }}
-                                  disabled={isReturn ? "disabled" : ""}
-                                />
-
-                                <span
-                                  style={{
-                                    position: "absolute",
-
-                                    right: "5px",
-
-                                    top: "0px",
-                                  }}
-                                >
-                                  {" "}
-                                  <select
-                                    value={
-                                      this.state.common_making_discount_type
-                                    }
-                                    onChange={(event) =>
-                                      this.handleCommonMakingDisType(event)
-                                    }
-                                    disabled={isReturn ? "disabled" : ""}
-                                  >
-                                    <option value="discount">Discount %</option>
-
-                                    <option value="rate">Flat rate</option>
-                                  </select>
-                                </span>
-                              </span>
-                            </div>
-                          </>
-                        ) : null}
-                      </TableCell>
-
-                      <TableCell className=" align-items-center mob-hide">
-                        <b className="price-cal ">
-                          {" "}
-                          {/*  */}
-                          <span>Price</span>
-                          <br />
-                          {priceFormat(formValues.total_tag_price)}
-                        </b>
-                      </TableCell>
-
-                      <TableCell className=" align-items-center mob-hide">
-                        <b className="price-cal ">
-                          {" "}
-                          {/*  */}
-                          <span>Dist</span>
-                          <br />
-                          {priceFormat(formValues.product_discount)}
-                        </b>
-                      </TableCell>
-
-                      <TableCell className=" align-items-center mob-hide">
-                        <b className="price-cal ">
-                          {" "}
-                          {/*  */}
-                          <span>Tax</span>
-                          <br />
-                          {priceFormat(formValues.total_tax)}
-                        </b>
-                      </TableCell>
-
-                      <TableCell className=" align-items-center mob-hide">
-                        <b className="price-cal">
-                          Total
-                          <br />
-                          {formValues.total_amount}
-                        </b>
-                      </TableCell>
-
-                      <TableCell className=" align-items-center note-cell">
-                        <div className="sticky-note">
-                          <i
-                            class="bi bi-pencil-square fs-4 "
-                            data-bs-toggle="modal"
-                            data-bs-target="#noteModal"
-                          ></i>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  </Table>
-                </TableContainer>
-              </>
+                <div className="sticky-note sale-summary-note">
+                  <i
+                    className="bi bi-pencil-square fs-4"
+                    data-bs-toggle="modal"
+                    data-bs-target="#noteModal"
+                  ></i>
+                </div>
+              </Paper>
             ) : null}
           </Grid>
 

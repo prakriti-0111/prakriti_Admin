@@ -838,7 +838,7 @@ class StockPage extends Component {
     try {
       // First, try to find the item by certificate number directly
       const searchParams = {
-        search: certificateNo,
+        certificate_no: certificateNo,
         page: 1,
         limit: 1, // Only need one result
         by_specific: this.state.queryParams.by_specific,

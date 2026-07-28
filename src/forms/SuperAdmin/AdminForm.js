@@ -226,11 +226,16 @@ class AdminForm extends React.Component {
         if(this.state.actionCalled){
             if(this.state.isCreateFrom){
                 if(this.state.createSuccess){
+                    let createdAdmin = this.props.newAdmin;
                     this.props.enqueueSnackbar(this.state.successMessage, {variant: 'success'});
                     this.props.dispatch({
                         type: SUPERADMIN_RESET_ADMIN
                     });
-                    this.props.navigate(getUserDashboardRoute(getRoleName(this.state.auth)) + '/admins');
+                    if(this.props.onCreateSuccess){
+                        this.props.onCreateSuccess(createdAdmin);
+                    }else{
+                        this.props.navigate(getUserDashboardRoute(getRoleName(this.state.auth)) + '/admins');
+                    }
                 }else{
                     this.setState({
                         submitting: false
@@ -507,7 +512,7 @@ class AdminForm extends React.Component {
                 <form autoComplete="off" className='ratn-dialog-inner'>
                 <Grid container spacing={2} className='loans_view p_view'>
                     <Grid item xs={12} md={3.5} className='create-input'>
-                        <TextField  
+                        <TextField size="small"  
                             label="Company Name"
                             variant="outlined"
                             fullWidth
@@ -516,8 +521,8 @@ class AdminForm extends React.Component {
                             error={formErros.company_name}
                         />
                     </Grid>
-                    <Grid item xs={3} className='create-input'>
-                        <TextField  
+                    <Grid item xs={6} md={3} className='create-input'>
+                        <TextField size="small"  
                             label="Owner Name" 
                             variant="outlined"
                             fullWidth
@@ -527,8 +532,8 @@ class AdminForm extends React.Component {
                         />
                     </Grid>
                 
-                    <Grid item xs={2} className='create-input'>
-                        <TextField  
+                    <Grid item xs={6} md={2} className='create-input'>
+                        <TextField size="small"  
                             label="Contact No" 
                             variant="outlined"
                             fullWidth
@@ -538,8 +543,8 @@ class AdminForm extends React.Component {
                             onInput={(e) => validateInteger(e)}
                         />
                     </Grid>
-                    <Grid item xs={3.5} className='create-input'>
-                        <TextField  
+                    <Grid item xs={12} sm={6} md={3.5} className='create-input'>
+                        <TextField size="small"  
                             label="Email" 
                             variant="outlined"
                             fullWidth
@@ -549,8 +554,8 @@ class AdminForm extends React.Component {
                         />
                     </Grid>
                    
-                    {/*<Grid item xs={3} className='create-input'>
-                        <TextField  
+                    {/*<Grid item xs={6} md={3} className='create-input'>
+                        <TextField size="small"  
                             label="Adhar" 
                             variant="outlined"
                             fullWidth
@@ -559,8 +564,8 @@ class AdminForm extends React.Component {
                             error={formErros.adhar}
                         />
                     </Grid>
-                    <Grid item xs={3} className='create-input'>
-                        <TextField  
+                    <Grid item xs={6} md={3} className='create-input'>
+                        <TextField size="small"  
                             label="Pan" 
                             variant="outlined"
                             fullWidth
@@ -569,8 +574,8 @@ class AdminForm extends React.Component {
                             error={formErros.pan}
                         />
                     </Grid>*/}
-                    <Grid item xs={6} className='create-input'>
-                        <TextField  
+                    <Grid item xs={12} sm={6} md={6} className='create-input'>
+                        <TextField size="small"  
                             label="Full Address" 
                             variant="outlined"
                             fullWidth
@@ -579,7 +584,7 @@ class AdminForm extends React.Component {
                             error={formErros.address}
                         />
 
-                        {/*<FormControl fullWidth error={formErros.address}>
+                        {/*<FormControl fullWidth size="small" error={formErros.address}>
                             <TextareaAutosize
                                 className='description'
                                 minRows={3}
@@ -590,8 +595,8 @@ class AdminForm extends React.Component {
                             />
                         </FormControl>*/}
                     </Grid>
-                    <Grid item xs={2} className='create-input'>
-                        <TextField  
+                    <Grid item xs={6} md={2} className='create-input'>
+                        <TextField size="small"  
                             label="Landmark" 
                             variant="outlined"
                             fullWidth
@@ -600,8 +605,8 @@ class AdminForm extends React.Component {
                             error={formErros.landmark}
                         />
                     </Grid>
-                    <Grid item xs={2} className='create-input'>
-                        <TextField  
+                    <Grid item xs={6} md={2} className='create-input'>
+                        <TextField size="small"  
                             label="GST"
                             variant="outlined"
                             fullWidth
@@ -610,8 +615,8 @@ class AdminForm extends React.Component {
                             error={formErros.gst}
                         />
                     </Grid>
-                    <Grid item xs={2} className='create-input'>
-                        <FormControl fullWidth>
+                    <Grid item xs={6} md={2} className='create-input'>
+                        <FormControl fullWidth size="small">
                             <InputLabel>Own Admin</InputLabel>
                             <Select
                                 className='input-inner'
@@ -625,8 +630,8 @@ class AdminForm extends React.Component {
                             </Select>
                         </FormControl>
                     </Grid>
-                    {/*<Grid item xs={6} className='create-input'>
-                        <FormControl fullWidth error={formErros.p_address}>
+                    {/*<Grid item xs={12} sm={6} md={6} className='create-input'>
+                        <FormControl fullWidth size="small" error={formErros.p_address}>
                             <TextareaAutosize
                                 className='description'
                                 minRows={3}
@@ -637,8 +642,8 @@ class AdminForm extends React.Component {
                             />
                         </FormControl>
                     </Grid>*/}
-                    <Grid item xs={3} className='create-input'>
-                        <FormControl fullWidth error={formErros.country_id}>
+                    <Grid item xs={6} md={3} className='create-input'>
+                        <FormControl fullWidth size="small" error={formErros.country_id}>
                             <InputLabel>Country</InputLabel>
                             <Select
                                 className='input-inner'
@@ -656,8 +661,8 @@ class AdminForm extends React.Component {
                             </Select>
                         </FormControl>
                     </Grid>
-                    <Grid item xs={3} className='create-input'>
-                        <FormControl fullWidth error={formErros.state_id}>
+                    <Grid item xs={6} md={3} className='create-input'>
+                        <FormControl fullWidth size="small" error={formErros.state_id}>
                             <InputLabel>State</InputLabel>
                             <Select
                                 className='input-inner'
@@ -675,8 +680,8 @@ class AdminForm extends React.Component {
                             </Select>
                         </FormControl>
                     </Grid>
-                    <Grid item xs={3} className='create-input'>
-                        <TextField  
+                    <Grid item xs={6} md={3} className='create-input'>
+                        <TextField size="small"  
                             label="City"
                             variant="outlined"
                             fullWidth
@@ -685,8 +690,8 @@ class AdminForm extends React.Component {
                             error={formErros.city}
                         />
                     </Grid>
-                    <Grid item xs={3} className='create-input'>
-                        <TextField  
+                    <Grid item xs={6} md={3} className='create-input'>
+                        <TextField size="small"  
                             label="Pincode"
                             variant="outlined"
                             fullWidth
@@ -696,8 +701,8 @@ class AdminForm extends React.Component {
                             onInput={(e) => validateInteger(e)}
                         />
                     </Grid>
-                    {/*<Grid item xs={3} className='create-input'>
-                        <FormControl fullWidth error={formErros.p_country_id}>
+                    {/*<Grid item xs={6} md={3} className='create-input'>
+                        <FormControl fullWidth size="small" error={formErros.p_country_id}>
                             <InputLabel>Permanent Country</InputLabel>
                             <Select
                                 className='input-inner'
@@ -715,8 +720,8 @@ class AdminForm extends React.Component {
                             </Select>
                         </FormControl>
                     </Grid>
-                    <Grid item xs={3} className='create-input'>
-                        <FormControl fullWidth error={formErros.p_state_id}>
+                    <Grid item xs={6} md={3} className='create-input'>
+                        <FormControl fullWidth size="small" error={formErros.p_state_id}>
                             <InputLabel>Permanent State</InputLabel>
                             <Select
                                 className='input-inner'
@@ -734,8 +739,8 @@ class AdminForm extends React.Component {
                             </Select>
                         </FormControl>
                     </Grid>
-                    <Grid item xs={3} className='create-input'>
-                        <TextField  
+                    <Grid item xs={6} md={3} className='create-input'>
+                        <TextField size="small"  
                             label="Permanent City"
                             variant="outlined"
                             fullWidth
@@ -744,8 +749,8 @@ class AdminForm extends React.Component {
                             error={formErros.p_city}
                         />
                     </Grid>
-                    <Grid item xs={3} className='create-input'>
-                        <TextField  
+                    <Grid item xs={6} md={3} className='create-input'>
+                        <TextField size="small"  
                             label="Permanent Pincode"
                             variant="outlined"
                             fullWidth
@@ -756,8 +761,8 @@ class AdminForm extends React.Component {
                     </Grid>*/}
                     
                     
-                    <Grid item xs={3} className='create-input'>
-                        <TextField  
+                    <Grid item xs={6} md={3} className='create-input'>
+                        <TextField size="small"  
                             label="Bank Name"
                             variant="outlined"
                             fullWidth
@@ -766,8 +771,8 @@ class AdminForm extends React.Component {
                             error={formErros.bank_name}
                         />
                     </Grid>
-                    <Grid item xs={3} className='create-input'>
-                        <TextField  
+                    <Grid item xs={6} md={3} className='create-input'>
+                        <TextField size="small"  
                             label="Branch Name"
                             variant="outlined"
                             fullWidth
@@ -776,8 +781,8 @@ class AdminForm extends React.Component {
                             error={formErros.branch_name}
                         />
                     </Grid>
-                    <Grid item xs={3} className='create-input'>
-                        <TextField  
+                    <Grid item xs={6} md={3} className='create-input'>
+                        <TextField size="small"  
                             label="Account Number"
                             variant="outlined"
                             fullWidth
@@ -787,8 +792,8 @@ class AdminForm extends React.Component {
                             onInput={(e) => validateInteger(e)}
                         />
                     </Grid>
-                    <Grid item xs={3} className='create-input'>
-                        <TextField  
+                    <Grid item xs={6} md={3} className='create-input'>
+                        <TextField size="small"  
                             label="IFSC Code"
                             variant="outlined"
                             fullWidth
@@ -799,9 +804,8 @@ class AdminForm extends React.Component {
                     </Grid>
                 </Grid>
 
-                <div className='custom-container ml-10'>
-                    <div className='custom-row pl-0'>
-                        <div className='custom-col-2'>
+                <Grid container spacing={2} sx={{ mt: 0 }}>
+                    <Grid item xs={6} md={2}>
                             <div className="admin-buttons">
                                 <div className='p-single-image-wrapper'>
                                     <div className='p-single-image'>
@@ -838,8 +842,8 @@ class AdminForm extends React.Component {
                                     </Button>
                                 </div>
                             </div>
-                        </div>
-                        <div className='custom-col-2'>
+                    </Grid>
+                    <Grid item xs={6} md={2}>
                             <div className="admin-buttons">
                                 <div className='p-single-image-wrapper'>
                                     <div className='p-single-image'>
@@ -876,8 +880,8 @@ class AdminForm extends React.Component {
                                     </Button>
                                 </div>
                             </div>
-                        </div>
-                        <div className='custom-col-8'>
+                    </Grid>
+                    <Grid item xs={12} md={8}>
                             <div className='all-image-wrapper'>
                                 <div className='all-single-image'>
                                     <div>
@@ -930,10 +934,9 @@ class AdminForm extends React.Component {
                                     ))
                                 }
                             </div>
-                        </div>
-                    </div>
-                </div>
-                   
+                    </Grid>
+                </Grid>
+
                     {/*<Grid item xs={12}>
                         <Grid container spacing={2}>
                             <Grid item xs={3} className="admin-buttons">
@@ -973,7 +976,7 @@ class AdminForm extends React.Component {
                                             : null
                                         }
                                     </ImageList>
-                                    : <Grid item xs={2} className='create-input'>
+                                    : <Grid item xs={6} md={2} className='create-input'>
                                     <img src={noImage} id="logo-img" style={{height: '100px', width: '100px'}} />
                                   </Grid>
                                 }
@@ -1030,7 +1033,7 @@ class AdminForm extends React.Component {
                                             : null
                                         }
                                     </ImageList>
-                                    : <Grid item xs={2} className='create-input'>
+                                    : <Grid item xs={6} md={2} className='create-input'>
                                     <img src={noImage} id="logo-img" style={{height: '100px', width: '100px'}} />
                                   </Grid>
                                 }
@@ -1073,7 +1076,7 @@ class AdminForm extends React.Component {
                                         </ImageListItem>
                                         ))}
                                     </ImageList>
-                                    : <Grid item xs={2} className='create-input'>
+                                    : <Grid item xs={6} md={2} className='create-input'>
                                             <img src={noImage} id="logo-img" style={{height: '100px', width: '100px'}} />
                                           </Grid>
                                 }
@@ -1096,8 +1099,8 @@ class AdminForm extends React.Component {
                         </Grid>
                     </Grid>*/}
                 <Grid container spacing={2} className='loans_view p_view'>
-                    <Grid item xs={3} className='create-input'>
-                        <TextField  
+                    <Grid item xs={6} md={3} className='create-input'>
+                        <TextField size="small"  
                             label="User Name"
                             variant="outlined"
                             fullWidth
@@ -1105,8 +1108,8 @@ class AdminForm extends React.Component {
                             disabled
                         />
                     </Grid>
-                    <Grid item xs={3} className='create-input'>
-                        <TextField  
+                    <Grid item xs={6} md={3} className='create-input'>
+                        <TextField size="small"  
                             label="Password" 
                             variant="outlined"
                             fullWidth
@@ -1117,8 +1120,8 @@ class AdminForm extends React.Component {
                             error={formErros.password}
                         />
                     </Grid>
-                    <Grid item xs={3} className='create-input'>
-                        <FormControl fullWidth>
+                    <Grid item xs={6} md={3} className='create-input'>
+                        <FormControl fullWidth size="small">
                             <InputLabel>Status</InputLabel>
                             <Select
                                 className='input-inner'
@@ -1133,7 +1136,7 @@ class AdminForm extends React.Component {
                         </FormControl>
                     </Grid>
 
-                    <Grid item xs={3}>
+                    <Grid item xs={12} md={3}>
                         <Stack spacing={1} direction="row" className='ratn-footer-buttons' justifyContent="flex-end">
                         <LoadingButton
                             className='conf-button'
@@ -1164,6 +1167,7 @@ class AdminForm extends React.Component {
 const mapStateToProps = (state) => ({
     actionCalled: state.superadmin.admin.actionCalled,
     createSuccess: state.superadmin.admin.createSuccess,
+    newAdmin: state.superadmin.admin.newAdmin,
     editSuccess: state.superadmin.admin.editSuccess,
     successMessage: state.superadmin.admin.successMessage,
     errorMessage: state.superadmin.admin.errorMessage,
