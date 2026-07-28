@@ -348,7 +348,7 @@ class SaleOnApproveViewPage extends React.Component {
         approve_declined_processing: false
       });
       if (this.state.status_changing == 4) {
-        this.props.actions.cartList();
+        /* the transfer no longer goes through the cart, nothing to refresh */
         this.props.navigate(
           getUserDashboardRoute(getRoleName(this.state.auth)) +
             "/sales/create?sale_on_approval=" +

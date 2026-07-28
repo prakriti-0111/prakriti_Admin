@@ -36,6 +36,17 @@ const objectToQuery = (obj, addQuestion) => {
 };
 
 /**
+ * Stock list search box: input longer than 6 chars is a certificate no,
+ * anything shorter is a gross weight filter. Mutates nothing, returns new params.
+ */
+const applyStockSearch = (params) => {
+  const search = (params.search || "").trim();
+  if (!search) return params;
+  const key = search.length > 6 ? "certificate_no" : "total_weight";
+  return { ...params, [key]: search, search: "" };
+};
+
+/**
  * Get dashboard page route by role name
  */
 const getUserDashboardRoute = (roleName) => {
@@ -990,6 +1001,7 @@ const fetchCertificateDetails = async (certificateNo) => {
 export {
   getAuthData,
   objectToQuery,
+  applyStockSearch,
   getUserDashboardRoute,
   convertToFormData,
   toBase64,

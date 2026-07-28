@@ -29,6 +29,7 @@ import {
   AccordionDetails,
   Paper,
   Tab,
+  CircularProgress,
 } from "@mui/material";
 import { ContactPageSharp } from "@mui/icons-material";
 import {
@@ -152,6 +153,11 @@ class ProductForm extends React.Component {
       percentage: [],
       gap: [],
       gapStartSize: [],
+      gapEndSize: [],
+      // editing: the category/size/material lists this product's selects
+      // depend on are fetched on mount, so hold the form back until they
+      // land instead of letting it assemble itself field by field
+      listsPending: !!formData,
     };
 
     this.imageFileRef = React.createRef();
@@ -178,13 +184,19 @@ class ProductForm extends React.Component {
     }
     const afterUpdate = () => this.applyGapCascade(index);
     if (condition) {
-      this.setState(() => ({
-        percentage: valueData,
-      }), afterUpdate);
+      this.setState(
+        () => ({
+          percentage: valueData,
+        }),
+        afterUpdate,
+      );
     } else {
-      this.setState((prevState) => ({
-        percentage: [...prevState.percentage, obj],
-      }), afterUpdate);
+      this.setState(
+        (prevState) => ({
+          percentage: [...prevState.percentage, obj],
+        }),
+        afterUpdate,
+      );
     }
   };
 
@@ -234,21 +246,44 @@ class ProductForm extends React.Component {
     }
   };
 
+  changeGapEndSize = (sizeId, indexValue) => {
+    let condition = false;
+    const obj = { sizeId, indexValue };
+    const valueData = this.state.gapEndSize;
+
+    valueData.map((item, index) => {
+      if (item.indexValue === indexValue) {
+        valueData[index].sizeId = sizeId;
+        condition = true;
+      }
+    });
+    const afterUpdate = () => this.applyGapCascade(indexValue);
+    if (condition) {
+      this.setState(() => ({ gapEndSize: valueData }), afterUpdate);
+    } else {
+      this.setState(
+        (prevState) => ({ gapEndSize: [...prevState.gapEndSize, obj] }),
+        afterUpdate,
+      );
+    }
+  };
+
   applyGapCascade = (material_key, baseWeightOverride) => {
     const size_materials = this.state.size_materials;
     if (!size_materials.length) return;
 
-    // The base weight always lives on the first size row, regardless of
-    // which size is chosen as the Start Size for this material's gap.
-    const anchorMaterial = size_materials[0]?.materials?.[material_key];
+    // The base weight lives on the first row of this material's own size
+    // range — which is not row 0 for a material that starts later.
+    const [startIndex, endIndex] = this.getSizeRange(material_key);
+    const anchorMaterial =
+      size_materials[startIndex]?.materials?.[material_key];
     if (!anchorMaterial) return;
 
     const baseWeight =
-      baseWeightOverride !== undefined ? baseWeightOverride : anchorMaterial.weight;
+      baseWeightOverride !== undefined
+        ? baseWeightOverride
+        : anchorMaterial.weight;
     if (baseWeight === undefined || baseWeight === "") return;
-
-    // Start Size only controls where the gap-based increase kicks in.
-    const startIndex = this.getGapStartIndex(material_key);
 
     let percValue = 0;
     for (let i = 0; i < this.state.percentage.length; i++) {
@@ -264,16 +299,22 @@ class ProductForm extends React.Component {
       }
     }
 
-    for (let i = 1; i < size_materials.length; i++) {
-      if (i < startIndex || !gapvalueData) {
+    // only rows inside this material's range follow its base weight
+    for (
+      let i = startIndex + 1;
+      i <= endIndex && i < size_materials.length;
+      i++
+    ) {
+      if (!gapvalueData) {
         size_materials[i].materials[material_key].weight = baseWeight;
         continue;
       }
       const distance = i - startIndex;
       const steps = Math.floor(distance / gapvalueData);
-      size_materials[i].materials[material_key].weight = this.normalizeDecimalValue(
-        Number(baseWeight) + (percValue / 100) * Number(baseWeight) * steps,
-      );
+      size_materials[i].materials[material_key].weight =
+        this.normalizeDecimalValue(
+          Number(baseWeight) + (percValue / 100) * Number(baseWeight) * steps,
+        );
     }
 
     this.setState({ size_materials });
@@ -292,8 +333,65 @@ class ProductForm extends React.Component {
 
   getGapStartIndex = (indexValue) => {
     const sizeId = this.getGapStartSizeId(indexValue);
-    const idx = _.findIndex(this.state.size_materials, { size_id: sizeId });
+    // native <select> values are always strings, so size_id must be
+    // compared loosely against the (often numeric) stored id
+    const idx = _.findIndex(
+      this.state.size_materials,
+      (sm) => sm.size_id == sizeId,
+    );
     return idx === -1 ? 0 : idx;
+  };
+
+  getGapEndSizeId = (indexValue) => {
+    for (let i = 0; i < this.state.gapEndSize.length; i++) {
+      if (this.state.gapEndSize[i].indexValue == indexValue) {
+        return this.state.gapEndSize[i].sizeId;
+      }
+    }
+    const last =
+      this.state.size_materials[this.state.size_materials.length - 1];
+    return last ? last.size_id : "";
+  };
+
+  getGapEndIndex = (indexValue) => {
+    const sizeId = this.getGapEndSizeId(indexValue);
+    const idx = _.findIndex(
+      this.state.size_materials,
+      (sm) => sm.size_id == sizeId,
+    );
+    return idx === -1 ? this.state.size_materials.length - 1 : idx;
+  };
+
+  // A material only applies to sizes inside its chosen range (e.g. 5-10),
+  // so it is hidden from — and not validated/submitted for — other sizes.
+  // [firstRow, lastRow] of this material's size range, as row indexes.
+  // Tolerates an inverted pick (10-5 reads the same as 5-10).
+  getSizeRange = (material_key) => {
+    const a = this.getGapStartIndex(material_key);
+    const b = this.getGapEndIndex(material_key);
+    return [Math.min(a, b), Math.max(a, b)];
+  };
+
+  isMaterialInSizeRange = (material_key, size_index) => {
+    const [start, end] = this.getSizeRange(material_key);
+    return size_index >= start && size_index <= end;
+  };
+
+  // percentage/gap are keyed by the material's position in size_materials
+  // rows, not by material_id — so map id -> key before reading/writing.
+  getMaterialKey = (material_id) =>
+    _.findIndex(this.state.size_materials[0]?.materials || [], {
+      material_id: material_id,
+    });
+
+  getPercentageValue = (material_key) => {
+    const item = _.find(this.state.percentage, (p) => p.index == material_key);
+    return item && item.percentageData !== undefined ? item.percentageData : "";
+  };
+
+  getGapValue = (material_key) => {
+    const item = _.find(this.state.gap, (g) => g.indexValue == material_key);
+    return item && item.gap !== undefined ? item.gap : "";
   };
 
   onEditorStateChange = (description) => {
@@ -324,7 +422,33 @@ class ProductForm extends React.Component {
     if (this.props.formData != prevProps.formData) {
       this.initializeFormData();
     }
+
+    // the dependent lists arrive as new arrays; when all three have been
+    // replaced, the selects can render with their options already in place
+    if (this.state.listsPending && this.pendingLists) {
+      const before = this.pendingLists;
+      if (
+        this.props.sub_categories !== before.sub_categories &&
+        this.props.materialList !== before.materialList &&
+        this.props.sizeList !== before.sizeList
+      ) {
+        this.clearListsPending();
+      }
+    }
   }
+
+  componentWillUnmount() {
+    clearTimeout(this.listsTimer);
+  }
+
+  clearListsPending = () => {
+    clearTimeout(this.listsTimer);
+    this.listsTimer = null;
+    this.pendingLists = null;
+    if (this.state.listsPending) {
+      this.setState({ listsPending: false });
+    }
+  };
 
   normalizeDecimalValue = (value, maxDecimals = 3) => {
     if (value === null || typeof value === "undefined" || value === "") {
@@ -358,10 +482,73 @@ class ProductForm extends React.Component {
     }));
   };
 
+  // A saved product can carry a different material list on each size row —
+  // either an older record, or one saved with per-material size ranges.
+  // Percentage/gap/range all key a material by its position in row 0, so
+  // give every row the same ordered list (padding the rows a material is
+  // missing from) and rebuild each material's range from the rows it was
+  // actually saved on.
+  alignSizeMaterials = (sizeMaterials) => {
+    const order = [];
+    const template = {};
+    sizeMaterials.forEach((sizeMaterial) => {
+      (sizeMaterial.materials || []).forEach((material) => {
+        if (!(material.material_id in template)) {
+          order.push(material.material_id);
+          template[material.material_id] = material;
+        }
+      });
+    });
+
+    const has = (rowIndex, material_id) =>
+      (sizeMaterials[rowIndex].materials || []).some(
+        (m) => m.material_id === material_id,
+      );
+
+    const rows = sizeMaterials.map((sizeMaterial) => {
+      const byId = {};
+      (sizeMaterial.materials || []).forEach((m) => {
+        byId[m.material_id] = m;
+      });
+      return {
+        ...sizeMaterial,
+        materials: order.map(
+          (id) =>
+            byId[id] || {
+              ...template[id],
+              purities: [],
+              weight: "",
+              quantity: "",
+            },
+        ),
+      };
+    });
+
+    const gapStartSize = [];
+    const gapEndSize = [];
+    order.forEach((id, material_key) => {
+      const present = rows
+        .map((row, i) => (has(i, id) ? i : -1))
+        .filter((i) => i > -1);
+      // absent everywhere, or present everywhere, is the default full range
+      if (!present.length || present.length === rows.length) return;
+      gapStartSize.push({
+        sizeId: rows[present[0]].size_id,
+        indexValue: material_key,
+      });
+      gapEndSize.push({
+        sizeId: rows[present[present.length - 1]].size_id,
+        indexValue: material_key,
+      });
+    });
+
+    return { rows, gapStartSize, gapEndSize };
+  };
+
   initializeFormData = () => {
     let formValues = { ...this.state.formData };
-    const normalizedSizeMaterials = this.normalizeSizeMaterials(
-      this.state.formData.size_materials,
+    const aligned = this.alignSizeMaterials(
+      this.normalizeSizeMaterials(this.state.formData.size_materials),
     );
     formValues.status = formValues.status ? 1 : 0;
     formValues.is_featured = formValues.is_featured ? 1 : 0;
@@ -376,6 +563,17 @@ class ProductForm extends React.Component {
     delete formValues.main_image;
     delete formValues.size_materials;
     delete formValues.tags;
+    // remember what the lists looked like before the fetch, so
+    // componentDidUpdate can tell this product's data from the previous
+    // page's leftovers; the timer is a failsafe so a failed request shows
+    // the form rather than spinning forever
+    this.pendingLists = {
+      sub_categories: this.props.sub_categories,
+      materialList: this.props.materialList,
+      sizeList: this.props.sizeList,
+    };
+    clearTimeout(this.listsTimer);
+    this.listsTimer = setTimeout(this.clearListsPending, 8000);
     this.props.actions.subCategoryList({
       all: 1,
       category_id: formValues.category_id,
@@ -397,7 +595,9 @@ class ProductForm extends React.Component {
       existing_images: formValues.images,
       existing_main_image: this.state.formData.main_image,
       existing_video_file: this.state.formData.video,
-      size_materials: normalizedSizeMaterials,
+      size_materials: aligned.rows,
+      gapStartSize: aligned.gapStartSize,
+      gapEndSize: aligned.gapEndSize,
       tags: this.state.formData.tags,
       product_type: formValues.type,
       description: this.state.formData.description
@@ -701,44 +901,149 @@ class ProductForm extends React.Component {
         renderValue={(selected) =>
           this.getSelectedMaterialNames(selected).join(", ")
         }
+        MenuProps={{
+          // style, not sx: MUI writes the anchor width as an inline
+          // minWidth on the paper, which would win over a class
+          PaperProps: { style: { minWidth: 520, maxHeight: 420 } },
+          // this menu mounts several inputs per option — skip the open
+          // animation and the auto-focus scroll, which is what makes it
+          // feel slow to open on edit
+          transitionDuration: 0,
+          disableAutoFocusItem: true,
+        }}
       >
-        {console.log("this.state.materialGroup : ", this.state.materialGroup)}
-        {this.state.materialList.map((item, index) => (
-          <MenuItem key={item.id} value={item.id} className="multi-select">
-            <Checkbox
-              checked={
-                input.value && input.value.indexOf(item.id) > -1 ? true : false
-              }
-            />
-            <ListItemText primary={item.name} />
-            <TextField
+        {this.state.materialList.map((item, index) => {
+          const materialKey = this.getMaterialKey(item.id);
+          // keystrokes must not reach the Select's type-ahead
+          const stopKeys = (e) => e.stopPropagation();
+          const stopClick = (e) => {
+            e.stopPropagation();
+            return false;
+          };
+          return (
+            <MenuItem
               key={item.id}
-              id="outlined-basic"
-              name="material_group"
-              label={""}
-              variant="outlined"
-              type="number"
-              InputProps={{ inputProps: { min: 0, max: 10 } }}
-              value={
-                this.state.materialGroup[item.id]
-                  ? this.state.materialGroup[item.id]
-                  : ""
-              }
-              onClick={(e) => {
-                e.stopPropagation();
-                return false;
-              }}
-              onChange={(e) => {
-                let mg = this.state.materialGroup;
-                mg[item.id] = parseInt(e.target.value);
-                console.log("material group", mg);
-                this.setState({
-                  materialGroup: mg,
-                });
-              }}
-            />
-          </MenuItem>
-        ))}
+              value={item.id}
+              className="multi-select"
+              sx={{ gap: 1 }}
+            >
+              <Checkbox
+                checked={
+                  input.value && input.value.indexOf(item.id) > -1
+                    ? true
+                    : false
+                }
+              />
+              <ListItemText primary={item.name} />
+              <TextField
+                key={item.id}
+                id="outlined-basic"
+                name="material_group"
+                label="Grp"
+                variant="outlined"
+                type="number"
+                size="small"
+                sx={{ ...hideNumberSpinner, width: 64, flexShrink: 0 }}
+                InputProps={{ inputProps: { min: 0, max: 10 } }}
+                value={
+                  this.state.materialGroup[item.id]
+                    ? this.state.materialGroup[item.id]
+                    : ""
+                }
+                onClick={stopClick}
+                onKeyDown={stopKeys}
+                onChange={(e) => {
+                  let mg = this.state.materialGroup;
+                  mg[item.id] = parseInt(e.target.value);
+                  console.log("material group", mg);
+                  this.setState({
+                    materialGroup: mg,
+                  });
+                }}
+              />
+              {materialKey > -1 ? (
+                <React.Fragment>
+                  <TextField
+                    label="%"
+                    variant="outlined"
+                    type="number"
+                    size="small"
+                    sx={{ ...hideNumberSpinner, width: 64, flexShrink: 0 }}
+                    InputProps={{ inputProps: { min: 0, max: 10 } }}
+                    value={this.getPercentageValue(materialKey)}
+                    onClick={stopClick}
+                    onKeyDown={stopKeys}
+                    onChange={(e) =>
+                      this.changePercentage(
+                        e.target.value,
+                        item.name,
+                        materialKey,
+                      )
+                    }
+                  />
+                  <TextField
+                    label="Gap"
+                    variant="outlined"
+                    type="number"
+                    size="small"
+                    sx={{ ...hideNumberSpinner, width: 64, flexShrink: 0 }}
+                    value={this.getGapValue(materialKey)}
+                    onClick={stopClick}
+                    onKeyDown={stopKeys}
+                    onChange={(e) =>
+                      this.changeGap(e.target.value, materialKey)
+                    }
+                  />
+                  {/* native selects: a nested MUI Select would mount a
+                      Popover plus a MenuItem per size, twice per option */}
+                  <TextField
+                    label="Size"
+                    select
+                    SelectProps={{ native: true }}
+                    InputLabelProps={{ shrink: true }}
+                    variant="outlined"
+                    size="small"
+                    sx={{ width: 62, flexShrink: 0 }}
+                    value={this.getGapStartSizeId(materialKey)}
+                    onClick={stopClick}
+                    onKeyDown={stopKeys}
+                    onChange={(e) =>
+                      this.changeGapStartSize(e.target.value, materialKey)
+                    }
+                  >
+                    {this.state.size_materials.map((sm, sIndex) => (
+                      <option value={sm.size_id} key={sIndex}>
+                        {sm.size_name}
+                      </option>
+                    ))}
+                  </TextField>
+                  <span style={{ flexShrink: 0 }}>-</span>
+                  <TextField
+                    label=" "
+                    select
+                    SelectProps={{ native: true }}
+                    InputLabelProps={{ shrink: true }}
+                    variant="outlined"
+                    size="small"
+                    sx={{ width: 62, flexShrink: 0 }}
+                    value={this.getGapEndSizeId(materialKey)}
+                    onClick={stopClick}
+                    onKeyDown={stopKeys}
+                    onChange={(e) =>
+                      this.changeGapEndSize(e.target.value, materialKey)
+                    }
+                  >
+                    {this.state.size_materials.map((sm, sIndex) => (
+                      <option value={sm.size_id} key={sIndex}>
+                        {sm.size_name}
+                      </option>
+                    ))}
+                  </TextField>
+                </React.Fragment>
+              ) : null}
+            </MenuItem>
+          );
+        })}
       </Select>
       {touched && error ? <FormHelperText>{error}</FormHelperText> : null}
     </FormControl>
@@ -1072,6 +1377,13 @@ class ProductForm extends React.Component {
 
     for (let i = 0; i < this.state.size_materials.length; i++) {
       for (let x = 0; x < this.state.size_materials[i].materials.length; x++) {
+        // out of its size range: not shown, so not required either
+        if (!this.isMaterialInSizeRange(x, i)) {
+          this.state.size_materials[i].materials[x]["purity_error"] = false;
+          this.state.size_materials[i].materials[x]["weight_error"] = false;
+          this.state.size_materials[i].materials[x]["unit_error"] = false;
+          continue;
+        }
         this.state.size_materials[i].materials[x]["material_group"] = this.state
           .materialGroup[this.state.size_materials[i].materials[x].material_id]
           ? this.state.materialGroup[
@@ -1116,7 +1428,13 @@ class ProductForm extends React.Component {
         thisImages[i] = await toBase64(thisImages[i]);
       }
       values.images = thisImages;
-      values.size_materials = this.state.size_materials;
+      // submit each size only with the materials whose range covers it
+      values.size_materials = this.state.size_materials.map((sm, i) => ({
+        ...sm,
+        materials: sm.materials.filter((m, x) =>
+          this.isMaterialInSizeRange(x, i),
+        ),
+      }));
       values.tags = this.state.tags;
       if (this.state.video_file) {
         values.video = await toBase64(this.state.video_file);
@@ -1277,17 +1595,25 @@ class ProductForm extends React.Component {
     return item.length ? item[0].purities : [];
   };
 
-  handlePurityChange = (e, size_key, material_key) => {
+  // Set a field on one row; when that row is the first of the material's own
+  // size range, copy it down the rest of the range. Editing any other row
+  // only touches that row, so every cell stays individually changeable.
+  applyDownRange = (field, value, size_key, material_key) => {
     let size_materials = this.state.size_materials;
-    size_materials[size_key].materials[material_key].purities = e.target.value;
-    if (size_key == 0 && size_materials.length > 1) {
-      for (let i = 1; i < size_materials.length; i++) {
-        size_materials[i].materials[material_key].purities = e.target.value;
+    size_materials[size_key].materials[material_key][field] = value;
+    const [start, end] = this.getSizeRange(material_key);
+    if (size_key == start && size_materials.length > 1) {
+      for (let i = start + 1; i <= end && i < size_materials.length; i++) {
+        size_materials[i].materials[material_key][field] = value;
       }
     }
     this.setState({
       size_materials: size_materials,
     });
+  };
+
+  handlePurityChange = (e, size_key, material_key) => {
+    this.applyDownRange("purities", e.target.value, size_key, material_key);
   };
 
   handleUnitChange = (e, size_key, material_key) => {
@@ -1299,16 +1625,7 @@ class ProductForm extends React.Component {
   };
 
   handleQuantityChange = (e, size_key, material_key) => {
-    let size_materials = this.state.size_materials;
-    size_materials[size_key].materials[material_key].quantity = e.target.value;
-    if (size_key == 0 && size_materials.length > 1) {
-      for (let i = 1; i < size_materials.length; i++) {
-        size_materials[i].materials[material_key].quantity = e.target.value;
-      }
-    }
-    this.setState({
-      size_materials: size_materials,
-    });
+    this.applyDownRange("quantity", e.target.value, size_key, material_key);
   };
 
   handleWeightChange = (e, size_key, material_key) => {
@@ -1316,7 +1633,11 @@ class ProductForm extends React.Component {
       let size_materials = this.state.size_materials;
       size_materials[size_key].materials[material_key].weight = e.target.value;
 
-      if (size_key == 0 && size_materials.length > 1) {
+      // cascade from the first row of this material's range, not row 0
+      if (
+        size_key == this.getSizeRange(material_key)[0] &&
+        size_materials.length > 1
+      ) {
         this.applyGapCascade(material_key, e.target.value);
       } else {
         this.setState({
@@ -1401,6 +1722,17 @@ class ProductForm extends React.Component {
   render() {
     const { handleSubmit, pristine, submitting } = this.props;
     const { description, onlyView } = this.state;
+
+    // one loader, then the finished form — instead of empty selects that
+    // fill in and a weights table that grows as each request lands
+    if (this.state.listsPending) {
+      return (
+        <Grid container justifyContent="center" sx={{ py: 6 }}>
+          <CircularProgress size="30px" />
+        </Grid>
+      );
+    }
+
     let firstAllImage = this.getAllImages(true);
 
     // console.log(this.state.percentage);
@@ -1562,21 +1894,6 @@ class ProductForm extends React.Component {
             {this.state.product_type != "material" ? (
               <React.Fragment>
                 <Grid item xs={6} md={3} className="create-input">
-                  <Field
-                    className="input-inner"
-                    name="materials"
-                    component={this.renderMaterialsField}
-                    label="Materials"
-                    multi
-                    type="select"
-                    defaultValue={[]}
-                    onChange={(event, val) =>
-                      this.handleMaterialsChange(event, val)
-                    }
-                    disabled={onlyView}
-                  />
-                </Grid>
-                <Grid item xs={6} md={3} className="create-input">
                   {/* <Field
                       className='input-inner'
                       name="sizes"
@@ -1596,6 +1913,21 @@ class ProductForm extends React.Component {
                     type="select"
                     defaultValue={[]}
                     onChange={(event, val) => this.handleSizeChange(event, val)}
+                    disabled={onlyView}
+                  />
+                </Grid>
+                <Grid item xs={6} md={3} className="create-input">
+                  <Field
+                    className="input-inner"
+                    name="materials"
+                    component={this.renderMaterialsField}
+                    label="Materials"
+                    multi
+                    type="select"
+                    defaultValue={[]}
+                    onChange={(event, val) =>
+                      this.handleMaterialsChange(event, val)
+                    }
                     disabled={onlyView}
                   />
                 </Grid>
@@ -1645,77 +1977,6 @@ class ProductForm extends React.Component {
                 disabled={onlyView}
               />
             </Grid>
-
-            {this.state.size_materials.length == 0
-              ? null
-              : this.state.size_materials[0].materials.map((items, index) => (
-                  <>
-                    <Grid
-                      item
-                      xs={6}
-                      md={1.5}
-                      className="create-input"
-                      key={index}
-                    >
-                      {/* {console.log(index)} */}
-                      <TextField
-                        id="outlined-basic"
-                        fullWidth
-                        label={items.material_name + " % "}
-                        variant="outlined"
-                        type="number"
-                        sx={hideNumberSpinner}
-                        InputProps={{ inputProps: { min: 0, max: 10 } }}
-                        value={this.state.percentage[index]?.percentage}
-                        onChange={(e) =>
-                          this.changePercentage(
-                            e.target.value,
-                            items.material_name,
-                            index,
-                          )
-                        }
-                      />
-                    </Grid>
-                    <Grid
-                      item
-                      xs={6}
-                      md={1.5}
-                      className="create-input"
-                      key={index}
-                    >
-                      <TextField
-                        id="outlined-basic"
-                        label="Size Gap"
-                        variant="outlined"
-                        type="number"
-                        fullWidth
-                        sx={hideNumberSpinner}
-                        value={this.state.gap[index]?.gap}
-                        onChange={(e) => this.changeGap(e.target.value, index)}
-                        InputProps={{
-                          endAdornment: (
-                            <Select
-                              variant="standard"
-                              disableUnderline
-                              value={this.getGapStartSizeId(index)}
-                              onChange={(e) =>
-                                this.changeGapStartSize(e.target.value, index)
-                              }
-                              onClick={(e) => e.stopPropagation()}
-                              sx={{ minWidth: 56, ml: 1, flexShrink: 0 }}
-                            >
-                              {this.state.size_materials.map((sm, sIndex) => (
-                                <MenuItem value={sm.size_id} key={sIndex}>
-                                  {sm.size_name}
-                                </MenuItem>
-                              ))}
-                            </Select>
-                          ),
-                        }}
-                      />
-                    </Grid>
-                  </>
-                ))}
           </Grid>
           <Grid container spacing={2} className="loans_view">
             <Grid item xs={12}>
@@ -1743,158 +2004,172 @@ class ProductForm extends React.Component {
                           <TableCell>{item.size_name}</TableCell>
                         ) : null}
                         <TableCell>
-                          {item.materials.map((m, key) => (
-                            <TextField
-                              key={key}
-                              label=""
-                              variant="outlined"
-                              fullWidth
-                              value={m.material_name}
-                              sx={{ marginBottom: "5px" }}
-                              inputProps={{ className: "non_disable_text" }}
-                              size="small"
-                              disabled={onlyView}
-                            />
-                          ))}
-                        </TableCell>
-                        <TableCell>
-                          {item.materials.map((m, key) => (
-                            <FormControl
-                              fullWidth
-                              error={
-                                "purity_error" in m && m.purity_error
-                                  ? true
-                                  : false
-                              }
-                              key={key}
-                              sx={{ marginBottom: "5px" }}
-                              size="small"
-                            >
-                              <Select
-                                label=""
-                                fullWidth
-                                defaultValue={[]}
-                                multiple
-                                value={m.purities}
-                                renderValue={(selected) =>
-                                  this.getSelectedPurities(
-                                    selected,
-                                    m.material_id,
-                                  ).join(", ")
-                                }
-                                onChange={(e) =>
-                                  this.handlePurityChange(e, index, key)
-                                }
-                                disabled={onlyView}
-                              >
-                                <MenuItem value=""></MenuItem>
-                                {this.getMaterialPurities(m.material_id).map(
-                                  (p, index2) => {
-                                    return (
-                                      <MenuItem
-                                        value={p.id}
-                                        key={index2}
-                                        className="multi-select"
-                                      >
-                                        <Checkbox
-                                          checked={
-                                            m.purities &&
-                                            m.purities.indexOf(p.id) > -1
-                                              ? true
-                                              : false
-                                          }
-                                        />
-                                        <ListItemText primary={p.name} />
-                                      </MenuItem>
-                                    );
-                                  },
-                                )}
-                              </Select>
-                            </FormControl>
-                          ))}
-                        </TableCell>
-                        <TableCell>
-                          {item.materials.map((m, key) => (
-                            <TextField
-                              key={key}
-                              label=""
-                              variant="outlined"
-                              fullWidth
-                              //  value={m.weight}
-                              value={m.weight}
-                              onChange={(e) =>
-                                this.handleWeightChange(
-                                  e,
-                                  index,
-                                  key,
-                                  m.material_name,
-                                )
-                              }
-                              sx={{ marginBottom: "5px" }}
-                              error={
-                                "weight_error" in m && m.weight_error
-                                  ? true
-                                  : false
-                              }
-                              size="small"
-                              disabled={onlyView}
-                            />
-                          ))}
-                        </TableCell>
-                        <TableCell>
-                          {item.materials.map((m, key) => (
-                            <FormControl
-                              fullWidth
-                              error={
-                                "unit_error" in m && m.unit_error ? true : false
-                              }
-                              key={key}
-                              sx={{ marginBottom: "5px" }}
-                              size="small"
-                            >
-                              <Select
-                                label=""
-                                fullWidth
-                                defaultValue=""
-                                value={m.unit_id}
-                                onChange={(e) =>
-                                  this.handleUnitChange(e, index, key)
-                                }
-                                disabled={onlyView}
-                              >
-                                <MenuItem value=""></MenuItem>
-                                {this.state.unitList.map((p, index2) => {
-                                  return (
-                                    <MenuItem value={p.id} key={index2}>
-                                      {p.name}
-                                    </MenuItem>
-                                  );
-                                })}
-                              </Select>
-                            </FormControl>
-                          ))}
-                        </TableCell>
-                        {this.state.product_type != "material" ? (
-                          <TableCell>
-                            {item.materials.map((m, key) => (
+                          {item.materials.map((m, key) =>
+                            !this.isMaterialInSizeRange(key, index) ? null : (
                               <TextField
                                 key={key}
                                 label=""
                                 variant="outlined"
                                 fullWidth
-                                value={m.quantity}
-                                onInput={(e) => validateInteger(e)}
+                                value={m.material_name}
+                                sx={{ marginBottom: "5px" }}
+                                inputProps={{ className: "non_disable_text" }}
+                                size="small"
+                                disabled={onlyView}
+                              />
+                            ),
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {item.materials.map((m, key) =>
+                            !this.isMaterialInSizeRange(key, index) ? null : (
+                              <FormControl
+                                fullWidth
+                                error={
+                                  "purity_error" in m && m.purity_error
+                                    ? true
+                                    : false
+                                }
+                                key={key}
+                                sx={{ marginBottom: "5px" }}
+                                size="small"
+                              >
+                                <Select
+                                  label=""
+                                  fullWidth
+                                  defaultValue={[]}
+                                  multiple
+                                  value={m.purities}
+                                  renderValue={(selected) =>
+                                    this.getSelectedPurities(
+                                      selected,
+                                      m.material_id,
+                                    ).join(", ")
+                                  }
+                                  onChange={(e) =>
+                                    this.handlePurityChange(e, index, key)
+                                  }
+                                  disabled={onlyView}
+                                >
+                                  <MenuItem value=""></MenuItem>
+                                  {this.getMaterialPurities(m.material_id).map(
+                                    (p, index2) => {
+                                      return (
+                                        <MenuItem
+                                          value={p.id}
+                                          key={index2}
+                                          className="multi-select"
+                                        >
+                                          <Checkbox
+                                            checked={
+                                              m.purities &&
+                                              m.purities.indexOf(p.id) > -1
+                                                ? true
+                                                : false
+                                            }
+                                          />
+                                          <ListItemText primary={p.name} />
+                                        </MenuItem>
+                                      );
+                                    },
+                                  )}
+                                </Select>
+                              </FormControl>
+                            ),
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {item.materials.map((m, key) =>
+                            !this.isMaterialInSizeRange(key, index) ? null : (
+                              <TextField
+                                key={key}
+                                label=""
+                                variant="outlined"
+                                fullWidth
+                                //  value={m.weight}
+                                value={m.weight}
                                 onChange={(e) =>
-                                  this.handleQuantityChange(e, index, key)
+                                  this.handleWeightChange(
+                                    e,
+                                    index,
+                                    key,
+                                    m.material_name,
+                                  )
                                 }
                                 sx={{ marginBottom: "5px" }}
                                 error={
-                                  "qty_error" in m && m.qty_error ? true : false
+                                  "weight_error" in m && m.weight_error
+                                    ? true
+                                    : false
                                 }
                                 size="small"
                                 disabled={onlyView}
                               />
-                            ))}
+                            ),
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {item.materials.map((m, key) =>
+                            !this.isMaterialInSizeRange(key, index) ? null : (
+                              <FormControl
+                                fullWidth
+                                error={
+                                  "unit_error" in m && m.unit_error
+                                    ? true
+                                    : false
+                                }
+                                key={key}
+                                sx={{ marginBottom: "5px" }}
+                                size="small"
+                              >
+                                <Select
+                                  label=""
+                                  fullWidth
+                                  defaultValue=""
+                                  value={m.unit_id}
+                                  onChange={(e) =>
+                                    this.handleUnitChange(e, index, key)
+                                  }
+                                  disabled={onlyView}
+                                >
+                                  <MenuItem value=""></MenuItem>
+                                  {this.state.unitList.map((p, index2) => {
+                                    return (
+                                      <MenuItem value={p.id} key={index2}>
+                                        {p.name}
+                                      </MenuItem>
+                                    );
+                                  })}
+                                </Select>
+                              </FormControl>
+                            ),
+                          )}
+                        </TableCell>
+                        {this.state.product_type != "material" ? (
+                          <TableCell>
+                            {item.materials.map((m, key) =>
+                              !this.isMaterialInSizeRange(key, index) ? null : (
+                                <TextField
+                                  key={key}
+                                  label=""
+                                  variant="outlined"
+                                  fullWidth
+                                  value={m.quantity}
+                                  onInput={(e) => validateInteger(e)}
+                                  onChange={(e) =>
+                                    this.handleQuantityChange(e, index, key)
+                                  }
+                                  sx={{ marginBottom: "5px" }}
+                                  error={
+                                    "qty_error" in m && m.qty_error
+                                      ? true
+                                      : false
+                                  }
+                                  size="small"
+                                  disabled={onlyView}
+                                />
+                              ),
+                            )}
                           </TableCell>
                         ) : null}
                       </TableRow>

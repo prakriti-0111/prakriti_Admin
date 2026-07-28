@@ -412,6 +412,21 @@ class ProfileSection extends Component {
                                                         </ListItemIcon>
                                                         <ListItemText primary={<Typography variant="body2">Edit Profile</Typography>} />
                                                     </ListItemButton>
+                                                    {
+                                                        this.isSuperAdmin ?
+                                                        <ListItemButton
+                                                            className='profile-dropdown'
+                                                            sx={{ borderRadius: `${customization.borderRadius}px` }}
+                                                            selected={selectedIndex === 2}
+                                                            onClick={(event) => handleListItemClick(event, 2, '/super-admin/company-details')}
+                                                        >
+                                                            <ListItemIcon className='company-details-icon'>
+                                                                <IconSettings stroke={1.5} size="1.3rem" />
+                                                            </ListItemIcon>
+                                                            <ListItemText primary={<Typography variant="body2">Company Details</Typography>} />
+                                                        </ListItemButton>
+                                                        : null
+                                                    }
                                                     <ListItemButton
                                                         className='profile-dropdown'
                                                         sx={{ borderRadius: `${customization.borderRadius}px` }}

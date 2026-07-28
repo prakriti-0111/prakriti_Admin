@@ -65,6 +65,7 @@ import {
   isMainSuperAdmin,
   objectToQuery,
   getAuthData,
+  applyStockSearch,
 } from "src/helpers/helper";
 import _ from "lodash";
 import jsQR from "jsqr";
@@ -522,14 +523,7 @@ class StockPage extends Component {
   }
 
   loadListData = () => {
-    const params = { ...this.state.queryParams };
-    const search = (params.search || "").trim();
-    // ponytail: numeric search text is treated as a total-weight filter; add a dedicated field if numeric codes ever need text search
-    if (/^\d+(\.\d+)?$/.test(search)) {
-      params.total_weight = search;
-      params.search = "";
-    }
-    this.props.actions.stocksList(params);
+    this.props.actions.stocksList(applyStockSearch({ ...this.state.queryParams }));
   };
 
   downloadCurrentStockReport = async (categoryId = null) => {
@@ -844,7 +838,7 @@ class StockPage extends Component {
     try {
       // First, try to find the item by certificate number directly
       const searchParams = {
-        search: certificateNo,
+        certificate_no: certificateNo,
         page: 1,
         limit: 1, // Only need one result
         by_specific: this.state.queryParams.by_specific,

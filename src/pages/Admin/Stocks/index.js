@@ -20,7 +20,7 @@ import DialogContent from '@mui/material/DialogContent';
 import DialogContentText from '@mui/material/DialogContentText';
 import DialogTitle from '@mui/material/DialogTitle';
 import { categoryList } from 'actions/admin/category.actions';
-import { displayAmount } from 'src/helpers/helper';
+import { displayAmount, applyStockSearch } from 'src/helpers/helper';
 
 class StockPage extends Component {
 
@@ -188,14 +188,7 @@ class StockPage extends Component {
   }
 
   loadListData = () => {
-    const params = { ...this.state.queryParams };
-    const search = (params.search || '').trim();
-    // ponytail: numeric search text is treated as a total-weight filter; add a dedicated field if numeric codes ever need text search
-    if (/^\d+(\.\d+)?$/.test(search)) {
-      params.total_weight = search;
-      params.search = '';
-    }
-    this.props.actions.stocksList(params);
+    this.props.actions.stocksList(applyStockSearch({ ...this.state.queryParams }));
   }
 
   handleView = (row) => {

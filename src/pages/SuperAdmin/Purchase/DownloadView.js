@@ -477,29 +477,21 @@ class PurchaseViewPage extends React.Component {
     } = this.state;
 
     return (
-      <MainCard
-        id="downloadViewPurchase"
-        border={false}
-        title={
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "8px",
-              flexWrap: "wrap",
-            }}
-          >
-            <span>{"Purchase Details"}</span>
+      <>
+        {/* Sticky header — plain divs, not Box: global .MuiBox-root in
+            style.scss forces padding/margin 0 !important */}
+        <div className="ratn-sticky-header">
+          {/* Left: title + chip + tabs */}
+          <div className="ratn-sticky-header-left">
+            <span className="ratn-sticky-header-title">Purchase Details</span>
             {purchase && (
-              <div>
-                <Chip
-                  label={purchase.approve_status}
-                  color={getApprovalColor(purchase.is_approved)}
-                />
-              </div>
+              <Chip
+                label={purchase.approve_status}
+                color={getApprovalColor(purchase.is_approved)}
+              />
             )}
             {purchase && (
-              <div style={{ display: "flex", gap: "4px", marginLeft: "12px" }}>
+              <div className="ratn-sticky-header-tabs">
                 {[
                   { id: "section-purchase-details", label: "Purchase Details" },
                   { id: "section-payment", label: "Payment" },
@@ -515,17 +507,8 @@ class PurchaseViewPage extends React.Component {
                       textTransform: "none",
                       backgroundColor:
                         this.state.activeTab === tab.id ? "#1E2746" : "#9e9e9e",
-                      color:
-                        this.state.activeTab === tab.id
-                          ? "#ffffff !important"
-                          : "#1E2746",
+                      color: "#ffffff !important",
                       fontWeight: this.state.activeTab === tab.id ? 700 : 400,
-                      "& .download-text": {
-                        color:
-                          this.state.activeTab === tab.id
-                            ? "#ffffff !important"
-                            : "#1E2746",
-                      },
                       "&:hover": {
                         backgroundColor:
                           this.state.activeTab === tab.id
@@ -534,216 +517,184 @@ class PurchaseViewPage extends React.Component {
                       },
                     }}
                   >
-                    <span className="download-text">{tab.label}</span>
+                    {tab.label}
                   </Button>
                 ))}
               </div>
             )}
           </div>
-        }
-        secondary={
-          <>
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "8px",
-                marginLeft: "10px",
-                flexWrap: "wrap",
-              }}
-            >
-              {downloadingInfo ? (
-                <CircularProgress size="30px" />
-              ) : (
-                <Button
-                  variant="contained"
-                  onClick={() => this.handleDownloadInfo(this.props.params.id)}
-                >
-                  <span className="download-text">Invoice</span>
-                  <FileDownloadIcon />
-                </Button>
-              )}
+
+          {/* Right: Invoice + Back */}
+          <div className="ratn-sticky-header-actions">
+            {downloadingInfo ? (
+              <CircularProgress size="28px" />
+            ) : (
               <Button
                 variant="contained"
-                onClick={() => this.props.navigate(-1)}
+                onClick={() => this.handleDownloadInfo(this.props.params.id)}
+                sx={{ color: "#fff !important" }}
               >
-                Back
+                Invoice
+                <FileDownloadIcon sx={{ ml: 0.5 }} />
               </Button>
-            </div>
-          </>
-        }
-      >
-        {!purchase ? (
-          <Grid container justifyContent="center">
-            <CircularProgress size="30px" />
-          </Grid>
-        ) : (
-          <>
-            {/* Purchase Details Section */}
-            <Box id="section-purchase-details" className="invoice-block">
-              <Grid container className="invoice-info-bar">
-                <Grid item xs={12} sm={6}>
-                  <Typography className="invoice-company-name">
-                    {purchase?.supplier_name}
-                  </Typography>
-                  {purchase?.supplier_mobile && (
-                    <Typography className="invoice-info-line">
-                      Contact: {purchase.supplier_mobile}
-                    </Typography>
-                  )}
-                  {purchase?.supplier_gst && (
-                    <Typography className="invoice-info-line">
-                      GST: {purchase.supplier_gst}
-                    </Typography>
-                  )}
-                </Grid>
-                <Grid item xs={12} sm={6} className="invoice-info-right">
-                  {purchase.invoice_number && (
-                    <Typography className="invoice-info-line">
-                      Invoice No: <b>{purchase.invoice_number}</b>
-                    </Typography>
-                  )}
-                  <Typography className="invoice-info-line">
-                    Invoice Date: {purchase.invoice_date}
-                  </Typography>
-                </Grid>
-              </Grid>
+            )}
+            <Button
+              variant="contained"
+              onClick={() => this.props.navigate(-1)}
+              sx={{ color: "#fff !important" }}
+            >
+              Back
+            </Button>
+          </div>
+        </div>
 
-              <TableContainer
-                component={Paper}
-                className="invoice-table-wrapper"
-              >
-                <div className="ratn-table-purchase-wrapper">
-                  <Table
-                    aria-label="collapsible table"
-                    className="invoice_product_list table-bordered"
-                  >
-                    <TableHead className="ratn-table-header">
-                      <TableRow>
-                        <TableCell />
-                        <TableCell>SL</TableCell>
-                        <TableCell>Product Name</TableCell>
-                        <TableCell>QTY</TableCell>
-                        <TableCell>HSN</TableCell>
-                        <TableCell>Material</TableCell>
-                        <TableCell>WT</TableCell>
-                        <TableCell>Unit</TableCell>
-                        <TableCell>Rate</TableCell>
-                        <TableCell>Tax@</TableCell>
-                        <TableCell>Taxable Amt.</TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {purchase.subCatItems.map((row, i) => (
-                        <SubCatRow key={i} row={row} index={i} />
-                      ))}
-                      {(() => {
-                        const materialTotals = {};
-                        let totalTaxableAmt = 0;
-                        purchase.subCatItems.forEach((item) => {
-                          const taxableAmt =
-                            parseFloat(item.taxableAmount) || 0;
-                          totalTaxableAmt += taxableAmt;
-                          item.material.forEach((mat) => {
-                            const key = mat.name;
-                            if (!materialTotals[key]) {
-                              materialTotals[key] = {
-                                weight: 0,
-                                unit: mat.unit,
-                                rate: parseFloat(mat.rate) || 0,
-                                amount: 0,
-                              };
-                            }
-                            materialTotals[key].weight +=
-                              parseFloat(mat.weight) || 0;
-                            const amt =
-                              (parseFloat(mat.weight) || 0) *
-                              (parseFloat(mat.rate) || 0);
-                            materialTotals[key].amount += amt;
+        <MainCard id="downloadViewPurchase" border={false}>
+          {!purchase ? (
+            <Grid container justifyContent="center">
+              <CircularProgress size="30px" />
+            </Grid>
+          ) : (
+            <>
+              {/* Purchase Details Section */}
+              <Box id="section-purchase-details" className="invoice-block">
+                <Grid container className="invoice-info-bar">
+                  <Grid item xs={12} sm={6}>
+                    <Typography className="invoice-company-name">
+                      {purchase?.supplier_name}
+                    </Typography>
+                    {purchase?.supplier_mobile && (
+                      <Typography className="invoice-info-line">
+                        Contact: {purchase.supplier_mobile}
+                      </Typography>
+                    )}
+                    {purchase?.supplier_gst && (
+                      <Typography className="invoice-info-line">
+                        GST: {purchase.supplier_gst}
+                      </Typography>
+                    )}
+                  </Grid>
+                  <Grid item xs={12} sm={6} className="invoice-info-right">
+                    {purchase.invoice_number && (
+                      <Typography className="invoice-info-line">
+                        Invoice No: <b>{purchase.invoice_number}</b>
+                      </Typography>
+                    )}
+                    <Typography className="invoice-info-line">
+                      Invoice Date: {purchase.invoice_date}
+                    </Typography>
+                  </Grid>
+                </Grid>
+
+                <TableContainer
+                  component={Paper}
+                  className="invoice-table-wrapper"
+                >
+                  <div className="ratn-table-purchase-wrapper">
+                    <Table
+                      aria-label="collapsible table"
+                      className="invoice_product_list table-bordered"
+                    >
+                      <TableHead className="ratn-table-header">
+                        <TableRow>
+                          <TableCell />
+                          <TableCell>SL</TableCell>
+                          <TableCell>Product Name</TableCell>
+                          <TableCell>QTY</TableCell>
+                          <TableCell>HSN</TableCell>
+                          <TableCell>Material</TableCell>
+                          <TableCell>WT</TableCell>
+                          <TableCell>Unit</TableCell>
+                          <TableCell>Rate</TableCell>
+                          <TableCell>Tax@</TableCell>
+                          <TableCell>Taxable Amt.</TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {purchase.subCatItems.map((row, i) => (
+                          <SubCatRow key={i} row={row} index={i} />
+                        ))}
+                        {(() => {
+                          const materialTotals = {};
+                          let totalTaxableAmt = 0;
+                          purchase.subCatItems.forEach((item) => {
+                            const taxableAmt =
+                              parseFloat(item.taxableAmount) || 0;
+                            totalTaxableAmt += taxableAmt;
+                            item.material.forEach((mat) => {
+                              const key = mat.name;
+                              if (!materialTotals[key]) {
+                                materialTotals[key] = {
+                                  weight: 0,
+                                  unit: mat.unit,
+                                  rate: parseFloat(mat.rate) || 0,
+                                  amount: 0,
+                                };
+                              }
+                              materialTotals[key].weight +=
+                                parseFloat(mat.weight) || 0;
+                              const amt =
+                                (parseFloat(mat.weight) || 0) *
+                                (parseFloat(mat.rate) || 0);
+                              materialTotals[key].amount += amt;
+                            });
                           });
-                        });
-                        const entries = Object.entries(materialTotals);
-                        if (entries.length === 0) return null;
-                        const parseAmt = (v) =>
-                          parseFloat(
-                            String(v || "").replace(/[^0-9.-]+/g, ""),
-                          ) || 0;
-                        const discountAmt = parseAmt(purchase.discount);
-                        return (
-                          <>
-                            <TableRow>
-                              <TableCell
-                                colSpan={11}
-                                style={{ borderBottom: "none", padding: "4px" }}
-                              />
-                            </TableRow>
-                            {entries.map(([name, data], idx) => (
-                              <TableRow
-                                key={idx}
-                                sx={{
-                                  "& td": {
-                                    borderBottom: "none",
-                                    padding: "2px 16px",
-                                  },
-                                }}
-                              >
+                          const entries = Object.entries(materialTotals);
+                          if (entries.length === 0) return null;
+                          const parseAmt = (v) =>
+                            parseFloat(
+                              String(v || "").replace(/[^0-9.-]+/g, ""),
+                            ) || 0;
+                          const discountAmt = parseAmt(purchase.discount);
+                          return (
+                            <>
+                              <TableRow>
                                 <TableCell
-                                  colSpan={5}
-                                  style={{ fontSize: "13px", color: "#555" }}
-                                >
-                                  {name}
-                                </TableCell>
-                                <TableCell
-                                  style={{ fontSize: "13px", color: "#555" }}
-                                >
-                                  {data.weight.toFixed(3)} {data.unit}
-                                </TableCell>
-                                <TableCell
-                                  colSpan={2}
-                                  style={{ fontSize: "13px", color: "#555" }}
-                                >
-                                  × ₹{formatIndianNumber(data.rate)}
-                                </TableCell>
-                                <TableCell
-                                  colSpan={3}
+                                  colSpan={11}
                                   style={{
-                                    fontSize: "13px",
-                                    color: "#555",
-                                    textAlign: "right",
+                                    borderBottom: "none",
+                                    padding: "4px",
+                                  }}
+                                />
+                              </TableRow>
+                              {entries.map(([name, data], idx) => (
+                                <TableRow
+                                  key={idx}
+                                  sx={{
+                                    "& td": {
+                                      borderBottom: "none",
+                                      padding: "2px 16px",
+                                    },
                                   }}
                                 >
-                                  ₹{formatIndianNumber(data.amount)}
-                                </TableCell>
-                              </TableRow>
-                            ))}
-                            <TableRow>
-                              <TableCell
-                                colSpan={8}
-                                style={{
-                                  fontSize: "15px",
-                                  fontWeight: 700,
-                                  color: "#1E2746",
-                                  borderTop: "2px solid #90caf9",
-                                  borderBottom: "none",
-                                }}
-                              >
-                                Taxable Amt.
-                              </TableCell>
-                              <TableCell
-                                colSpan={3}
-                                style={{
-                                  fontSize: "15px",
-                                  fontWeight: 700,
-                                  color: "#1E2746",
-                                  textAlign: "right",
-                                  borderTop: "2px solid #90caf9",
-                                  borderBottom: "none",
-                                }}
-                              >
-                                ₹{totalTaxableAmt.toFixed(2)}
-                              </TableCell>
-                            </TableRow>
-                            {discountAmt > 0 && (
+                                  <TableCell
+                                    colSpan={5}
+                                    style={{ fontSize: "13px", color: "#555" }}
+                                  >
+                                    {name}
+                                  </TableCell>
+                                  <TableCell
+                                    style={{ fontSize: "13px", color: "#555" }}
+                                  >
+                                    {data.weight.toFixed(3)} {data.unit}
+                                  </TableCell>
+                                  <TableCell
+                                    colSpan={2}
+                                    style={{ fontSize: "13px", color: "#555" }}
+                                  >
+                                    × ₹{formatIndianNumber(data.rate)}
+                                  </TableCell>
+                                  <TableCell
+                                    colSpan={3}
+                                    style={{
+                                      fontSize: "13px",
+                                      color: "#555",
+                                      textAlign: "right",
+                                    }}
+                                  >
+                                    ₹{formatIndianNumber(data.amount)}
+                                  </TableCell>
+                                </TableRow>
+                              ))}
                               <TableRow>
                                 <TableCell
                                   colSpan={8}
@@ -751,10 +702,11 @@ class PurchaseViewPage extends React.Component {
                                     fontSize: "15px",
                                     fontWeight: 700,
                                     color: "#1E2746",
+                                    borderTop: "2px solid #90caf9",
                                     borderBottom: "none",
                                   }}
                                 >
-                                  Discount
+                                  Taxable Amt.
                                 </TableCell>
                                 <TableCell
                                   colSpan={3}
@@ -763,461 +715,502 @@ class PurchaseViewPage extends React.Component {
                                     fontWeight: 700,
                                     color: "#1E2746",
                                     textAlign: "right",
+                                    borderTop: "2px solid #90caf9",
                                     borderBottom: "none",
                                   }}
                                 >
-                                  - ₹{formatIndianNumber(discountAmt)}
+                                  ₹{totalTaxableAmt.toFixed(2)}
                                 </TableCell>
                               </TableRow>
-                            )}
+                              {discountAmt > 0 && (
+                                <TableRow>
+                                  <TableCell
+                                    colSpan={8}
+                                    style={{
+                                      fontSize: "15px",
+                                      fontWeight: 700,
+                                      color: "#1E2746",
+                                      borderBottom: "none",
+                                    }}
+                                  >
+                                    Discount
+                                  </TableCell>
+                                  <TableCell
+                                    colSpan={3}
+                                    style={{
+                                      fontSize: "15px",
+                                      fontWeight: 700,
+                                      color: "#1E2746",
+                                      textAlign: "right",
+                                      borderBottom: "none",
+                                    }}
+                                  >
+                                    - ₹{formatIndianNumber(discountAmt)}
+                                  </TableCell>
+                                </TableRow>
+                              )}
+                            </>
+                          );
+                        })()}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </TableContainer>
+
+                <Grid container className="invoice-totals-row">
+                  <Grid item xs={12} sm={6}>
+                    {purchase.notes && (
+                      <Typography className="invoice-info-line invoice-notes">
+                        Notes: {purchase.notes}
+                      </Typography>
+                    )}
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <div className="invoice-totals-box">
+                      {(() => {
+                        const parseAmt = (v) =>
+                          parseFloat(
+                            String(v || "").replace(/[^0-9.-]+/g, ""),
+                          ) || 0;
+                        const subTotal = parseAmt(purchase.taxable_amount);
+                        const tax = parseAmt(purchase.tax);
+                        const discount = parseAmt(purchase.discount);
+                        return (
+                          <>
+                            <div className="invoice-totals-line">
+                              <span style={{ fontWeight: 700 }}>Sub Total</span>
+                              <span style={{ fontWeight: 700 }}>
+                                ₹{formatIndianNumber(subTotal)}
+                              </span>
+                            </div>
+                            <div className="invoice-totals-line">
+                              <span>Tax</span>
+                              <span>₹{formatIndianNumber(tax)}</span>
+                            </div>
+                            <div className="invoice-totals-line">
+                              <span>Discount</span>
+                              <span>
+                                - ₹
+                                {formatIndianNumber(
+                                  discount > 0 ? discount : 0,
+                                )}
+                              </span>
+                            </div>
                           </>
                         );
                       })()}
-                    </TableBody>
-                  </Table>
-                </div>
-              </TableContainer>
-
-              <Grid container className="invoice-totals-row">
-                <Grid item xs={12} sm={6}>
-                  {purchase.notes && (
-                    <Typography className="invoice-info-line invoice-notes">
-                      Notes: {purchase.notes}
-                    </Typography>
-                  )}
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <div className="invoice-totals-box">
-                    {(() => {
-                      const parseAmt = (v) =>
-                        parseFloat(String(v || "").replace(/[^0-9.-]+/g, "")) ||
-                        0;
-                      const subTotal = parseAmt(purchase.taxable_amount);
-                      const tax = parseAmt(purchase.tax);
-                      const discount = parseAmt(purchase.discount);
-                      return (
-                        <>
-                          <div className="invoice-totals-line">
-                            <span style={{ fontWeight: 700 }}>Sub Total</span>
-                            <span style={{ fontWeight: 700 }}>
-                              ₹{formatIndianNumber(subTotal)}
-                            </span>
-                          </div>
-                          <div className="invoice-totals-line">
-                            <span>Tax</span>
-                            <span>₹{formatIndianNumber(tax)}</span>
-                          </div>
-                          <div className="invoice-totals-line">
-                            <span>Discount</span>
-                            <span>
-                              - ₹
-                              {formatIndianNumber(discount > 0 ? discount : 0)}
-                            </span>
-                          </div>
-                        </>
-                      );
-                    })()}
-                    <div className="invoice-totals-line invoice-totals-line-final">
-                      <span style={{ fontWeight: 700 }}>Total Payable</span>
-                      <span style={{ fontWeight: 700 }}>
-                        {purchase.total_payable || purchase.bill_amount}
-                      </span>
+                      <div className="invoice-totals-line invoice-totals-line-final">
+                        <span style={{ fontWeight: 700 }}>Total Payable</span>
+                        <span style={{ fontWeight: 700 }}>
+                          {purchase.total_payable || purchase.bill_amount}
+                        </span>
+                      </div>
                     </div>
-                  </div>
-                </Grid>
-              </Grid>
-
-              <Grid container className="invoice-footer-band">
-                <Grid item xs={6} sm={3}>
-                  <span className="invoice-footer-label">Due Date</span>
-                  <br />
-                  {purchase.due_date}
-                </Grid>
-                <Grid item xs={6} sm={3}>
-                  <span className="invoice-footer-label">Return Amount</span>
-                  <br />
-                  {purchase.return_amount}
-                </Grid>
-                <Grid item xs={6} sm={3}>
-                  <span className="invoice-footer-label">Paid Amount</span>
-                  <br />
-                  {purchase.paid_amount_display}
-                </Grid>
-                <Grid item xs={6} sm={3}>
-                  <span className="invoice-footer-label">Due Amount</span>
-                  <br />
-                  {purchase.due_amount_display}
-                </Grid>
-              </Grid>
-            </Box>
-
-            <Divider
-              sx={{ my: 2, borderColor: "#1E2746", borderWidth: "1px" }}
-            />
-
-            {/* Payment Section */}
-            <div id="section-payment">
-              <Grid
-                container
-                spacing={{ xs: 2, md: 2 }}
-                style={{ paddingBottom: "1%", cursor: "pointer" }}
-                onClick={this.togglePaymentSection}
-                alignItems="center"
-              >
-                <Grid item xs={4} md={6} sm={5}>
-                  <h3
-                    className="p_heading_list"
-                    style={{ margin: 0, fontSize: "20px" }}
-                  >
-                    Payment Details
-                  </h3>
-                </Grid>
-                <Grid
-                  item
-                  xs={8}
-                  md={6}
-                  sm={7}
-                  style={{
-                    display: "flex",
-                    justifyContent: "flex-end",
-                    alignItems: "center",
-                    gap: "8px",
-                  }}
-                >
-                  {purchase && parseFloat(purchase.due_amount) > 0 ? (
-                    <div className="action_btn">
-                      <Button
-                        variant="contained"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          this.handlePayNow();
-                        }}
-                      >
-                        Pay Now
-                      </Button>
-                    </div>
-                  ) : null}
-                  <IconButton size="small">
-                    {this.state.paymentOpen ? (
-                      <KeyboardArrowUpIcon />
-                    ) : (
-                      <KeyboardArrowDownIcon />
-                    )}
-                  </IconButton>
-                </Grid>
-              </Grid>
-
-              <Collapse
-                in={this.state.paymentOpen}
-                timeout="auto"
-                unmountOnExit
-              >
-                {!purchase.is_assigned ? (
-                  <Grid
-                    item
-                    xs={12}
-                    className="p-add-product create-input button-right"
-                  >
-                    <DataTable
-                      columns={this.columns}
-                      rows={this.state.items}
-                      page={this.state.queryParams.page}
-                      limit={this.state.queryParams.limit}
-                      total={this.state.total}
-                      handlePagination={this.handlePagination}
-                      actions={[]}
-                      actionValue={"action_value"}
-                      actionValueColorConditions={[
-                        { value: "Accepted", color: "green" },
-                        { value: "Declined", color: "red" },
-                      ]}
-                    />
                   </Grid>
-                ) : null}
-              </Collapse>
-            </div>
-
-            <Divider
-              sx={{ my: 2, borderColor: "#1E2746", borderWidth: "1px" }}
-            />
-
-            {/* Product List Section */}
-            <div id="section-product-list">
-              <Grid
-                container
-                spacing={{ xs: 2, md: 3 }}
-                style={{ cursor: "pointer" }}
-                onClick={this.toggleProductListSection}
-                alignItems="center"
-              >
-                <Grid item xs={4} md={6} sm={5}>
-                  <h3
-                    className="p_heading_list"
-                    style={{ margin: 0, fontSize: "20px" }}
-                  >
-                    Product List
-                  </h3>
                 </Grid>
-                <Grid
-                  item
-                  xs={8}
-                  md={6}
-                  sm={7}
-                  style={{
-                    display: "flex",
-                    justifyContent: "flex-end",
-                    alignItems: "center",
-                    gap: "8px",
-                  }}
-                >
-                  <div className="action_btn">
-                    {downloadingList ? (
-                      <CircularProgress size="30px" />
-                    ) : (
-                      <Button
-                        variant="contained"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          this.handleDownloadList(this.props.params.id);
-                        }}
-                      >
-                        <span className="download-text">List</span>
-                        <FileDownloadIcon size="20px" />
-                      </Button>
-                    )}
-                  </div>
-                  <div className="action_btn">
-                    {downloadingItem ? (
-                      <CircularProgress size="30px" />
-                    ) : (
-                      <Button
-                        variant="contained"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          this.handleDownloadItems(this.props.params.id);
-                        }}
-                      >
-                        <span className="download-text">Details</span>
-                        <FileDownloadIcon />
-                      </Button>
-                    )}
-                  </div>
-                  <IconButton size="small">
-                    {this.state.productListOpen ? (
-                      <KeyboardArrowUpIcon />
-                    ) : (
-                      <KeyboardArrowDownIcon />
-                    )}
-                  </IconButton>
-                </Grid>
-              </Grid>
 
-              <Collapse
-                in={this.state.productListOpen}
-                timeout="auto"
-                unmountOnExit
-              >
+                <Grid container className="invoice-footer-band">
+                  <Grid item xs={6} sm={3}>
+                    <span className="invoice-footer-label">Due Date</span>
+                    <br />
+                    {purchase.due_date}
+                  </Grid>
+                  <Grid item xs={6} sm={3}>
+                    <span className="invoice-footer-label">Return Amount</span>
+                    <br />
+                    {purchase.return_amount}
+                  </Grid>
+                  <Grid item xs={6} sm={3}>
+                    <span className="invoice-footer-label">Paid Amount</span>
+                    <br />
+                    {purchase.paid_amount_display}
+                  </Grid>
+                  <Grid item xs={6} sm={3}>
+                    <span className="invoice-footer-label">Due Amount</span>
+                    <br />
+                    {purchase.due_amount_display}
+                  </Grid>
+                </Grid>
+              </Box>
+
+              <Divider
+                sx={{ my: 2, borderColor: "#1E2746", borderWidth: "1px" }}
+              />
+
+              {/* Payment Section */}
+              <div id="section-payment">
                 <Grid
                   container
-                  spacing={gridSpacing}
-                  className="details-header ratn-pur-wrapper loans_view"
+                  spacing={{ xs: 2, md: 2 }}
+                  style={{ paddingBottom: "1%", cursor: "pointer" }}
+                  onClick={this.togglePaymentSection}
+                  alignItems="center"
                 >
-                  <Grid item xs={12}>
-                    <TableContainer component={Paper}>
-                      <div className="ratn-table-purchase-wrapper">
-                        <Table
-                          aria-label="collapsible table"
-                          className="invoice_product_list"
-                        >
-                          <TableHead className="ratn-table-header">
-                            <TableRow>
-                              <TableCell />
-                              <TableCell>#</TableCell>
-                              <TableCell>Product Name</TableCell>
-                              <TableCell>Category Name</TableCell>
-                              <TableCell>Certificate Number</TableCell>
-                              <TableCell>Total Weight</TableCell>
-                              <TableCell>Size</TableCell>
-                              <TableCell>Making Charge</TableCell>
-                              <TableCell>Sub Total</TableCell>
-                              <TableCell>Dist</TableCell>
-                              <TableCell>Tax</TableCell>
-                              <TableCell colSpan="2">Total</TableCell>
-                            </TableRow>
-                          </TableHead>
-                          <TableBody>
-                            {purchase.products.map((row, i) => (
-                              <Row key={i} row={row} index={i} />
-                            ))}
-                          </TableBody>
-                        </Table>
-                      </div>
-                    </TableContainer>
+                  <Grid item xs={4} md={6} sm={5}>
+                    <h3
+                      className="p_heading_list"
+                      style={{ margin: 0, fontSize: "20px" }}
+                    >
+                      Payment Details
+                    </h3>
                   </Grid>
-                </Grid>
-              </Collapse>
-            </div>
-          </>
-        )}
-
-        <Dialog
-          className="ratn-dialog-wrapper"
-          open={this.state.openDialog}
-          onClose={this.handleDialogClose}
-          fullWidth
-          maxWidth="md"
-        >
-          <DialogTitle>Pay Now</DialogTitle>
-          <DialogContent>
-            <DialogContentText></DialogContentText>
-            <Box sx={{ flexGrow: 1, m: 0.5 }}>
-              <Grid container spacing={2}>
-                <Grid
-                  item
-                  md={4}
-                  xs={12}
-                  className="p-invoice-date create-input"
-                >
-                  <LocalizationProvider dateAdapter={AdapterDayjs}>
-                    <DatePicker
-                      label="Payment Date"
-                      value={formValues.payment_date}
-                      inputFormat="DD/MM/YYYY"
-                      onChange={(newValue) =>
-                        this.updateFormValue(newValue, "payment_date")
-                      }
-                      renderInput={(params) => (
-                        <TextField
-                          {...params}
-                          fullWidth
-                          error={formErros.payment_date}
-                          className="non_disable_text"
-                        />
-                      )}
-                      disabled
-                    />
-                  </LocalizationProvider>
-                </Grid>
-                <Grid item md={4} xs={12} className="create-input">
-                  <TextField
-                    label="Amount"
-                    variant="outlined"
-                    fullWidth
-                    value={formValues.amount}
-                    InputProps={{
-                      startAdornment: (
-                        <InputAdornment position="start">₹</InputAdornment>
-                      ),
+                  <Grid
+                    item
+                    xs={8}
+                    md={6}
+                    sm={7}
+                    style={{
+                      display: "flex",
+                      justifyContent: "flex-end",
+                      alignItems: "center",
+                      gap: "8px",
                     }}
-                    error={formErros.amount}
-                    onChange={(event) =>
-                      this.updateFormValue(event.target.value, "amount")
-                    }
-                  />
-                </Grid>
-                <Grid item md={4} xs={12} className="create-input">
-                  <FormControl fullWidth error={formErros.payment_mode}>
-                    <InputLabel>Payment Mode</InputLabel>
-                    <Select
-                      className="input-inner"
-                      value={formValues.payment_mode}
-                      fullWidth
-                      label="Payment Mode"
-                      onChange={(event) =>
-                        this.updateFormValue(event.target.value, "payment_mode")
-                      }
-                    >
-                      <MenuItem value=""></MenuItem>
-                      <MenuItem value="cash">Cash</MenuItem>
-                      <MenuItem value="cheque">Cheque</MenuItem>
-                      <MenuItem value="imps_neft">BANKING/RTGS/NEFT</MenuItem>
-                      <MenuItem value="online">UPI/PhonePe/Gpay</MenuItem>
-                    </Select>
-                  </FormControl>
-                </Grid>
-                {formValues.payment_mode === "cheque" ? (
-                  <Grid item md={4} xs={12} className="create-input">
-                    <TextField
-                      label="Cheque No"
-                      variant="outlined"
-                      fullWidth
-                      value={formValues.cheque_no}
-                      onChange={(event) =>
-                        this.updateFormValue(event.target.value, "cheque_no")
-                      }
-                    />
-                  </Grid>
-                ) : null}
-                {formValues.payment_mode === "imps_neft" ||
-                formValues.payment_mode === "upi" ? (
-                  <Grid item md={4} xs={12} className="create-input">
-                    <TextField
-                      label="Transaction #"
-                      variant="outlined"
-                      fullWidth
-                      value={formValues.txn_id}
-                      onChange={(event) =>
-                        this.updateFormValue(event.target.value, "txn_id")
-                      }
-                    />
-                  </Grid>
-                ) : null}
-                <Grid item md={4} xs={12} className="create-input">
-                  <TextareaAutosize
-                    className="description"
-                    minRows={1}
-                    placeholder="Notes"
-                    style={{ width: "100%", height: "51px" }}
-                    value={formValues.notes}
-                    onChange={(event) =>
-                      this.updateFormValue(event.target.value, "notes")
-                    }
-                  />
-                </Grid>
-                <Grid
-                  item
-                  md={4}
-                  xs={12}
-                  className="p-invoice-date create-input"
-                >
-                  <LocalizationProvider dateAdapter={AdapterDayjs}>
-                    <DatePicker
-                      label="Due Date"
-                      value={formValues.due_date}
-                      inputFormat="DD/MM/YYYY"
-                      onChange={(newValue) =>
-                        this.updateFormValue(newValue, "due_date")
-                      }
-                      renderInput={(params) => (
-                        <TextField
-                          {...params}
-                          fullWidth
-                          error={formErros.due_date}
-                        />
+                  >
+                    {purchase && parseFloat(purchase.due_amount) > 0 ? (
+                      <div className="action_btn">
+                        <Button
+                          variant="contained"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            this.handlePayNow();
+                          }}
+                        >
+                          Pay Now
+                        </Button>
+                      </div>
+                    ) : null}
+                    <IconButton size="small">
+                      {this.state.paymentOpen ? (
+                        <KeyboardArrowUpIcon />
+                      ) : (
+                        <KeyboardArrowDownIcon />
                       )}
-                    />
-                  </LocalizationProvider>
+                    </IconButton>
+                  </Grid>
                 </Grid>
-                <Grid item xs={12}>
-                  <Stack spacing={1} direction="row" justifyContent="flex-end">
-                    <Button
-                      variant="contained"
-                      type="button"
-                      disabled={this.state.processing}
-                      onClick={this.handleSubmit}
+
+                <Collapse
+                  in={this.state.paymentOpen}
+                  timeout="auto"
+                  unmountOnExit
+                >
+                  {!purchase.is_assigned ? (
+                    <Grid
+                      item
+                      xs={12}
+                      className="p-add-product create-input button-right"
                     >
-                      {this.state.processing ? "Processing" : "Submit"}
-                    </Button>
-                    <Button variant="outlined" onClick={this.handleDialogClose}>
-                      Cancel
-                    </Button>
-                  </Stack>
+                      <DataTable
+                        columns={this.columns}
+                        rows={this.state.items}
+                        page={this.state.queryParams.page}
+                        limit={this.state.queryParams.limit}
+                        total={this.state.total}
+                        handlePagination={this.handlePagination}
+                        actions={[]}
+                        actionValue={"action_value"}
+                        actionValueColorConditions={[
+                          { value: "Accepted", color: "green" },
+                          { value: "Declined", color: "red" },
+                        ]}
+                      />
+                    </Grid>
+                  ) : null}
+                </Collapse>
+              </div>
+
+              <Divider
+                sx={{ my: 2, borderColor: "#1E2746", borderWidth: "1px" }}
+              />
+
+              {/* Product List Section */}
+              <div id="section-product-list">
+                <Grid
+                  container
+                  spacing={{ xs: 2, md: 3 }}
+                  style={{ cursor: "pointer" }}
+                  onClick={this.toggleProductListSection}
+                  alignItems="center"
+                >
+                  <Grid item xs={4} md={6} sm={5}>
+                    <h3
+                      className="p_heading_list"
+                      style={{ margin: 0, fontSize: "20px" }}
+                    >
+                      Product List
+                    </h3>
+                  </Grid>
+                  <Grid
+                    item
+                    xs={8}
+                    md={6}
+                    sm={7}
+                    style={{
+                      display: "flex",
+                      justifyContent: "flex-end",
+                      alignItems: "center",
+                      gap: "8px",
+                    }}
+                  >
+                    <div className="action_btn">
+                      {downloadingList ? (
+                        <CircularProgress size="30px" />
+                      ) : (
+                        <Button
+                          variant="contained"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            this.handleDownloadList(this.props.params.id);
+                          }}
+                        >
+                          <span className="download-text">List</span>
+                          <FileDownloadIcon size="20px" />
+                        </Button>
+                      )}
+                    </div>
+                    <div className="action_btn">
+                      {downloadingItem ? (
+                        <CircularProgress size="30px" />
+                      ) : (
+                        <Button
+                          variant="contained"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            this.handleDownloadItems(this.props.params.id);
+                          }}
+                        >
+                          <span className="download-text">Details</span>
+                          <FileDownloadIcon />
+                        </Button>
+                      )}
+                    </div>
+                    <IconButton size="small">
+                      {this.state.productListOpen ? (
+                        <KeyboardArrowUpIcon />
+                      ) : (
+                        <KeyboardArrowDownIcon />
+                      )}
+                    </IconButton>
+                  </Grid>
                 </Grid>
-              </Grid>
-            </Box>
-          </DialogContent>
-        </Dialog>
-      </MainCard>
+
+                <Collapse
+                  in={this.state.productListOpen}
+                  timeout="auto"
+                  unmountOnExit
+                >
+                  <Grid
+                    container
+                    spacing={gridSpacing}
+                    className="details-header ratn-pur-wrapper loans_view"
+                  >
+                    <Grid item xs={12}>
+                      <TableContainer component={Paper}>
+                        <div className="ratn-table-purchase-wrapper">
+                          <Table
+                            aria-label="collapsible table"
+                            className="invoice_product_list"
+                          >
+                            <TableHead className="ratn-table-header">
+                              <TableRow>
+                                <TableCell />
+                                <TableCell>#</TableCell>
+                                <TableCell>Product Name</TableCell>
+                                <TableCell>Category Name</TableCell>
+                                <TableCell>Certificate Number</TableCell>
+                                <TableCell>Total Weight</TableCell>
+                                <TableCell>Size</TableCell>
+                                <TableCell>Making Charge</TableCell>
+                                <TableCell>Sub Total</TableCell>
+                                <TableCell>Dist</TableCell>
+                                <TableCell>Tax</TableCell>
+                                <TableCell colSpan="2">Total</TableCell>
+                              </TableRow>
+                            </TableHead>
+                            <TableBody>
+                              {purchase.products.map((row, i) => (
+                                <Row key={i} row={row} index={i} />
+                              ))}
+                            </TableBody>
+                          </Table>
+                        </div>
+                      </TableContainer>
+                    </Grid>
+                  </Grid>
+                </Collapse>
+              </div>
+            </>
+          )}
+
+          <Dialog
+            className="ratn-dialog-wrapper"
+            open={this.state.openDialog}
+            onClose={this.handleDialogClose}
+            fullWidth
+            maxWidth="md"
+          >
+            <DialogTitle>Pay Now</DialogTitle>
+            <DialogContent>
+              <DialogContentText></DialogContentText>
+              <Box sx={{ flexGrow: 1, m: 0.5 }}>
+                <Grid container spacing={2}>
+                  <Grid
+                    item
+                    md={4}
+                    xs={12}
+                    className="p-invoice-date create-input"
+                  >
+                    <LocalizationProvider dateAdapter={AdapterDayjs}>
+                      <DatePicker
+                        label="Payment Date"
+                        value={formValues.payment_date}
+                        inputFormat="DD/MM/YYYY"
+                        onChange={(newValue) =>
+                          this.updateFormValue(newValue, "payment_date")
+                        }
+                        renderInput={(params) => (
+                          <TextField
+                            {...params}
+                            fullWidth
+                            error={formErros.payment_date}
+                            className="non_disable_text"
+                          />
+                        )}
+                        disabled
+                      />
+                    </LocalizationProvider>
+                  </Grid>
+                  <Grid item md={4} xs={12} className="create-input">
+                    <TextField
+                      label="Amount"
+                      variant="outlined"
+                      fullWidth
+                      value={formValues.amount}
+                      InputProps={{
+                        startAdornment: (
+                          <InputAdornment position="start">₹</InputAdornment>
+                        ),
+                      }}
+                      error={formErros.amount}
+                      onChange={(event) =>
+                        this.updateFormValue(event.target.value, "amount")
+                      }
+                    />
+                  </Grid>
+                  <Grid item md={4} xs={12} className="create-input">
+                    <FormControl fullWidth error={formErros.payment_mode}>
+                      <InputLabel>Payment Mode</InputLabel>
+                      <Select
+                        className="input-inner"
+                        value={formValues.payment_mode}
+                        fullWidth
+                        label="Payment Mode"
+                        onChange={(event) =>
+                          this.updateFormValue(
+                            event.target.value,
+                            "payment_mode",
+                          )
+                        }
+                      >
+                        <MenuItem value=""></MenuItem>
+                        <MenuItem value="cash">Cash</MenuItem>
+                        <MenuItem value="cheque">Cheque</MenuItem>
+                        <MenuItem value="imps_neft">BANKING/RTGS/NEFT</MenuItem>
+                        <MenuItem value="online">UPI/PhonePe/Gpay</MenuItem>
+                      </Select>
+                    </FormControl>
+                  </Grid>
+                  {formValues.payment_mode === "cheque" ? (
+                    <Grid item md={4} xs={12} className="create-input">
+                      <TextField
+                        label="Cheque No"
+                        variant="outlined"
+                        fullWidth
+                        value={formValues.cheque_no}
+                        onChange={(event) =>
+                          this.updateFormValue(event.target.value, "cheque_no")
+                        }
+                      />
+                    </Grid>
+                  ) : null}
+                  {formValues.payment_mode === "imps_neft" ||
+                  formValues.payment_mode === "upi" ? (
+                    <Grid item md={4} xs={12} className="create-input">
+                      <TextField
+                        label="Transaction #"
+                        variant="outlined"
+                        fullWidth
+                        value={formValues.txn_id}
+                        onChange={(event) =>
+                          this.updateFormValue(event.target.value, "txn_id")
+                        }
+                      />
+                    </Grid>
+                  ) : null}
+                  <Grid item md={4} xs={12} className="create-input">
+                    <TextareaAutosize
+                      className="description"
+                      minRows={1}
+                      placeholder="Notes"
+                      style={{ width: "100%", height: "51px" }}
+                      value={formValues.notes}
+                      onChange={(event) =>
+                        this.updateFormValue(event.target.value, "notes")
+                      }
+                    />
+                  </Grid>
+                  <Grid
+                    item
+                    md={4}
+                    xs={12}
+                    className="p-invoice-date create-input"
+                  >
+                    <LocalizationProvider dateAdapter={AdapterDayjs}>
+                      <DatePicker
+                        label="Due Date"
+                        value={formValues.due_date}
+                        inputFormat="DD/MM/YYYY"
+                        onChange={(newValue) =>
+                          this.updateFormValue(newValue, "due_date")
+                        }
+                        renderInput={(params) => (
+                          <TextField
+                            {...params}
+                            fullWidth
+                            error={formErros.due_date}
+                          />
+                        )}
+                      />
+                    </LocalizationProvider>
+                  </Grid>
+                  <Grid item xs={12}>
+                    <Stack
+                      spacing={1}
+                      direction="row"
+                      justifyContent="flex-end"
+                    >
+                      <Button
+                        variant="contained"
+                        type="button"
+                        disabled={this.state.processing}
+                        onClick={this.handleSubmit}
+                      >
+                        {this.state.processing ? "Processing" : "Submit"}
+                      </Button>
+                      <Button
+                        variant="outlined"
+                        onClick={this.handleDialogClose}
+                      >
+                        Cancel
+                      </Button>
+                    </Stack>
+                  </Grid>
+                </Grid>
+              </Box>
+            </DialogContent>
+          </Dialog>
+        </MainCard>
+      </>
     );
   }
 }
