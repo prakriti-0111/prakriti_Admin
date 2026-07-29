@@ -15,6 +15,7 @@ const initialState = {
     total_sale_paid: 0,
     total_sale_return: 0,
     item: null,
+    newDistributor: null,
     actionCalled: false,
     createSuccess: false,
     deleteSuccess: false,
@@ -36,6 +37,7 @@ export default function (state = initialState, action) {
                 ...state,
                 actionCalled: true,
                 createSuccess: payload.success,
+                newDistributor: payload.success ? payload.data : state.newDistributor,
                 successMessage: payload.success ? payload.message : null,
                 errorMessage: !payload.success ? payload.message : null,
             }
@@ -68,6 +70,7 @@ export default function (state = initialState, action) {
                 createSuccess: false,
                 deleteSuccess: false,
                 editSuccess: false,
+                newDistributor: null,
                 successMessage: null,
                 errorMessage: null
             }
