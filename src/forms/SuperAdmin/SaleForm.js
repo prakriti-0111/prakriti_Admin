@@ -82,6 +82,10 @@ import AddIcon from "@mui/icons-material/Add";
 
 import AdminForm from "forms/SuperAdmin/AdminForm";
 
+import DistributorForm from "forms/SuperAdmin/DistributorForm";
+
+import RetailerForm from "forms/SuperAdmin/RetailerForm";
+
 import { withSnackbar } from "notistack";
 
 const { updateSyncErrors } = require("redux-form/lib/actions").default;
@@ -397,6 +401,10 @@ class SaleForm extends React.Component {
       showAddAdminDialog: false,
 
       pendingAdminSelectId: null,
+
+      selectedUserOption: null,
+
+      userAutoSelected: false,
 
       isOnApprove: false,
 
@@ -1173,18 +1181,18 @@ class SaleForm extends React.Component {
   }
 
   async componentDidUpdate(prevProps, prevState) {
-    if (
-      this.state.pendingAdminSelectId &&
-      this.state.adminList !== prevState.adminList
-    ) {
-      let newlyCreatedAdmin = _.find(
-        this.state.adminList,
+    if (this.state.pendingAdminSelectId) {
+      let newlyCreatedUser = _.find(
+        this.getUserList(),
         (item) => String(item.id) === String(this.state.pendingAdminSelectId),
       );
-      if (newlyCreatedAdmin) {
+      if (newlyCreatedUser) {
         let pendingId = this.state.pendingAdminSelectId;
-        this.setState({ pendingAdminSelectId: null }, () =>
-          this.handleAdminChange(null, pendingId),
+        /* the company was picked for us by the inline creation, it is not
+           meant to be swapped afterwards */
+        this.setState(
+          { pendingAdminSelectId: null, userAutoSelected: true },
+          () => this.handleAdminChange(null, pendingId),
         );
       }
     }
@@ -1403,6 +1411,11 @@ class SaleForm extends React.Component {
       {
         user_gst_no: user_gst_no,
 
+        /* kept aside because the selection can outlive the list it came from:
+           picking an own company in the sale mode flips the form to transfer,
+           whose list is a different one */
+        selectedUserOption: selectedUser,
+
         formValues: {
           ...this.state.formValues,
 
@@ -1429,15 +1442,61 @@ class SaleForm extends React.Component {
     );
   };
 
-  handleAdminCreated = (newAdmin) => {
-    // adminList is resynced from props on every render (see
-    // getDerivedStateFromProps), so selecting the new admin has to wait
+  /**
+   * Which user the company picker can create inline, one level below the
+   * logged in role: Super Admin -> Admin, Admin -> Distributor,
+   * Distributor / Sales Executive -> Retailer. Transfers pick from an
+   * existing list only, so assigning gets no add option.
+   */
+  getAddUserConfig = () => {
+    if (this.state.isAssign) {
+      return null;
+    }
+
+    if (this.isSuperAdmin) {
+      return {
+        label: "Add New Admin",
+        title: "Add Admin",
+        Form: AdminForm,
+        refresh: () => this.props.actions.adminList({ all: 1 }),
+      };
+    }
+
+    if (this.isAdmin) {
+      return {
+        label: "Add New Distributor",
+        title: "Add Distributor",
+        Form: DistributorForm,
+        refresh: () => this.props.actions.distributorList({ all: 1 }),
+      };
+    }
+
+    if (this.isDistributor || this.isSalesExecutive) {
+      return {
+        label: "Add New Retailer",
+        title: "Add Retailer",
+        Form: RetailerForm,
+        refresh: () => this.props.actions.retailerList({ all: 1 }),
+      };
+    }
+
+    return null;
+  };
+
+  handleAdminCreated = (newUser) => {
+    // the lists are resynced from props on every render (see
+    // getDerivedStateFromProps), so selecting the new user has to wait
     // for the refreshed list to actually arrive — see componentDidUpdate
+    let addConfig = this.getAddUserConfig();
+
     this.setState({
       showAddAdminDialog: false,
-      pendingAdminSelectId: newAdmin && newAdmin.id ? newAdmin.id : null,
+      pendingAdminSelectId: newUser && newUser.id ? newUser.id : null,
     });
-    this.props.actions.adminList({ all: 1 });
+
+    if (addConfig) {
+      addConfig.refresh();
+    }
   };
 
   setAdminDetails = () => {
@@ -4413,12 +4472,32 @@ class SaleForm extends React.Component {
 
     let userIdValue = user.length ? user[0] : null;
 
-    // only the plain admin picker (Super Admin, not assigning) creates admins inline
-    const canAddAdmin = this.isSuperAdmin && !this.state.isAssign;
-    const ADD_ADMIN_OPTION = { id: "__add_admin__", company_name: "Add New Admin" };
-    let userListWithAddOption = canAddAdmin
+    /* the selected user is not always part of the list of the current mode:
+       picking an own company on a sale switches the form to a transfer, whose
+       list is built from other roles, so fall back to what was picked instead
+       of leaving the field blank */
+    if (
+      !userIdValue &&
+      formValues.user_id &&
+      this.state.selectedUserOption &&
+      String(this.state.selectedUserOption.id) === String(formValues.user_id)
+    ) {
+      userIdValue = this.state.selectedUserOption;
+    }
+
+    // the company picker creates the next user down the chain inline
+    const addConfig = this.getAddUserConfig();
+    const ADD_ADMIN_OPTION = {
+      id: "__add_admin__",
+      company_name: addConfig ? addConfig.label : "",
+    };
+    let userListWithAddOption = addConfig
       ? [...userList, ADD_ADMIN_OPTION]
       : userList;
+
+    if (userIdValue && !user.length) {
+      userListWithAddOption = [userIdValue, ...userListWithAddOption];
+    }
 
     /* the company is picked for us, either from a sale on approval or after
        an inline admin creation, both wait on the user list to arrive */
@@ -4651,30 +4730,32 @@ class SaleForm extends React.Component {
                     value={userIdValue}
                     autoHighlight
                     getOptionLabel={(option) =>
-                      this.state.isAssign ? option.name : option.company_name
+                      (this.state.isAssign
+                        ? option.name || option.company_name
+                        : option.company_name || option.name) || ""
                     }
                     renderOption={(props, option) =>
                       option.id === ADD_ADMIN_OPTION.id ? (
                         <li {...props} key={option.id}>
                           <AddIcon fontSize="small" sx={{ mr: 1 }} />
-                          Add New Admin
+                          {ADD_ADMIN_OPTION.company_name}
                         </li>
                       ) : (
                         <li {...props} key={option.id}>
                           {" "}
                           {this.state.isAssign
-                            ? option.name +
+                            ? (option.name || option.company_name || "") +
                               " - " +
-                              (option.user_name.search("RVE") != -1
+                              ((option.user_name || "").search("RVE") != -1
                                 ? "SE "
                                 : "") +
-                              (option.user_name.search("RVA") != -1
+                              ((option.user_name || "").search("RVA") != -1
                                 ? "Admin "
                                 : "") +
-                              (option.user_name.search("RVD") != -1
+                              ((option.user_name || "").search("RVD") != -1
                                 ? "Distributor"
                                 : "") +
-                              (option.user_name.search("RVR") != -1
+                              ((option.user_name || "").search("RVR") != -1
                                 ? "Retailer"
                                 : "")
                             : option.company_name + "( " + option.city + " )"}
@@ -4720,7 +4801,11 @@ class SaleForm extends React.Component {
                     disabled={
                       !this.state.isCreateFrom ||
                       (order ? true : false) ||
-                      selectingUser
+                      selectingUser ||
+                      this.state.userAutoSelected ||
+                      /* a sale on approval brings its own company, it is not
+                         changeable nor clearable */
+                      !isEmpty(this.props.query.get("sale_on_approval"))
                     }
                   />
                 )}
@@ -4733,7 +4818,7 @@ class SaleForm extends React.Component {
                 maxWidth="xl"
               >
                 <DialogTitle>
-                  Add Admin
+                  {addConfig ? addConfig.title : ""}
                   <IconButton
                     onClick={() =>
                       this.setState({ showAddAdminDialog: false })
@@ -4744,8 +4829,10 @@ class SaleForm extends React.Component {
                   </IconButton>
                 </DialogTitle>
                 <DialogContent dividers>
-                  {this.state.showAddAdminDialog ? (
-                    <AdminForm onCreateSuccess={this.handleAdminCreated} />
+                  {this.state.showAddAdminDialog && addConfig ? (
+                    <addConfig.Form
+                      onCreateSuccess={this.handleAdminCreated}
+                    />
                   ) : null}
                 </DialogContent>
               </Dialog>

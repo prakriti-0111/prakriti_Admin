@@ -16,6 +16,7 @@ const initialState = {
     total_sale_paid: 0,
     total_sale_return: 0,
     item: null,
+    newRetailer: null,
     actionCalled: false,
     createSuccess: false,
     deleteSuccess: false,
@@ -39,6 +40,7 @@ export default function (state = initialState, action) {
                 ...state,
                 actionCalled: true,
                 createSuccess: payload.success,
+                newRetailer: payload.success ? payload.data : state.newRetailer,
                 successMessage: payload.success ? payload.message : null,
                 errorMessage: !payload.success ? payload.message : null,
             }
@@ -71,6 +73,7 @@ export default function (state = initialState, action) {
                 createSuccess: false,
                 deleteSuccess: false,
                 editSuccess: false,
+                newRetailer: null,
                 successMessage: null,
                 errorMessage: null
             }

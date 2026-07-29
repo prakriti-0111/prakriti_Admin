@@ -3,10 +3,15 @@ import {
     LIST_COMPANY_DETAILS,
     UPDATE_COMPANY_DETAILS,
 } from '../../actionTypes/superadmin/companyDetails.types';
+import { isAdmin } from 'src/helpers/helper';
+
+const getApiPrefix = () => {
+    return isAdmin() ? '/admin' : '/superadmin';
+};
 
 export const companyDetailsList = () => {
     return (dispatch) => {
-        axios.get(`/superadmin/company-details`)
+        axios.get(`${getApiPrefix()}/company-details`)
             .then(response => {
                 dispatch({
                     type: LIST_COMPANY_DETAILS,
@@ -14,7 +19,6 @@ export const companyDetailsList = () => {
                 });
             })
             .catch(() => {
-                // dispatch empty so spinner stops
                 dispatch({ type: LIST_COMPANY_DETAILS, payload: {} });
             });
     };
@@ -22,7 +26,7 @@ export const companyDetailsList = () => {
 
 export const companyDetailsUpdate = (data) => {
     return (dispatch) => {
-        axios.post(`/superadmin/company-details/update`, data)
+        axios.post(`${getApiPrefix()}/company-details/update`, data)
             .then(response => {
                 dispatch({ type: UPDATE_COMPANY_DETAILS, payload: response.data });
             })

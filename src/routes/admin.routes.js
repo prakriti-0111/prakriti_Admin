@@ -269,6 +269,9 @@ const EditProfilePage = Loadable(
 const ChangePasswordPage = Loadable(
   lazy(() => import("../pages/Admin/Profile/ChangePassword")),
 );
+const CompanyDetailsPage = Loadable(
+  lazy(() => import("../pages/SuperAdmin/CompanyDetails")),
+);
 
 //roles
 const RolePage = Loadable(lazy(() => import("../pages/SuperAdmin/Role")));
@@ -552,6 +555,10 @@ const AdminRoutes = (isLoggedIn) => [
       {
         path: "change-password",
         element: <ChangePasswordPage />,
+      },
+      {
+        path: "company-details",
+        element: <CompanyDetailsPage />,
       },
       {
         path: "roles",
