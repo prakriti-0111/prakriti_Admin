@@ -1,28 +1,36 @@
 import { React, Component } from 'react';
 import { connect } from 'react-redux';
-import { Avatar, CssBaseline, Link, Box, Typography, Container, Alert, Grid, TextField, Button } from '@mui/material';
+import { Avatar, CssBaseline, Link, Box, Typography, Container, Alert, Grid, TextField, Button, InputAdornment } from '@mui/material';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
-import MarkEmailReadOutlinedIcon from '@mui/icons-material/MarkEmailReadOutlined';
-import { forgotPasswordSendLink } from 'actions/admin/auth.actions';
+import Visibility from '@mui/icons-material/Visibility';
+import VisibilityOff from '@mui/icons-material/VisibilityOff';
+import { resetPassword } from 'actions/team/auth.actions';
 import { bindActionCreators } from 'redux';
 import withRouter from 'src/helpers/withRouter';
 import { getUserDashboardRoute, getRoleName } from 'src/helpers/helper';
 import { withSnackbar } from 'notistack';
 
-const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const LOGIN_ROUTE = '/login';
 
-class ForgotPassword extends Component {
+class ResetPassword extends Component {
 
     constructor(props) {
         super(props);
 
+        const params = new URLSearchParams(window.location.search);
+
         this.state = {
             isLoggedIn: this.props.isLoggedIn,
+            token: params.get('token') || '',
+            email: params.get('email') || '',
+            new_password: '',
+            confirm_new_password: '',
+            new_password_err: '',
+            confirm_new_password_err: '',
             resErr: '',
-            email: '',
-            email_err: '',
             processing: false,
-            sent: false,
+            passwordShow1: false,
+            passwordShow2: false,
         }
     }
 
@@ -41,14 +49,23 @@ class ForgotPassword extends Component {
 
     formValidate = () => {
         let err = false;
-        if (!this.state.email) {
-            this.setState({ email_err: 'Required.' });
+        if (!this.state.new_password) {
+            this.setState({ new_password_err: 'Required.' });
             err = true;
-        } else if (!EMAIL_REGEX.test(this.state.email)) {
-            this.setState({ email_err: 'Enter a valid email address.' });
+        } else if (this.state.new_password.length < 8) {
+            this.setState({ new_password_err: 'At least 8 characters.' });
             err = true;
         } else {
-            this.setState({ email_err: '' });
+            this.setState({ new_password_err: '' });
+        }
+        if (!this.state.confirm_new_password) {
+            this.setState({ confirm_new_password_err: 'Required.' });
+            err = true;
+        } else if (this.state.new_password && this.state.confirm_new_password !== this.state.new_password) {
+            this.setState({ confirm_new_password_err: 'Passwords do not match.' });
+            err = true;
+        } else {
+            this.setState({ confirm_new_password_err: '' });
         }
         return !err;
     }
@@ -59,10 +76,17 @@ class ForgotPassword extends Component {
 
         this.setState({ resErr: '', processing: true });
         try {
-            let res = await forgotPasswordSendLink({ email: this.state.email.trim() });
+            let res = await resetPassword({
+                email: this.state.email,
+                token: this.state.token,
+                new_password: this.state.new_password,
+                confirm_new_password: this.state.confirm_new_password,
+            });
             if (res.data.success) {
                 this.props.enqueueSnackbar(res.data.message, { variant: 'success' });
-                this.setState({ processing: false, sent: true });
+                this.setState({ processing: false }, () => {
+                    this.props.navigate(LOGIN_ROUTE);
+                });
             } else {
                 this.setState({ processing: false, resErr: res.data.message });
             }
@@ -72,7 +96,9 @@ class ForgotPassword extends Component {
     }
 
     render() {
-        const { resErr, sent } = this.state;
+        const { resErr } = this.state;
+        const invalidLink = !this.state.token || !this.state.email;
+
         return (
             <div className='super-admin-login'>
                 <div className="square-box">
@@ -85,10 +111,10 @@ class ForgotPassword extends Component {
                     <div className='login-wrapper'>
                         <Box sx={{ marginTop: 8, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                             <Avatar sx={{ m: 1, bgcolor: 'secondary.main' }} className='login-icon'>
-                                {sent ? <MarkEmailReadOutlinedIcon /> : <LockOutlinedIcon />}
+                                <LockOutlinedIcon />
                             </Avatar>
                             <Typography component="h1" variant="h5">
-                                {sent ? 'Check your email' : 'Forgot Password'}
+                                Reset Password
                             </Typography>
 
                             {resErr ?
@@ -97,39 +123,53 @@ class ForgotPassword extends Component {
                                 </Box>
                                 : null}
 
-                            {sent ?
+                            {invalidLink ?
                                 <Box sx={{ mt: 2, width: 1, textAlign: 'center' }}>
-                                    <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                                        If an account exists for <strong>{this.state.email.trim()}</strong>, we've sent a
-                                        password reset link. The link expires in 60 minutes.
-                                    </Typography>
+                                    <Alert severity="warning" sx={{ mb: 3 }}>
+                                        This password reset link is invalid or incomplete. Please request a new one.
+                                    </Alert>
                                     <Button
                                         className='signin-btn'
                                         fullWidth
                                         variant="contained"
-                                        sx={{ mt: 1, mb: 2 }}
-                                        onClick={() => this.props.navigate('/admin/login')}
+                                        onClick={() => this.props.navigate('/forgot-password')}
                                     >
-                                        Back to Login
+                                        Request New Link
                                     </Button>
                                 </Box>
                                 :
                                 <form onSubmit={this.handleSubmit}>
                                     <Box sx={{ mt: 1 }} className='myinput'>
                                         <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                                            Enter your registered email and we'll send you a link to reset your password.
+                                            Set a new password for <strong>{this.state.email}</strong>.
                                         </Typography>
                                         <TextField
-                                            label="Email"
+                                            label="New Password"
                                             margin="normal"
-                                            name="email"
-                                            type="email"
-                                            value={this.state.email}
+                                            name="new_password"
+                                            type={this.state.passwordShow1 ? "text" : "password"}
+                                            value={this.state.new_password}
                                             fullWidth
-                                            autoFocus
-                                            error={this.state.email_err ? true : false}
-                                            helperText={this.state.email_err ? this.state.email_err : ''}
+                                            error={this.state.new_password_err ? true : false}
+                                            helperText={this.state.new_password_err ? this.state.new_password_err : 'At least 8 characters'}
                                             onChange={this.handleChange}
+                                            InputProps={{
+                                                endAdornment: <InputAdornment position="end">{this.state.passwordShow1 ? <Visibility onClick={() => this.setState({ passwordShow1: false })} /> : <VisibilityOff onClick={() => this.setState({ passwordShow1: true })} />}</InputAdornment>,
+                                            }}
+                                        />
+                                        <TextField
+                                            label="Confirm New Password"
+                                            margin="normal"
+                                            name="confirm_new_password"
+                                            type={this.state.passwordShow2 ? "text" : "password"}
+                                            value={this.state.confirm_new_password}
+                                            fullWidth
+                                            error={this.state.confirm_new_password_err ? true : false}
+                                            helperText={this.state.confirm_new_password_err ? this.state.confirm_new_password_err : ''}
+                                            onChange={this.handleChange}
+                                            InputProps={{
+                                                endAdornment: <InputAdornment position="end">{this.state.passwordShow2 ? <Visibility onClick={() => this.setState({ passwordShow2: false })} /> : <VisibilityOff onClick={() => this.setState({ passwordShow2: true })} />}</InputAdornment>,
+                                            }}
                                         />
                                         <Button
                                             className='signin-btn'
@@ -139,12 +179,12 @@ class ForgotPassword extends Component {
                                             sx={{ mt: 3, mb: 2 }}
                                             disabled={this.state.processing}
                                         >
-                                            {this.state.processing ? "Sending..." : "Send Reset Link"}
+                                            {this.state.processing ? "Resetting..." : "Reset Password"}
                                         </Button>
                                         <Grid container>
                                             <Grid item xs>
-                                                <Link href="/admin/login" variant="body2" className='forget-text'>
-                                                    Already have an account?
+                                                <Link href="/login" variant="body2" className='forget-text'>
+                                                    Back to Login
                                                 </Link>
                                             </Grid>
                                         </Grid>
@@ -175,4 +215,4 @@ const mapDispatchToProps = dispatch => ({
     actions: bindActionCreators({}, dispatch)
 });
 
-export default withSnackbar(withRouter(connect(mapStateToProps, mapDispatchToProps)(ForgotPassword)));
+export default withSnackbar(withRouter(connect(mapStateToProps, mapDispatchToProps)(ResetPassword)));
