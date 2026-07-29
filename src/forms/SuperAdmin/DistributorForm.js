@@ -272,11 +272,16 @@ class DistributorForm extends React.Component {
         if(this.state.actionCalled){
             if(this.state.isCreateFrom){
                 if(this.state.createSuccess){
+                    let createdDistributor = this.props.newDistributor;
                     this.props.enqueueSnackbar(this.state.successMessage, {variant: 'success'});
                     this.props.dispatch({
                         type: SUPERADMIN_RESET_DISTRIBUTOR
                     });
-                    this.props.navigate(getUserDashboardRoute(getRoleName(this.state.auth)) + '/distributors');
+                    if(this.props.onCreateSuccess){
+                        this.props.onCreateSuccess(createdDistributor);
+                    }else{
+                        this.props.navigate(getUserDashboardRoute(getRoleName(this.state.auth)) + '/distributors');
+                    }
                 }else{
                     this.setState({
                         submitting: false
@@ -1297,6 +1302,7 @@ class DistributorForm extends React.Component {
 const mapStateToProps = (state) => ({
     actionCalled: state.superadmin.distributor.actionCalled,
     createSuccess: state.superadmin.distributor.createSuccess,
+    newDistributor: state.superadmin.distributor.newDistributor,
     editSuccess: state.superadmin.distributor.editSuccess,
     successMessage: state.superadmin.distributor.successMessage,
     errorMessage: state.superadmin.distributor.errorMessage,

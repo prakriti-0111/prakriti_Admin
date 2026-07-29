@@ -592,11 +592,9 @@ class StockPage extends Component {
   };
 
   handleImageClick = (imageUrl, row, imageMeta = {}) => {
-    const isSuperAdminUser = isMainSuperAdmin();
-    const isAdminUser = isAdmin();
     const isBrokenImage = imageMeta.isImageLoaded === false;
-    const canUpdateImage =
-      row && (isSuperAdminUser || (isAdminUser && isBrokenImage));
+    // admins update any stock image, same as the main super admin
+    const canUpdateImage = row && (isMainSuperAdmin() || isAdmin());
 
     if (canUpdateImage) {
       this.setState({
