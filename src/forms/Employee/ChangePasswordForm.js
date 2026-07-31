@@ -130,6 +130,16 @@ class ChangePasswordForm extends React.Component {
         }else{
             formErros.confirm_password = false;
         }
+        // New password must be at least 8 characters - matches the reset-password rule.
+        if(!isEmpty(formValues.password) && formValues.password.length < 8){
+            formErros.password = true;
+            hasErr = true;
+            this.props.enqueueSnackbar('Password must be at least 8 characters.', {variant: 'error'});
+        }else if(!isEmpty(formValues.password) && !isEmpty(formValues.confirm_password) && formValues.password !== formValues.confirm_password){
+            formErros.confirm_password = true;
+            hasErr = true;
+            this.props.enqueueSnackbar("Password and confirm password doesn't match", {variant: 'error'});
+        }
         this.setState({
             formErros: formErros
         });
