@@ -237,11 +237,16 @@ class RetailerForm extends React.Component {
         if(this.state.actionCalled){
             if(this.state.isCreateFrom){
                 if(this.state.createSuccess){
+                    let createdRetailer = this.props.newRetailer;
                     this.props.enqueueSnackbar(this.state.successMessage, {variant: 'success'});
                     this.props.dispatch({
                         type: SUPERADMIN_RESET_RETAILER
                     });
-                    this.props.navigate(-1);
+                    if(this.props.onCreateSuccess){
+                        this.props.onCreateSuccess(createdRetailer);
+                    }else{
+                        this.props.navigate(-1);
+                    }
                 }else{
                     this.setState({
                         submitting: false
@@ -1237,6 +1242,7 @@ class RetailerForm extends React.Component {
 const mapStateToProps = (state) => ({
     actionCalled: state.superadmin.retailer.actionCalled,
     createSuccess: state.superadmin.retailer.createSuccess,
+    newRetailer: state.superadmin.retailer.newRetailer,
     editSuccess: state.superadmin.retailer.editSuccess,
     successMessage: state.superadmin.retailer.successMessage,
     errorMessage: state.superadmin.retailer.errorMessage,

@@ -333,7 +333,12 @@ class ProductForm extends React.Component {
 
   getGapStartIndex = (indexValue) => {
     const sizeId = this.getGapStartSizeId(indexValue);
-    const idx = _.findIndex(this.state.size_materials, { size_id: sizeId });
+    // native <select> values are always strings, so size_id must be
+    // compared loosely against the (often numeric) stored id
+    const idx = _.findIndex(
+      this.state.size_materials,
+      (sm) => sm.size_id == sizeId,
+    );
     return idx === -1 ? 0 : idx;
   };
 
@@ -350,7 +355,10 @@ class ProductForm extends React.Component {
 
   getGapEndIndex = (indexValue) => {
     const sizeId = this.getGapEndSizeId(indexValue);
-    const idx = _.findIndex(this.state.size_materials, { size_id: sizeId });
+    const idx = _.findIndex(
+      this.state.size_materials,
+      (sm) => sm.size_id == sizeId,
+    );
     return idx === -1 ? this.state.size_materials.length - 1 : idx;
   };
 
@@ -1886,21 +1894,6 @@ class ProductForm extends React.Component {
             {this.state.product_type != "material" ? (
               <React.Fragment>
                 <Grid item xs={6} md={3} className="create-input">
-                  <Field
-                    className="input-inner"
-                    name="materials"
-                    component={this.renderMaterialsField}
-                    label="Materials"
-                    multi
-                    type="select"
-                    defaultValue={[]}
-                    onChange={(event, val) =>
-                      this.handleMaterialsChange(event, val)
-                    }
-                    disabled={onlyView}
-                  />
-                </Grid>
-                <Grid item xs={6} md={3} className="create-input">
                   {/* <Field
                       className='input-inner'
                       name="sizes"
@@ -1920,6 +1913,21 @@ class ProductForm extends React.Component {
                     type="select"
                     defaultValue={[]}
                     onChange={(event, val) => this.handleSizeChange(event, val)}
+                    disabled={onlyView}
+                  />
+                </Grid>
+                <Grid item xs={6} md={3} className="create-input">
+                  <Field
+                    className="input-inner"
+                    name="materials"
+                    component={this.renderMaterialsField}
+                    label="Materials"
+                    multi
+                    type="select"
+                    defaultValue={[]}
+                    onChange={(event, val) =>
+                      this.handleMaterialsChange(event, val)
+                    }
                     disabled={onlyView}
                   />
                 </Grid>

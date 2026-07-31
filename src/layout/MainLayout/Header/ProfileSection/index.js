@@ -50,7 +50,7 @@ import PerfectScrollbar from 'react-perfect-scrollbar';
 import MainCard from 'ui-component/cards/MainCard';
 import Transitions from 'ui-component/extended/Transitions';
 import User1 from 'assets/images/users/user.jpg';
-import { isSalesExecutive, isSuperAdmin, hasPermission, isEmployee } from 'src/helpers/helper';
+import { isSalesExecutive, isSuperAdmin, isAdmin, hasPermission, isEmployee } from 'src/helpers/helper';
 
 // assets
 import { IconLogout, IconSearch, IconSettings, IconUser, IconUserCircle, IconLock, IconCalendarEvent } from '@tabler/icons';
@@ -79,6 +79,7 @@ class ProfileSection extends Component {
         }
         this.isSalesExecutive = isSalesExecutive();
         this.isSuperAdmin = isSuperAdmin();
+        this.isAdmin = isAdmin();
         this.isEmployee = isEmployee();
     }
 
@@ -412,6 +413,21 @@ class ProfileSection extends Component {
                                                         </ListItemIcon>
                                                         <ListItemText primary={<Typography variant="body2">Edit Profile</Typography>} />
                                                     </ListItemButton>
+                                                    {
+                                                        this.isSuperAdmin || this.isAdmin ?
+                                                        <ListItemButton
+                                                            className='profile-dropdown'
+                                                            sx={{ borderRadius: `${customization.borderRadius}px` }}
+                                                            selected={selectedIndex === 2}
+                                                            onClick={(event) => handleListItemClick(event, 2, (this.isAdmin ? '/admin' : '/super-admin') + '/company-details')}
+                                                        >
+                                                            <ListItemIcon className='company-details-icon'>
+                                                                <IconSettings stroke={1.5} size="1.3rem" />
+                                                            </ListItemIcon>
+                                                            <ListItemText primary={<Typography variant="body2">Company Details</Typography>} />
+                                                        </ListItemButton>
+                                                        : null
+                                                    }
                                                     <ListItemButton
                                                         className='profile-dropdown'
                                                         sx={{ borderRadius: `${customization.borderRadius}px` }}
