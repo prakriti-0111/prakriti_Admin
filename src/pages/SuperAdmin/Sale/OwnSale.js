@@ -15,7 +15,7 @@ import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import moment from 'moment';
-import {isSuperAdmin, isDistributor, isAdmin, isSalesExecutive, hasPermission} from 'src/helpers/helper';
+import {isSuperAdmin, isDistributor, isAdmin, isSalesExecutive, hasPermission, filterOwnRetailers} from 'src/helpers/helper';
 import { retailerList } from 'actions/superadmin/retailer.actions';
 import { distributorList } from 'actions/superadmin/distributor.actions';
 import { salesExecutiveList } from 'actions/superadmin/salesExecutive.actions';
@@ -108,12 +108,15 @@ class OwnSalePage extends Component {
     this.loadListData();
     if(this.isSuperAdmin){
       this.props.actions.adminList({ all: 1 });
+      this.props.actions.retailerList({ all: 1, my_retailer: 1 });
     }else if(this.isAdmin){
       this.props.actions.distributorList({ all: 1 });
+      this.props.actions.salesExecutiveList({ all: 1, role_id: 4 });
+      this.props.actions.retailerList({ all: 1, my_retailer: 1 });
     }else if(this.isDistributor){
-      this.props.actions.retailerList({ all: 1 });
+      this.props.actions.retailerList({ all: 1, my_retailer: 1 });
     }else if(this.isSalesExecutive){
-      this.props.actions.retailerList({ all: 1 });
+      this.props.actions.retailerList({ all: 1, my_retailer: 1 });
     }
   }
 
@@ -145,6 +148,9 @@ class OwnSalePage extends Component {
     }
     if (props.retailerList !== state.retailerList) {
       update.retailerList = props.retailerList;
+    }
+    if (props.salesExecutiveList !== state.salesExecutiveList) {
+      update.salesExecutiveList = props.salesExecutiveList;
     }
     if (props.permissions !== state.permissions) {
       update.permissions = props.permissions;
@@ -241,9 +247,14 @@ class OwnSalePage extends Component {
   getUserList = () => {
     let userList = [];
     if(this.isSuperAdmin){
-        userList = this.state.adminList;
+        userList = this.state.adminList.concat(this.state.retailerList);
     }else if(this.isAdmin){
-        userList = this.state.distributorList;
+        userList = this.state.distributorList.concat(
+          filterOwnRetailers(
+            this.state.retailerList,
+            this.state.distributorList.concat(this.state.salesExecutiveList),
+          ),
+        );
     }else if(this.isDistributor){
       userList = this.state.retailerList;
     }else if(this.isSalesExecutive){
@@ -256,9 +267,9 @@ class OwnSalePage extends Component {
     let userList = this.getUserList();
     let userLabel = '';
     if(this.isSuperAdmin){
-      userLabel = 'Admin';
+      userLabel = 'Admin / Retailer';
     }else if(this.isAdmin){
-      userLabel = 'Distributor';
+      userLabel = 'Distributor / Retailer';
     }else if(this.isDistributor){
       userLabel = 'Retailer';
     }else if(this.isSalesExecutive){

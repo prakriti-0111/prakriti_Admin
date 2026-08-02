@@ -62,6 +62,7 @@ import {
 import { paymentStore, paymentList } from "actions/superadmin/payment.actions";
 import { SUPERADMIN_RESET_PAYMENT } from "../../../actionTypes/superadmin/payment.types";
 import { getNotifiactions } from "actions/superadmin/notification.actions";
+import axios from 'axios';
 import FileDownloadIcon from "@mui/icons-material/FileDownload";
 import { stocksList } from "actions/superadmin/stocks.actions";
 import { stocksTransferHistoryStore } from "actions/superadmin/stockHistory.actions";
@@ -98,6 +99,10 @@ class SaleViewPage extends React.Component {
       paymentOpen: false,
       productListOpen: false,
       activeTab: "section-sale-details",
+      liveGoldPerGram: 0,
+      liveGoldPriceDisplay: '',
+      selectedPurityLabel: '',
+      selectedPurityPerGram: 0,
     };
 
     this.columns = [
@@ -337,6 +342,15 @@ class SaleViewPage extends React.Component {
   }
 
   handlePayNow = () => {
+    axios.get('https://n8n.prakriti.one/webhook/gold-rate-india')
+      .then(res => {
+        if (res.data && res.data.per_gram) {
+          const liveGoldPerGram = res.data.per_gram['24K'];
+          const liveGoldPriceDisplay = res.data.display || `₹${liveGoldPerGram.toLocaleString('en-IN')}`;
+          this.setState({ liveGoldPerGram, liveGoldPriceDisplay });
+        }
+      })
+      .catch(() => {});
     this.props.actions.stocksList({
       page: 1,
       limit: 50,
@@ -410,30 +424,66 @@ class SaleViewPage extends React.Component {
     };
   };
 
+  // Per-gram rate for the selected purity, e.g. 24 Carat (99.5%) of a
+  // 24K spot of 14422 is 14349.89 - the figure shown on the purity chip.
+  getQuotedMetalRate = () => {
+    const { liveGoldPerGram, formValues } = this.state;
+    if (!(liveGoldPerGram > 0)) return null;
+    const purity = (this.props.purityItems || []).find(
+      (p) => p.id == formValues.purity_id
+    );
+    const purityPct = parseFloat(purity?.value) || 100;
+    return parseFloat((liveGoldPerGram * purityPct / 100).toFixed(2));
+  };
+
   handleSubmit = async () => {
     if (!this.formValidate()) {
-      this.setState({
-        processing: true,
+      this.setState({ processing: true });
+      const { formValues, sale } = this.state;
+      const isMetalPayment = formValues.payment_mode === 'metal';
+      const totalAmount = parseFloat(formValues.amount) || 0;
+      // Store the rate the operator was actually quoted - the purity rate,
+      // which applies to the gross weight. Deriving amount/fine_weight later
+      // would give the 24K rate instead, which is not what was agreed.
+      const metalRate = this.getQuotedMetalRate();
+
+      // 1. Record payment against the sale
+      this.props.actions.paymentStore({
+        ...formValues,
+        amount: totalAmount,
+        metal_rate: isMetalPayment ? metalRate : null,
+        user_id: sale.user_id,
+        table_id: sale.id,
+        effective_weight: isMetalPayment ? formValues.weight : formValues.effective_weight,
       });
-      let data = {
-        ...this.state.formValues,
-        user_id: this.state.sale.user_id,
-        table_id: this.state.sale.id,
-      };
-      this.props.actions.paymentStore(data);
-      await stocksTransferHistoryStore({
-        from_user_id: this.state.sale.user_id,
-        to_user_id: this.state.sale.sale_by_id,
-        material_id: this.state.formValues.material_id,
-        quantity: 0,
-        //material_stocks: this.state.materialStocks,
-        payment_mode: this.state.formValues.payment_mode,
-        amount: this.state.formValues.amount,
-        purity_id: this.state.formValues.purity_id,
-        unit_id: this.state.formValues.unit_id,
-        weight: this.state.formValues.weight,
-        effective_weight: this.state.formValues.effective_weight,
-      });
+
+      // 2. Transfer metal from buyer to seller's material stock
+      if (isMetalPayment) {
+        try {
+          const stockRes = await stocksTransferHistoryStore({
+            from_user_id: sale.user_id,
+            to_user_id: sale.sale_by_id,
+            material_id: formValues.material_id,
+            quantity: 0,
+            payment_mode: 'metal',
+            amount: totalAmount,
+            metal_rate: metalRate,
+            ref_no: sale.invoice_number || `SALE-${sale.id}`,
+            purity_id: formValues.purity_id || '',
+            unit_id: formValues.unit_id || '',
+            weight: formValues.weight,
+            effective_weight: formValues.effective_weight || formValues.weight,
+          });
+          if (!stockRes?.data?.success) {
+            this.props.enqueueSnackbar(
+              stockRes?.data?.message || 'Metal stock update failed.',
+              { variant: 'warning' }
+            );
+          }
+        } catch (e) {
+          this.props.enqueueSnackbar('Metal stock update failed.', { variant: 'warning' });
+        }
+      }
     }
   };
 
@@ -441,14 +491,11 @@ class SaleViewPage extends React.Component {
     let formValues = this.state.formValues;
     let formErros = this.state.formErros;
     let hasErr = false;
-    if (
-      parseFloat(formValues.amount) > parseFloat(this.state.sale.due_amount)
-    ) {
+    const isMetalPayment = formValues.payment_mode === 'metal';
+    // Nothing absorbs an over-payment any more, so no mode may exceed the due.
+    if (parseFloat(formValues.amount) > parseFloat(this.state.sale.due_amount)) {
       hasErr = true;
-      this.props.enqueueSnackbar(
-        "Amount must be less than or equal due amount.",
-        { variant: "error" },
-      );
+      this.props.enqueueSnackbar("Amount must be less than or equal due amount.", { variant: "error" });
     }
     if (isEmpty(formValues.amount)) {
       formErros.amount = true;
@@ -565,9 +612,57 @@ class SaleViewPage extends React.Component {
           id: item.id,
           value: item.value,
           name: item.name + `${item.value ? "(" + item.value + "%)" : ""}`,
+          label: item.name,
         });
       });
     }
+    const extractPurityPct = (purity_name) => {
+      const pctMatch = (purity_name || '').match(/\((\d+\.?\d*)%\)/);
+      if (pctMatch) return parseFloat(pctMatch[1]);
+      const caratMatch = (purity_name || '').match(/(\d+\.?\d*)\s*(?:carat|k)\b/i);
+      if (caratMatch) return (parseFloat(caratMatch[1]) / 24) * 100;
+      return 0;
+    };
+    // Build purity lookup from purityItems (name → value%) for fallback
+    const purityLookup = {};
+    (this.props.purityItems || []).forEach(item => {
+      if (item.name && item.value) purityLookup[item.name.trim()] = parseFloat(item.value);
+    });
+    // Invoice fine metal: 18K gold × 76% = fine gold (24K equivalent)
+    let invoiceFineWeight = 0;
+    if (sale) {
+      (sale.products || []).forEach(product => {
+        (product.materials || []).forEach(material => {
+          if ((material.material_name || '').toLowerCase().includes('gold')) {
+            const pakka = parseFloat(material.pakka_weight) || 0;
+            if (pakka > 0) {
+              invoiceFineWeight += pakka;
+            } else {
+              const w = parseFloat(material.weight) || 0;
+              // Try regex, then purityItems lookup, then carat extraction
+              let purityPct = extractPurityPct(material.purity_name);
+              if (!purityPct && material.purity_name) {
+                purityPct = purityLookup[material.purity_name.trim()] || 0;
+              }
+              if (purityPct > 0 && w > 0) {
+                invoiceFineWeight += w * purityPct / 100;
+              }
+            }
+          }
+        });
+      });
+    }
+    // Metal already paid on this invoice. The API stores effective_weight in
+    // payments.weight, so that column is the fine (24K) weight settled so far.
+    const paidFineWeight = (this.state.items || []).reduce(
+      (sum, row) => sum + (parseFloat(row.weight) || 0), 0
+    );
+    // Fine weight still payable in metal — fixed by the invoice, less what's paid.
+    const calculatedFineWeight = invoiceFineWeight > 0
+      ? Math.max(invoiceFineWeight - paidFineWeight, 0)
+      : null;
+    const selectedPurityForFine = metalPurityList.find(p => p.id == formValues.purity_id);
+    const selectedPurityPct = parseFloat(selectedPurityForFine?.value) || 0;
     console.log("sale : ", sale);
 
     return (
@@ -1596,7 +1691,17 @@ class SaleViewPage extends React.Component {
             fullWidth
             maxWidth="md"
           >
-            <DialogTitle>Pay Now</DialogTitle>
+            <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', pr: 3 }}>
+              <span>Pay Now</span>
+              {this.state.liveGoldPriceDisplay ? (
+                <Chip
+                  label={`${this.state.selectedPurityLabel || '24K'}:- ₹${(this.state.selectedPurityPerGram > 0 ? this.state.selectedPurityPerGram : this.state.liveGoldPerGram).toLocaleString('en-IN')}/gm`}
+                  size="small"
+                  color="warning"
+                  variant="outlined"
+                />
+              ) : null}
+            </DialogTitle>
             <DialogContent>
               <DialogContentText></DialogContentText>
               <Box sx={{ flexGrow: 1, m: 0.5 }}>
@@ -1700,6 +1805,23 @@ class SaleViewPage extends React.Component {
                   ) : null}
                   {formValues.payment_mode == "metal" ? (
                     <>
+                      {calculatedFineWeight !== null && (
+                        <Grid item xs={12} className="create-input">
+                          <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 1, p: '6px 12px', bgcolor: '#e8f5e9', borderRadius: 1 }}>
+                            <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 500 }}>
+                              Fine Metal ({selectedPurityForFine?.label || selectedPurityForFine?.name}):
+                            </Typography>
+                            <Typography variant="body2" sx={{ fontWeight: 700, color: '#1a7a1a' }}>
+                              {calculatedFineWeight.toFixed(3)} GM
+                            </Typography>
+                            {paidFineWeight > 0 && (
+                              <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                                (already paid {paidFineWeight.toFixed(3)} GM of {invoiceFineWeight.toFixed(3)} GM)
+                              </Typography>
+                            )}
+                          </Box>
+                        </Grid>
+                      )}
                       <Grid item md={4} xs={12} className="create-input">
                         <FormControl fullWidth error={formErros.payment_mode}>
                           <InputLabel>Purity</InputLabel>
@@ -1794,14 +1916,24 @@ class SaleViewPage extends React.Component {
 
                             console.log(" selected_purity : ", selected_purity);
 
+                            const enteredWeight = parseFloat(event.target.value) || 0;
+                            // Cap at invoice fine metal weight
+                            const cappedWeight = calculatedFineWeight !== null && enteredWeight > calculatedFineWeight
+                              ? calculatedFineWeight
+                              : enteredWeight;
+                            if (selected_purity && cappedWeight > 0) {
+                              // gross weight = fine ÷ payment purity%
+                              const purityPct = parseFloat(selected_purity.value) || 100;
+                              effective_weight = cappedWeight * 100 / purityPct;
+                            }
                             this.setState({
-                              formValues: {
+              formValues: {
                                 ...this.state.formValues,
-                                weight: event.target.value,
+                                weight: effective_weight || event.target.value, // gross weight for API
                                 unit_id: selected_purity
                                   ? selected_purity.unit_id || ""
                                   : "",
-                                effective_weight: effective_weight,
+                                effective_weight: cappedWeight, // fine weight for display + API
                               },
                             });
                           }}

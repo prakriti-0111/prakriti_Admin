@@ -4,7 +4,9 @@ import {
     SUPERADMIN_CART_ADD,
     SUPERADMIN_CART_DELETE
 } from '../../actionTypes/superadmin/cart.types';
-import {objectToQuery} from 'src/helpers/helper';
+import { objectToQuery, isAdmin } from 'src/helpers/helper';
+
+const getCartPrefix = () => isAdmin() ? 'admin/sale-carts' : 'superadmin/carts';
 
 export const cartList = (params) => {
     params = objectToQuery(params, true)
@@ -40,6 +42,14 @@ export const cartStore = (data) => {
         .catch(error => {
         })
     }
+}
+
+export const cartHold = (data) => {
+    return axios.post(`/${getCartPrefix()}/hold`, data);
+}
+
+export const cartUnhold = (id) => {
+    return axios.post(`/${getCartPrefix()}/unhold/${id}`);
 }
 
 export const cartDelete = (id, raw) => {

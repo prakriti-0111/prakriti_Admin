@@ -1,7 +1,7 @@
 import { React, Component } from 'react';
 import { matchRoutes, useLocation } from "react-router-dom"
 import { connect } from 'react-redux';
-import {TextField, MenuItem, Link, Box, FormControl, InputLabel, Select, Grid, Button } from '@mui/material';
+import {TextField, MenuItem, Link, Box, FormControl, InputLabel, Select, Grid, Button, CircularProgress } from '@mui/material';
 import { bindActionCreators } from 'redux';
 import { gridSpacing } from 'store/constant';
 import MainCard from 'ui-component/cards/MainCard';
@@ -22,6 +22,7 @@ class SalePage extends Component {
     super(props);
 
     this.state = {
+      isLoading: false,
       items: this.props.items,
       total: this.props.total,
       actionCalled: this.props.actionCalled,
@@ -117,6 +118,7 @@ class SalePage extends Component {
     let update = {};
     if(props.items !== state.items){
       update.items = props.items;
+      update.isLoading = false;
     }
 
     if(props.total !== state.total){
@@ -141,6 +143,7 @@ class SalePage extends Component {
   }
 
   loadListData = () => {
+    this.setState({ isLoading: true });
     let data = {...this.state.queryParams};
     if(data.date_from){
         data.date_from = moment(data.date_from.toString()).format('YYYY-MM-DD')
@@ -301,17 +304,23 @@ class SalePage extends Component {
             </Grid>
           </Grid>
         </Box>
-        <Grid container spacing={gridSpacing}>
-          <DataTable 
-            columns={this.columns}
-            rows={this.state.items}
-            page={this.state.queryParams.page}
-            limit={this.state.queryParams.limit}
-            total={this.state.total}
-            handlePagination={this.handlePagination}
-            actions={this.tableActions}
-          />
-        </Grid>
+        {this.state.isLoading ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+            <CircularProgress />
+          </Box>
+        ) : (
+          <Grid container spacing={gridSpacing}>
+            <DataTable 
+              columns={this.columns}
+              rows={this.state.items}
+              page={this.state.queryParams.page}
+              limit={this.state.queryParams.limit}
+              total={this.state.total}
+              handlePagination={this.handlePagination}
+              actions={this.tableActions}
+            />
+          </Grid>
+        )}
       </MainCard>
     );
   }

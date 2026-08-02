@@ -1,7 +1,7 @@
 import { React, Component } from 'react';
 import { matchRoutes, useLocation } from "react-router-dom"
 import { connect } from 'react-redux';
-import {Select, CssBaseline, InputLabel, Box, FormControl, MenuItem, TextField, Grid, Button } from '@mui/material';
+import {Select, CssBaseline, InputLabel, Box, FormControl, MenuItem, TextField, Grid, Button, CircularProgress } from '@mui/material';
 import LoginForm from 'forms/SuperAdmin/LoginForm';
 import { bindActionCreators } from 'redux';
 import { gridSpacing } from 'store/constant';
@@ -23,6 +23,7 @@ class ProductPage extends Component {
     super(props);
 
     this.state = {
+      isLoading: false,
       items: this.props.items,
       total: this.props.total,
       actionCalled: this.props.actionCalled,
@@ -95,6 +96,7 @@ class ProductPage extends Component {
     let update = {};
     if(props.items !== state.items){
       update.items = props.items;
+      update.isLoading = false;
     }
 
     if(props.total !== state.total){
@@ -131,6 +133,7 @@ class ProductPage extends Component {
   }
 
   loadListData = () => {
+    this.setState({ isLoading: true });
     this.props.productList(this.state.queryParams);
   }
 
@@ -299,31 +302,37 @@ class ProductPage extends Component {
             </Grid>
           </Box>
         <Grid container spacing={gridSpacing}>
-          <DataTable 
-            columns={this.columns}
-            rows={this.state.items}
-            page={this.state.queryParams.page}
-            limit={this.state.queryParams.limit}
-            total={this.state.total}
-            handlePagination={this.handlePagination}
-            actions={[
-              {
-                label: 'Edit',
-                onClick: this.handleEdit,
-                color: 'primary',
-                show: hasPermission(this.state.permissions, 'products', 'edit')
-              },
-              {
-                label: 'Delete',
-                onClick: this.handleDelete,
-                isDelete: true,
-                color: 'error',
-                show: hasPermission(this.state.permissions, 'products', 'delete')
-              }
-            ]}
-            haveAllOption={true}
-            stickyHeader={true}
-          />
+          {this.state.isLoading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+              <CircularProgress />
+            </Box>
+          ) : (
+            <DataTable 
+              columns={this.columns}
+              rows={this.state.items}
+              page={this.state.queryParams.page}
+              limit={this.state.queryParams.limit}
+              total={this.state.total}
+              handlePagination={this.handlePagination}
+              actions={[
+                {
+                  label: 'Edit',
+                  onClick: this.handleEdit,
+                  color: 'primary',
+                  show: hasPermission(this.state.permissions, 'products', 'edit')
+                },
+                {
+                  label: 'Delete',
+                  onClick: this.handleDelete,
+                  isDelete: true,
+                  color: 'error',
+                  show: hasPermission(this.state.permissions, 'products', 'delete')
+                }
+              ]}
+              haveAllOption={true}
+              stickyHeader={true}
+            />
+          )}
         </Grid>
       </MainCard>
     );

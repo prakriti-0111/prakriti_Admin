@@ -146,6 +146,7 @@ class StockPage extends Component {
       downloadingReport: false,
       downloadingCategoryId: null,
       searching: false,
+      isLoading: true,
     };
 
     this.columns = [
@@ -293,6 +294,7 @@ class StockPage extends Component {
     if (props.items !== state.items) {
       update.items = props.items;
       update.searching = false;
+      update.isLoading = false;
     }
 
     if (props.total !== state.total) {
@@ -2181,21 +2183,27 @@ class StockPage extends Component {
               </Grid> */}
             </Grid>
           </Box>
-          <Grid container spacing={gridSpacing} className="orders-sale-button">
-            {console.log(this.props)}
-            <DataTable
-              columns={this.columns}
-              rows={this.state.items}
-              page={this.state.queryParams.page}
-              limit={this.state.queryParams.limit}
-              total={this.state.total}
-              handlePagination={this.handlePagination}
-              actions={this.getTableActions()}
-              haveAllOption={true}
-              getRowActions={this.getTableActions} // Pass function to generate row-specific actions
-              onImageClick={this.handleImageClick} // Pass custom image click handler
-            />
-          </Grid>
+          {this.state.isLoading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+              <CircularProgress />
+            </Box>
+          ) : (
+            <Grid container spacing={gridSpacing} className="orders-sale-button">
+              {console.log(this.props)}
+              <DataTable
+                columns={this.columns}
+                rows={this.state.items}
+                page={this.state.queryParams.page}
+                limit={this.state.queryParams.limit}
+                total={this.state.total}
+                handlePagination={this.handlePagination}
+                actions={this.getTableActions()}
+                haveAllOption={true}
+                getRowActions={this.getTableActions} // Pass function to generate row-specific actions
+                onImageClick={this.handleImageClick} // Pass custom image click handler
+              />
+            </Grid>
+          )}
         </MainCard>
 
         {/* Read-only Image Dialog for non-superadmin users */}
