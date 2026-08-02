@@ -1,6 +1,6 @@
 import { React, Component } from 'react';
 import { connect } from 'react-redux';
-import { Grid, Button, Card, CardContent, Typography } from '@mui/material';
+import { Grid, Button, Card, CardContent, Typography, Box, CircularProgress } from '@mui/material';
 import { bindActionCreators } from 'redux';
 import { gridSpacing } from 'store/constant';
 import MainCard from 'ui-component/cards/MainCard';
@@ -19,6 +19,7 @@ class SupplierPage extends Component {
     super(props);
 
     this.state = {
+      isLoading: false,
       ...this.props,
       queryParams: {
         page: 1,
@@ -116,6 +117,7 @@ class SupplierPage extends Component {
     let update = {};
     if(props.items !== state.items){
       update.items = props.items;
+      update.isLoading = false;
     }
 
     if(props.total !== state.total){
@@ -154,6 +156,7 @@ class SupplierPage extends Component {
   }
 
   loadListData = () => {
+    this.setState({ isLoading: true });
     this.props.actions.supplierList(this.state.queryParams);
   }
 
@@ -229,47 +232,53 @@ class SupplierPage extends Component {
         </Card>
         <MainCard title="Suppliers" secondary={(!isDistributor() && hasPermission(this.state.permissions, 'supplier', 'add') && this.state.auth.user.own == false) ? <Button variant="contained" onClick={() => this.props.navigate('create') }>Add</Button> : null} >
           <Grid container spacing={gridSpacing} className="abc">
-            <DataTable 
-              columns={this.columns}
-              rows={this.state.items}
-              page={this.state.queryParams.page}
-              limit={this.state.queryParams.limit}
-              total={this.state.total}
-              handlePagination={this.handlePagination}
-              actions={[
-                {
-                  label: 'View',
-                  onClick: this.handleView,
-                  color: 'primary',
-                  show: hasPermission(this.state.permissions, 'supplier', 'view')
-                },
-                {
-                  label: 'Edit',
-                  onClick: this.handleEdit,
-                  color: 'primary',
-                  show: hasPermission(this.state.permissions, 'supplier', 'edit'),
-                  conditions: [
-                    {
-                      key: "can_edit_delete",
-                      value: true
-                    }
-                  ]
-                },
-                {
-                  label: 'Delete',
-                  onClick: this.handleDelete,
-                  isDelete: true,
-                  color: 'error',
-                  show: hasPermission(this.state.permissions, 'supplier', 'delete'),
-                  conditions: [
-                    {
-                      key: "can_edit_delete",
-                      value: true
-                    }
-                  ]
-                }
-              ]}
-            />
+            {this.state.isLoading ? (
+              <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+                <CircularProgress />
+              </Box>
+            ) : (
+              <DataTable 
+                columns={this.columns}
+                rows={this.state.items}
+                page={this.state.queryParams.page}
+                limit={this.state.queryParams.limit}
+                total={this.state.total}
+                handlePagination={this.handlePagination}
+                actions={[
+                  {
+                    label: 'View',
+                    onClick: this.handleView,
+                    color: 'primary',
+                    show: hasPermission(this.state.permissions, 'supplier', 'view')
+                  },
+                  {
+                    label: 'Edit',
+                    onClick: this.handleEdit,
+                    color: 'primary',
+                    show: hasPermission(this.state.permissions, 'supplier', 'edit'),
+                    conditions: [
+                      {
+                        key: "can_edit_delete",
+                        value: true
+                      }
+                    ]
+                  },
+                  {
+                    label: 'Delete',
+                    onClick: this.handleDelete,
+                    isDelete: true,
+                    color: 'error',
+                    show: hasPermission(this.state.permissions, 'supplier', 'delete'),
+                    conditions: [
+                      {
+                        key: "can_edit_delete",
+                        value: true
+                      }
+                    ]
+                  }
+                ]}
+              />
+            )}
           </Grid>
         </MainCard>
       </>

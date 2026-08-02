@@ -10,6 +10,7 @@ import {
   Select,
   TextField,
   MenuItem,
+  CircularProgress,
 } from "@mui/material";
 import LoginForm from "forms/SuperAdmin/LoginForm";
 import { bindActionCreators } from "redux";
@@ -42,6 +43,7 @@ class PurchasePage extends Component {
     super(props);
 
     this.state = {
+      isLoading: false,
       items: this.props.items,
       total: this.props.total,
       actionCalled: this.props.actionCalled,
@@ -137,6 +139,7 @@ class PurchasePage extends Component {
         };
       });
       update.items = items;
+      update.isLoading = false;
     }
 
     if (props.total !== state.total) {
@@ -164,6 +167,7 @@ class PurchasePage extends Component {
   }
 
   loadListData = () => {
+    this.setState({ isLoading: true });
     let data = { ...this.state.queryParams };
     if (data.date_from) {
       data.date_from = moment(data.date_from.toString()).format("YYYY-MM-DD");
@@ -368,68 +372,74 @@ class PurchasePage extends Component {
           </Grid>
         </Box>
         <Grid container spacing={gridSpacing}>
-          <DataTable
-            columns={this.columns}
-            rows={this.state.items}
-            page={this.state.queryParams.page}
-            limit={this.state.queryParams.limit}
-            total={this.state.total}
-            handlePagination={this.handlePagination}
-            actions={[
-              {
-                label: "Return",
-                onClick: this.handleReturn,
-                color: "primary",
-                conditions: [
-                  {
-                    key: "approve_status",
-                    value: "Accepted",
-                  },
-                ],
-                show:
-                  !isDistributor() &&
-                  !isAdmin() &&
-                  hasPermission(this.state.permissions, "purchase", "view") &&
-                  this.props.query.get("all_purchase") != 1,
-              },
-              {
-                label: "Edit",
-                onClick: this.handleEdit,
-                color: "primary",
-                show:
-                  hasPermission(this.state.permissions, "purchase", "edit") &&
-                  this.props.query.get("all_purchase") != 1,
-                conditions: [
-                  {
-                    key: "created_myself",
-                    value: true,
-                  },
-                  {
-                    key: "approve_status",
-                    value: "Pending",
-                  },
-                ],
-              },
-              {
-                label: "View",
-                onClick: this.handleView,
-                color: "primary",
-                show: hasPermission(this.state.permissions, "purchase", "view"),
-              },
-              /*{
-                label: 'Delete',
-                onClick: this.handleDelete,
-                isDelete: true,
-                color: 'error'
-              }*/
-              {
-                label: "Download",
-                onClick: this.handleDownloadView,
-                color: "primary",
-                show: hasPermission(this.state.permissions, "purchase", "list"),
-              },
-            ]}
-          />
+          {this.state.isLoading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+              <CircularProgress />
+            </Box>
+          ) : (
+            <DataTable
+              columns={this.columns}
+              rows={this.state.items}
+              page={this.state.queryParams.page}
+              limit={this.state.queryParams.limit}
+              total={this.state.total}
+              handlePagination={this.handlePagination}
+              actions={[
+                {
+                  label: "Return",
+                  onClick: this.handleReturn,
+                  color: "primary",
+                  conditions: [
+                    {
+                      key: "approve_status",
+                      value: "Accepted",
+                    },
+                  ],
+                  show:
+                    !isDistributor() &&
+                    !isAdmin() &&
+                    hasPermission(this.state.permissions, "purchase", "view") &&
+                    this.props.query.get("all_purchase") != 1,
+                },
+                {
+                  label: "Edit",
+                  onClick: this.handleEdit,
+                  color: "primary",
+                  show:
+                    hasPermission(this.state.permissions, "purchase", "edit") &&
+                    this.props.query.get("all_purchase") != 1,
+                  conditions: [
+                    {
+                      key: "created_myself",
+                      value: true,
+                    },
+                    {
+                      key: "approve_status",
+                      value: "Pending",
+                    },
+                  ],
+                },
+                {
+                  label: "View",
+                  onClick: this.handleView,
+                  color: "primary",
+                  show: hasPermission(this.state.permissions, "purchase", "view"),
+                },
+                /*{
+                  label: 'Delete',
+                  onClick: this.handleDelete,
+                  isDelete: true,
+                  color: 'error'
+                }*/
+                {
+                  label: "Download",
+                  onClick: this.handleDownloadView,
+                  color: "primary",
+                  show: hasPermission(this.state.permissions, "purchase", "list"),
+                },
+              ]}
+            />
+          )}
         </Grid>
       </MainCard>
     );

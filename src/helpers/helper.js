@@ -584,6 +584,26 @@ const isSalesExecutive = () => {
   return role == "Sales Executive";
 };
 
+/**
+ * Retailers the logged in user actually owns. The API's my_retailer scope only
+ * matches the creator, so an Admin still gets every other distributor's
+ * retailers back: keep the ones created by the user or by anyone in the
+ * downline passed in (their distributors and sales executives). Retailers
+ * without a created_by are left alone — only the API can scope those.
+ */
+const filterOwnRetailers = (retailers, downline) => {
+  let ids = [getAuthData("id", true)]
+    .concat((downline || []).map((user) => user.id))
+    .filter((id) => !isEmpty(id))
+    .map(String);
+
+  return (retailers || []).filter(
+    (retailer) =>
+      isEmpty(retailer.created_by) ||
+      ids.indexOf(String(retailer.created_by)) !== -1,
+  );
+};
+
 const getApprovalColor = (status) => {
   if (status == 1 || status == 4) {
     return "success";
@@ -1007,6 +1027,7 @@ export {
   toBase64,
   getValuesFromKey,
   isEmpty,
+  filterOwnRetailers,
   getNewlineText,
   calculateAdminProductPrice,
   priceFormat,

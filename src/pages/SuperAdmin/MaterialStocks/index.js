@@ -1,7 +1,7 @@
 import { React, Component } from 'react';
 import { matchRoutes, useLocation } from "react-router-dom"
 import { connect } from 'react-redux';
-import { Select, Stack, InputLabel, Box, Typography, FormControl, Card, CardContent, TextField, Grid, Button, MenuItem } from '@mui/material';
+import { Select, Stack, InputLabel, Box, Typography, FormControl, Card, CardContent, TextField, Grid, Button, MenuItem, CircularProgress } from '@mui/material';
 import { bindActionCreators } from 'redux';
 import { gridSpacing } from 'store/constant';
 import MainCard from 'ui-component/cards/MainCard';
@@ -39,6 +39,7 @@ class MaterialStockPage extends Component {
   constructor(props) {
     super(props);
     this.state = {
+      isLoading: false,
       items: this.props.items,
       total: this.props.total,
       actionCalled: this.props.actionCalled,
@@ -149,6 +150,7 @@ class MaterialStockPage extends Component {
     let update = {};
     if (props.items !== state.items) {
       update.items = props.items;
+      update.isLoading = false;
     }
 
     if (props.total !== state.total) {
@@ -218,6 +220,7 @@ class MaterialStockPage extends Component {
   }
 
   loadListData = () => {
+    this.setState({ isLoading: true });
     this.props.actions.stocksList(this.state.queryParams);
   }
 
@@ -452,23 +455,34 @@ class MaterialStockPage extends Component {
             </Grid>
           </Box>
           <Grid container spacing={gridSpacing} className='orders-sale-button'>
-            <DataTable
-              columns={this.columns}
-              rows={this.state.items}
-              page={this.state.queryParams.page}
-              limit={this.state.queryParams.limit}
-              total={this.state.total}
-              handlePagination={this.handlePagination}
-              actions={[
-                {
-                  label: '+',
-                  onClick: this.handleSend,
-                  color: 'primary',
-                  show: this.props.query.get('by_specific') ? false : true,
-                }
-              ]}
-              haveAllOption={true}
-            />
+            {this.state.isLoading ? (
+              <Box sx={{ display: 'flex', justifyContent: 'center', p: 3, width: '100%' }}>
+                <CircularProgress />
+              </Box>
+            ) : (
+              <DataTable
+                columns={this.columns}
+                rows={this.state.items}
+                page={this.state.queryParams.page}
+                limit={this.state.queryParams.limit}
+                total={this.state.total}
+                handlePagination={this.handlePagination}
+                actions={[
+                  {
+                    label: 'View',
+                    onClick: this.handleView,
+                    color: 'primary',
+                  },
+                  {
+                    label: '+',
+                    onClick: this.handleSend,
+                    color: 'primary',
+                    show: this.props.query.get('by_specific') ? false : true,
+                  }
+                ]}
+                haveAllOption={true}
+              />
+            )}
           </Grid>
         </MainCard>
 

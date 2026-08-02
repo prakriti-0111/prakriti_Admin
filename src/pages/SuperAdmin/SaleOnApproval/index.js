@@ -11,6 +11,7 @@ import {
   Select,
   Grid,
   Button,
+  CircularProgress,
 } from "@mui/material";
 import { bindActionCreators } from "redux";
 import { gridSpacing } from "store/constant";
@@ -45,6 +46,7 @@ class SaleOnApprovePage extends Component {
     super(props);
 
     this.state = {
+      isLoading: false,
       items: this.props.items,
       total: this.props.total,
       actionCalled: this.props.actionCalled,
@@ -204,6 +206,7 @@ class SaleOnApprovePage extends Component {
     let update = {};
     if (props.items !== state.items) {
       update.items = props.items;
+      update.isLoading = false;
     }
 
     if (props.total !== state.total) {
@@ -237,6 +240,7 @@ class SaleOnApprovePage extends Component {
   }
 
   loadListData = () => {
+    this.setState({ isLoading: true });
     let data = { ...this.state.queryParams };
     if (data.date_from) {
       data.date_from = moment(data.date_from.toString()).format("YYYY-MM-DD");
@@ -457,36 +461,42 @@ class SaleOnApprovePage extends Component {
           </Grid>
         </Box>
         <Grid container spacing={gridSpacing}>
-          <DataTable
-            columns={this.columns}
-            rows={this.state.items}
-            page={this.state.queryParams.page}
-            limit={this.state.queryParams.limit}
-            total={this.state.total}
-            handlePagination={this.handlePagination}
-            actions={[
-              {
-                label: "View",
-                onClick: this.handleView,
-                color: "primary",
-                show: hasPermission(
-                  this.state.permissions,
-                  "sale_on_approval",
-                  "view",
-                ),
-              },
-              {
-                label: "Download",
-                onClick: this.handleDownloadView,
-                color: "primary",
-                show: hasPermission(
-                  this.state.permissions,
-                  "sale_on_approval",
-                  "view",
-                ),
-              },
-            ]}
-          />
+          {this.state.isLoading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', p: 3, width: '100%' }}>
+              <CircularProgress />
+            </Box>
+          ) : (
+            <DataTable
+              columns={this.columns}
+              rows={this.state.items}
+              page={this.state.queryParams.page}
+              limit={this.state.queryParams.limit}
+              total={this.state.total}
+              handlePagination={this.handlePagination}
+              actions={[
+                {
+                  label: "View",
+                  onClick: this.handleView,
+                  color: "primary",
+                  show: hasPermission(
+                    this.state.permissions,
+                    "sale_on_approval",
+                    "view",
+                  ),
+                },
+                {
+                  label: "Download",
+                  onClick: this.handleDownloadView,
+                  color: "primary",
+                  show: hasPermission(
+                    this.state.permissions,
+                    "sale_on_approval",
+                    "view",
+                  ),
+                },
+              ]}
+            />
+          )}
         </Grid>
       </MainCard>
     );

@@ -1,7 +1,7 @@
 import { React, Component } from 'react';
 import { matchRoutes, useLocation } from "react-router-dom"
 import { connect } from 'react-redux';
-import {Avatar, CssBaseline, Link, Box, Typography, Container, Alert, Grid, Button } from '@mui/material';
+import {Avatar, CssBaseline, Link, Box, Typography, Container, Alert, Grid, Button, CircularProgress } from '@mui/material';
 import { bindActionCreators } from 'redux';
 import { gridSpacing } from 'store/constant';
 import MainCard from 'ui-component/cards/MainCard';
@@ -17,6 +17,7 @@ class LeaveApplicationPage extends Component {
     super(props);
 
     this.state = {
+      isLoading: false,
       items: this.props.items,
       total: this.props.total,
       actionCalled: this.props.actionCalled,
@@ -62,6 +63,7 @@ class LeaveApplicationPage extends Component {
     let update = {};
     if(props.items !== state.items){
       update.items = props.items;
+      update.isLoading = false;
     }
 
     if(props.total !== state.total){
@@ -83,6 +85,7 @@ class LeaveApplicationPage extends Component {
   }
 
   loadListData = () => {
+    this.setState({ isLoading: true });
     const userId=localStorage.getItem('auth')
     this.props.leaveApplicationFetch(JSON.parse(userId).user.id)
     // this.props.leaveApplicationList(this.state.queryParams);
@@ -120,7 +123,7 @@ class LeaveApplicationPage extends Component {
     return (
       <MainCard title="Leave Application" >
         <Grid container spacing={gridSpacing} className="abc">
-          <DataTable 
+          {this.state.isLoading ? <Box sx={{display:'flex',justifyContent:'center',p:3}}><CircularProgress /></Box> : <DataTable 
             columns={this.columns}
             rows={this.state.items}
             page={this.state.queryParams.page}
@@ -128,7 +131,7 @@ class LeaveApplicationPage extends Component {
             total={this.state.total}
             handlePagination={this.handlePagination}
             actions={this.tableActions}
-          />
+          />}
         </Grid>
       </MainCard>
     );

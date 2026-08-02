@@ -30,6 +30,7 @@ import {
   Collapse,
   Alert,
   CircularProgress,
+  Chip,
 } from "@mui/material";
 
 import { ContactPageSharp } from "@mui/icons-material";
@@ -49,6 +50,7 @@ import {
   isSalesExecutive,
   validateNumber,
   validateInteger,
+  filterOwnRetailers,
 } from "src/helpers/helper";
 
 import { bindActionCreators } from "redux";
@@ -164,6 +166,8 @@ import {
   cartDelete,
   cartListRaw,
   cartList,
+  cartHold,
+  cartUnhold,
 } from "actions/superadmin/cart.actions";
 
 import { retailerList } from "actions/superadmin/retailer.actions";
@@ -477,6 +481,22 @@ class SaleForm extends React.Component {
       lastNotFoundCert: null,
 
       qrScanNotified: false,
+
+      holdSelectedItems: new Set(),
+
+      holdDialogOpen: false,
+
+      holdMessage: '',
+
+      holdProcessing: false,
+
+      holdSectionOpen: false,
+
+      holdListSelected: new Set(),
+
+      holdListLoading: false,
+
+      productsLoading: false,
     };
 
     this.isSuperAdmin = isSuperAdmin();
@@ -576,9 +596,13 @@ class SaleForm extends React.Component {
     if (this.isSuperAdmin) {
       this.props.actions.adminList({ all: 1 });
 
+      this.props.actions.retailerList({ all: 1, my_retailer: 1 });
+
       this.props.actions.employeeList({ role_id: 9 });
     } else if (this.isAdmin) {
       this.props.actions.adminList({ all: 1 });
+
+      this.props.actions.retailerList({ all: 1, my_retailer: 1 });
 
       this.props.actions.distributorList({ all: 1 });
 
@@ -586,7 +610,7 @@ class SaleForm extends React.Component {
 
       this.props.actions.supplierList({ all: 1, page: 1 });
     } else if (this.isDistributor) {
-      this.props.actions.retailerList({ all: 1 });
+      this.props.actions.retailerList({ all: 1, my_retailer: 1 });
 
       this.props.actions.salesExecutiveList({ all: 1, role_id: 4 });
 
@@ -594,7 +618,7 @@ class SaleForm extends React.Component {
     } else if (this.isSalesExecutive) {
       this.props.actions.adminList({ all: 1 });
 
-      this.props.actions.retailerList({ all: 1 });
+      this.props.actions.retailerList({ all: 1, my_retailer: 1 });
 
       this.props.actions.distributorList({ all: 1 });
 
@@ -790,6 +814,7 @@ class SaleForm extends React.Component {
   };
 
   loadCart = async () => {
+    this.setState({ productsLoading: true });
     let onApprovalId = this.props.query.get("sale_on_approval");
 
     /* a sale on approval brings its own items, the cart stays untouched */
@@ -945,6 +970,10 @@ class SaleForm extends React.Component {
           quantity: cart.quantity,
 
           order_product_id: cart.order_product_id,
+
+          is_held: cart.is_held || false,
+
+          hold_message: cart.hold_message || '',
         });
       }
 
@@ -964,6 +993,8 @@ class SaleForm extends React.Component {
           formValues: formValues,
 
           unique_materials: this.buildUniqueMaterials(products),
+
+          productsLoading: false,
         },
 
         () => {
@@ -978,9 +1009,10 @@ class SaleForm extends React.Component {
    * product list so a cart load and a product removal stay in sync.
    */
   buildUniqueMaterials = (products) => {
+    const activeProducts = products.filter(p => !p.is_held);
     let material_total_by_unit = {};
 
-    for (let product of products) {
+    for (let product of activeProducts) {
       for (let item of product.materials) {
         material_total_by_unit[item.material_id] =
           (material_total_by_unit[item.material_id] || 0) +
@@ -990,7 +1022,7 @@ class SaleForm extends React.Component {
 
     let unique_materials = [];
 
-    for (let product of products) {
+    for (let product of activeProducts) {
       for (let item of product.materials) {
         let index = _.findIndex(
           unique_materials,
@@ -1476,7 +1508,7 @@ class SaleForm extends React.Component {
         label: "Add New Retailer",
         title: "Add Retailer",
         Form: RetailerForm,
-        refresh: () => this.props.actions.retailerList({ all: 1 }),
+        refresh: () => this.props.actions.retailerList({ all: 1, my_retailer: 1 }),
       };
     }
 
@@ -1826,6 +1858,8 @@ class SaleForm extends React.Component {
     let report_qty = 0;
 
     for (let x = 0; x < products.length; x++) {
+      if (products[x].is_held) continue;
+
       let total_price = 0,
         total_price_with_discount = 0,
         making_charge = 0,
@@ -2181,6 +2215,129 @@ class SaleForm extends React.Component {
     return totalWeight;
   };
 
+  handleHoldSelectAll = (checked) => {
+    const { formValues } = this.state;
+    if (checked) {
+      const all = new Set();
+      formValues.products.forEach((p, i) => { if (!p.is_held) all.add(i); });
+      this.setState({ holdSelectedItems: all });
+    } else {
+      this.setState({ holdSelectedItems: new Set() });
+    }
+  };
+
+  handleHoldItemSelect = (index, checked) => {
+    const next = new Set(this.state.holdSelectedItems);
+    checked ? next.add(index) : next.delete(index);
+    this.setState({ holdSelectedItems: next });
+  };
+
+  handleHoldSubmit = async () => {
+    const { holdSelectedItems, holdMessage, formValues } = this.state;
+    if (holdSelectedItems.size === 0) return;
+    this.setState({ holdProcessing: true });
+    const cart_ids = [...holdSelectedItems].map(idx => formValues.products[idx].id);
+    try {
+      const response = await cartHold({ cart_ids, message: holdMessage });
+      if (response.data.success) {
+        const products = [...formValues.products];
+        holdSelectedItems.forEach(idx => {
+          products[idx] = { ...products[idx], is_held: true, hold_message: holdMessage };
+        });
+        this.setState({
+          formValues: { ...formValues, products },
+          holdSelectedItems: new Set(),
+          holdDialogOpen: false,
+          holdMessage: '',
+          holdProcessing: false,
+          unique_materials: this.buildUniqueMaterials(products),
+        }, () => this.calculateProductPrice());
+        this.props.enqueueSnackbar('Items held successfully', { variant: 'success' });
+      } else {
+        this.setState({ holdProcessing: false });
+        this.props.enqueueSnackbar(response.data.message || 'Failed to hold items', { variant: 'error' });
+      }
+    } catch (e) {
+      this.setState({ holdProcessing: false });
+      this.props.enqueueSnackbar('Failed to hold items', { variant: 'error' });
+    }
+  };
+
+  handleUnholdAll = async () => {
+    this.setState({ holdListLoading: true });
+    const { formValues } = this.state;
+    const heldItems = formValues.products
+      .map((p, i) => ({ ...p, index: i }))
+      .filter(p => p.is_held);
+    for (const item of heldItems) {
+      await cartUnhold(item.id).catch(() => {});
+    }
+    const products = formValues.products.map(p =>
+      p.is_held ? { ...p, is_held: false, hold_message: '' } : p
+    );
+    this.setState(
+      { formValues: { ...formValues, products }, holdSectionOpen: false, holdListSelected: new Set(), holdListLoading: false, unique_materials: this.buildUniqueMaterials(products) },
+      () => this.calculateProductPrice()
+    );
+    this.props.enqueueSnackbar('All items released from hold', { variant: 'success' });
+  };
+
+  handleUnholdSelected = async () => {
+    const { formValues, holdListSelected } = this.state;
+    if (!holdListSelected.size) return;
+    this.setState({ holdListLoading: true });
+    const selectedIndices = [...holdListSelected];
+    for (const idx of selectedIndices) {
+      await cartUnhold(formValues.products[idx].id).catch(() => {});
+    }
+    const products = formValues.products.map((p, i) =>
+      holdListSelected.has(i) ? { ...p, is_held: false, hold_message: '' } : p
+    );
+    this.setState(
+      { formValues: { ...formValues, products }, holdListSelected: new Set(), holdListLoading: false, unique_materials: this.buildUniqueMaterials(products) },
+      () => this.calculateProductPrice()
+    );
+    this.props.enqueueSnackbar(`${selectedIndices.length} item(s) released from hold`, { variant: 'success' });
+  };
+
+  handleHoldListSelectAll = (checked) => {
+    if (checked) {
+      const all = new Set(
+        this.state.formValues.products
+          .map((p, i) => p.is_held ? i : null)
+          .filter(i => i !== null)
+      );
+      this.setState({ holdListSelected: all });
+    } else {
+      this.setState({ holdListSelected: new Set() });
+    }
+  };
+
+  handleHoldListItemSelect = (index, checked) => {
+    const next = new Set(this.state.holdListSelected);
+    checked ? next.add(index) : next.delete(index);
+    this.setState({ holdListSelected: next });
+  };
+
+  handleUnhold = async (cartId, index) => {
+    try {
+      const response = await cartUnhold(cartId);
+      if (response.data.success) {
+        const products = [...this.state.formValues.products];
+        products[index] = { ...products[index], is_held: false, hold_message: '' };
+        this.setState(
+          { formValues: { ...this.state.formValues, products }, unique_materials: this.buildUniqueMaterials(products) },
+          () => this.calculateProductPrice()
+        );
+        this.props.enqueueSnackbar('Item released from hold', { variant: 'success' });
+      } else {
+        this.props.enqueueSnackbar(response.data.message || 'Failed to unhold item', { variant: 'error' });
+      }
+    } catch (e) {
+      this.props.enqueueSnackbar('Failed to unhold item', { variant: 'error' });
+    }
+  };
+
   handleProductDelete = (index) => {
     this.setState({
       deletingIndex: index,
@@ -2300,6 +2457,8 @@ class SaleForm extends React.Component {
       due_amount = 0;
 
     for (let i = 0; i < formValues.products.length; i++) {
+      if (formValues.products[i].is_held) continue;
+
       taxable_amount +=
         parseFloat(formValues.products[i].total) -
         parseFloat(formValues.products[i].total_tax);
@@ -2558,6 +2717,8 @@ class SaleForm extends React.Component {
 
       let data = {
         ...this.state.formValues,
+
+        products: this.state.formValues.products.filter(p => !p.is_held),
 
         on_approval: isApproval,
 
@@ -2992,7 +3153,8 @@ class SaleForm extends React.Component {
 
         userList = this.state.salesExecutiveList.concat(userList);
       } else {
-        userList = this.state.adminList;
+        /* every role sells to its own downline retailers as well */
+        userList = this.state.adminList.concat(this.state.retailerList);
       }
     } else if (this.isAdmin) {
       if (this.state.isAssign) {
@@ -3030,7 +3192,14 @@ class SaleForm extends React.Component {
           );
         }
 
-        userList = adminList.concat(this.state.distributorList);
+        userList = adminList
+          .concat(this.state.distributorList)
+          .concat(
+            filterOwnRetailers(
+              this.state.retailerList,
+              this.state.distributorList.concat(this.state.salesExecutiveList),
+            ),
+          );
       }
     } else if (this.isDistributor) {
       if (this.state.isAssign) {
@@ -4485,6 +4654,9 @@ class SaleForm extends React.Component {
       userIdValue = this.state.selectedUserOption;
     }
 
+    // Hold feature only shows on fresh cart creation, not on sale-on-approval or view/edit
+    const isCartPage = this.state.isCreateFrom && isEmpty(this.props.query.get('sale_on_approval'));
+
     // the company picker creates the next user down the chain inline
     const addConfig = this.getAddUserConfig();
     const ADD_ADMIN_OPTION = {
@@ -5257,9 +5429,24 @@ class SaleForm extends React.Component {
               >
                 <TableHead className="ratn-table-header p_view">
                   <TableRow>
-                    {!this.state.isCreateFrom ? (
-                      <TableCell sx={{ width: "30px" }}></TableCell>
-                    ) : null}
+                    {isCartPage ? (
+                      <TableCell sx={{ width: '30px', p: '4px 8px' }}>
+                        {(() => {
+                          const unheld = formValues.products.filter(p => !p.is_held);
+                          const { holdSelectedItems } = this.state;
+                          return (
+                            <Checkbox
+                              size="small"
+                              checked={unheld.length > 0 && holdSelectedItems.size === unheld.length}
+                              indeterminate={holdSelectedItems.size > 0 && holdSelectedItems.size < unheld.length}
+                              onChange={(e) => this.handleHoldSelectAll(e.target.checked)}
+                            />
+                          );
+                        })()}
+                      </TableCell>
+                    ) : (
+                      <TableCell sx={{ width: '30px' }}></TableCell>
+                    )}
 
                     <TableCell sx={{ width: 15 }}>#</TableCell>
 
@@ -5282,12 +5469,30 @@ class SaleForm extends React.Component {
                     <TableCell sx={{ width: "40px" }}>Total</TableCell>
 
                     {this.state.isCreateFrom ? (
-                      <TableCell sx={{ width: "20px" }}>Actions</TableCell>
+                      <TableCell sx={{ width: '120px', textAlign: 'right' }}>
+                        {isCartPage && this.state.holdSelectedItems.size > 0 ? (
+                          <Button
+                            size="small"
+                            variant="contained"
+                            onClick={() => this.setState({ holdDialogOpen: true })}
+                            style={{ backgroundColor: '#f57c00', color: '#fff', fontWeight: 600, textTransform: 'none', fontSize: '0.72rem', padding: '3px 10px', borderRadius: 6 }}
+                          >
+                            Hold Selected
+                          </Button>
+                        ) : 'Actions'}
+                      </TableCell>
                     ) : null}
                   </TableRow>
                 </TableHead>
 
                 <TableBody>
+                  {!isCartPage && this.state.productsLoading && (
+                    <TableRow>
+                      <TableCell colSpan={12} sx={{ textAlign: 'center', py: 4 }}>
+                        <CircularProgress size={28} sx={{ color: '#1E2746' }} />
+                      </TableCell>
+                    </TableRow>
+                  )}
                   {formValues.products.map((item, index) => {
                     let getUnit = item.materials.filter(
                       (itm) => itm.purity_id == 4 || itm.purity_id == 18,
@@ -5298,20 +5503,13 @@ class SaleForm extends React.Component {
 
                     return (
                       <React.Fragment key={index}>
+
+                        {item.is_held && isCartPage ? null : (
+                        <>
+
                         <TableRow className="product_details">
                           {!this.state.isCreateFrom ? (
                             <TableCell>
-                              {!item.is_return ? (
-                                <Checkbox
-                                  onChange={(e) =>
-                                    this.handleCheckBox(e, index)
-                                  }
-                                  checked={
-                                    this.state.return_products[index].is_return
-                                  }
-                                />
-                              ) : null}
-
                               {!item.is_return &&
                               item.product_type == "material" &&
                               item.materials[0].return_weight ? (
@@ -5328,7 +5526,17 @@ class SaleForm extends React.Component {
                                 </IconButton>
                               ) : null}
                             </TableCell>
-                          ) : null}
+                          ) : (
+                            <TableCell sx={{ p: '4px 8px' }}>
+                              {isCartPage && (
+                                <Checkbox
+                                  size="small"
+                                  checked={this.state.holdSelectedItems.has(index)}
+                                  onChange={(e) => this.handleHoldItemSelect(index, e.target.checked)}
+                                />
+                              )}
+                            </TableCell>
+                          )}
 
                           <TableCell>{index + 1}</TableCell>
 
@@ -5577,6 +5785,10 @@ class SaleForm extends React.Component {
                             </TableCell>
                           </TableRow>
                         ) : null}
+
+                        </>
+                        )}
+
                       </React.Fragment>
                     );
                   })}
@@ -5731,6 +5943,7 @@ class SaleForm extends React.Component {
                 </TableBody>
               </Table>
             </TableContainer>
+
           </Grid>
 
           <div
@@ -7163,6 +7376,127 @@ class SaleForm extends React.Component {
           ) : null}
         </Grid>
 
+        {/* ── On Hold Items Section ── */}
+        {(() => {
+          const heldProducts = formValues.products
+            .map((p, i) => ({ ...p, _idx: i }))
+            .filter(p => p.is_held);
+          const { holdListSelected, holdSectionOpen } = this.state;
+          const allSelected = heldProducts.length > 0 && heldProducts.every(p => holdListSelected.has(p._idx));
+          const someSelected = heldProducts.some(p => holdListSelected.has(p._idx));
+          const uniqueMessages = [...new Set(heldProducts.map(p => p.hold_message).filter(Boolean))];
+          if (!isCartPage || !heldProducts.length) return null;
+          return (
+            <Box sx={{ mt: 2, width: '100%', border: '2px solid #1E2746', borderRadius: 1, overflow: 'hidden' }}>
+
+              {/* Header — left: checkbox + count + message | right: unhold btn + arrow */}
+              <Box
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  px: 2,
+                  py: 1.6,
+                  backgroundColor: '#1E2746',
+                  userSelect: 'none',
+                  gap: 1.5,
+                }}
+              >
+                {/* Left: Select All + count + message */}
+                <Checkbox
+                  size="small"
+                  checked={allSelected}
+                  indeterminate={someSelected && !allSelected}
+                  onChange={e => this.handleHoldListSelectAll(e.target.checked)}
+                  sx={{ color: '#fff', p: 0, '&.Mui-checked': { color: '#f57c00' }, '&.MuiCheckbox-indeterminate': { color: '#f57c00' } }}
+                />
+                <Box
+                  sx={{ display: 'flex', alignItems: 'center', gap: 1.5, cursor: 'pointer', flex: 1, minWidth: 0 }}
+                  onClick={() => this.setState(s => ({ holdSectionOpen: !s.holdSectionOpen }))}
+                >
+                  <Typography sx={{ color: '#fff', fontWeight: 600, fontSize: '1.05rem', flexShrink: 0 }}>
+                    {heldProducts.length} item(s) on hold
+                  </Typography>
+                  {uniqueMessages.length > 0 && (
+                    <Typography sx={{ color: '#b0bec5', fontSize: '0.88rem', fontStyle: 'italic', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      &mdash; {uniqueMessages.join(', ')}
+                    </Typography>
+                  )}
+                </Box>
+
+                {/* Right: Unhold btn + arrow */}
+                <Button
+                  size="small"
+                  variant="contained"
+                  onClick={someSelected ? this.handleUnholdSelected : this.handleUnholdAll}
+                  style={{
+                    backgroundColor: '#f57c00',
+                    color: '#fff',
+                    borderRadius: '50px',
+                    fontSize: '0.78rem',
+                    fontWeight: 600,
+                    textTransform: 'none',
+                    padding: '4px 16px',
+                    minWidth: 'unset',
+                    flexShrink: 0,
+                  }}
+                >
+                  {someSelected ? `Unhold (${holdListSelected.size})` : 'Unhold All'}
+                </Button>
+                <Box
+                  sx={{ cursor: 'pointer', display: 'flex', alignItems: 'center', flexShrink: 0 }}
+                  onClick={() => this.setState(s => ({ holdSectionOpen: !s.holdSectionOpen }))}
+                >
+                  {holdSectionOpen
+                    ? <KeyboardArrowUpIcon sx={{ color: '#fff', fontSize: 24 }} />
+                    : <KeyboardArrowDownIcon sx={{ color: '#fff', fontSize: 24 }} />}
+                </Box>
+              </Box>
+
+              {/* Body — rows: name + cert + weight, no checkboxes, with loading overlay */}
+              <Collapse in={holdSectionOpen}>
+                {this.state.holdListLoading ? (
+                  <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', py: 4, backgroundColor: '#fff' }}>
+                    <CircularProgress size={28} sx={{ color: '#1E2746' }} />
+                  </Box>
+                ) : (
+                  <Box sx={{ maxHeight: 560, overflowY: 'auto' }}>
+                    {heldProducts.map((item) => (
+                      <Box
+                        key={item._idx}
+                        sx={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 2,
+                          px: 2.5,
+                          py: 2.4,
+                          borderBottom: '1px solid #e8eaf0',
+                          '&:last-child': { borderBottom: 'none' },
+                        }}
+                      >
+                        <Typography sx={{ fontWeight: 700, fontSize: '1rem', color: '#1E2746', minWidth: 200 }}>
+                          {item.product_name}
+                        </Typography>
+                        {item.certificate_no && (
+                          <Typography sx={{ fontSize: '0.88rem', color: '#555', minWidth: 150 }}>
+                            #{item.certificate_no}
+                          </Typography>
+                        )}
+                        {item.total_weight && (
+                          <Typography sx={{ fontSize: '0.88rem', color: '#1E2746', fontWeight: 600, minWidth: 90 }}>
+                            {item.total_weight} gm
+                          </Typography>
+                        )}
+                        <Box sx={{ flex: 1 }} />
+                      </Box>
+                    ))}
+                  </Box>
+                )}
+              </Collapse>
+
+            </Box>
+          );
+        })()}
+
         <Dialog
           open={this.state.productDialog}
           onClose={this.handleProductDialogClose}
@@ -8249,6 +8583,56 @@ class SaleForm extends React.Component {
             </Button>
           </Box>
         </Modal>
+
+        {/* Hold Items Dialog — only on cart page */}
+        <Dialog
+          open={isCartPage && this.state.holdDialogOpen}
+          onClose={() => this.setState({ holdDialogOpen: false, holdMessage: '' })}
+          fullWidth
+          maxWidth="sm"
+          className="ratn-dialog-wrapper"
+        >
+          <DialogTitle>
+            Hold Cart Items
+          </DialogTitle>
+          <DialogContent>
+            <DialogContentText sx={{ mb: 2 }}>
+              {this.state.holdSelectedItems.size} item(s) will be put on hold and collapsed in the cart. Enter an optional message.
+            </DialogContentText>
+            <TextField
+              autoFocus
+              label="Hold Message"
+              placeholder="e.g. Customer will confirm size tomorrow"
+              fullWidth
+              multiline
+              rows={3}
+              value={this.state.holdMessage}
+              onChange={(e) => this.setState({ holdMessage: e.target.value })}
+            />
+          </DialogContent>
+          <DialogActions>
+            <Button
+              onClick={() => this.setState({ holdDialogOpen: false, holdMessage: '' })}
+              disabled={this.state.holdProcessing}
+            >
+              Cancel
+            </Button>
+            <LoadingButton
+              loading={this.state.holdProcessing}
+              variant="contained"
+              onClick={this.handleHoldSubmit}
+              sx={{
+                backgroundColor: '#f57c00',
+                color: '#fff',
+                fontWeight: 600,
+                '&:hover': { backgroundColor: '#e65100' },
+              }}
+            >
+              Hold Items
+            </LoadingButton>
+          </DialogActions>
+        </Dialog>
+
       </Box>
     );
   }
