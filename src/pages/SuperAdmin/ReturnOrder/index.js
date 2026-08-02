@@ -2,7 +2,7 @@
 import React from 'react';
 import { matchRoutes, useLocation } from "react-router-dom"
 import { connect } from 'react-redux';
-import { Avatar, CssBaseline, Link, Box, Stack, Container, Alert, Grid, Button, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
+import { Avatar, CssBaseline, Link, Box, Stack, Container, Alert, Grid, Button, FormControl, InputLabel, Select, MenuItem, CircularProgress } from '@mui/material';
 import { bindActionCreators } from 'redux';
 import { gridSpacing } from 'store/constant';
 import MainCard from 'ui-component/cards/MainCard';
@@ -28,6 +28,7 @@ class ReturnOrderPage extends React.Component {
     super(props);
 
     this.state = {
+      isLoading: false,
       items: this.props.items,
       total: this.props.total,
       queryParams: {
@@ -96,6 +97,7 @@ class ReturnOrderPage extends React.Component {
     let update = {};
     if (props.items !== state.items) {
       update.items = props.items;
+      update.isLoading = false;
     }
 
     if (props.total !== state.total) {
@@ -112,6 +114,7 @@ class ReturnOrderPage extends React.Component {
   }
 
   loadListData = () => {
+    this.setState({ isLoading: true });
     let data = {...this.state.queryParams};
     if(data.date_from){
         data.date_from = moment(data.date_from.toString()).format('YYYY-MM-DD')
@@ -293,28 +296,34 @@ class ReturnOrderPage extends React.Component {
                 </Grid>
             </Grid>
           <Grid container spacing={gridSpacing}>
-            <DataTable
-              columns={this.columns}
-              rows={this.state.items}
-              page={this.state.queryParams.page}
-              limit={this.state.queryParams.limit}
-              total={this.state.total}
-              handlePagination={this.handlePagination}
-              actions={[
-                {
-                  label: 'View',
-                  onClick: this.handleView,
-                  color: 'primary',
-                  show: hasPermission(this.state.permissions, 'return_orders', 'view')
-                },
-                /*{
-                  label: 'Assign',
-                  onClick: this.handleAssign,
-                  color: 'primary',
-                  conditions: []
-                }*/
-              ]}
-            />
+            {this.state.isLoading ? (
+              <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+                <CircularProgress />
+              </Box>
+            ) : (
+              <DataTable
+                columns={this.columns}
+                rows={this.state.items}
+                page={this.state.queryParams.page}
+                limit={this.state.queryParams.limit}
+                total={this.state.total}
+                handlePagination={this.handlePagination}
+                actions={[
+                  {
+                    label: 'View',
+                    onClick: this.handleView,
+                    color: 'primary',
+                    show: hasPermission(this.state.permissions, 'return_orders', 'view')
+                  },
+                  /*{
+                    label: 'Assign',
+                    onClick: this.handleAssign,
+                    color: 'primary',
+                    conditions: []
+                  }*/
+                ]}
+              />
+            )}
           </Grid>
 
 

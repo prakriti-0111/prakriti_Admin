@@ -47,35 +47,23 @@ module.exports = {
           MiniCssExtractPlugin.loader,
           "css-loader",
           "postcss-loader",
-          "sass-loader",
-        ],
-      },
-      {
-        test: /\.(jpe?g|png|gif|svg)$/i,
-        use: [
           {
-            loader: "file-loader",
+            loader: "sass-loader",
             options: {
-              name: "assets/[name].[ext]",
-            },
-          },
-          {
-            loader: "image-webpack-loader",
-            options: {
-              query: {
-                mozjpeg: {
-                  progressive: true,
-                },
-                gifsicle: {
-                  interlaced: true,
-                },
-                optipng: {
-                  optimizationLevel: 7,
-                },
+              api: "modern",
+              sassOptions: {
+                silenceDeprecations: ["import"],
               },
             },
           },
         ],
+      },
+      {
+        test: /\.(jpe?g|png|gif|svg)$/i,
+        type: "asset/resource",
+        generator: {
+          filename: "assets/[name][ext]",
+        },
       },
     ],
   },

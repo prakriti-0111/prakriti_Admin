@@ -1,6 +1,6 @@
 import { React, Component } from 'react';
 import { connect } from 'react-redux';
-import { Grid, Button, Card, CardContent, Typography, FormControl, TextField, IconButton, Box } from '@mui/material';
+import { Grid, Button, Card, CardContent, Typography, FormControl, TextField, IconButton, Box, CircularProgress } from '@mui/material';
 import { bindActionCreators } from 'redux';
 import { gridSpacing } from 'store/constant';
 import MainCard from 'ui-component/cards/MainCard';
@@ -26,6 +26,7 @@ class RetailerPage extends Component {
     super(props);
 
     this.state = {
+      isLoading: false,
       ...this.props,
       queryParams: {
         page: 1,
@@ -122,6 +123,7 @@ class RetailerPage extends Component {
     let update = {};
     if(props.items !== state.items){
       update.items = props.items;
+      update.isLoading = false;
     }
 
     if(props.total !== state.total){
@@ -155,6 +157,7 @@ class RetailerPage extends Component {
   }
 
   loadListData = () => {
+    this.setState({ isLoading: true });
     let data = {...this.state.queryParams};
     if(data.date_from){
       data.date_from = moment(data.date_from.toString()).format('YYYY-MM-DD')
@@ -344,6 +347,11 @@ class RetailerPage extends Component {
 
 
           <Grid container spacing={gridSpacing}>
+            {this.state.isLoading ? (
+              <Box sx={{ display: 'flex', justifyContent: 'center', p: 3, width: '100%' }}>
+                <CircularProgress />
+              </Box>
+            ) : (
             <DataTable 
               columns={this.columns}
               rows={this.state.items}
@@ -354,6 +362,7 @@ class RetailerPage extends Component {
               actions={this.getTableActions()}
               haveAllOption={true}
             />
+            )}
           </Grid>
 
           <Dialog

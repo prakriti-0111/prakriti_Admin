@@ -54,6 +54,8 @@ import {
 import { getNotifiactions } from "actions/superadmin/notification.actions";
 import { stocksList } from 'actions/superadmin/stocks.actions';
 import { stocksTransferHistoryStore } from 'actions/superadmin/stockHistory.actions';
+import { purityList } from 'actions/superadmin/purity.actions';
+import axios from 'axios';
 import './style.css';
 
 class SaleViewPage extends React.Component {
@@ -61,6 +63,7 @@ class SaleViewPage extends React.Component {
     super(props);
 
     this.state = {
+      isLoading: true,
       sale: this.props.sale,
       materialStocks: this.props.materialStocks,
       openDialog: false,
@@ -80,6 +83,11 @@ class SaleViewPage extends React.Component {
         table_type: "sale",
       },
       auth: this.props.auth,
+      liveGoldPerGram: 0,
+      liveGoldPriceDisplay: '',
+      selectedPurityLabel: '',
+      selectedPurityPerGram: 0,
+      purityItems: this.props.purityItems || [],
     };
 
     this.columns = [
@@ -113,6 +121,7 @@ class SaleViewPage extends React.Component {
   componentDidMount() {
     this.loadViewData();
     this.loadListData();
+    this.props.actions.purityList({ all: 1 });
   }
 
   loadListData = () => {
@@ -138,6 +147,7 @@ class SaleViewPage extends React.Component {
     let update = {};
     if (props.sale !== state.sale) {
       update.sale = props.sale;
+      update.isLoading = false;
     }
 
     if (props.materialStocks !== state.materialStocks) {
@@ -167,10 +177,25 @@ class SaleViewPage extends React.Component {
     if (props.auth !== state.auth) {
       update.auth = props.auth;
     }
+    if (props.purityItems !== state.purityItems) {
+      update.purityItems = props.purityItems;
+    }
+    if (props.materialStocks !== state.materialStocks) {
+      update.materialStocks = props.materialStocks;
+    }
     return update;
   }
 
   handlePayNow = () => {
+    axios.get('https://n8n.prakriti.one/webhook/gold-rate-india')
+      .then(res => {
+        if (res.data && res.data.per_gram) {
+          const liveGoldPerGram = res.data.per_gram['24K'];
+          const liveGoldPriceDisplay = res.data.display || `₹${liveGoldPerGram.toLocaleString('en-IN')}`;
+          this.setState({ liveGoldPerGram, liveGoldPriceDisplay });
+        }
+      })
+      .catch(() => {});
     this.props.actions.stocksList({
       page: 1,
       limit: 50,
@@ -247,28 +272,64 @@ class SaleViewPage extends React.Component {
 
   handleSubmit = async () => {
     if (!this.formValidate()) {
-      this.setState({
-        processing: true,
+      this.setState({ processing: true });
+      const { formValues, sale } = this.state;
+      const isMetalPayment = formValues.payment_mode === 'metal';
+      const totalAmount = parseFloat(formValues.amount) || 0;
+      // This modal is 24K-only, so the quoted rate is the 24K spot itself.
+      const metalRate = this.state.liveGoldPerGram > 0 ? this.state.liveGoldPerGram : null;
+
+      // 1. Record payment against the sale
+      this.props.actions.paymentStore({
+        ...formValues,
+        amount: totalAmount,
+        metal_rate: isMetalPayment ? metalRate : null,
+        user_id: sale.user_id,
+        table_id: sale.id,
+        purity_id: isMetalPayment ? '' : formValues.purity_id,
+        effective_weight: isMetalPayment ? formValues.weight : formValues.effective_weight,
       });
-      let data = {
-        ...this.state.formValues,
-        user_id: this.state.sale.user_id,
-        table_id: this.state.sale.id,
-      };
-      this.props.actions.paymentStore(data);
-      await stocksTransferHistoryStore({
-        from_user_id: this.state.sale.user_id,
-        to_user_id: this.state.sale.sale_by_id,
-        material_id: this.state.formValues.material_id,
-        quantity: 0,
-        //material_stocks: this.state.materialStocks,
-        payment_mode: this.state.formValues.payment_mode,
-        amount: this.state.formValues.amount,
-        purity_id: this.state.formValues.purity_id,
-        unit_id: this.state.formValues.unit_id,
-        weight: this.state.formValues.weight,
-        effective_weight: this.state.formValues.effective_weight
-      });
+
+      // 2. Transfer metal from buyer to seller's material stock
+      if (isMetalPayment) {
+        // Find 24K purity from loaded purity list (value = 100 or highest available)
+        const purityItems = this.state.purityItems || [];
+        let purity24K = purityItems.find(p => parseFloat(p.value) === 100);
+        if (!purity24K) purity24K = purityItems.find(p => (p.name || '').toLowerCase().includes('24'));
+        if (!purity24K && purityItems.length > 0) {
+          purity24K = purityItems.reduce((max, p) => parseFloat(p.value) > parseFloat(max.value) ? p : max, purityItems[0]);
+        }
+        // Get unit_id from seller's material stocks if loaded
+        const materialStocks = this.state.materialStocks || [];
+        let unit_id = '';
+        if (materialStocks.length > 0 && materialStocks[0].stock_materials?.length > 0) {
+          unit_id = materialStocks[0].stock_materials[0].unit_id || '';
+        }
+        try {
+          const stockRes = await stocksTransferHistoryStore({
+            from_user_id: sale.user_id,
+            to_user_id: sale.sale_by_id,
+            material_id: formValues.material_id,
+            quantity: 0,
+            payment_mode: 'metal',
+            amount: totalAmount,
+            metal_rate: metalRate,
+            ref_no: sale.invoice_number || `SALE-${sale.id}`,
+            purity_id: purity24K?.id || '',
+            unit_id: unit_id,
+            weight: formValues.weight,
+            effective_weight: formValues.weight,
+          });
+          if (!stockRes?.data?.success) {
+            this.props.enqueueSnackbar(
+              stockRes?.data?.message || 'Metal stock update failed.',
+              { variant: 'warning' }
+            );
+          }
+        } catch (e) {
+          this.props.enqueueSnackbar('Metal stock update failed.', { variant: 'warning' });
+        }
+      }
     }
   };
 
@@ -276,14 +337,12 @@ class SaleViewPage extends React.Component {
     let formValues = this.state.formValues;
     let formErros = this.state.formErros;
     let hasErr = false;
-    if (
-      parseFloat(formValues.amount) > parseFloat(this.state.sale.due_amount)
-    ) {
+    const isMetalPayment = formValues.payment_mode === 'metal';
+
+    // Nothing absorbs an over-payment any more, so no mode may exceed the due.
+    if (parseFloat(formValues.amount) > parseFloat(this.state.sale.due_amount)) {
       hasErr = true;
-      this.props.enqueueSnackbar(
-        "Amount must be less than or equal due amount.",
-        { variant: "error" }
-      );
+      this.props.enqueueSnackbar("Amount must be less than or equal due amount.", { variant: "error" });
     }
     if (isEmpty(formValues.amount)) {
       formErros.amount = true;
@@ -297,23 +356,15 @@ class SaleViewPage extends React.Component {
     } else {
       formErros.payment_mode = false;
     }
-    if(this.state.materialStocks.length > 0 && isSuperAdmin && isAdmin && formValues.payment_mode == "metal"){
-      if (isEmpty(formValues.purity_id)) {
-        formErros.purity_id = true;
-        hasErr = true;
-      } else {
-        formErros.purity_id = false;
-      }
+    if (isMetalPayment) {
+      // Metal is always 24K — only validate weight
       if (isEmpty(formValues.weight)) {
         formErros.weight = true;
         hasErr = true;
-      } else if(formValues.weight <= 0){
+      } else if (parseFloat(formValues.weight) <= 0) {
         formErros.weight = true;
         hasErr = true;
-        this.props.enqueueSnackbar(
-          "Weight must be greater than 0.",
-          { variant: "error" }
-        );
+        this.props.enqueueSnackbar("Weight must be greater than 0.", { variant: "error" });
       } else {
         formErros.weight = false;
       }
@@ -381,25 +432,10 @@ class SaleViewPage extends React.Component {
 
   render() {
     const { sale, formValues, formErros } = this.state;
-    console.log("formValues : ", formValues);
-    let metalPurityList = [];
-    if(this.state.materialStocks.length > 0 && isSuperAdmin && isAdmin && formValues.payment_mode == "metal"){
-      this.state.materialStocks.map((item) => {
-        if(item.stock_materials.length > 0){
-          item.stock_materials.map((subItem) => {
-            subItem.purities.map((priority) => {
-              metalPurityList.push({
-                id: priority.id,
-                unit_id: subItem.unit_id,
-                value: priority.value,
-                name: priority.name+`${priority.value?"("+priority.value+"%)":""}`,
-              });
-            });
-          });
-        }
-      });
-    }
-    console.log("sale : ", sale);
+    const { liveGoldPerGram } = this.state;
+    const metalAmount = liveGoldPerGram > 0 && parseFloat(formValues.weight) > 0
+      ? parseFloat((parseFloat(formValues.weight) * liveGoldPerGram).toFixed(2))
+      : parseFloat(formValues.amount) || 0;
     let total_report_charge_amount = 0;
     let total_report_charge_tax_amount = 0;
     let total_report_charge_amount_after_tax = 0;
@@ -424,10 +460,10 @@ class SaleViewPage extends React.Component {
             Back
           </Button></>
         }>
-        {!sale ? (
-          <Grid container justifyContent='center'>
-            <CircularProgress size='30px' />
-          </Grid>
+        {this.state.isLoading ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+            <CircularProgress />
+          </Box>
         ) : (
           <>
             {/* <div className='single-item-wrapper details-header'>
@@ -657,42 +693,19 @@ class SaleViewPage extends React.Component {
           onClose={this.handleDialogClose}
           fullWidth
           maxWidth='md'>
-          <DialogTitle>Pay Now</DialogTitle>
+          <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', pr: 3 }}>
+            <span>Pay Now</span>
+            {this.state.liveGoldPriceDisplay ? (
+              <Chip
+                label={`24K:- ₹${this.state.liveGoldPerGram.toLocaleString('en-IN')}/gm`}
+                size="small"
+                color="warning"
+                variant="outlined"
+              />
+            ) : null}
+          </DialogTitle>
           <DialogContent>
             <DialogContentText></DialogContentText>
-            {
-              this.state.materialStocks.length > 0 && isSuperAdmin && isAdmin && formValues.payment_mode == "metal"?
-              <TableContainer component={Paper} style={{ marginBottom: "20px" }}>
-                <div className='ratn-table-purchase-wrapper'>
-                  <Table aria-label="collapsible table" className='invoice_product_list'>
-                    <TableHead className='ratn-table-header sale-modal-header'>
-                      <TableRow>
-                        <TableCell>Purity</TableCell>
-                        <TableCell>Available Qty</TableCell>
-                        <TableCell>Avl. Weight</TableCell>
-                        <TableCell>Unit</TableCell>
-                        <TableCell>Mrp.</TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {this.state.materialStocks.map((row, i) => (
-                        <TableRow key={i}>
-                          <TableCell>{row.stock_materials[0].purity_name}</TableCell>
-                          <TableCell>{row.quantity}</TableCell>
-                          <TableCell>{row.total_weight_display}</TableCell>
-                          <TableCell>{row.unit_display[0]}</TableCell>
-                          <TableCell>{row.mrp_display}</TableCell>
-                        </TableRow>
-                      ))}
-                      {/* {this.state.suppliers.map((row, i) => (
-                              <Row key={i} row={row} index={i} />
-                            ))} */}
-                    </TableBody>
-                  </Table>
-                </div>
-              </TableContainer>
-              : null
-            }
             <Box sx={{ flexGrow: 1, m: 0.5 }}>
               <Grid container spacing={2}>
                 <Grid
@@ -720,21 +733,21 @@ class SaleViewPage extends React.Component {
                     />
                   </LocalizationProvider>
                 </Grid>
+                {/* Amount: auto-calculated for metal, manual for others */}
                 <Grid item md={4} xs={12} className='create-input'>
                   <TextField
                     label='Amount'
                     variant='outlined'
                     fullWidth
-                    value={formValues.amount}
+                    value={formValues.payment_mode === 'metal' ? (metalAmount || '') : formValues.amount}
                     InputProps={{
-                      startAdornment: (
-                        <InputAdornment position='start'>₹</InputAdornment>
-                      ),
+                      startAdornment: <InputAdornment position='start'>₹</InputAdornment>,
+                      readOnly: formValues.payment_mode === 'metal',
                     }}
                     error={formErros.amount}
-                    onChange={(event) =>
-                      this.updateFormValue(event.target.value, "amount")
-                    }
+                    onChange={(event) => {
+                      if (formValues.payment_mode !== 'metal') this.updateFormValue(event.target.value, 'amount');
+                    }}
                   />
                 </Grid>
 
@@ -746,152 +759,59 @@ class SaleViewPage extends React.Component {
                       value={formValues.payment_mode}
                       fullWidth
                       label='Payment Mode'
-                      onChange={(event) =>
-                        this.updateFormValue(event.target.value, "payment_mode")
-                      }>
+                      onChange={(event) => {
+                        this.setState({
+                          formValues: { ...this.state.formValues, payment_mode: event.target.value, weight: '', amount: '' },
+                        });
+                      }}>
                       <MenuItem value=''></MenuItem>
                       <MenuItem value='cash'>Cash</MenuItem>
                       <MenuItem value='cheque'>Cheque</MenuItem>
                       <MenuItem value='imps_neft'>BANKING/RTGS/NEFT</MenuItem>
                       <MenuItem value='online'>UPI/PhonePe/Gpay</MenuItem>
-                      {isSuperAdmin && isAdmin && <MenuItem value='metal'>Metal</MenuItem>}
+                      {isSuperAdmin && isAdmin && <MenuItem value='metal'>Metal (24K)</MenuItem>}
                     </Select>
                   </FormControl>
                 </Grid>
-                {formValues.payment_mode == "cheque" ? (
+
+                {formValues.payment_mode === 'cheque' && (
+                  <Grid item md={4} xs={12} className='create-input'>
+                    <TextField label='Cheque No' variant='outlined' fullWidth value={formValues.cheque_no}
+                      onChange={(e) => this.updateFormValue(e.target.value, 'cheque_no')} />
+                  </Grid>
+                )}
+                {(formValues.payment_mode === 'imps_neft' || formValues.payment_mode === 'upi') && (
+                  <Grid item md={4} xs={12} className='create-input'>
+                    <TextField label='Transaction #' variant='outlined' fullWidth value={formValues.txn_id}
+                      onChange={(e) => this.updateFormValue(e.target.value, 'txn_id')} />
+                  </Grid>
+                )}
+
+                {/* Metal 24K: weight input → amount auto-calculates from live rate */}
+                {isSuperAdmin && isAdmin && formValues.payment_mode === 'metal' && (
                   <Grid item md={4} xs={12} className='create-input'>
                     <TextField
-                      label='Cheque No'
+                      label='Weight (GM) — 24K'
                       variant='outlined'
                       fullWidth
-                      value={formValues.cheque_no}
-                      onChange={(event) =>
-                        this.updateFormValue(event.target.value, "cheque_no")
-                      }
+                      error={formErros.weight}
+                      value={formValues.weight}
+                      onChange={(event) => {
+                        const w = event.target.value;
+                        const calcAmount = liveGoldPerGram > 0 && parseFloat(w) > 0
+                          ? parseFloat((parseFloat(w) * liveGoldPerGram).toFixed(2)) : '';
+                        this.setState({
+                          formValues: { ...this.state.formValues, weight: w, amount: calcAmount, effective_weight: w },
+                        });
+                      }}
                     />
+                    {liveGoldPerGram > 0 && parseFloat(formValues.weight) > 0 && (
+                      <Typography variant='h6' gutterBottom component='div'>
+                        {`₹${metalAmount.toLocaleString('en-IN')} @ ₹${liveGoldPerGram.toLocaleString('en-IN')}/gm`}
+                      </Typography>
+                    )}
                   </Grid>
-                ) : null}
-                {formValues.payment_mode == "imps_neft" ||
-                formValues.payment_mode == "upi" ? (
-                  <Grid item md={4} xs={12} className='create-input'>
-                    <TextField
-                      label='Transaction #'
-                      variant='outlined'
-                      fullWidth
-                      value={formValues.txn_id}
-                      onChange={(event) =>
-                        this.updateFormValue(event.target.value, "txn_id")
-                      }
-                    />
-                  </Grid>
-                ) : null}
-                {isSuperAdmin && isAdmin && formValues.payment_mode == "metal" ? (
-                  <>
-                    <Grid item md={4} xs={12} className='create-input'>
-                      <FormControl fullWidth error={formErros.payment_mode}>
-                        <InputLabel>Purity</InputLabel>
-                        <Select
-                          className='input-inner'
-                          value={formValues.purity_id}
-                          fullWidth
-                          label='Purity'
-                          error={formErros.purity_id}
-                          onChange={(event) => {
-                            let effective_weight = 0;
-                            let selected_purity = metalPurityList.find(
-                              (item) => item.id == event.target.value
-                            );
-                            if (selected_purity && parseFloat(formValues.weight) > 0) {
-                              effective_weight = selected_purity.value
-                              ?
-                                (parseFloat(formValues.weight) *
-                                parseFloat(selected_purity.value)) /
-                                100
-                              : parseFloat(formValues.weight);
-                            }
-                              
-                            console.log(" selected_purity : ", selected_purity);
-                           
-                            this.setState({
-                              formValues: {
-                                ...this.state.formValues,
-                                "effective_weight": effective_weight,
-                                "unit_id" : selected_purity.unit_id,
-                                "purity_id": selected_purity.id,
-                              }
-                            });
-                          }
-                          }>
-                          {metalPurityList.map((item, i) => (
-                            <MenuItem key={i} value={item.id}>
-                              {item.name}
-                            </MenuItem>
-                          ))}
-                        </Select>
-                      </FormControl>
-                    </Grid>
-                    {/* <Grid item md={4} xs={12} className='create-input'>
-                      <FormControl fullWidth error={formErros.payment_mode}>
-                        <InputLabel>Material</InputLabel>
-                        <Select
-                          className='input-inner'
-                          value={formValues.material_id}
-                          fullWidth
-                          label='Material'
-                          error={formErros.material_id}
-                          onChange={(event) => {
-                            
-                          }
-                          }>
-                          {metalPurityList.map((item, i) => (
-                            <MenuItem key={i} value={item.id}>
-                              {item.name}
-                            </MenuItem>
-                          ))}
-                        </Select>
-                      </FormControl>
-                    </Grid> */}
-                    <Grid item md={4} xs={12} className='create-input'>
-                      <TextField
-                        label='Weight(GM)'
-                        variant='outlined'
-                        fullWidth
-                        error={formErros.weight}
-                        value={formValues.weight}
-                        onChange={(event) => {
-                          let effective_weight = 0;
-                          let selected_purity = metalPurityList.find(
-                            (item) => item.id == formValues.purity_id
-                          );
-                          if (selected_purity && parseFloat(event.target.value) > 0) {
-                            effective_weight = selected_purity.value
-                            ?
-                              (parseFloat(event.target.value) *
-                              parseFloat(selected_purity.value)) /
-                              100
-                            : parseFloat(event.target.value);
-                          }
-                            
-                          console.log(" selected_purity : ", selected_purity);
-                          
-                          this.setState({
-                            formValues: {
-                              ...this.state.formValues,
-                              "weight": event.target.value,
-                              "unit_id" : selected_purity.unit_id,
-                              "effective_weight": effective_weight
-                            },
-                          });
-                        }
-                        }
-                      />
-                      {formValues.effective_weight > 0 ? <Typography
-                        variant='h6'
-                        gutterBottom
-                        component='div'>{`Effective weight : ${formValues.effective_weight} GM`}</Typography>:<></>}
-                    </Grid>
-                  </>
-                ) : null}
+                )}
                 <Grid item md={4} xs={12} className='create-input'>
                   <TextareaAutosize
                     className='description'
@@ -958,6 +878,7 @@ class SaleViewPage extends React.Component {
 const mapStateToProps = (state) => ({
   sale: state.superadmin.sales.sale,
   materialStocks: state.superadmin.stocks.items,
+  purityItems: state.superadmin.purity.items,
   actionCalled: state.superadmin.payment.actionCalled,
   createSuccess: state.superadmin.payment.createSuccess,
   successMessage: state.superadmin.payment.successMessage,
@@ -976,7 +897,8 @@ const mapDispatchToProps = (dispatch) => {
         paymentStore,
         paymentList,
         getNotifiactions,
-        stocksList
+        stocksList,
+        purityList
       },
       dispatch
     ),
