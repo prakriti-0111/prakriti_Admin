@@ -2,6 +2,7 @@ import { React, Component } from 'react';
 import { matchRoutes, useLocation } from "react-router-dom"
 import { connect } from 'react-redux';
 import { Select, Stack, InputLabel, Box, Typography, FormControl, Card, CardContent, TextField, Grid, Button, MenuItem, CircularProgress } from '@mui/material';
+import axios from 'axios';
 import { bindActionCreators } from 'redux';
 import { gridSpacing } from 'store/constant';
 import MainCard from 'ui-component/cards/MainCard';
@@ -77,7 +78,9 @@ class MaterialStockPage extends Component {
       sub_categories: this.props.sub_categories,
       price_by_categories: [],
       unitList: [],
-      processing: false
+      processing: false,
+      liveGoldRate24K: 0,
+      liveGoldRateDisplay: ''
     }
 
     this.columns = [
@@ -116,6 +119,10 @@ class MaterialStockPage extends Component {
         display_name: 'Size'
       },*/
       {
+        name: 'rate_display',
+        display_name: 'Rate'
+      },
+      {
         name: 'mrp_display',
         display_name: 'Price'
       }
@@ -128,10 +135,28 @@ class MaterialStockPage extends Component {
     this.loadListData();
     this.props.actions.categoryList({ all: 1 });
     this.props.actions.unitList({ all: 1 });
-
     this.loadPriceByCategory();
+    this.props.actions.employeeList({ role_id: this.isManager ? 1 : 9 });
+    this.fetchLiveGoldRate();
+    this._goldRateInterval = setInterval(this.fetchLiveGoldRate, 5 * 60 * 1000); // refresh every 5 min
+  }
 
-    this.props.actions.employeeList({ role_id: this.isManager ? 1 : 9 })
+  componentWillUnmount() {
+    clearInterval(this._goldRateInterval);
+  }
+
+  fetchLiveGoldRate = () => {
+    axios.get('https://n8n.prakriti.one/webhook/gold-rate-india')
+      .then(res => {
+        if (res.data && res.data.per_gram && res.data.per_gram['24K']) {
+          const rate = res.data.per_gram['24K'];
+          this.setState({
+            liveGoldRate24K: rate,
+            liveGoldRateDisplay: `₹${parseFloat(rate).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}/gm`
+          });
+        }
+      })
+      .catch(() => {});
   }
 
   loadPriceByCategory = async () => {
@@ -375,25 +400,57 @@ class MaterialStockPage extends Component {
 
     return (
       <>
-        <div className='sale-heading'>
-          <h1>Material Stock List</h1>
+        <div className='sale-heading' style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+          <h1 style={{ margin: 0 }}>Material Stock List</h1>
+          {this.state.liveGoldRate24K > 0 && (
+            <span style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              color: '#fff',
+              fontWeight: 800,
+              fontSize: '0.9rem',
+              whiteSpace: 'nowrap'
+            }}>
+              Live 24K Gold:- <strong style={{ marginLeft: 4 }}>{this.state.liveGoldRateDisplay}</strong>
+            </span>
+          )}
         </div>
         {
           this.state.price_by_categories.length ?
             <Card className='dashboard_card' style={{ marginBottom: '4px' }}>
               {
-                this.state.price_by_categories.map((item, key) => (
-                  <CardContent className={`dashboard_card_content bg-color-1`} sx={{ display: "flex", justifyContent: "space-between" }} key={key} onClick={() => this.handleCardClick(item.category_id)}>
-                    <Typography sx={{ fontSize: 14, margin: 0 }} color="text.secondary" gutterBottom component="span">
-                      <h1>{item.category_name}</h1>
-                      <h2>{displayAmount(item.total_amount)}</h2>
-                      <h3>{item.quantity} Piece(s)</h3>
-                    </Typography>
-                    <div className="card-icon">
-                      {/* <DiamondIcon /> */}
-                    </div>
-                  </CardContent>
-                ))
+                (() => {
+                  const { liveGoldRate24K, items } = this.state;
+                  // Build a map of category_id → live total using items list
+                  const liveTotalByCategory = {};
+                  if (liveGoldRate24K > 0 && items && items.length) {
+                    items.forEach(item => {
+                      const catId = item.category_id;
+                      if (catId === undefined || catId === null) return;
+                      const is24K = (item.purity_name || '').toLowerCase().includes('24') || parseFloat(item.purity_value) >= 99;
+                      const weight = parseFloat(item.total_weight) || 0;
+                      const staticMrp = parseFloat(item.mrp) || 0;
+                      const val = is24K ? weight * liveGoldRate24K : staticMrp;
+                      liveTotalByCategory[catId] = (liveTotalByCategory[catId] || 0) + val;
+                    });
+                  }
+                  return this.state.price_by_categories.map((cat, key) => {
+                    const liveTotal = liveTotalByCategory[cat.category_id];
+                    const displayTotal = liveGoldRate24K > 0 && liveTotal !== undefined
+                      ? liveTotal.toFixed(2)
+                      : cat.total_amount;
+                    return (
+                      <CardContent className={`dashboard_card_content bg-color-1`} sx={{ display: "flex", justifyContent: "space-between" }} key={key} onClick={() => this.handleCardClick(cat.category_id)}>
+                        <Typography sx={{ fontSize: 14, margin: 0 }} color="text.secondary" gutterBottom component="span">
+                          <h1>{cat.category_name}</h1>
+                          <h2>{displayAmount(displayTotal)}</h2>
+                          <h3>{cat.quantity} Piece(s)</h3>
+                        </Typography>
+                        <div className="card-icon" />
+                      </CardContent>
+                    );
+                  });
+                })()
               }
             </Card>
             : null
@@ -462,7 +519,22 @@ class MaterialStockPage extends Component {
             ) : (
               <DataTable
                 columns={this.columns}
-                rows={this.state.items}
+                rows={(() => {
+                  const { liveGoldRate24K, items } = this.state;
+                  if (!liveGoldRate24K || !items) return items;
+                  return items.map(item => {
+                    const purity = (item.purity_name || '').toLowerCase();
+                    const is24K = purity.includes('24') || parseFloat(item.purity_value) >= 99;
+                    if (!is24K) return item;
+                    const weightGm = parseFloat(item.total_weight) || 0;
+                    const livePrice = parseFloat((liveGoldRate24K * weightGm).toFixed(2));
+                    return {
+                      ...item,
+                      rate_display: `₹${parseFloat(liveGoldRate24K).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+                      mrp_display: `₹${livePrice.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                    };
+                  });
+                })()}
                 page={this.state.queryParams.page}
                 limit={this.state.queryParams.limit}
                 total={this.state.total}

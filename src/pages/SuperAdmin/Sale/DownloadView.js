@@ -1615,12 +1615,14 @@ class SaleViewPage extends React.Component {
           >
             <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', pr: 3 }}>
               <span>Pay Now</span>
-              {formValues.payment_mode === 'metal' && this.state.selectedPurityPerGram > 0 && (
-                <Chip
-                  label={`${formValues.payment_mode === 'metal' && this.state.selectedPurityLabel ? this.state.selectedPurityLabel : '24K'}:- \u20b9${(formValues.payment_mode === 'metal' && this.state.selectedPurityPerGram > 0 ? this.state.selectedPurityPerGram : this.state.liveGoldPerGram).toLocaleString('en-IN')}/gm`}
-                  size="small"
-                  sx={{ background: 'transparent', color: 'white', fontSize: '0.85rem' }}
-                />
+              {this.state.liveGoldPerGram > 0 && (
+                <span style={{
+                  display: 'inline-flex', alignItems: 'center',
+                  color: '#fff', fontWeight: 800, fontSize: '0.9rem',
+                  whiteSpace: 'nowrap'
+                }}>
+                  {formValues.payment_mode === 'metal' && this.state.selectedPurityLabel ? this.state.selectedPurityLabel : '24K'}:-&nbsp;<strong>₹{(formValues.payment_mode === 'metal' && this.state.selectedPurityPerGram > 0 ? this.state.selectedPurityPerGram : this.state.liveGoldPerGram).toLocaleString('en-IN')}/gm</strong>
+                </span>
               )}
             </DialogTitle>
             <DialogContent>
@@ -1673,11 +1675,11 @@ class SaleViewPage extends React.Component {
                             let calculated_amount = '';
                             if (selected_purity) {
                               if (parseFloat(formValues.weight) > 0) {
-                                effective_weight = (parseFloat(formValues.weight) * purityPct) / 100;
+                                effective_weight = parseFloat(((parseFloat(formValues.weight) * purityPct) / 100).toFixed(3));
                                 if (liveGoldPerGram > 0)
                                   calculated_amount = parseFloat((effective_weight * liveGoldPerGram * purityPct / 100).toFixed(2));
                               } else if (parseFloat(formValues.amount) > 0 && liveGoldPerGram > 0) {
-                                effective_weight = parseFloat(formValues.amount) / (liveGoldPerGram * purityPct / 100);
+                                effective_weight = parseFloat((parseFloat(formValues.amount) / (liveGoldPerGram * purityPct / 100)).toFixed(3));
                               }
                             }
                             this.setState({
@@ -1828,8 +1830,8 @@ class SaleViewPage extends React.Component {
                               const purityPct = parseFloat(selPurity?.value) || 100;
                               // gross weight = fine ÷ payment purity%
                               const gross_weight = purityPct > 0 ? fine_weight * 100 / purityPct : fine_weight;
-                              newFormValues.effective_weight = parseFloat(fine_weight.toFixed(4));
-                              newFormValues.weight = parseFloat(gross_weight.toFixed(4));
+                              newFormValues.effective_weight = parseFloat(fine_weight.toFixed(3));
+                              newFormValues.weight = parseFloat(gross_weight.toFixed(3));
                             } else if (!parseFloat(val)) {
                               newFormValues.weight = '';
                               newFormValues.effective_weight = '';
@@ -1843,30 +1845,41 @@ class SaleViewPage extends React.Component {
                           label="Fine Weight(GM)"
                           variant="outlined"
                           fullWidth
+                          type="number"
+                          inputProps={{ step: '0.001', min: 0 }}
                           error={formErros.weight}
                           value={formValues.effective_weight}
                           onChange={(event) => {
+                            let inputVal = event.target.value;
+                            // Limit to 3 decimal places
+                            if (inputVal && inputVal.includes('.')) {
+                              const parts = inputVal.split('.');
+                              if (parts[1] && parts[1].length > 3) {
+                                inputVal = parts[0] + '.' + parts[1].slice(0, 3);
+                              }
+                            }
                             const selected_purity = metalPurityList.find(
                               (item) => item.id == formValues.purity_id,
                             );
                             const { liveGoldPerGram } = this.state;
                             const purityPct = parseFloat(selected_purity?.value) || 100;
                             let calculated_amount = '';
-                            const enteredFine = parseFloat(event.target.value) || 0;
+                            const enteredFine = parseFloat(inputVal) || 0;
                             // Cap at invoice fine metal limit
                             const cappedFine = calculatedFineWeight !== null && enteredFine > calculatedFineWeight
                               ? calculatedFineWeight
                               : enteredFine;
                             // gross weight = fine ÷ payment purity%
-                            const gross_weight = cappedFine > 0 ? parseFloat((cappedFine * 100 / purityPct).toFixed(4)) : 0;
+                            const gross_weight = cappedFine > 0 ? parseFloat((cappedFine * 100 / purityPct).toFixed(3)) : 0;
                             // amount = fine weight × 24K rate
                             if (cappedFine > 0 && liveGoldPerGram > 0) {
                               calculated_amount = parseFloat((cappedFine * liveGoldPerGram).toFixed(2));
                             }
+                            const roundedFine = cappedFine > 0 ? parseFloat(cappedFine.toFixed(3)) : inputVal;
                             this.setState({
                               formValues: {
                                 ...this.state.formValues,
-                                effective_weight: cappedFine || event.target.value,
+                                effective_weight: roundedFine,
                                 weight: gross_weight,
                                 unit_id: selected_purity ? selected_purity.unit_id || '' : '',
                                 ...(calculated_amount ? { amount: calculated_amount } : {}),
