@@ -1693,13 +1693,14 @@ class SaleViewPage extends React.Component {
           >
             <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', pr: 3 }}>
               <span>Pay Now</span>
-              {this.state.liveGoldPriceDisplay ? (
-                <Chip
-                  label={`${this.state.selectedPurityLabel || '24K'}:- ₹${(this.state.selectedPurityPerGram > 0 ? this.state.selectedPurityPerGram : this.state.liveGoldPerGram).toLocaleString('en-IN')}/gm`}
-                  size="small"
-                  color="warning"
-                  variant="outlined"
-                />
+              {this.state.liveGoldPerGram > 0 ? (
+                <span style={{
+                  display: 'inline-flex', alignItems: 'center',
+                  color: '#fff', fontWeight: 800, fontSize: '0.9rem',
+                  whiteSpace: 'nowrap'
+                }}>
+                  {this.state.selectedPurityLabel || '24K'}:-&nbsp;<strong>₹{(this.state.selectedPurityPerGram > 0 ? this.state.selectedPurityPerGram : this.state.liveGoldPerGram).toLocaleString('en-IN')}/gm</strong>
+                </span>
               ) : null}
             </DialogTitle>
             <DialogContent>
@@ -1841,10 +1842,10 @@ class SaleViewPage extends React.Component {
                                 parseFloat(formValues.weight) > 0
                               ) {
                                 effective_weight = selected_purity.value
-                                  ? (parseFloat(formValues.weight) *
+                                  ? parseFloat(((parseFloat(formValues.weight) *
                                       parseFloat(selected_purity.value)) /
-                                    100
-                                  : parseFloat(formValues.weight);
+                                    100).toFixed(3))
+                                  : parseFloat(parseFloat(formValues.weight).toFixed(3));
                               }
 
                               console.log(
@@ -1896,27 +1897,37 @@ class SaleViewPage extends React.Component {
                           label="Weight(GM)"
                           variant="outlined"
                           fullWidth
+                          type="number"
+                          inputProps={{ step: '0.001', min: 0 }}
                           error={formErros.weight}
                           value={formValues.weight}
                           onChange={(event) => {
+                            let inputVal = event.target.value;
+                            // Limit to 3 decimal places
+                            if (inputVal && inputVal.includes('.')) {
+                              const parts = inputVal.split('.');
+                              if (parts[1] && parts[1].length > 3) {
+                                inputVal = parts[0] + '.' + parts[1].slice(0, 3);
+                              }
+                            }
                             let effective_weight = 0;
                             let selected_purity = metalPurityList.find(
                               (item) => item.id == formValues.purity_id,
                             );
                             if (
                               selected_purity &&
-                              parseFloat(event.target.value) > 0
+                              parseFloat(inputVal) > 0
                             ) {
                               effective_weight = selected_purity.value
-                                ? (parseFloat(event.target.value) *
+                                ? (parseFloat(inputVal) *
                                     parseFloat(selected_purity.value)) /
                                   100
-                                : parseFloat(event.target.value);
+                                : parseFloat(inputVal);
                             }
 
                             console.log(" selected_purity : ", selected_purity);
 
-                            const enteredWeight = parseFloat(event.target.value) || 0;
+                            const enteredWeight = parseFloat(inputVal) || 0;
                             // Cap at invoice fine metal weight
                             const cappedWeight = calculatedFineWeight !== null && enteredWeight > calculatedFineWeight
                               ? calculatedFineWeight
@@ -1924,16 +1935,17 @@ class SaleViewPage extends React.Component {
                             if (selected_purity && cappedWeight > 0) {
                               // gross weight = fine ÷ payment purity%
                               const purityPct = parseFloat(selected_purity.value) || 100;
-                              effective_weight = cappedWeight * 100 / purityPct;
+                              effective_weight = parseFloat((cappedWeight * 100 / purityPct).toFixed(3));
                             }
+                            const roundedCapped = cappedWeight > 0 ? parseFloat(cappedWeight.toFixed(3)) : inputVal;
                             this.setState({
               formValues: {
                                 ...this.state.formValues,
-                                weight: effective_weight || event.target.value, // gross weight for API
+                                weight: effective_weight || inputVal, // gross weight for API
                                 unit_id: selected_purity
                                   ? selected_purity.unit_id || ""
                                   : "",
-                                effective_weight: cappedWeight, // fine weight for display + API
+                                effective_weight: roundedCapped, // fine weight for display + API
                               },
                             });
                           }}

@@ -696,12 +696,13 @@ class SaleViewPage extends React.Component {
           <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', pr: 3 }}>
             <span>Pay Now</span>
             {this.state.liveGoldPriceDisplay ? (
-              <Chip
-                label={`24K:- ₹${this.state.liveGoldPerGram.toLocaleString('en-IN')}/gm`}
-                size="small"
-                color="warning"
-                variant="outlined"
-              />
+              <span style={{
+                display: 'inline-flex', alignItems: 'center',
+                color: '#fff', fontWeight: 800, fontSize: '0.9rem',
+                whiteSpace: 'nowrap'
+              }}>
+                24K:- <strong style={{ marginLeft: 4 }}>₹{this.state.liveGoldPerGram.toLocaleString('en-IN')}/gm</strong>
+              </span>
             ) : null}
           </DialogTitle>
           <DialogContent>
@@ -794,10 +795,19 @@ class SaleViewPage extends React.Component {
                       label='Weight (GM) — 24K'
                       variant='outlined'
                       fullWidth
+                      type='number'
+                      inputProps={{ step: '0.001', min: 0 }}
                       error={formErros.weight}
                       value={formValues.weight}
                       onChange={(event) => {
-                        const w = event.target.value;
+                        let w = event.target.value;
+                        // Limit to 3 decimal places
+                        if (w && w.includes('.')) {
+                          const parts = w.split('.');
+                          if (parts[1] && parts[1].length > 3) {
+                            w = parts[0] + '.' + parts[1].slice(0, 3);
+                          }
+                        }
                         const calcAmount = liveGoldPerGram > 0 && parseFloat(w) > 0
                           ? parseFloat((parseFloat(w) * liveGoldPerGram).toFixed(2)) : '';
                         this.setState({
