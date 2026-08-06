@@ -59,6 +59,10 @@ import {
   getApprovalColor,
   convertUnitToGram,
 } from "src/helpers/helper";
+import {
+  metalValuesFromFine as computeMetalValues,
+  purePerGramRate,
+} from "src/helpers/metalPayment.mjs";
 import { paymentStore, paymentList } from "actions/superadmin/payment.actions";
 import { SUPERADMIN_RESET_PAYMENT } from "../../../actionTypes/superadmin/payment.types";
 import { getNotifiactions } from "actions/superadmin/notification.actions";
@@ -424,8 +428,10 @@ class SaleViewPage extends React.Component {
     };
   };
 
-  // Per-gram rate for the selected purity, e.g. 24 Carat (99.5%) of a
-  // 24K spot of 14422 is 14349.89 - the figure shown on the purity chip.
+  // Per-gram rate for the selected purity. The feed's 24K price is already
+  // quoted at 24 Carat (99.50 in the purity master), so it is taken as-is for
+  // 24 Carat and pro-rated from there — e.g. 18 Carat of a 14422 spot is
+  // 14422 x 76 / 99.5 = 11017.75, not 14422 x 76 / 100.
   getQuotedMetalRate = () => {
     const { liveGoldPerGram, formValues } = this.state;
     if (!(liveGoldPerGram > 0)) return null;
@@ -433,7 +439,8 @@ class SaleViewPage extends React.Component {
       (p) => p.id == formValues.purity_id
     );
     const purityPct = parseFloat(purity?.value) || 100;
-    return parseFloat((liveGoldPerGram * purityPct / 100).toFixed(2));
+    const pureRate = purePerGramRate(liveGoldPerGram, this.props.purityItems);
+    return parseFloat(((pureRate * purityPct) / 100).toFixed(2));
   };
 
   handleSubmit = async () => {
@@ -663,6 +670,27 @@ class SaleViewPage extends React.Component {
       : null;
     const selectedPurityForFine = metalPurityList.find(p => p.id == formValues.purity_id);
     const selectedPurityPct = parseFloat(selectedPurityForFine?.value) || 0;
+    // Amount and Weight drive each other through the fine weight:
+    // gross x purity% = fine, fine x pure rate = amount. Both inputs clamp to
+    // the fine metal still owed on the invoice, so neither can be used to
+    // over-pay. One helper so the two directions cannot drift apart.
+    // The feed's 24K price is already a 99.50 price, so it is converted back
+    // to a notional 100% rate here rather than being discounted again.
+    const { liveGoldPerGram } = this.state;
+    const metalPurityPct = selectedPurityPct || 100;
+    const pureGoldPerGram = purePerGramRate(
+      liveGoldPerGram,
+      this.props.purityItems,
+    );
+    const maxMetalAmount = calculatedFineWeight !== null && pureGoldPerGram > 0
+      ? parseFloat((calculatedFineWeight * pureGoldPerGram).toFixed(2))
+      : null;
+    const metalValuesFromFine = (fine) =>
+      computeMetalValues(fine, {
+        purityPct: metalPurityPct,
+        ratePerGram: pureGoldPerGram,
+        maxFine: calculatedFineWeight,
+      });
     console.log("sale : ", sale);
 
     return (
@@ -1733,23 +1761,64 @@ class SaleViewPage extends React.Component {
                       />
                     </LocalizationProvider>
                   </Grid>
-                  <Grid item md={4} xs={12} className="create-input">
-                    <TextField
-                      label="Amount"
-                      variant="outlined"
-                      fullWidth
-                      value={formValues.amount}
-                      InputProps={{
-                        startAdornment: (
-                          <InputAdornment position="start">₹</InputAdornment>
-                        ),
-                      }}
-                      error={formErros.amount}
-                      onChange={(event) =>
-                        this.updateFormValue(event.target.value, "amount")
-                      }
-                    />
-                  </Grid>
+                  {/* Slot 2 holds Purity for metal payments, Amount otherwise —
+                      Amount moves down into the metal block beside Weight. */}
+                  {formValues.payment_mode == "metal" ? (
+                    <Grid item md={4} xs={12} className="create-input">
+                      <FormControl fullWidth error={formErros.purity_id}>
+                        <InputLabel>Purity</InputLabel>
+                        <Select
+                          className="input-inner"
+                          value={formValues.purity_id}
+                          fullWidth
+                          label="Purity"
+                          error={formErros.purity_id}
+                          onChange={(event) => {
+                            const selected_purity = metalPurityList.find(
+                              (item) => item.id == event.target.value,
+                            );
+                            const purityPct =
+                              parseFloat(selected_purity?.value) || 100;
+                            // Gross weight is what the operator hands over, so
+                            // it stays put; fine weight and amount re-derive.
+                            const gross = parseFloat(formValues.weight) || 0;
+                            this.setState({
+                              formValues: {
+                                ...this.state.formValues,
+                                purity_id: selected_purity.id,
+                                unit_id: selected_purity.unit_id || "",
+                                ...metalValuesFromFine((gross * purityPct) / 100),
+                              },
+                            });
+                          }}
+                        >
+                          {metalPurityList.map((item, i) => (
+                            <MenuItem key={i} value={item.id}>
+                              {item.name}
+                            </MenuItem>
+                          ))}
+                        </Select>
+                      </FormControl>
+                    </Grid>
+                  ) : (
+                    <Grid item md={4} xs={12} className="create-input">
+                      <TextField
+                        label="Amount"
+                        variant="outlined"
+                        fullWidth
+                        value={formValues.amount}
+                        InputProps={{
+                          startAdornment: (
+                            <InputAdornment position="start">₹</InputAdornment>
+                          ),
+                        }}
+                        error={formErros.amount}
+                        onChange={(event) =>
+                          this.updateFormValue(event.target.value, "amount")
+                        }
+                      />
+                    </Grid>
+                  )}
 
                   <Grid item md={4} xs={12} className="create-input">
                     <FormControl fullWidth error={formErros.payment_mode}>
@@ -1824,52 +1893,42 @@ class SaleViewPage extends React.Component {
                         </Grid>
                       )}
                       <Grid item md={4} xs={12} className="create-input">
-                        <FormControl fullWidth error={formErros.payment_mode}>
-                          <InputLabel>Purity</InputLabel>
-                          <Select
-                            className="input-inner"
-                            value={formValues.purity_id}
-                            fullWidth
-                            label="Purity"
-                            error={formErros.purity_id}
-                            onChange={(event) => {
-                              let effective_weight = 0;
-                              let selected_purity = metalPurityList.find(
-                                (item) => item.id == event.target.value,
-                              );
-                              if (
-                                selected_purity &&
-                                parseFloat(formValues.weight) > 0
-                              ) {
-                                effective_weight = selected_purity.value
-                                  ? parseFloat(((parseFloat(formValues.weight) *
-                                      parseFloat(selected_purity.value)) /
-                                    100).toFixed(3))
-                                  : parseFloat(parseFloat(formValues.weight).toFixed(3));
-                              }
-
-                              console.log(
-                                " selected_purity : ",
-                                selected_purity,
-                              );
-
-                              this.setState({
-                                formValues: {
-                                  ...this.state.formValues,
-                                  effective_weight: effective_weight,
-                                  unit_id: selected_purity.unit_id || "",
-                                  purity_id: selected_purity.id,
-                                },
-                              });
-                            }}
-                          >
-                            {metalPurityList.map((item, i) => (
-                              <MenuItem key={i} value={item.id}>
-                                {item.name}
-                              </MenuItem>
-                            ))}
-                          </Select>
-                        </FormControl>
+                        <TextField
+                          label="Amount"
+                          variant="outlined"
+                          fullWidth
+                          value={formValues.amount}
+                          InputProps={{
+                            startAdornment: (
+                              <InputAdornment position="start">₹</InputAdornment>
+                            ),
+                          }}
+                          error={formErros.amount}
+                          onChange={(event) => {
+                            const typed = event.target.value;
+                            if (!(pureGoldPerGram > 0)) {
+                              this.updateFormValue(typed, "amount");
+                              return;
+                            }
+                            const entered = parseFloat(typed) || 0;
+                            const synced = metalValuesFromFine(
+                              entered / pureGoldPerGram,
+                            );
+                            this.setState({
+                              formValues: {
+                                ...this.state.formValues,
+                                ...synced,
+                                // Keep the raw text unless the cap trimmed it,
+                                // otherwise a trailing "." can't be typed.
+                                amount:
+                                  maxMetalAmount !== null &&
+                                  entered > maxMetalAmount
+                                    ? synced.amount
+                                    : typed,
+                              },
+                            });
+                          }}
+                        />
                       </Grid>
                       {/* <Grid item md={4} xs={12} className='create-input'>
                       <FormControl fullWidth error={formErros.payment_mode}>
@@ -1910,42 +1969,28 @@ class SaleViewPage extends React.Component {
                                 inputVal = parts[0] + '.' + parts[1].slice(0, 3);
                               }
                             }
-                            let effective_weight = 0;
-                            let selected_purity = metalPurityList.find(
+                            const selected_purity = metalPurityList.find(
                               (item) => item.id == formValues.purity_id,
                             );
-                            if (
-                              selected_purity &&
-                              parseFloat(inputVal) > 0
-                            ) {
-                              effective_weight = selected_purity.value
-                                ? (parseFloat(inputVal) *
-                                    parseFloat(selected_purity.value)) /
-                                  100
-                                : parseFloat(inputVal);
-                            }
-
-                            console.log(" selected_purity : ", selected_purity);
-
-                            const enteredWeight = parseFloat(inputVal) || 0;
-                            // Cap at invoice fine metal weight
-                            const cappedWeight = calculatedFineWeight !== null && enteredWeight > calculatedFineWeight
-                              ? calculatedFineWeight
-                              : enteredWeight;
-                            if (selected_purity && cappedWeight > 0) {
-                              // gross weight = fine ÷ payment purity%
-                              const purityPct = parseFloat(selected_purity.value) || 100;
-                              effective_weight = parseFloat((cappedWeight * 100 / purityPct).toFixed(3));
-                            }
-                            const roundedCapped = cappedWeight > 0 ? parseFloat(cappedWeight.toFixed(3)) : inputVal;
+                            // This box is the gross weight handed over, so the
+                            // fine weight it settles is gross x purity%.
+                            const gross = parseFloat(inputVal) || 0;
+                            const synced = metalValuesFromFine(
+                              (gross * metalPurityPct) / 100,
+                            );
                             this.setState({
-              formValues: {
+                              formValues: {
                                 ...this.state.formValues,
-                                weight: effective_weight || inputVal, // gross weight for API
+                                ...synced,
                                 unit_id: selected_purity
                                   ? selected_purity.unit_id || ""
                                   : "",
-                                effective_weight: roundedCapped, // fine weight for display + API
+                                // Keep the raw text unless the cap trimmed it,
+                                // otherwise a trailing "." can't be typed.
+                                weight:
+                                  synced.weight !== "" && synced.weight < gross
+                                    ? synced.weight
+                                    : inputVal,
                               },
                             });
                           }}
