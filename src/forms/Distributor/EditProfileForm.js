@@ -2,7 +2,7 @@ import React from 'react';
 import { connect } from 'react-redux';
 import { Field, reduxForm } from 'redux-form/immutable';
 import {Box, TextField, Button, Grid, Stack} from '@mui/material';
-import {isEmpty} from 'src/helpers/helper';
+import {isEmpty, isValidEmail} from 'src/helpers/helper';
 import { bindActionCreators } from 'redux';
 import { updateEditProfile } from 'actions/distributor/profile.actions';
 import { withSnackbar } from 'notistack';
@@ -134,6 +134,12 @@ class EditProfileForm extends React.Component {
         }else{
             formErros.mobile = false;
         }
+        if(!isValidEmail(formValues.email)){
+            formErros.email = true;
+            hasErr = true;
+        }else{
+            formErros.email = false;
+        }
         this.setState({
             formErros: formErros
         });
@@ -170,7 +176,7 @@ class EditProfileForm extends React.Component {
                             label="Email" 
                             variant="outlined"
                             fullWidth
-                            value={formValues.email}
+                            value={formValues.email || ''}
                             onChange={(event) => this.handleDefaultChange(event, 'email')}
                             error={formErros.email}
                         />

@@ -313,6 +313,15 @@ const isEmpty = (value) => {
   );
 };
 
+/**
+ * Email is a login identifier, so a malformed one would lock the user out.
+ * Blank counts as invalid — callers use this for required email fields.
+ */
+const isValidEmail = (value) => {
+  if (isEmpty(value)) return false;
+  return /^\S+@\S+\.\S+$/.test(String(value).trim());
+};
+
 const getNewlineText = (text) => {
   return text
     .split("\n")
@@ -1055,6 +1064,7 @@ export {
   ucWords,
   validateNumber,
   validateInteger,
+  isValidEmail,
   fetchCertificateDetails,
   formatIndianNumber,
 };
