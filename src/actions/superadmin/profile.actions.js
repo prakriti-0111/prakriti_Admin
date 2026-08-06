@@ -37,16 +37,24 @@ export const changePassword = (data) => {
     }
 }
 
+/**
+ * The dashboard is served as three independent sections. Summary and charts are
+ * a few milliseconds each, the stock valuation is the slow one, so they are
+ * fetched in parallel and each paints as it lands instead of the whole page
+ * waiting on the slowest query.
+ */
 export const getDashboardData = (data) => {
     return (dispatch) => {
-        axios.get(`/superadmin/dashboard`)
-        .then(response => {
-            dispatch({
-                type: SUPERADMIN_DASHBOARD,
-                payload: response.data.data
-            });
-        })
-        .catch(error => {
+        ['summary', 'charts', 'stock'].forEach(section => {
+            axios.get(`/superadmin/dashboard/${section}`)
+            .then(response => {
+                dispatch({
+                    type: SUPERADMIN_DASHBOARD,
+                    payload: { ...response.data.data, [`__${section}`]: true }
+                });
+            })
+            .catch(error => {
+            })
         })
     }
 }
