@@ -494,6 +494,8 @@ class SaleForm extends React.Component {
 
       holdListSelected: new Set(),
 
+      holdRowsOpen: new Set(),
+
       holdListLoading: false,
 
       productsLoading: false,
@@ -2317,6 +2319,13 @@ class SaleForm extends React.Component {
     const next = new Set(this.state.holdListSelected);
     checked ? next.add(index) : next.delete(index);
     this.setState({ holdListSelected: next });
+  };
+
+  /* held rows start collapsed, only the product line shows until expanded */
+  handleHoldRowToggle = (index) => {
+    const next = new Set(this.state.holdRowsOpen);
+    next.has(index) ? next.delete(index) : next.add(index);
+    this.setState({ holdRowsOpen: next });
   };
 
   handleUnhold = async (cartId, index) => {
@@ -7459,37 +7468,138 @@ class SaleForm extends React.Component {
                     <CircularProgress size={28} sx={{ color: '#1E2746' }} />
                   </Box>
                 ) : (
-                  <Box sx={{ maxHeight: 560, overflowY: 'auto' }}>
-                    {heldProducts.map((item) => (
-                      <Box
-                        key={item._idx}
-                        sx={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: 2,
-                          px: 2.5,
-                          py: 2.4,
-                          borderBottom: '1px solid #e8eaf0',
-                          '&:last-child': { borderBottom: 'none' },
-                        }}
-                      >
-                        <Typography sx={{ fontWeight: 700, fontSize: '1rem', color: '#1E2746', minWidth: 200 }}>
-                          {item.product_name}
-                        </Typography>
-                        {item.certificate_no && (
-                          <Typography sx={{ fontSize: '0.88rem', color: '#555', minWidth: 150 }}>
-                            #{item.certificate_no}
-                          </Typography>
-                        )}
-                        {item.total_weight && (
-                          <Typography sx={{ fontSize: '0.88rem', color: '#1E2746', fontWeight: 600, minWidth: 90 }}>
-                            {item.total_weight} gm
-                          </Typography>
-                        )}
-                        <Box sx={{ flex: 1 }} />
-                      </Box>
-                    ))}
-                  </Box>
+                  /* same table as the cart itself, read only — a held item is
+                     not editable until it is unheld */
+                  <TableContainer
+                    component={Paper}
+                    square
+                    elevation={0}
+                    sx={{ maxHeight: 560 }}
+                  >
+                    <Table
+                      sx={{ minWidth: 650 }}
+                      aria-label="on hold items"
+                      className="ratn-table-product-wrapper sale_form_table"
+                    >
+                      <TableHead className="ratn-table-header p_view">
+                        <TableRow>
+                          <TableCell sx={{ width: '30px', p: '4px 8px' }}></TableCell>
+                          <TableCell sx={{ width: '30px', p: '4px 8px' }}></TableCell>
+                          <TableCell sx={{ width: 15 }}>#</TableCell>
+                          <TableCell sx={{ width: 225 }}>Product Name</TableCell>
+                          <TableCell sx={{ width: 100, paddingLeft: '12px', paddingRight: '12px' }}>Size</TableCell>
+                          <TableCell sx={{ width: 120 }}>Certificate No</TableCell>
+                          <TableCell sx={{ width: 90 }}>Matl Cost</TableCell>
+                          <TableCell sx={{ width: 160 }}>Mac Charge</TableCell>
+                          <TableCell sx={{ width: "40px" }}>Price</TableCell>
+                          <TableCell sx={{ width: "20px" }}>Dist</TableCell>
+                          <TableCell sx={{ width: "80px" }}>Tax</TableCell>
+                          <TableCell sx={{ width: "40px" }}>Total</TableCell>
+                        </TableRow>
+                      </TableHead>
+
+                      <TableBody>
+                        {heldProducts.map((item, index) => (
+                          <React.Fragment key={item._idx}>
+                            <TableRow className="product_details">
+                              <TableCell sx={{ p: '4px 8px' }}>
+                                <Checkbox
+                                  size="small"
+                                  checked={holdListSelected.has(item._idx)}
+                                  onChange={(e) =>
+                                    this.handleHoldListItemSelect(item._idx, e.target.checked)
+                                  }
+                                />
+                              </TableCell>
+
+                              <TableCell sx={{ p: '4px 8px' }}>
+                                <IconButton
+                                  size="small"
+                                  onClick={() => this.handleHoldRowToggle(item._idx)}
+                                >
+                                  {this.state.holdRowsOpen.has(item._idx)
+                                    ? <KeyboardArrowUpIcon fontSize="small" />
+                                    : <KeyboardArrowDownIcon fontSize="small" />}
+                                </IconButton>
+                              </TableCell>
+
+                              <TableCell>{index + 1}</TableCell>
+
+                              <TableCell>
+                                {item.product_name} X{" "}
+                                {item.quantity
+                                  ? item.quantity
+                                  : item.certificate_no
+                                    ? 1
+                                    : item.materials[0].avl_qty}
+                              </TableCell>
+
+                              <TableCell style={{ paddingLeft: '12px', paddingRight: '12px' }}>
+                                {item.size_name}
+                              </TableCell>
+
+                              <TableCell>{item.certificate_no}</TableCell>
+
+                              <TableCell colSpan={2}>
+                                {item.total_weight} {"Wt"}
+                              </TableCell>
+
+                              <TableCell colSpan={4}></TableCell>
+                            </TableRow>
+
+                            {this.state.holdRowsOpen.has(item._idx) && (
+                            <TableRow className="material_details">
+                              <TableCell colSpan={3}></TableCell>
+
+                              <TableCell colSpan={3}>
+                                {item.materials.map((m, key) =>
+                                  parseFloat(m.weight || 0) > 0 ||
+                                  parseFloat(m.amount || 0) > 0 ? (
+                                    <div className="products-data-container" key={key}>
+                                      <div className="products-data-row">
+                                        <div className="products-data">
+                                          {m.material_name} &nbsp;({m.purity}) &nbsp;
+                                          {m.weight} &nbsp;{m.unit_name} &nbsp; x
+                                          &nbsp; {m.rate}{" "}
+                                        </div>
+
+                                        <div className="products-amount">
+                                          {" "}
+                                          = &nbsp; &nbsp;{m.amount}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  ) : null,
+                                )}
+                              </TableCell>
+
+                              <TableCell>
+                                {item.materials.map((m, key) =>
+                                  parseFloat(m.weight || 0) > 0 ||
+                                  parseFloat(m.amount || 0) > 0 ? (
+                                    <p key={key}>
+                                      {priceFormat(m.amount - m.discount_amount)}
+                                    </p>
+                                  ) : null,
+                                )}
+                              </TableCell>
+
+                              <TableCell>{item.making_charge}</TableCell>
+
+                              <TableCell>{item.sub_price}</TableCell>
+
+                              <TableCell>{item.total_discount}</TableCell>
+
+                              <TableCell>{item.total_tax}</TableCell>
+
+                              <TableCell>{item.total}</TableCell>
+                            </TableRow>
+                            )}
+                          </React.Fragment>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
                 )}
               </Collapse>
 
