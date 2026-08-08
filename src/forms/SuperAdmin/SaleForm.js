@@ -490,7 +490,7 @@ class SaleForm extends React.Component {
 
       holdProcessing: false,
 
-      holdSectionOpen: false,
+      holdSectionOpen: new Set(),
 
       holdListSelected: new Set(),
 
@@ -976,6 +976,8 @@ class SaleForm extends React.Component {
           is_held: cart.is_held || false,
 
           hold_message: cart.hold_message || '',
+
+          hold_at: cart.hold_at || null,
         });
       }
 
@@ -2239,12 +2241,15 @@ class SaleForm extends React.Component {
     if (holdSelectedItems.size === 0) return;
     this.setState({ holdProcessing: true });
     const cart_ids = [...holdSelectedItems].map(idx => formValues.products[idx].id);
+    /* one stamp for this hold, so the batch stays its own group in the cart
+       until the list is reloaded and the server value takes over */
+    const heldAt = new Date().toISOString();
     try {
       const response = await cartHold({ cart_ids, message: holdMessage });
       if (response.data.success) {
         const products = [...formValues.products];
         holdSelectedItems.forEach(idx => {
-          products[idx] = { ...products[idx], is_held: true, hold_message: holdMessage };
+          products[idx] = { ...products[idx], is_held: true, hold_message: holdMessage, hold_at: heldAt };
         });
         this.setState({
           formValues: { ...formValues, products },
@@ -2265,54 +2270,58 @@ class SaleForm extends React.Component {
     }
   };
 
-  handleUnholdAll = async () => {
-    this.setState({ holdListLoading: true });
+  /**
+   * Release the given cart rows from hold. Every unhold path goes through here:
+   * a whole hold group, the ticked rows of one group, or a single row.
+   */
+  unholdIndices = async (indices) => {
+    if (!indices.length) return;
     const { formValues } = this.state;
-    const heldItems = formValues.products
-      .map((p, i) => ({ ...p, index: i }))
-      .filter(p => p.is_held);
-    for (const item of heldItems) {
-      await cartUnhold(item.id).catch(() => {});
-    }
-    const products = formValues.products.map(p =>
-      p.is_held ? { ...p, is_held: false, hold_message: '' } : p
-    );
-    this.setState(
-      { formValues: { ...formValues, products }, holdSectionOpen: false, holdListSelected: new Set(), holdListLoading: false, unique_materials: this.buildUniqueMaterials(products) },
-      () => this.calculateProductPrice()
-    );
-    this.props.enqueueSnackbar('All items released from hold', { variant: 'success' });
-  };
-
-  handleUnholdSelected = async () => {
-    const { formValues, holdListSelected } = this.state;
-    if (!holdListSelected.size) return;
     this.setState({ holdListLoading: true });
-    const selectedIndices = [...holdListSelected];
-    for (const idx of selectedIndices) {
+    for (const idx of indices) {
       await cartUnhold(formValues.products[idx].id).catch(() => {});
     }
+    const released = new Set(indices);
     const products = formValues.products.map((p, i) =>
-      holdListSelected.has(i) ? { ...p, is_held: false, hold_message: '' } : p
+      released.has(i) ? { ...p, is_held: false, hold_message: '', hold_at: null } : p
+    );
+    const holdListSelected = new Set(
+      [...this.state.holdListSelected].filter(i => !released.has(i))
     );
     this.setState(
-      { formValues: { ...formValues, products }, holdListSelected: new Set(), holdListLoading: false, unique_materials: this.buildUniqueMaterials(products) },
+      { formValues: { ...formValues, products }, holdListSelected, holdListLoading: false, unique_materials: this.buildUniqueMaterials(products) },
       () => this.calculateProductPrice()
     );
-    this.props.enqueueSnackbar(`${selectedIndices.length} item(s) released from hold`, { variant: 'success' });
+    this.props.enqueueSnackbar(`${indices.length} item(s) released from hold`, { variant: 'success' });
   };
 
-  handleHoldListSelectAll = (checked) => {
-    if (checked) {
-      const all = new Set(
-        this.state.formValues.products
-          .map((p, i) => p.is_held ? i : null)
-          .filter(i => i !== null)
-      );
-      this.setState({ holdListSelected: all });
-    } else {
-      this.setState({ holdListSelected: new Set() });
-    }
+  handleUnholdAll = async (indices) => {
+    const all = indices && indices.length
+      ? indices
+      : this.state.formValues.products
+          .map((p, i) => (p.is_held ? i : null))
+          .filter(i => i !== null);
+    await this.unholdIndices(all);
+  };
+
+  handleUnholdSelected = async (indices) => {
+    const { holdListSelected } = this.state;
+    // only the ticked rows of the group the button belongs to
+    const selected = indices && indices.length
+      ? indices.filter(i => holdListSelected.has(i))
+      : [...holdListSelected];
+    await this.unholdIndices(selected);
+  };
+
+  handleHoldListSelectAll = (checked, indices) => {
+    const groupIndices = indices && indices.length
+      ? indices
+      : this.state.formValues.products
+          .map((p, i) => (p.is_held ? i : null))
+          .filter(i => i !== null);
+    const next = new Set(this.state.holdListSelected);
+    groupIndices.forEach(i => (checked ? next.add(i) : next.delete(i)));
+    this.setState({ holdListSelected: next });
   };
 
   handleHoldListItemSelect = (index, checked) => {
@@ -2333,7 +2342,7 @@ class SaleForm extends React.Component {
       const response = await cartUnhold(cartId);
       if (response.data.success) {
         const products = [...this.state.formValues.products];
-        products[index] = { ...products[index], is_held: false, hold_message: '' };
+        products[index] = { ...products[index], is_held: false, hold_message: '', hold_at: null };
         this.setState(
           { formValues: { ...this.state.formValues, products }, unique_materials: this.buildUniqueMaterials(products) },
           () => this.calculateProductPrice()
@@ -7385,18 +7394,43 @@ class SaleForm extends React.Component {
           ) : null}
         </Grid>
 
-        {/* ── On Hold Items Section ── */}
+        {/* ── On Hold Items Section — one block per hold ── */}
         {(() => {
-          const heldProducts = formValues.products
+          const allHeld = formValues.products
             .map((p, i) => ({ ...p, _idx: i }))
             .filter(p => p.is_held);
-          const { holdListSelected, holdSectionOpen } = this.state;
-          const allSelected = heldProducts.length > 0 && heldProducts.every(p => holdListSelected.has(p._idx));
+          const { holdListSelected } = this.state;
+          if (!isCartPage || !allHeld.length) return null;
+
+          /* items held in one action share a hold_at stamp and stay their own
+             group; rows held before that stamp existed fall back to their
+             message so old carts still read sensibly */
+          const groups = [];
+          allHeld.forEach(item => {
+            const key = String(item.hold_at || item.hold_message || 'held');
+            let group = groups.find(g => g.key === key);
+            if (!group) {
+              group = { key: key, message: item.hold_message || '', items: [] };
+              groups.push(group);
+            }
+            group.items.push(item);
+          });
+
+          return groups.map(group => {
+          const heldProducts = group.items;
+          const groupIndices = heldProducts.map(p => p._idx);
+          const holdSectionOpen = this.state.holdSectionOpen.has(group.key);
+          const allSelected = heldProducts.every(p => holdListSelected.has(p._idx));
           const someSelected = heldProducts.some(p => holdListSelected.has(p._idx));
-          const uniqueMessages = [...new Set(heldProducts.map(p => p.hold_message).filter(Boolean))];
-          if (!isCartPage || !heldProducts.length) return null;
+          const selectedCount = groupIndices.filter(i => holdListSelected.has(i)).length;
+          const toggleSection = () =>
+            this.setState(st => {
+              const open = new Set(st.holdSectionOpen);
+              open.has(group.key) ? open.delete(group.key) : open.add(group.key);
+              return { holdSectionOpen: open };
+            });
           return (
-            <Box sx={{ mt: 2, width: '100%', border: '2px solid #1E2746', borderRadius: 1, overflow: 'hidden' }}>
+            <Box key={group.key} sx={{ mt: 2, width: '100%', border: '2px solid #1E2746', borderRadius: 1, overflow: 'hidden' }}>
 
               {/* Header — left: checkbox + count + message | right: unhold btn + arrow */}
               <Box
@@ -7415,28 +7449,32 @@ class SaleForm extends React.Component {
                   size="small"
                   checked={allSelected}
                   indeterminate={someSelected && !allSelected}
-                  onChange={e => this.handleHoldListSelectAll(e.target.checked)}
+                  onChange={e => this.handleHoldListSelectAll(e.target.checked, groupIndices)}
                   sx={{ color: '#fff', p: 0, '&.Mui-checked': { color: '#f57c00' }, '&.MuiCheckbox-indeterminate': { color: '#f57c00' } }}
                 />
                 <Box
                   sx={{ display: 'flex', alignItems: 'center', gap: 1.5, cursor: 'pointer', flex: 1, minWidth: 0 }}
-                  onClick={() => this.setState(s => ({ holdSectionOpen: !s.holdSectionOpen }))}
+                  onClick={toggleSection}
                 >
                   <Typography sx={{ color: '#fff', fontWeight: 600, fontSize: '1.05rem', flexShrink: 0 }}>
                     {heldProducts.length} item(s) on hold
                   </Typography>
-                  {uniqueMessages.length > 0 && (
+                  {group.message ? (
                     <Typography sx={{ color: '#b0bec5', fontSize: '0.88rem', fontStyle: 'italic', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      &mdash; {uniqueMessages.join(', ')}
+                      &mdash; {group.message}
                     </Typography>
-                  )}
+                  ) : null}
                 </Box>
 
                 {/* Right: Unhold btn + arrow */}
                 <Button
                   size="small"
                   variant="contained"
-                  onClick={someSelected ? this.handleUnholdSelected : this.handleUnholdAll}
+                  onClick={() =>
+                    someSelected
+                      ? this.handleUnholdSelected(groupIndices)
+                      : this.handleUnholdAll(groupIndices)
+                  }
                   style={{
                     backgroundColor: '#f57c00',
                     color: '#fff',
@@ -7449,11 +7487,11 @@ class SaleForm extends React.Component {
                     flexShrink: 0,
                   }}
                 >
-                  {someSelected ? `Unhold (${holdListSelected.size})` : 'Unhold All'}
+                  {someSelected ? `Unhold (${selectedCount})` : 'Unhold All'}
                 </Button>
                 <Box
                   sx={{ cursor: 'pointer', display: 'flex', alignItems: 'center', flexShrink: 0 }}
-                  onClick={() => this.setState(s => ({ holdSectionOpen: !s.holdSectionOpen }))}
+                  onClick={toggleSection}
                 >
                   {holdSectionOpen
                     ? <KeyboardArrowUpIcon sx={{ color: '#fff', fontSize: 24 }} />
@@ -7605,6 +7643,7 @@ class SaleForm extends React.Component {
 
             </Box>
           );
+          });
         })()}
 
         <Dialog
