@@ -56,8 +56,7 @@ import {
   isSuperAdmin,
   isDistributor,
   isSalesExecutive,
-  isAdmin,
-} from "src/helpers/helper";
+  isAdmin, prepareFileWindow, showFileWindow, closeFileWindow } from "src/helpers/helper";
 import { paymentStore } from "actions/superadmin/payment.actions";
 import { SUPERADMIN_RESET_PAYMENT } from "../../../actionTypes/superadmin/payment.types";
 import { SUPERADMIN_RESET_VISIT } from "../../../actionTypes/superadmin/visit.types";
@@ -430,9 +429,14 @@ class RetailerViewPage extends React.Component {
   };
 
   handleInvoiceDownload = async (row) => {
+    // opened on the click itself so mobile does not treat it as a popup
+    const fileWindow = prepareFileWindow();
     let response = await salesDownloadInvoice(row.id);
     if (response.data.success) {
-      window.open(response.data.data.url, "_blank").focus();
+      showFileWindow(fileWindow, response.data.data.url);
+    } else {
+      // the API failed, so the blank tab has nothing to show
+      closeFileWindow(fileWindow);
     }
   };
 

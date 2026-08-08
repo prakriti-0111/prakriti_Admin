@@ -1027,6 +1027,42 @@ const fetchCertificateDetails = async (certificateNo) => {
   }
 };
 
+/**
+ * Open a generated invoice/report PDF.
+ *
+ * `window.open()` only counts as user-initiated while the click handler is
+ * still on the stack. These downloads call it *after* awaiting the API, by
+ * which point mobile Safari and Chrome for Android treat it as an unsolicited
+ * popup and block it - which is why the phone showed nothing while the desktop
+ * worked. So the tab is opened empty on the click itself (prepareFileWindow)
+ * and pointed at the file once the URL arrives (showFileWindow). If the tab was
+ * blocked anyway, the current one navigates to the file instead.
+ */
+const prepareFileWindow = () => {
+  try {
+    return window.open("", "_blank");
+  } catch (e) {
+    return null;
+  }
+};
+
+const closeFileWindow = (fileWindow) => {
+  if (fileWindow && !fileWindow.closed) fileWindow.close();
+};
+
+const showFileWindow = (fileWindow, url) => {
+  if (!url) {
+    closeFileWindow(fileWindow);
+    return;
+  }
+  if (fileWindow && !fileWindow.closed) {
+    fileWindow.location.href = url;
+    if (fileWindow.focus) fileWindow.focus();
+    return;
+  }
+  window.location.href = url;
+};
+
 export {
   getAuthData,
   objectToQuery,
@@ -1067,4 +1103,7 @@ export {
   isValidEmail,
   fetchCertificateDetails,
   formatIndianNumber,
+  prepareFileWindow,
+  showFileWindow,
+  closeFileWindow,
 };

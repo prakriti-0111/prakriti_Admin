@@ -52,8 +52,7 @@ import DialogTitle from "@mui/material/DialogTitle";
 import {
   isEmpty,
   getApprovalColor,
-  formatIndianNumber,
-} from "src/helpers/helper";
+  formatIndianNumber, prepareFileWindow, showFileWindow, closeFileWindow } from "src/helpers/helper";
 import { paymentStore, paymentList } from "actions/superadmin/payment.actions";
 import { SUPERADMIN_RESET_PAYMENT } from "../../../actionTypes/superadmin/payment.types";
 import { getRoleName, getUserDashboardRoute } from "src/helpers/helper";
@@ -140,6 +139,8 @@ class PurchaseViewPage extends React.Component {
   };
 
   handleDownloadInfo = async (id) => {
+    // opened on the click itself so mobile does not treat it as a popup
+    const fileWindow = prepareFileWindow();
     this.setState({
       downloadingInfo: true,
     });
@@ -151,7 +152,7 @@ class PurchaseViewPage extends React.Component {
           downloadingInfo: false,
         },
         () => {
-          window.open(response.data.data.url, "_blank").focus();
+          showFileWindow(fileWindow, response.data.data.url);
         },
       );
 
@@ -171,6 +172,8 @@ class PurchaseViewPage extends React.Component {
       xhr.open('GET', response.data.data.url);
       xhr.send();*/
     } else {
+      // the API failed, so the blank tab has nothing to show
+      closeFileWindow(fileWindow);
       this.setState({
         downloadingInfo: false,
       });
@@ -178,6 +181,8 @@ class PurchaseViewPage extends React.Component {
   };
 
   handleDownloadList = async (id) => {
+    // opened on the click itself so mobile does not treat it as a popup
+    const fileWindow = prepareFileWindow();
     this.setState({
       downloadingList: true,
     });
@@ -189,7 +194,7 @@ class PurchaseViewPage extends React.Component {
           downloadingList: false,
         },
         () => {
-          window.open(response.data.data.url, "_blank").focus();
+          showFileWindow(fileWindow, response.data.data.url);
         },
       );
 
@@ -209,6 +214,8 @@ class PurchaseViewPage extends React.Component {
       xhr.open('GET', response.data.data.url);
       xhr.send();*/
     } else {
+      // the API failed, so the blank tab has nothing to show
+      closeFileWindow(fileWindow);
       this.setState({
         downloadingList: false,
       });
@@ -216,6 +223,8 @@ class PurchaseViewPage extends React.Component {
   };
 
   handleDownloadItems = async (id) => {
+    // opened on the click itself so mobile does not treat it as a popup
+    const fileWindow = prepareFileWindow();
     this.setState({
       downloadingItem: true,
     });
@@ -226,7 +235,7 @@ class PurchaseViewPage extends React.Component {
           downloadingItem: false,
         },
         () => {
-          window.open(response.data.data.url, "_blank").focus();
+          showFileWindow(fileWindow, response.data.data.url);
         },
       );
 
@@ -246,6 +255,8 @@ class PurchaseViewPage extends React.Component {
       xhr.open('GET', response.data.data.url);
       xhr.send();*/
     } else {
+      // the API failed, so the blank tab has nothing to show
+      closeFileWindow(fileWindow);
       this.setState({
         downloadingItem: false,
       });
