@@ -35,8 +35,7 @@ import {
   isDistributor,
   isAdmin,
   isSalesExecutive,
-  hasPermission,
-} from "src/helpers/helper";
+  hasPermission, prepareFileWindow, showFileWindow, closeFileWindow } from "src/helpers/helper";
 import { retailerList } from "actions/superadmin/retailer.actions";
 import { distributorList } from "actions/superadmin/distributor.actions";
 import { salesExecutiveList } from "actions/superadmin/salesExecutive.actions";
@@ -197,9 +196,11 @@ class SalePage extends Component {
   };
 
   handleDownload = async (row) => {
+    // opened on the click itself so mobile does not treat it as a popup
+    const fileWindow = prepareFileWindow();
     let response = await salesDownloadInvoice(row.id);
     if (response.data.success) {
-      window.open(response.data.data.url, "_blank").focus();
+      showFileWindow(fileWindow, response.data.data.url);
 
       /*var xhr = new XMLHttpRequest();
       xhr.responseType = 'blob';
@@ -216,6 +217,9 @@ class SalePage extends Component {
       };
       xhr.open('GET', response.data.data.url);
       xhr.send();*/
+    } else {
+      // the API failed, so the blank tab has nothing to show
+      closeFileWindow(fileWindow);
     }
   };
 
