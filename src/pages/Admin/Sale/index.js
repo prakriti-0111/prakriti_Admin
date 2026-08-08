@@ -15,6 +15,7 @@ import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import moment from 'moment';
+import { prepareFileWindow, showFileWindow, closeFileWindow } from "src/helpers/helper";
 
 class SalePage extends Component {
 
@@ -155,9 +156,11 @@ class SalePage extends Component {
   }
 
   handleDownload = async (row) => {
+    // opened on the click itself so mobile does not treat it as a popup
+    const fileWindow = prepareFileWindow();
     let response = await salesDownloadInvoice(row.id);
     if(response.data.success){
-      window.open(response.data.data.url, '_blank').focus();
+      showFileWindow(fileWindow, response.data.data.url);
 
       /*var xhr = new XMLHttpRequest();
       xhr.responseType = 'blob';
@@ -174,6 +177,9 @@ class SalePage extends Component {
       };
       xhr.open('GET', response.data.data.url);
       xhr.send();*/
+    } else {
+      // the API failed, so the blank tab has nothing to show
+      closeFileWindow(fileWindow);
     }
   }
 
