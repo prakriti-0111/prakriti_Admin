@@ -22,6 +22,8 @@ import { purchaseProducts } from "actions/superadmin/purchase.actions";
 import DataTable from "src/utils/DataTable";
 import { withSnackbar } from "notistack";
 import { categoryList } from "actions/superadmin/category.actions";
+import { subCategoryList } from "actions/superadmin/subCategory.actions";
+import { supplierList } from "actions/superadmin/supplier.actions";
 import { displayAmount } from "src/helpers/helper";
 import { getRoleName, getUserDashboardRoute } from "src/helpers/helper";
 
@@ -33,11 +35,15 @@ class PurchaseProductsPage extends Component {
       total: 0,
       price_by_categories: [],
       categories: this.props.categories,
+      sub_categories: this.props.sub_categories,
+      suppliers: this.props.suppliers,
       queryParams: {
         page: 1,
         limit: 50,
         all: 0,
         category_id: "",
+        sub_category_id: "",
+        supplier_id: "",
       },
       auth: this.props.auth,
     };
@@ -110,6 +116,7 @@ class PurchaseProductsPage extends Component {
   componentDidMount() {
     this.loadListData();
     this.props.actions.categoryList({ all: 1 });
+    this.props.actions.supplierList({ all: 1 });
   }
 
   static getDerivedStateFromProps(props, state) {
@@ -119,6 +126,12 @@ class PurchaseProductsPage extends Component {
     }
     if (props.categories !== state.categories) {
       update.categories = props.categories;
+    }
+    if (props.sub_categories !== state.sub_categories) {
+      update.sub_categories = props.sub_categories;
+    }
+    if (props.suppliers !== state.suppliers) {
+      update.suppliers = props.suppliers;
     }
     return update;
   }
@@ -161,6 +174,7 @@ class PurchaseProductsPage extends Component {
 
   handleCategoryChange = (event) => {
     let val = event.target.value;
+    this.props.actions.subCategoryList({ all: 1, category_id: val });
     this.setState({
       queryParams: {
         ...this.state.queryParams,
@@ -168,6 +182,25 @@ class PurchaseProductsPage extends Component {
         all: 0,
         limit: 50,
         category_id: val,
+        sub_category_id: "",
+      },
+    });
+  };
+
+  handleSubCategoryChange = (event) => {
+    this.setState({
+      queryParams: {
+        ...this.state.queryParams,
+        sub_category_id: event.target.value,
+      },
+    });
+  };
+
+  handleSupplierChange = (event) => {
+    this.setState({
+      queryParams: {
+        ...this.state.queryParams,
+        supplier_id: event.target.value,
       },
     });
   };
@@ -189,6 +222,7 @@ class PurchaseProductsPage extends Component {
   };
 
   handleCardClick = (category_id) => {
+    this.props.actions.subCategoryList({ all: 1, category_id: category_id });
     this.setState(
       {
         queryParams: {
@@ -197,6 +231,7 @@ class PurchaseProductsPage extends Component {
           all: 0,
           limit: 50,
           category_id: category_id,
+          sub_category_id: "",
         },
       },
       () => {
@@ -262,6 +297,44 @@ class PurchaseProductsPage extends Component {
                   </Select>
                 </FormControl>
               </Grid>
+              <Grid item xs={6} md={3} className="create-input">
+                <FormControl fullWidth>
+                  <InputLabel>Sub Category</InputLabel>
+                  <Select
+                    value={this.state.queryParams.sub_category_id}
+                    label="Sub Category"
+                    onChange={this.handleSubCategoryChange}
+                    className="input-inner"
+                    defaultValue=""
+                  >
+                    <MenuItem value="">All</MenuItem>
+                    {this.state.sub_categories.map((item, index) => (
+                      <MenuItem value={item.id} key={index}>
+                        {item.name}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Grid>
+              <Grid item xs={6} md={3} className="create-input">
+                <FormControl fullWidth>
+                  <InputLabel>Supplier</InputLabel>
+                  <Select
+                    value={this.state.queryParams.supplier_id}
+                    label="Supplier"
+                    onChange={this.handleSupplierChange}
+                    className="input-inner"
+                    defaultValue=""
+                  >
+                    <MenuItem value="">All</MenuItem>
+                    {this.state.suppliers.map((item, index) => (
+                      <MenuItem value={item.id} key={index}>
+                        {item.name}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Grid>
               <Grid
                 item
                 xs={6}
@@ -299,6 +372,8 @@ class PurchaseProductsPage extends Component {
 
 const mapStateToProps = (state) => ({
   categories: state.superadmin.category.items,
+  sub_categories: state.superadmin.subCategory.items,
+  suppliers: state.superadmin.supplier.items,
   auth: state.auth,
 });
 
@@ -308,6 +383,8 @@ const mapDispatchToProps = (dispatch) => {
     actions: bindActionCreators(
       {
         categoryList,
+        subCategoryList,
+        supplierList,
       },
       dispatch,
     ),
