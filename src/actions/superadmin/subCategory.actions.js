@@ -17,7 +17,7 @@ import { objectToQuery } from "src/helpers/helper";
 export const subCategoryList = (params) => {
   params = objectToQuery(params, true);
   return (dispatch) => {
-    axios
+    return axios
       .get(`/superadmin/sub-categories${params}`)
       .then((response) => {
         if (response.data.success) {

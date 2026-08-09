@@ -36,6 +36,9 @@ class PurchaseProductsPage extends Component {
       items: [],
       total: 0,
       searching: false,
+      categoriesLoading: false,
+      subCategoriesLoading: false,
+      suppliersLoading: false,
       price_by_categories: [],
       categories: this.props.categories,
       sub_categories: this.props.sub_categories,
@@ -118,9 +121,34 @@ class PurchaseProductsPage extends Component {
 
   componentDidMount() {
     this.loadListData();
-    this.props.actions.categoryList({ all: 1 });
-    this.props.actions.supplierList({ all: 1 });
   }
+
+  // Categories/suppliers are fetched only when their dropdown is opened,
+  // not on every page load - the list is rarely touched but was always paid for.
+  handleCategoryOpen = () => {
+    if (!this.state.categories.length) {
+      this.setState({ categoriesLoading: true });
+      this.props.actions
+        .categoryList({ all: 1 })
+        .finally(() => this.setState({ categoriesLoading: false }));
+    }
+  };
+
+  handleSupplierOpen = () => {
+    if (!this.state.suppliers.length) {
+      this.setState({ suppliersLoading: true });
+      this.props.actions
+        .supplierList({ all: 1 })
+        .finally(() => this.setState({ suppliersLoading: false }));
+    }
+  };
+
+  fetchSubCategories = (category_id) => {
+    this.setState({ subCategoriesLoading: true });
+    this.props.actions
+      .subCategoryList({ all: 1, category_id })
+      .finally(() => this.setState({ subCategoriesLoading: false }));
+  };
 
   static getDerivedStateFromProps(props, state) {
     let update = {};
@@ -180,7 +208,7 @@ class PurchaseProductsPage extends Component {
 
   handleCategoryChange = (event) => {
     let val = event.target.value;
-    this.props.actions.subCategoryList({ all: 1, category_id: val });
+    this.fetchSubCategories(val);
     this.setState({
       queryParams: {
         ...this.state.queryParams,
@@ -228,7 +256,7 @@ class PurchaseProductsPage extends Component {
   };
 
   handleCardClick = (category_id) => {
-    this.props.actions.subCategoryList({ all: 1, category_id: category_id });
+    this.fetchSubCategories(category_id);
     this.setState(
       {
         queryParams: {
@@ -291,15 +319,22 @@ class PurchaseProductsPage extends Component {
                     value={this.state.queryParams.category_id}
                     label="Category"
                     onChange={this.handleCategoryChange}
+                    onOpen={this.handleCategoryOpen}
                     className="input-inner"
                     defaultValue=""
                   >
                     <MenuItem value="">All</MenuItem>
-                    {this.state.categories.map((item, index) => (
-                      <MenuItem value={item.id} key={index}>
-                        {item.name}
+                    {this.state.categoriesLoading ? (
+                      <MenuItem disabled sx={{ justifyContent: "center" }}>
+                        <CircularProgress size={20} />
                       </MenuItem>
-                    ))}
+                    ) : (
+                      this.state.categories.map((item, index) => (
+                        <MenuItem value={item.id} key={index}>
+                          {item.name}
+                        </MenuItem>
+                      ))
+                    )}
                   </Select>
                 </FormControl>
               </Grid>
@@ -314,11 +349,17 @@ class PurchaseProductsPage extends Component {
                     defaultValue=""
                   >
                     <MenuItem value="">All</MenuItem>
-                    {this.state.sub_categories.map((item, index) => (
-                      <MenuItem value={item.id} key={index}>
-                        {item.name}
+                    {this.state.subCategoriesLoading ? (
+                      <MenuItem disabled sx={{ justifyContent: "center" }}>
+                        <CircularProgress size={20} />
                       </MenuItem>
-                    ))}
+                    ) : (
+                      this.state.sub_categories.map((item, index) => (
+                        <MenuItem value={item.id} key={index}>
+                          {item.name}
+                        </MenuItem>
+                      ))
+                    )}
                   </Select>
                 </FormControl>
               </Grid>
@@ -329,15 +370,22 @@ class PurchaseProductsPage extends Component {
                     value={this.state.queryParams.supplier_id}
                     label="Supplier"
                     onChange={this.handleSupplierChange}
+                    onOpen={this.handleSupplierOpen}
                     className="input-inner"
                     defaultValue=""
                   >
                     <MenuItem value="">All</MenuItem>
-                    {this.state.suppliers.map((item, index) => (
-                      <MenuItem value={item.id} key={index}>
-                        {item.name}
+                    {this.state.suppliersLoading ? (
+                      <MenuItem disabled sx={{ justifyContent: "center" }}>
+                        <CircularProgress size={20} />
                       </MenuItem>
-                    ))}
+                    ) : (
+                      this.state.suppliers.map((item, index) => (
+                        <MenuItem value={item.id} key={index}>
+                          {item.name}
+                        </MenuItem>
+                      ))
+                    )}
                   </Select>
                 </FormControl>
               </Grid>

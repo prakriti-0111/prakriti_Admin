@@ -11,7 +11,7 @@ import {objectToQuery} from 'src/helpers/helper';
 export const supplierList = (params) => {
     params = objectToQuery(params, true)
     return (dispatch) => {
-        axios.get(`/superadmin/suppliers${params}`)
+        return axios.get(`/superadmin/suppliers${params}`)
         .then(response => {
             if(response.data.success){
                 dispatch({

@@ -178,6 +178,7 @@ class PurchaseForm extends React.Component {
       isReturnForm: this.props.isReturnForm,
       supplierList: this.props.supplierList,
       productList: this.props.productList,
+      productListLoading: false,
       prePurchaseItems: this.props.prePurchaseItems,
       workerList: this.props.workerList,
       unitList: this.props.unitList,
@@ -374,11 +375,20 @@ class PurchaseForm extends React.Component {
     return resolvePurchaseType(source, fallback);
   };
 
+  // Shared by every productList call site so the Product Autocomplete can
+  // show a spinner instead of a bare "No options" while the request is in flight.
+  fetchProductList = (params) => {
+    this.setState({ productListLoading: true });
+    this.props.actions
+      .productList(params)
+      .finally(() => this.setState({ productListLoading: false }));
+  };
+
   componentDidMount() {
     // Ensure local state is reset for the incoming props.formData on mount
     this.resetLocalFormState(this.props.formData);
     this.props.actions.purchasePreStoreList({ all: 1 });
-    this.props.actions.productList({ all: 1, purity_price: 1 });
+    this.fetchProductList({ all: 1, purity_price: 1 });
     this.props.actions.categoryList({ all: 1 });
     this.props.actions.supplierList({ all: 1 });
     this.props.actions.employeeList({ all: 1, role_id: 10 });
@@ -1316,7 +1326,7 @@ class PurchaseForm extends React.Component {
     // Load the appropriate list based on purchase type
     if (purchaseType === "product") {
       // Load all products initially (not filtered by subcategory)
-      this.props.actions.productList({ all: 1, purity_price: 1 });
+      this.fetchProductList({ all: 1, purity_price: 1 });
     } else {
       // Material list is already loaded in componentDidMount
       // But we can reload if needed
@@ -2937,14 +2947,14 @@ class PurchaseForm extends React.Component {
     } else {
       if (event.target.value) {
         // Filter products by subcategory
-        this.props.actions.productList({
+        this.fetchProductList({
           all: 1,
           sub_category_id: event.target.value,
           purity_price: 1,
         });
       } else {
         // Load all products when subcategory is cleared
-        this.props.actions.productList({
+        this.fetchProductList({
           all: 1,
           purity_price: 1,
         });
@@ -3720,6 +3730,10 @@ class PurchaseForm extends React.Component {
                         className="autocomplete-selectbox"
                         fullWidth
                         options={this.state.productList}
+                        loading={this.state.productListLoading}
+                        loadingText={
+                          <CircularProgress size={20} color="inherit" />
+                        }
                         autoHighlight
                         getOptionLabel={(option) =>
                           option.name + " | " + option.product_code
@@ -3736,6 +3750,20 @@ class PurchaseForm extends React.Component {
                             inputProps={{
                               ...params.inputProps,
                               autoComplete: "new-password",
+                            }}
+                            InputProps={{
+                              ...params.InputProps,
+                              endAdornment: (
+                                <>
+                                  {this.state.productListLoading ? (
+                                    <CircularProgress
+                                      color="inherit"
+                                      size={16}
+                                    />
+                                  ) : null}
+                                  {params.InputProps.endAdornment}
+                                </>
+                              ),
                             }}
                             fullWidth
                             error={productFormErrors.product_id}
