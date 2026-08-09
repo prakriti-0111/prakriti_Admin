@@ -13,7 +13,7 @@ import {objectToQuery} from 'src/helpers/helper';
 export const productList = (params) => {
     params = objectToQuery(params, true)
     return (dispatch) => {
-        axios.get(`/superadmin/product${params}`)
+        return axios.get(`/superadmin/product${params}`)
         .then(response => {
             if(response.data.success){
                 dispatch({
