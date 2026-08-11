@@ -79,17 +79,15 @@ class EditProfileForm extends React.Component {
         if(this.state.actionCalled){
             if(this.state.editProfileSuccess){
                 this.props.enqueueSnackbar(this.state.successMessage, {variant: 'success'});
-                console.log({
-                    name: this.state.formValues.name,
-                    mobile: this.state.formValues.mobile,
-                    email: this.state.formValues.email,
-                    gst: this.state.formValues.gst
-                })
+                /* The form seeds itself from the cached auth user, so every field the
+                   API just saved has to be written back here too — leaving `email` out
+                   made a saved address look unsaved on the next visit. */
                 this.props.dispatch({
                     type: UPDATE_GLOBAL_AUTH,
                     payload: {
                         name: this.state.formValues.name,
                         mobile: this.state.formValues.mobile,
+                        email: this.state.formValues.email,
                         gst: this.state.formValues.gst
                     }
                 });
