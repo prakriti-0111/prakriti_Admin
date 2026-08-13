@@ -116,14 +116,22 @@ class OwnSalePage extends Component {
     }else if(this.isDistributor){
       this.props.actions.retailerList({ all: 1, my_retailer: 1 });
     }else if(this.isSalesExecutive){
-      this.props.actions.retailerList({ all: 1, my_retailer: 1 });
+      // the team's book, same as the sale form
+      this.props.actions.retailerList({ all: 1 });
     }
   }
 
   static getDerivedStateFromProps(props, state){
     let update = {};
     if(props.items !== state.items){
-      update.items = props.items;
+      const items = props.items.map((item) => {
+        return {
+          ...item,
+          // Ensure company name is available - API may return as company_name or user_company_name
+          user_company_name: item.user_company_name || item.company_name || item.user_details?.company_name || '-'
+        };
+      });
+      update.items = items;
     }
 
     if(props.total !== state.total){

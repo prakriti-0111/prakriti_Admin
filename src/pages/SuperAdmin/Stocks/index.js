@@ -2006,7 +2006,7 @@ class StockPage extends Component {
                             },
                           }}
                         >
-                          {this.state.searching ? <CircularProgress size={20} /> : <SearchIcon />}
+                          {this.state.searching ? <CircularProgress size={20} /> : <SearchIcon className="search-icon" />}
                         </Button>
                       ),
                     }}
@@ -2082,7 +2082,7 @@ class StockPage extends Component {
                                   </span>
                                 </div>
                               ) : (
-                                <SearchIcon />
+                                <SearchIcon className="search-icon" />
                               )}
                             </Button>
                             <Button

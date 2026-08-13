@@ -6,6 +6,7 @@ import withRouter from 'src/helpers/withRouter';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import LoadingButton from '@mui/lab/LoadingButton';
 
 const validate = values => {
   const errors = {}
@@ -118,7 +119,14 @@ class HolidayForm extends React.Component {
               </Grid>
             </Grid>
             <Stack spacing={1} mt={2} direction="row" className='modal-button-area'>
-              <Button variant="contained" type="submit">Submit</Button>
+              <LoadingButton
+              variant="contained"
+              type="submit"
+              loading={submitting}
+              disabled={submitting}
+            >
+              Submit
+            </LoadingButton>
               <Button variant="outlined" onClick={() => this.props.handleCancel() }>Cancel</Button>
             </Stack>
         </Box>

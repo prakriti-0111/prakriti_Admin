@@ -204,7 +204,14 @@ class SaleOnApprovePage extends Component {
   static getDerivedStateFromProps(props, state) {
     let update = {};
     if (props.items !== state.items) {
-      update.items = props.items;
+      const items = props.items.map((item) => {
+        return {
+          ...item,
+          // Ensure company name is available - API may return as company_name or user_company_name
+          user_company_name: item.user_company_name || item.company_name || item.user_details?.company_name || '-'
+        };
+      });
+      update.items = items;
       update.isLoading = false;
     }
 

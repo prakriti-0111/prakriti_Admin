@@ -94,6 +94,7 @@ class SaleViewPage extends React.Component {
       },
       auth: this.props.auth,
       downloadingInfo: false,
+      downloadingCurrent: false,
       downloadingList: false,
       downloadingItem: false,
       paymentOpen: false,
@@ -191,14 +192,14 @@ class SaleViewPage extends React.Component {
     this.setState((prev) => ({ productListOpen: !prev.productListOpen }));
   };
 
-  handleDownloadInfo = async (id) => {
+  handleDownloadInfo = async (id, current = false) => {
     // opened on the click itself so mobile does not treat it as a popup
     const fileWindow = prepareFileWindow();
-    this.setState({
-      downloadingInfo: true,
-    });
+    this.setState(
+      current ? { downloadingCurrent: true } : { downloadingInfo: true }
+    );
 
-    let response = await salesDownloadInvoiceInfo(id);
+    let response = await salesDownloadInvoiceInfo(id, current);
     if (response.data.success) {
       /*if(response.data.data.html){
         var newWindow = window.open();
@@ -206,9 +207,7 @@ class SaleViewPage extends React.Component {
         return false;
       }*/
       this.setState(
-        {
-          downloadingInfo: false,
-        },
+        { downloadingInfo: false, downloadingCurrent: false },
         () => {
           showFileWindow(fileWindow, response.data.data.url);
         },
@@ -232,9 +231,7 @@ class SaleViewPage extends React.Component {
     } else {
       // the API failed, so the blank tab has nothing to show
       closeFileWindow(fileWindow);
-      this.setState({
-        downloadingInfo: false,
-      });
+      this.setState({ downloadingInfo: false, downloadingCurrent: false });
     }
   };
 
@@ -597,7 +594,10 @@ class SaleViewPage extends React.Component {
 
   loadViewData = async () => {
     this.setState({ sale: null });
-    const response = await salesViewRaw(this.props.params.id);
+    /* current=1: the metal is shown at today's gold rate. The API only
+       reprices the copy it sends back - the stored sale is untouched, and the
+       plain Invoice button still prints the rates frozen at sale time. */
+    const response = await salesViewRaw(this.props.params.id, true);
     if (response.data.success) {
       this.setState({ sale: response.data.data });
     }
@@ -609,6 +609,7 @@ class SaleViewPage extends React.Component {
       formValues,
       formErros,
       downloadingInfo,
+      downloadingCurrent,
       downloadingItem,
       downloadingList,
     } = this.state;
@@ -729,8 +730,23 @@ class SaleViewPage extends React.Component {
                 variant="contained"
                 onClick={() => this.handleDownloadInfo(this.props.params.id)}
                 sx={{ color: "#fff !important" }}
+                title="Rates as they were when the sale was raised"
               >
                 Invoice
+                <FileDownloadIcon sx={{ ml: 0.5 }} />
+              </Button>
+            )}
+            {/* the same jewellery re-costed at today's gold rate */}
+            {downloadingCurrent ? (
+              <CircularProgress size="28px" />
+            ) : (
+              <Button
+                variant="contained"
+                onClick={() => this.handleDownloadInfo(this.props.params.id, true)}
+                sx={{ color: "#fff !important", backgroundColor: "#f57c00" }}
+                title="Re-costed at today's gold rate"
+              >
+                Current Invoice
                 <FileDownloadIcon sx={{ ml: 0.5 }} />
               </Button>
             )}
