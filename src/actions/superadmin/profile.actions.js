@@ -1,4 +1,5 @@
 import axios from 'actions/axios';
+import { isAdmin, isDistributor, isSalesExecutive } from 'src/helpers/helper';
 import {
     SUPERADMIN_UPDATE_PROFILE,
     SUPERADMIN_UPDATE_PASSWORD,
@@ -47,6 +48,19 @@ export const changePassword = (data) => {
 }
 
 /**
+ * Every role renders this same dashboard, and its numbers come from the
+ * superadmin controller, which branches on the caller's role. That is no reason
+ * for an admin to be seen calling /api/superadmin/... - each role now asks its
+ * own prefix, which serves the same controller behind that role's guard.
+ */
+const getDashboardApiPrefix = () => {
+    if (isAdmin()) return '/admin';
+    if (isDistributor()) return '/distributor';
+    if (isSalesExecutive()) return '/sales-executive';
+    return '/superadmin';
+};
+
+/**
  * The dashboard is served as three independent sections. Summary and charts are
  * a few milliseconds each, the stock valuation is the slow one, so they are
  * fetched in parallel and each paints as it lands instead of the whole page
@@ -55,7 +69,7 @@ export const changePassword = (data) => {
 export const getDashboardData = (data) => {
     return (dispatch) => {
         ['summary', 'charts', 'stock'].forEach(section => {
-            axios.get(`/superadmin/dashboard/${section}`)
+            axios.get(`${getDashboardApiPrefix()}/dashboard/${section}`)
             .then(response => {
                 dispatch({
                     type: SUPERADMIN_DASHBOARD,

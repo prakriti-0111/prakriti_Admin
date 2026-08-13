@@ -847,7 +847,7 @@ class AdminViewPage extends React.Component {
                                   onClick={this.handleSearch}
                                   edge="end"
                                 >
-                                  <SearchIcon />
+                                  <SearchIcon className="search-icon" />
                                 </IconButton>
                               </InputAdornment>
                             }
