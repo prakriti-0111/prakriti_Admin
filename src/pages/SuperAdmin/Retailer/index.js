@@ -34,7 +34,10 @@ class RetailerPage extends Component {
         search: '',
         date_from: null,
         date_to: null,
-        all: 0
+        all: 0,
+        // 1 = only the retailers of this admin's own distributors and SEs
+        // Admin always uses my_retailer=1 (no tabs), Distributor defaults to my_retailer=1
+        my_retailer: (isAdmin() || isDistributor()) ? 1 : 0
       },
       deleteSuccess: this.props.deleteSuccess,
       countries: this.props.countries,
@@ -211,6 +214,20 @@ class RetailerPage extends Component {
     })
   }
 
+  handleTabChange = (my_retailer) => {
+    if (this.state.queryParams.my_retailer === my_retailer) return;
+    this.setState({
+      queryParams: {
+        ...this.state.queryParams,
+        my_retailer: my_retailer,
+        page: 1,
+        all: 0
+      }
+    }, () => {
+      this.loadListData();
+    })
+  }
+
   handleSearch = () => {
     this.setState({
       queryParams: {
@@ -294,7 +311,34 @@ class RetailerPage extends Component {
           </Card>
           : null
         }
-        <MainCard title="Retailers" secondary={((!this.isSalesExecutive && !this.isAdmin /*&& !this.isDistributor*/ && hasPermission(this.state.permissions, 'retailer', 'add')) || this.isDistributor) ? <Button variant="contained" onClick={() => this.props.navigate('create') }>Add</Button> : null} >
+        {this.isDistributor ? (
+          <div className="ratn-sticky-header-tabs" style={{ display: 'flex', gap: '4px', marginBottom: '12px' }}>
+            {[
+              { value: 1, label: 'My Retailer' },
+              { value: 0, label: 'All Retailers' }
+            ].map((tab) => (
+              <Button
+                key={tab.value}
+                variant="contained"
+                size="small"
+                onClick={() => this.handleTabChange(tab.value)}
+                sx={{
+                  borderRadius: '4px',
+                  textTransform: 'none',
+                  backgroundColor: this.state.queryParams.my_retailer === tab.value ? '#1E2746' : '#9e9e9e',
+                  color: '#ffffff !important',
+                  fontWeight: this.state.queryParams.my_retailer === tab.value ? 700 : 400,
+                  '&:hover': {
+                    backgroundColor: this.state.queryParams.my_retailer === tab.value ? '#1E2746' : '#757575'
+                  }
+                }}
+              >
+                {tab.label}
+              </Button>
+            ))}
+          </div>
+        ) : null}
+        <MainCard title={this.isDistributor && this.state.queryParams.my_retailer === 1 ? "My Retailer" : "Retailers"} secondary={((!this.isSalesExecutive && !this.isAdmin /*&& !this.isDistributor*/ && hasPermission(this.state.permissions, 'retailer', 'add')) || this.isDistributor) ? <Button variant="contained" onClick={() => this.props.navigate('create') }>Add</Button> : null} >
         <Box sx={{ flexGrow: 1, m: 0.5 }} className='ratn-dialog-inner'>
           <Grid container spacing={2} className='tax-input loans_view p_view'>
             <Grid item xs={6} md={2}>

@@ -51,7 +51,7 @@ class SaleCartSection extends Component {
       user: this.props.user,
       distributorCartTotal: this.props.distributorCartTotal,
       adminCartTotal: this.props.adminCartTotal,
-      superAdminCartTotal: this.props.superAdminCartTotal,
+      superAdminCartItems: this.props.superAdminCartItems,
     };
   }
 
@@ -67,8 +67,8 @@ class SaleCartSection extends Component {
     if (props.adminCartTotal !== state.adminCartTotal) {
       update.adminCartTotal = props.adminCartTotal;
     }
-    if (props.superAdminCartTotal !== state.superAdminCartTotal) {
-      update.superAdminCartTotal = props.superAdminCartTotal;
+    if (props.superAdminCartItems !== state.superAdminCartItems) {
+      update.superAdminCartItems = props.superAdminCartItems;
     }
 
     return update;
@@ -139,10 +139,11 @@ class SaleCartSection extends Component {
                 default:
                     break;
             }*/
+      const superAdminCartTotal = (this.state.superAdminCartItems || []).filter(
+        (item) => !item.is_held
+      ).length;
       totalCart =
-        this.state.superAdminCartTotal > 9
-          ? this.state.superAdminCartTotal + "+"
-          : this.state.superAdminCartTotal;
+        superAdminCartTotal > 9 ? superAdminCartTotal + "+" : superAdminCartTotal;
     }
 
     return (
@@ -197,7 +198,7 @@ const mapStateToProps = (state) => ({
   user: state.auth.user,
   distributorCartTotal: state.distributor.saleCart.total,
   adminCartTotal: state.admin.saleCart.total,
-  superAdminCartTotal: state.superadmin.cart.total,
+  superAdminCartItems: state.superadmin.cart.items,
 });
 
 const mapDispatchToProps = (dispatch) => ({

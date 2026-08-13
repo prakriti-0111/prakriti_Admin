@@ -856,7 +856,7 @@ class DistrubutorViewPage extends React.Component {
                                     <IconButton
                                       onClick={this.handleSearch}
                                       edge='end'>
-                                      <SearchIcon />
+                                      <SearchIcon className="search-icon" />
                                     </IconButton>
                                   </InputAdornment>
                                 }

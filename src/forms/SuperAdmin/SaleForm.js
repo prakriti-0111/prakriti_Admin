@@ -620,7 +620,10 @@ class SaleForm extends React.Component {
     } else if (this.isSalesExecutive) {
       this.props.actions.adminList({ all: 1 });
 
-      this.props.actions.retailerList({ all: 1, my_retailer: 1 });
+      /* a sales executive sells to the whole team's book, not only to the
+         retailers it registered itself - my_retailer=1 is the own-created
+         subset and left the Company Name list with a single entry */
+      this.props.actions.retailerList({ all: 1 });
 
       this.props.actions.distributorList({ all: 1 });
 
@@ -2259,6 +2262,9 @@ class SaleForm extends React.Component {
           holdProcessing: false,
           unique_materials: this.buildUniqueMaterials(products),
         }, () => this.calculateProductPrice());
+        /* the header badge counts the unheld cart rows off the redux cart, so
+           it stays on the old number until the list is refetched */
+        this.props.actions.cartList();
         this.props.enqueueSnackbar('Items held successfully', { variant: 'success' });
       } else {
         this.setState({ holdProcessing: false });
@@ -2292,6 +2298,7 @@ class SaleForm extends React.Component {
       { formValues: { ...formValues, products }, holdListSelected, holdListLoading: false, unique_materials: this.buildUniqueMaterials(products) },
       () => this.calculateProductPrice()
     );
+    this.props.actions.cartList();
     this.props.enqueueSnackbar(`${indices.length} item(s) released from hold`, { variant: 'success' });
   };
 
@@ -2347,6 +2354,7 @@ class SaleForm extends React.Component {
           { formValues: { ...this.state.formValues, products }, unique_materials: this.buildUniqueMaterials(products) },
           () => this.calculateProductPrice()
         );
+        this.props.actions.cartList();
         this.props.enqueueSnackbar('Item released from hold', { variant: 'success' });
       } else {
         this.props.enqueueSnackbar(response.data.message || 'Failed to unhold item', { variant: 'error' });
@@ -2712,7 +2720,10 @@ class SaleForm extends React.Component {
       return false;
     }
 
-    if (formValues.products.length == 0) {
+    /* held rows are stripped from the payload below, so a cart holding nothing
+       but held rows is an empty sale - it has to fail the check, not submit
+       zero products */
+    if (formValues.products.filter((p) => !p.is_held).length == 0) {
       this.props.enqueueSnackbar("Please add at least one product", {
         variant: "error",
       });
@@ -2722,7 +2733,7 @@ class SaleForm extends React.Component {
       return false;
     }
 
-    if (!hasErr && formValues.products.length) {
+    if (!hasErr && formValues.products.filter((p) => !p.is_held).length) {
       this.setState({
         submitting: true,
 
@@ -4681,12 +4692,16 @@ class SaleForm extends React.Component {
       id: "__add_admin__",
       company_name: addConfig ? addConfig.label : "",
     };
-    let userListWithAddOption = addConfig
-      ? [...userList, ADD_ADMIN_OPTION]
-      : userList;
+    let userListWithAddOption = userList;
 
     if (userIdValue && !user.length) {
       userListWithAddOption = [userIdValue, ...userListWithAddOption];
+    }
+
+    /* the add row sits at the very top of the dropdown, so it stays reachable
+       without scrolling however long the company list gets */
+    if (addConfig) {
+      userListWithAddOption = [ADD_ADMIN_OPTION, ...userListWithAddOption];
     }
 
     /* the company is picked for us, either from a sale on approval or after
@@ -4926,7 +4941,12 @@ class SaleForm extends React.Component {
                     }
                     renderOption={(props, option) =>
                       option.id === ADD_ADMIN_OPTION.id ? (
-                        <li {...props} key={option.id}>
+                        /* only the add row is blue — it is an action, not a company */
+                        <li
+                          {...props}
+                          key={option.id}
+                          style={{ color: "#2196f3", fontWeight: 500 }}
+                        >
                           <AddIcon fontSize="small" sx={{ mr: 1 }} />
                           {ADD_ADMIN_OPTION.company_name}
                         </li>
