@@ -58,6 +58,14 @@ class SalesExecutivePage extends Component {
         display_name: 'Distributor'
       }];
     }
+    // The team's retailer book - every retailer brought in by this executive's
+    // distributor and the executives beside it, which is the same figure the
+    // executive sees on its own dashboard.
+    this.columns = [...this.columns, {
+      name: 'total_retailer',
+      display_name: 'Total Retailer',
+      isBold: true
+    }];
     if(this.isAdmin || this.isDistributor || this.isSuperAdmin){
       this.columns = [...this.columns, ...[
         {
@@ -134,7 +142,7 @@ class SalesExecutivePage extends Component {
     const items = this.state.items || [];
     const distributors = this.state.distributors || [];
     return items.map((row) => {
-      let companyName = row.company_name || row.parent_company_name || '';
+      let companyName = row.company_name_display || row.company_name || row.parent_company_name || '';
       if(!companyName && row.parent_id){
         const parent = distributors.find((d) => d.id == row.parent_id);
         if(parent){
@@ -143,7 +151,8 @@ class SalesExecutivePage extends Component {
       }
       return {
         ...row,
-        company_name_display: companyName
+        company_name_display: companyName,
+        total_retailer: row.total_retailer === undefined || row.total_retailer === null ? 0 : row.total_retailer
       };
     });
   }
