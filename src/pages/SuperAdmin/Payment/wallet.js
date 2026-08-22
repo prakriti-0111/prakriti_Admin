@@ -222,6 +222,14 @@ class WalletPage extends Component {
     if (reason && reason == "backdropClick") return;
     this.setState({
       openDialog: false,
+      // Clear what was typed, or the next row opens carrying the last row's
+      // decline reason / cheque ref - which now also decides whether the
+      // confirm button is enabled.
+      formvalues: {
+        ...this.state.formvalues,
+        reasons: "",
+        ref_no: "",
+      },
     });
   };
 
@@ -1009,10 +1017,46 @@ class WalletPage extends Component {
           maxWidth="xs"
         >
           <DialogTitle>
-            {this.state.formvalues.status == 1 ? "Accept" : "Reject"}
+            {this.state.formvalues.status == 1
+              ? "Accept Payment"
+              : "Decline Payment"}
           </DialogTitle>
           <DialogContent>
-            <DialogContentText></DialogContentText>
+            {/* A confirmation dialog with an empty body told the user nothing
+                about what they were confirming - the amount, who it is from and
+                how it was paid all come from the row being acted on. */}
+            <DialogContentText sx={{ mb: 2 }}>
+              {this.state.formvalues.status == 1 ? (
+                <>
+                  Accept{" "}
+                  <strong>
+                    {this.state.actionRow ? this.state.actionRow.amount : ""}
+                  </strong>
+                  {this.state.actionRow && this.state.actionRow.payment_mode
+                    ? " paid by " + this.state.actionRow.payment_mode
+                    : ""}
+                  {this.state.actionRow && this.state.actionRow.payment_to
+                    ? " from " + this.state.actionRow.payment_to
+                    : ""}
+                  ? The amount will be added to your wallet balance.
+                </>
+              ) : (
+                <>
+                  Decline{" "}
+                  <strong>
+                    {this.state.actionRow ? this.state.actionRow.amount : ""}
+                  </strong>
+                  {this.state.actionRow && this.state.actionRow.payment_mode
+                    ? " paid by " + this.state.actionRow.payment_mode
+                    : ""}
+                  {this.state.actionRow && this.state.actionRow.payment_to
+                    ? " from " + this.state.actionRow.payment_to
+                    : ""}
+                  ? Nothing will be added to your wallet, and the reason below
+                  is shown to the sender.
+                </>
+              )}
+            </DialogContentText>
             <Box sx={{ flexGrow: 1, m: 0.5 }}>
               <Grid container spacing={2}>
                 {this.state.formvalues.status == 1 ? (
@@ -1039,11 +1083,18 @@ class WalletPage extends Component {
                   </>
                 ) : (
                   <Grid item xs={12} className="create-input">
-                    <InputLabel>Reason</InputLabel>
-                    <TextareaAutosize
+                    {/* Was a bare TextareaAutosize with only width:100% - no
+                        border, no padding, so it read as blank space under a
+                        floating label. An outlined multiline TextField looks
+                        like every other input on the screen. */}
+                    <TextField
+                      label="Reason"
+                      placeholder="Why is this payment being declined?"
+                      variant="outlined"
+                      fullWidth
+                      required
+                      multiline
                       minRows={3}
-                      label={"Reason"}
-                      style={{ width: "100%" }}
                       value={this.state.formvalues.reasons}
                       onChange={(event) =>
                         this.setState({
@@ -1053,21 +1104,36 @@ class WalletPage extends Component {
                           },
                         })
                       }
+                      helperText="The sender sees this, so say what was wrong."
                     />
                   </Grid>
                 )}
                 <Grid item xs={12}>
                   <Stack spacing={1} direction="row" justifyContent="flex-end">
+                    {/* "Submit" said nothing about what was being submitted.
+                        The button now names the action it performs. */}
                     <Button
                       variant="contained"
                       type="button"
-                      disabled={this.state.processing}
+                      color={
+                        this.state.formvalues.status == 1 ? "primary" : "error"
+                      }
+                      disabled={
+                        this.state.processing ||
+                        // A decline with no reason tells the sender nothing.
+                        (this.state.formvalues.status != 1 &&
+                          !String(this.state.formvalues.reasons || "").trim())
+                      }
                       onClick={this.handleSubmit}
                     >
-                      {this.state.processing ? "Processing" : "Submit"}
+                      {this.state.processing
+                        ? "Processing"
+                        : this.state.formvalues.status == 1
+                          ? "Yes, Accept"
+                          : "Yes, Decline"}
                     </Button>
                     <Button variant="outlined" onClick={this.handleDialogClose}>
-                      Cancel
+                      No
                     </Button>
                   </Stack>
                 </Grid>
