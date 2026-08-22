@@ -68,6 +68,7 @@ import { stocksList } from "actions/superadmin/stocks.actions";
 import { stocksTransferHistoryStore } from "actions/superadmin/stockHistory.actions";
 import { purityList } from "actions/superadmin/purity.actions";
 import "./style.css";
+import { PAYMENT_STATUS_COLORS } from "../../../utils/paymentStatusColors";
 
 class SaleViewPage extends React.Component {
   constructor(props) {
@@ -1332,16 +1333,7 @@ class SaleViewPage extends React.Component {
                         handlePagination={this.handlePagination}
                         actions={[]}
                         actionValue={"action_value"}
-                        actionValueColorConditions={[
-                          {
-                            value: "Accepted",
-                            color: "green",
-                          },
-                          {
-                            value: "Declined",
-                            color: "red",
-                          },
-                        ]}
+                        actionValueColorConditions={PAYMENT_STATUS_COLORS}
                       />
                     </Grid>
                   ) : null}

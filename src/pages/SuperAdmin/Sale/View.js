@@ -57,6 +57,7 @@ import { stocksTransferHistoryStore } from 'actions/superadmin/stockHistory.acti
 import { purityList } from 'actions/superadmin/purity.actions';
 import axios from 'axios';
 import './style.css';
+import { PAYMENT_STATUS_COLORS } from "../../../utils/paymentStatusColors";
 
 class SaleViewPage extends React.Component {
   constructor(props) {
@@ -100,8 +101,11 @@ class SaleViewPage extends React.Component {
         display_name: "Amount",
       },
       {
-        name: "payment_mode",
+        // display_mode, not payment_mode: it carries the cheque no / txn id and,
+        // while a payment is still pending, the amount on its own line beneath.
+        name: "display_mode",
         display_name: "Payment Mode",
+        isHtml: true,
       },
       {
         name: "cheque_no",
@@ -670,16 +674,7 @@ class SaleViewPage extends React.Component {
                     handlePagination={this.handlePagination}
                     actions={[]}
                     actionValue={"action_value"}
-                    actionValueColorConditions={[
-                      {
-                        value: "Accepted",
-                        color: "green",
-                      },
-                      {
-                        value: "Declined",
-                        color: "red",
-                      },
-                    ]}
+                    actionValueColorConditions={PAYMENT_STATUS_COLORS}
                   />
                 </Grid>
               ) : null}
