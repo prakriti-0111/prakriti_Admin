@@ -60,6 +60,7 @@ import { distributorList } from "actions/superadmin/distributor.actions";
 import { adminList } from "actions/superadmin/admin.actions";
 import { retailerList } from "actions/superadmin/retailer.actions";
 import { getProfile } from "actions/superadmin/profile.actions";
+import { PAYMENT_STATUS_COLORS } from "../../../utils/paymentStatusColors";
 
 class WalletPage extends Component {
   constructor(props) {
@@ -918,7 +919,7 @@ class WalletPage extends Component {
                     rawAction === "success" ||
                     rawAction === "processed"
                   ) {
-                    normalizedActionValue = "processed";
+                    normalizedActionValue = "Processed";
                   } else if (
                     rawAction === "failed" ||
                     rawAction === "declined" ||
@@ -932,7 +933,7 @@ class WalletPage extends Component {
                     );
                     normalizedActionValue =
                       !Number.isNaN(creditAmount) && creditAmount > 0
-                        ? "processed"
+                        ? "Processed"
                         : "Pending";
                   }
                 } else if (rawStatus === "pending" && row.can_accept) {
@@ -941,7 +942,7 @@ class WalletPage extends Component {
                     rawAction === "success" ||
                     rawAction === "processed"
                   ) {
-                    normalizedActionValue = "processed";
+                    normalizedActionValue = "Processed";
                   } else if (
                     rawAction === "failed" ||
                     rawAction === "declined" ||
@@ -962,7 +963,7 @@ class WalletPage extends Component {
                     rawStatus === "reject" ||
                     rawStatus === "rejected"
                       ? "Declined"
-                      : "processed";
+                      : "Processed";
                 }
 
                 let normalizedDisplayMode = row.display_mode;
@@ -995,24 +996,7 @@ class WalletPage extends Component {
               handlePagination={this.handlePagination}
               actions={this.tableActions}
               actionValue={"action_value"}
-              actionValueColorConditions={[
-                {
-                  value: "Pending",
-                  color: "orange",
-                },
-                {
-                  value: "Accepted",
-                  color: "green",
-                },
-                {
-                  value: "Declined",
-                  color: "red",
-                },
-                {
-                  value: "processed",
-                  color: "gray",
-                },
-              ]}
+              actionValueColorConditions={PAYMENT_STATUS_COLORS}
             />
           )}
         </Grid>
