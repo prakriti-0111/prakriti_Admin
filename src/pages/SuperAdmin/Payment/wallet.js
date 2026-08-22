@@ -1092,7 +1092,6 @@ class WalletPage extends Component {
                       placeholder="Why is this payment being declined?"
                       variant="outlined"
                       fullWidth
-                      required
                       multiline
                       minRows={3}
                       value={this.state.formvalues.reasons}
@@ -1104,7 +1103,7 @@ class WalletPage extends Component {
                           },
                         })
                       }
-                      helperText="The sender sees this, so say what was wrong."
+                      helperText="Optional. If given, the sender sees it."
                     />
                   </Grid>
                 )}
@@ -1118,12 +1117,7 @@ class WalletPage extends Component {
                       color={
                         this.state.formvalues.status == 1 ? "primary" : "error"
                       }
-                      disabled={
-                        this.state.processing ||
-                        // A decline with no reason tells the sender nothing.
-                        (this.state.formvalues.status != 1 &&
-                          !String(this.state.formvalues.reasons || "").trim())
-                      }
+                      disabled={this.state.processing}
                       onClick={this.handleSubmit}
                     >
                       {this.state.processing
