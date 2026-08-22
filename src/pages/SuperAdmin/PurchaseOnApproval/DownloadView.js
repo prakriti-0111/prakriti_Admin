@@ -59,6 +59,7 @@ import { getRoleName, getUserDashboardRoute } from "src/helpers/helper";
 import { getNotifiactions } from "actions/superadmin/notification.actions";
 import FileDownloadIcon from "@mui/icons-material/FileDownload";
 import "./style.css";
+import { PAYMENT_STATUS_COLORS } from "../../../utils/paymentStatusColors";
 class PurchaseViewPage extends React.Component {
   constructor(props) {
     super(props);
@@ -919,10 +920,7 @@ class PurchaseViewPage extends React.Component {
                         handlePagination={this.handlePagination}
                         actions={[]}
                         actionValue={"action_value"}
-                        actionValueColorConditions={[
-                          { value: "Accepted", color: "green" },
-                          { value: "Declined", color: "red" },
-                        ]}
+                        actionValueColorConditions={PAYMENT_STATUS_COLORS}
                       />
                     </Grid>
                   ) : null}
