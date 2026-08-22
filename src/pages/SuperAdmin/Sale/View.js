@@ -101,9 +101,10 @@ class SaleViewPage extends React.Component {
         display_name: "Amount",
       },
       {
-        // display_mode, not payment_mode: it carries the cheque no / txn id and,
-        // while a payment is still pending, the amount on its own line beneath.
-        name: "display_mode",
+        // payment_mode_display carries the amount in brackets while a payment
+        // is still pending: "Cheque (Rs.500.00)". The cheque no / txn id have
+        // their own columns on this screen, so they are not repeated here.
+        name: "payment_mode_display",
         display_name: "Payment Mode",
         isHtml: true,
       },
