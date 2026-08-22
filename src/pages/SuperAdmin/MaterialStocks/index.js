@@ -146,7 +146,7 @@ class MaterialStockPage extends Component {
   }
 
   fetchLiveGoldRate = () => {
-    axios.get('https://n8n.prakriti.one/webhook/gold-rate-india')
+    axios.get(process.env.GOLD_RATE_URL)
       .then(res => {
         if (res.data && res.data.per_gram && res.data.per_gram['24K']) {
           const rate = res.data.per_gram['24K'];

@@ -352,10 +352,10 @@ class SaleViewPage extends React.Component {
   }
 
   handlePayNow = () => {
-    axios.get('https://n8n.prakriti.one/webhook/gold-rate-india')
+    axios.get(process.env.GOLD_RATE_URL)
       .then(res => {
-        if (res.data && res.data.per_gram) {
-          const liveGoldPerGram = res.data.per_gram['24K'];
+        if (res.data && res.data.base_per_gram) {
+          const liveGoldPerGram = res.data.base_per_gram['24K'];
           const liveGoldPriceDisplay = res.data.display || `₹${liveGoldPerGram.toLocaleString('en-IN')}`;
           this.setState({ liveGoldPerGram, liveGoldPriceDisplay });
         }
