@@ -121,8 +121,34 @@ class PurchaseProductsPage extends Component {
 
   componentDidMount() {
     this.loadListData();
-    this.props.actions.categoryList({ all: 1 });
   }
+
+  // Categories/suppliers are fetched only when their dropdown is opened,
+  // not on every page load - the list is rarely touched but was always paid for.
+  handleCategoryOpen = () => {
+    if (!this.state.categories.length) {
+      this.setState({ categoriesLoading: true });
+      this.props.actions
+        .categoryList({ all: 1 })
+        .finally(() => this.setState({ categoriesLoading: false }));
+    }
+  };
+
+  handleSupplierOpen = () => {
+    if (!this.state.suppliers.length) {
+      this.setState({ suppliersLoading: true });
+      this.props.actions
+        .supplierList({ all: 1 })
+        .finally(() => this.setState({ suppliersLoading: false }));
+    }
+  };
+
+  fetchSubCategories = (category_id) => {
+    this.setState({ subCategoriesLoading: true });
+    this.props.actions
+      .subCategoryList({ all: 1, category_id })
+      .finally(() => this.setState({ subCategoriesLoading: false }));
+  };
 
   static getDerivedStateFromProps(props, state) {
     let update = {};
@@ -182,6 +208,7 @@ class PurchaseProductsPage extends Component {
 
   handleCategoryChange = (event) => {
     let val = event.target.value;
+    this.fetchSubCategories(val);
     this.setState({
       queryParams: {
         ...this.state.queryParams,
@@ -229,6 +256,7 @@ class PurchaseProductsPage extends Component {
   };
 
   handleCardClick = (category_id) => {
+    this.fetchSubCategories(category_id);
     this.setState(
       {
         queryParams: {
@@ -358,44 +386,6 @@ class PurchaseProductsPage extends Component {
                         </MenuItem>
                       ))
                     )}
-                  </Select>
-                </FormControl>
-              </Grid>
-              <Grid item xs={6} md={3} className="create-input">
-                <FormControl fullWidth>
-                  <InputLabel>Sub Category</InputLabel>
-                  <Select
-                    value={this.state.queryParams.sub_category_id}
-                    label="Sub Category"
-                    onChange={this.handleSubCategoryChange}
-                    className="input-inner"
-                    defaultValue=""
-                  >
-                    <MenuItem value="">All</MenuItem>
-                    {this.state.sub_categories.map((item, index) => (
-                      <MenuItem value={item.id} key={index}>
-                        {item.name}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              </Grid>
-              <Grid item xs={6} md={3} className="create-input">
-                <FormControl fullWidth>
-                  <InputLabel>Supplier</InputLabel>
-                  <Select
-                    value={this.state.queryParams.supplier_id}
-                    label="Supplier"
-                    onChange={this.handleSupplierChange}
-                    className="input-inner"
-                    defaultValue=""
-                  >
-                    <MenuItem value="">All</MenuItem>
-                    {this.state.suppliers.map((item, index) => (
-                      <MenuItem value={item.id} key={index}>
-                        {item.name}
-                      </MenuItem>
-                    ))}
                   </Select>
                 </FormControl>
               </Grid>

@@ -50,22 +50,9 @@ module.exports = {
           {
             loader: "sass-loader",
             options: {
-              name: "assets/[name].[ext]",
-            },
-          },
-          {
-            loader: "image-webpack-loader",
-            options: {
-              query: {
-                mozjpeg: {
-                  progressive: true,
-                },
-                gifsicle: {
-                  interlaced: true,
-                },
-                optipng: {
-                  optimizationLevel: 7,
-                },
+              api: "modern",
+              sassOptions: {
+                silenceDeprecations: ["import"],
               },
             },
           },
