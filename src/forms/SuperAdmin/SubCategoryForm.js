@@ -21,6 +21,7 @@ import { priceFormat, displayAmount } from "src/helpers/helper";
 import Autocomplete, { createFilterOptions } from "@mui/material/Autocomplete";
 import { subCategoryRawList } from "actions/superadmin/subCategory.actions";
 import { validateInteger, validateNumber } from '../../helpers/helper';
+import LoadingButton from '@mui/lab/LoadingButton';
 
 const validate = (values) => {
   const errors = {};
@@ -547,13 +548,15 @@ class SubCategoryForm extends React.Component {
                 direction="row"
                 className="modal-button-area ratn-footer-buttons"
               >
-                <Button
+                <LoadingButton
                   variant="contained"
                   className="conf-button"
                   type="submit"
+                  loading={submitting}
+                  disabled={submitting}
                 >
                   Submit
-                </Button>
+                </LoadingButton>
                 {/*<Button variant="outlined" onClick={() => this.props.handleCancel() }>Cancel</Button>*/}
               </Stack>
             </Grid>

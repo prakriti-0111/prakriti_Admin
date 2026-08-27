@@ -19,6 +19,7 @@ class SaleProductsPage extends Component {
     super(props);
     this.state = {
       items: [],
+      total: 0,
       sale_by_list: [],
       price_by_categories: [],
       categories: this.props.categories,
@@ -140,6 +141,8 @@ class SaleProductsPage extends Component {
 
           this.setState({
             items: res.data.data.items,
+            // the API pages the rows now, so the pager needs the full count
+            total: res?.data?.data?.total || res?.data?.data?.items?.length || 0,
             sale_by_list: saleByList,
             price_by_categories: res.data.data.categories
           })
@@ -330,7 +333,7 @@ class SaleProductsPage extends Component {
               rows={this.state.items}
               page={this.state.queryParams.page}
               limit={this.state.queryParams.limit}
-              total={this.state.items.length}
+              total={this.state.total}
               haveAllOption={true}
               //havePagination={false}
               handlePagination={this.handlePagination}

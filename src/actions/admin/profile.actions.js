@@ -15,6 +15,15 @@ export const updateEditProfile = (data) => {
             });
         })
         .catch(error => {
+            /* Swallowing this left the Update button spinning with no message when
+               the request never reached the API. Report it like any other failure. */
+            dispatch({
+                type: ADMIN_UPDATE_PROFILE,
+                payload: (error && error.response && error.response.data) || {
+                    success: false,
+                    message: 'Could not reach the server. Please try again.'
+                }
+            });
         })
     }
 }

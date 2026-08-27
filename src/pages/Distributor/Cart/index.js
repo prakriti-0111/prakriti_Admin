@@ -1,7 +1,7 @@
 import { React, Component } from 'react';
 import { matchRoutes, useLocation } from "react-router-dom"
 import { connect } from 'react-redux';
-import { Avatar, CssBaseline, Link, Box, Typography, Container, Alert, Grid, Button, Stack } from '@mui/material';
+import { Avatar, CssBaseline, Link, Box, Typography, Container, Alert, Grid, Button, Stack, CircularProgress } from '@mui/material';
 import { bindActionCreators } from 'redux';
 import { gridSpacing } from 'store/constant';
 import MainCard from 'ui-component/cards/MainCard';
@@ -34,6 +34,7 @@ class CartPage extends Component {
     super(props);
 
     this.state = {
+      isLoading: false,
       items: this.props.items,
       total: this.props.total,
       deleteDialogOpen: false,
@@ -55,6 +56,7 @@ class CartPage extends Component {
     let update = {};
     if (props.items !== state.items) {
       update.items = props.items;
+      update.isLoading = false;
     }
 
     if (props.total !== state.total) {
@@ -77,6 +79,7 @@ class CartPage extends Component {
   }
 
   loadListData = () => {
+    this.setState({ isLoading: true });
     this.props.actions.cartList();
   }
 
@@ -141,7 +144,7 @@ class CartPage extends Component {
       <>
         <MainCard title="Carts" secondary={<Button variant="contained" onClick={() => this.handlePlaceOrderConfirm }>Place Order</Button>}>
           <Grid container spacing={gridSpacing}>
-          <TableContainer component={Paper} className='ratn-table-wrapper'>
+          {this.state.isLoading ? <Box sx={{display:'flex',justifyContent:'center',p:3}}><CircularProgress /></Box> : <TableContainer component={Paper} className='ratn-table-wrapper'>
           <Table sx={{ minWidth: 500 }}>
             <TableHead className='ratn-table-header'>
               <TableRow>
@@ -207,7 +210,7 @@ class CartPage extends Component {
 
             </TableBody>
             </Table>
-            </TableContainer>
+            </TableContainer>}
           </Grid>
 
           <Dialog

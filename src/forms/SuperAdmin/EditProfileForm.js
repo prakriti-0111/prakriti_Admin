@@ -2,7 +2,7 @@ import React from 'react';
 import { connect } from 'react-redux';
 import { Field, reduxForm } from 'redux-form/immutable';
 import {Box, TextField, Button, Grid, Stack} from '@mui/material';
-import {isEmpty} from 'src/helpers/helper';
+import {isEmpty, isValidEmail} from 'src/helpers/helper';
 import { bindActionCreators } from 'redux';
 import { updateEditProfile } from 'actions/superadmin/profile.actions';
 import { withSnackbar } from 'notistack';
@@ -24,11 +24,13 @@ class EditProfileForm extends React.Component {
             formValues: {
                 name: this.props.auth.user.name,
                 mobile: this.props.auth.user.mobile,
+                email: this.props.auth.user.email,
                 gst: this.props.auth.user.gst
             },
             formErros: {
                 name: false,
                 mobile: false,
+                email: false,
                 gst: false
             },
             actionCalled: this.props.actionCalled,
@@ -47,6 +49,7 @@ class EditProfileForm extends React.Component {
                     ...this.state.formValues,
                     name: this.props.auth.user.name,
                     mobile: this.props.auth.user.mobile,
+                    email: this.props.auth.user.email,
                     gst: this.props.auth.user.gst
                 }
             })
@@ -76,16 +79,15 @@ class EditProfileForm extends React.Component {
         if(this.state.actionCalled){
             if(this.state.editProfileSuccess){
                 this.props.enqueueSnackbar(this.state.successMessage, {variant: 'success'});
-                console.log({
-                    name: this.state.formValues.name,
-                    mobile: this.state.formValues.mobile,
-                    gst: this.state.formValues.gst
-                })
+                /* The form seeds itself from the cached auth user, so every field the
+                   API just saved has to be written back here too — leaving `email` out
+                   made a saved address look unsaved on the next visit. */
                 this.props.dispatch({
                     type: UPDATE_GLOBAL_AUTH,
                     payload: {
                         name: this.state.formValues.name,
                         mobile: this.state.formValues.mobile,
+                        email: this.state.formValues.email,
                         gst: this.state.formValues.gst
                     }
                 });
@@ -140,6 +142,12 @@ class EditProfileForm extends React.Component {
         }else{
             formErros.mobile = false;
         }
+        if(!isValidEmail(formValues.email)){
+            formErros.email = true;
+            hasErr = true;
+        }else{
+            formErros.email = false;
+        }
         if(isEmpty(formValues.gst)){
             formErros.gst = true;
             hasErr = true;
@@ -157,9 +165,9 @@ class EditProfileForm extends React.Component {
         return (
             <Box sx={{ flexGrow: 1, m: 0.5 }} className='ratn-dialog-inner'>
                 <Grid container spacing={2} className='tax-input loans_view p_view '>
-                    <Grid item xs={4} className='create-input'>
-                        <TextField  
-                            label="Name" 
+                    <Grid item xs={12} sm={6} md={3} className='create-input'>
+                        <TextField
+                            label="Name"
                             variant="outlined"
                             fullWidth
                             value={formValues.name}
@@ -167,9 +175,9 @@ class EditProfileForm extends React.Component {
                             error={formErros.name}
                         />
                     </Grid>
-                    <Grid item xs={4} className='create-input'>
-                        <TextField  
-                            label="Mobile" 
+                    <Grid item xs={12} sm={6} md={3} className='create-input'>
+                        <TextField
+                            label="Mobile"
                             variant="outlined"
                             fullWidth
                             value={formValues.mobile}
@@ -178,9 +186,19 @@ class EditProfileForm extends React.Component {
                             onInput={(e) => validateInteger(e)}
                         />
                     </Grid>
-                    <Grid item xs={4} className='create-input'>
-                        <TextField  
-                            label="GST" 
+                    <Grid item xs={12} sm={6} md={3} className='create-input'>
+                        <TextField
+                            label="Email"
+                            variant="outlined"
+                            fullWidth
+                            value={formValues.email || ''}
+                            onChange={(event) => this.handleDefaultChange(event, 'email')}
+                            error={formErros.email}
+                        />
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={3} className='create-input'>
+                        <TextField
+                            label="GST"
                             variant="outlined"
                             fullWidth
                             value={formValues.gst}

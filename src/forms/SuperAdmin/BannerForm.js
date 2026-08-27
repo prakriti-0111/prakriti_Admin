@@ -7,6 +7,7 @@ import withRouter from 'src/helpers/withRouter';
 import {isEmpty} from 'src/helpers/helper';
 import noImage from 'src/assets/images/no_image.jpg';
 import { useSnackbar } from 'notistack';
+import LoadingButton from '@mui/lab/LoadingButton';
 
 const validate = values => {
   const errors = {};
@@ -149,7 +150,14 @@ class BannerForm extends React.Component {
               </Grid>
             </Grid>
             <Stack spacing={1} mt={2} direction="row" className='modal-button-area'>
-              <Button variant="contained" type="submit">Submit</Button>
+              <LoadingButton
+              variant="contained"
+              type="submit"
+              loading={submitting}
+              disabled={submitting}
+            >
+              Submit
+            </LoadingButton>
               <Button variant="outlined" onClick={() => this.props.handleCancel() }>Cancel</Button>
             </Stack>
         </Box>

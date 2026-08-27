@@ -1,6 +1,6 @@
 import { React, Component } from 'react';
 import { connect } from 'react-redux';
-import { Grid, Button, Box, FormControl, TextField, IconButton  } from '@mui/material';
+import { Grid, Button, Box, FormControl, TextField, IconButton, CircularProgress  } from '@mui/material';
 import { bindActionCreators } from 'redux';
 import { gridSpacing } from 'store/constant';
 import MainCard from 'ui-component/cards/MainCard';
@@ -29,6 +29,7 @@ class NewArrivalPage extends Component {
     super(props);
 
     this.state = {
+      isLoading: false,
       ...this.props,
       queryParams: {
         page: 1,
@@ -75,6 +76,7 @@ class NewArrivalPage extends Component {
 
     if (props.items !== state.items) {
       update.items = props.items;
+      update.isLoading = false;
     }
 
     if (props.total !== state.total) {
@@ -124,6 +126,7 @@ class NewArrivalPage extends Component {
   }
 
   loadListData = () => {
+    this.setState({ isLoading: true });
     this.props.actions.newArrivalList(this.state.queryParams);
   }
 
@@ -272,29 +275,35 @@ class NewArrivalPage extends Component {
           </Grid>
         </Box>*/}
         <Grid container spacing={gridSpacing}>
-          <DataTable
-            columns={this.columns}
-            rows={this.state.items}
-            page={this.state.queryParams.page}
-            limit={this.state.queryParams.limit}
-            total={this.state.total}
-            handlePagination={this.handlePagination}
-            actions={[
-              {
-                label: 'Edit',
-                onClick: this.handleEdit,
-                color: 'primary',
-                show: hasPermission(this.state.permissions, 'new-arrivals', 'edit')
-              },
-              {
-                label: 'Delete',
-                onClick: this.handleDelete,
-                isDelete: true,
-                color: 'error',
-                show: hasPermission(this.state.permissions, 'new-arrivals', 'delete')
-              }
-            ]}
-          />
+          {this.state.isLoading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+              <CircularProgress />
+            </Box>
+          ) : (
+            <DataTable
+              columns={this.columns}
+              rows={this.state.items}
+              page={this.state.queryParams.page}
+              limit={this.state.queryParams.limit}
+              total={this.state.total}
+              handlePagination={this.handlePagination}
+              actions={[
+                {
+                  label: 'Edit',
+                  onClick: this.handleEdit,
+                  color: 'primary',
+                  show: hasPermission(this.state.permissions, 'new-arrivals', 'edit')
+                },
+                {
+                  label: 'Delete',
+                  onClick: this.handleDelete,
+                  isDelete: true,
+                  color: 'error',
+                  show: hasPermission(this.state.permissions, 'new-arrivals', 'delete')
+                }
+              ]}
+            />
+          )}
         </Grid>
 
           <Dialog

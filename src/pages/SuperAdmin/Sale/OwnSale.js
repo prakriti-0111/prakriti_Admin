@@ -15,7 +15,7 @@ import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import moment from 'moment';
-import {isSuperAdmin, isDistributor, isAdmin, isSalesExecutive, hasPermission} from 'src/helpers/helper';
+import {isSuperAdmin, isDistributor, isAdmin, isSalesExecutive, hasPermission, filterOwnRetailers, prepareFileWindow, showFileWindow, closeFileWindow } from 'src/helpers/helper';
 import { retailerList } from 'actions/superadmin/retailer.actions';
 import { distributorList } from 'actions/superadmin/distributor.actions';
 import { salesExecutiveList } from 'actions/superadmin/salesExecutive.actions';
@@ -108,11 +108,15 @@ class OwnSalePage extends Component {
     this.loadListData();
     if(this.isSuperAdmin){
       this.props.actions.adminList({ all: 1 });
+      this.props.actions.retailerList({ all: 1, my_retailer: 1 });
     }else if(this.isAdmin){
       this.props.actions.distributorList({ all: 1 });
+      this.props.actions.salesExecutiveList({ all: 1, role_id: 4 });
+      this.props.actions.retailerList({ all: 1, my_retailer: 1 });
     }else if(this.isDistributor){
-      this.props.actions.retailerList({ all: 1 });
+      this.props.actions.retailerList({ all: 1, my_retailer: 1 });
     }else if(this.isSalesExecutive){
+      // the team's book, same as the sale form
       this.props.actions.retailerList({ all: 1 });
     }
   }
@@ -120,7 +124,14 @@ class OwnSalePage extends Component {
   static getDerivedStateFromProps(props, state){
     let update = {};
     if(props.items !== state.items){
-      update.items = props.items;
+      const items = props.items.map((item) => {
+        return {
+          ...item,
+          // Ensure company name is available - API may return as company_name or user_company_name
+          user_company_name: item.user_company_name || item.company_name || item.user_details?.company_name || '-'
+        };
+      });
+      update.items = items;
     }
 
     if(props.total !== state.total){
@@ -146,6 +157,9 @@ class OwnSalePage extends Component {
     if (props.retailerList !== state.retailerList) {
       update.retailerList = props.retailerList;
     }
+    if (props.salesExecutiveList !== state.salesExecutiveList) {
+      update.salesExecutiveList = props.salesExecutiveList;
+    }
     if (props.permissions !== state.permissions) {
       update.permissions = props.permissions;
     }
@@ -165,9 +179,11 @@ class OwnSalePage extends Component {
   }
 
   handleDownload = async (row) => {
+    // opened on the click itself so mobile does not treat it as a popup
+    const fileWindow = prepareFileWindow();
     let response = await salesDownloadInvoice(row.id);
     if(response.data.success){
-      window.open(response.data.data.url, '_blank').focus();
+      showFileWindow(fileWindow, response.data.data.url);
 
       /*var xhr = new XMLHttpRequest();
       xhr.responseType = 'blob';
@@ -184,6 +200,9 @@ class OwnSalePage extends Component {
       };
       xhr.open('GET', response.data.data.url);
       xhr.send();*/
+    } else {
+      // the API failed, so the blank tab has nothing to show
+      closeFileWindow(fileWindow);
     }
   }
 
@@ -241,9 +260,14 @@ class OwnSalePage extends Component {
   getUserList = () => {
     let userList = [];
     if(this.isSuperAdmin){
-        userList = this.state.adminList;
+        userList = this.state.adminList.concat(this.state.retailerList);
     }else if(this.isAdmin){
-        userList = this.state.distributorList;
+        userList = this.state.distributorList.concat(
+          filterOwnRetailers(
+            this.state.retailerList,
+            this.state.distributorList.concat(this.state.salesExecutiveList),
+          ),
+        );
     }else if(this.isDistributor){
       userList = this.state.retailerList;
     }else if(this.isSalesExecutive){
@@ -256,9 +280,9 @@ class OwnSalePage extends Component {
     let userList = this.getUserList();
     let userLabel = '';
     if(this.isSuperAdmin){
-      userLabel = 'Admin';
+      userLabel = 'Admin / Retailer';
     }else if(this.isAdmin){
-      userLabel = 'Distributor';
+      userLabel = 'Distributor / Retailer';
     }else if(this.isDistributor){
       userLabel = 'Retailer';
     }else if(this.isSalesExecutive){

@@ -1,6 +1,6 @@
 import { React, Component } from 'react';
 import { connect } from 'react-redux';
-import { Grid, Button, Box, Stack, Typography, OutlinedInput, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
+import { Grid, Button, Box, Stack, Typography, OutlinedInput, FormControl, InputLabel, Select, MenuItem, CircularProgress } from '@mui/material';
 import { bindActionCreators } from 'redux';
 import { gridSpacing } from 'store/constant';
 import MainCard from 'ui-component/cards/MainCard';
@@ -28,6 +28,7 @@ class ExpensePage extends Component {
     super(props);
 
     this.state = {
+      isLoading: false,
       ...this.props,
       queryParams: {
         page: 1,
@@ -119,6 +120,7 @@ class ExpensePage extends Component {
 
     if (props.items !== state.items) {
       update.items = props.items;
+      update.isLoading = false;
     }
 
     if (props.total !== state.total) {
@@ -181,6 +183,7 @@ class ExpensePage extends Component {
   }
 
   loadListData = () => {
+    this.setState({ isLoading: true });
     this.props.actions.expenseList(this.state.queryParams);
   }
 
@@ -461,30 +464,36 @@ class ExpensePage extends Component {
           </Grid>
         </Box>
         <Grid container spacing={gridSpacing}>
-          <DataTable
-            columns={this.columns}
-            rows={this.state.items}
-            page={this.state.queryParams.page}
-            limit={this.state.queryParams.limit}
-            total={this.state.total}
-            handlePagination={this.handlePagination}
-            actions={this.getTableActions()}
-            actionValue={'action_value'}
-            actionValueColorConditions={[
-              {
-                value: "Declined",
-                color: "red"
-              },
-              {
-                value: "Pending",
-                color: "#ff9800"
-              },
-              {
-                value: "Accepted",
-                color: "green"
-              },
-            ]}
-          />
+          {this.state.isLoading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+              <CircularProgress />
+            </Box>
+          ) : (
+            <DataTable
+              columns={this.columns}
+              rows={this.state.items}
+              page={this.state.queryParams.page}
+              limit={this.state.queryParams.limit}
+              total={this.state.total}
+              handlePagination={this.handlePagination}
+              actions={this.getTableActions()}
+              actionValue={'action_value'}
+              actionValueColorConditions={[
+                {
+                  value: "Declined",
+                  color: "red"
+                },
+                {
+                  value: "Pending",
+                  color: "#ff9800"
+                },
+                {
+                  value: "Accepted",
+                  color: "green"
+                },
+              ]}
+            />
+          )}
         </Grid>
 
         <Dialog
