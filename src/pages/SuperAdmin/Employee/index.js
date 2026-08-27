@@ -1,6 +1,6 @@
 import { React, Component } from 'react';
 import { connect } from 'react-redux';
-import { Grid, Button } from '@mui/material';
+import { Grid, Button, Box, CircularProgress } from '@mui/material';
 import { bindActionCreators } from 'redux';
 import { gridSpacing } from 'store/constant';
 import MainCard from 'ui-component/cards/MainCard';
@@ -16,6 +16,7 @@ class EmployeePage extends Component {
     super(props);
 
     this.state = {
+      isLoading: false,
       ...this.props,
       queryParams: {
         page: 1,
@@ -79,6 +80,7 @@ class EmployeePage extends Component {
     let update = {};
     if(props.items !== state.items){
       update.items = props.items;
+      update.isLoading = false;
     }
 
     if(props.total !== state.total){
@@ -96,6 +98,7 @@ class EmployeePage extends Component {
   }
 
   loadListData = () => {
+    this.setState({ isLoading: true });
     this.props.actions.employeeList(this.state.queryParams);
   }
 
@@ -131,35 +134,41 @@ class EmployeePage extends Component {
     return (
       <MainCard title="Employees" secondary={hasPermission(this.state.permissions, 'employees', 'add') ? <Button variant="contained" onClick={() => this.props.navigate('create') }>Add</Button> : null} >
         <Grid container spacing={gridSpacing} className="abc">
-          <DataTable 
-            columns={this.columns}
-            rows={this.state.items}
-            page={this.state.queryParams.page}
-            limit={this.state.queryParams.limit}
-            total={this.state.total}
-            handlePagination={this.handlePagination}
-            actions={[
-              {
-                label: 'View',
-                onClick: this.handleView,
-                color: 'primary',
-                show: hasPermission(this.state.permissions, 'employees', 'view')
-              },
-              {
-                label: 'Edit',
-                onClick: this.handleEdit,
-                color: 'primary',
-                show: hasPermission(this.state.permissions, 'employees', 'edit')
-              },
-              {
-                label: 'Delete',
-                onClick: this.handleDelete,
-                isDelete: true,
-                color: 'error',
-                show: hasPermission(this.state.permissions, 'employees', 'delete')
-              }
-            ]}
-          />
+          {this.state.isLoading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+              <CircularProgress />
+            </Box>
+          ) : (
+            <DataTable 
+              columns={this.columns}
+              rows={this.state.items}
+              page={this.state.queryParams.page}
+              limit={this.state.queryParams.limit}
+              total={this.state.total}
+              handlePagination={this.handlePagination}
+              actions={[
+                {
+                  label: 'View',
+                  onClick: this.handleView,
+                  color: 'primary',
+                  show: hasPermission(this.state.permissions, 'employees', 'view')
+                },
+                {
+                  label: 'Edit',
+                  onClick: this.handleEdit,
+                  color: 'primary',
+                  show: hasPermission(this.state.permissions, 'employees', 'edit')
+                },
+                {
+                  label: 'Delete',
+                  onClick: this.handleDelete,
+                  isDelete: true,
+                  color: 'error',
+                  show: hasPermission(this.state.permissions, 'employees', 'delete')
+                }
+              ]}
+            />
+          )}
         </Grid>
       </MainCard>
     );

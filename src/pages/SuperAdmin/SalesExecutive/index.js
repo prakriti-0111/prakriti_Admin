@@ -1,12 +1,11 @@
 import { React, Component } from 'react';
 import { connect } from 'react-redux';
-import { Grid, Button } from '@mui/material';
+import { Grid, Button, Box, CircularProgress } from '@mui/material';
 import { bindActionCreators } from 'redux';
 import { gridSpacing } from 'store/constant';
 import MainCard from 'ui-component/cards/MainCard';
 import withRouter from 'src/helpers/withRouter';
 import { salesExecutiveList, salesExecutiveDelete } from 'actions/superadmin/salesExecutive.actions';
-import { distributorList } from 'actions/superadmin/distributor.actions';
 import DataTable from 'src/utils/DataTable';
 import {SUPERADMIN_RESET_SALESEXECUTIVE} from '../../../actionTypes/superadmin/salesExecutive.types';
 import {isAdmin, isDistributor, isSuperAdmin, hasPermission } from 'src/helpers/helper';
@@ -17,6 +16,7 @@ class SalesExecutivePage extends Component {
     super(props);
 
     this.state = {
+      isLoading: false,
       ...this.props,
       queryParams: {
         page: 1,
@@ -24,7 +24,6 @@ class SalesExecutivePage extends Component {
         role_id: 4
       },
       deleteSuccess: this.props.deleteSuccess,
-      distributors: this.props.distributors,
     }
     this.isAdmin = isAdmin();
     this.isDistributor = isDistributor();
@@ -36,15 +35,14 @@ class SalesExecutivePage extends Component {
       },
       {
         name: 'mobile',
-        display_name: 'Mobile',
-        width: '140px'
+        display_name: 'Mobile'
       },
       /*{
         name: 'email',
         display_name: 'Email'
       }*/
       {
-        name: 'company_name_display',
+        name: 'company_name',
         display_name: 'Company name'
       },
       {
@@ -58,14 +56,6 @@ class SalesExecutivePage extends Component {
         display_name: 'Distributor'
       }];
     }
-    // The team's retailer book - every retailer brought in by this executive's
-    // distributor and the executives beside it, which is the same figure the
-    // executive sees on its own dashboard.
-    this.columns = [...this.columns, {
-      name: 'total_retailer',
-      display_name: 'Total Retailer',
-      isBold: true
-    }];
     if(this.isAdmin || this.isDistributor || this.isSuperAdmin){
       this.columns = [...this.columns, ...[
         {
@@ -108,15 +98,13 @@ class SalesExecutivePage extends Component {
 
   componentDidMount(){
     this.loadListData();
-    if(!this.isDistributor){
-      this.props.actions.distributorList({all: 1});
-    }
   }
 
   static getDerivedStateFromProps(props, state){
     let update = {};
     if(props.items !== state.items){
       update.items = props.items;
+      update.isLoading = false;
     }
 
     if(props.total !== state.total){
@@ -129,35 +117,12 @@ class SalesExecutivePage extends Component {
     if(props.permissions !== state.permissions){
       update.permissions = props.permissions;
     }
-    if(props.distributors !== state.distributors){
-      update.distributors = props.distributors;
-    }
 
     return update;
   }
 
-  // A sales executive record often has no company name of its own, so fall back
-  // to the company name of the distributor it belongs to.
-  getRows = () => {
-    const items = this.state.items || [];
-    const distributors = this.state.distributors || [];
-    return items.map((row) => {
-      let companyName = row.company_name_display || row.company_name || row.parent_company_name || '';
-      if(!companyName && row.parent_id){
-        const parent = distributors.find((d) => d.id == row.parent_id);
-        if(parent){
-          companyName = parent.company_name || '';
-        }
-      }
-      return {
-        ...row,
-        company_name_display: companyName,
-        total_retailer: row.total_retailer === undefined || row.total_retailer === null ? 0 : row.total_retailer
-      };
-    });
-  }
-
   loadListData = () => {
+    this.setState({ isLoading: true });
     this.props.actions.salesExecutiveList(this.state.queryParams);
   }
 
@@ -242,15 +207,21 @@ class SalesExecutivePage extends Component {
     return (
       <MainCard title="Sales Executives" secondary={(!this.isDistributor && hasPermission(this.state.permissions, 'sales_executive', 'add')) ? <Button variant="contained" onClick={() => this.props.navigate('create') }>Add</Button> : null} >
         <Grid container spacing={gridSpacing} className="abc">
-          <DataTable 
-            columns={this.columns}
-            rows={this.getRows()}
-            page={this.state.queryParams.page}
-            limit={this.state.queryParams.limit}
-            total={this.state.total}
-            handlePagination={this.handlePagination}
-            actions={this.getTableActions()}
-          />
+          {this.state.isLoading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+              <CircularProgress />
+            </Box>
+          ) : (
+            <DataTable 
+              columns={this.columns}
+              rows={this.state.items}
+              page={this.state.queryParams.page}
+              limit={this.state.queryParams.limit}
+              total={this.state.total}
+              handlePagination={this.handlePagination}
+              actions={this.getTableActions()}
+            />
+          )}
         </Grid>
       </MainCard>
     );
@@ -261,14 +232,13 @@ const mapStateToProps = (state) => ({
   items: state.superadmin.salesExecutive.items,
   total: state.superadmin.salesExecutive.total,
   deleteSuccess: state.superadmin.salesExecutive.deleteSuccess,
-  distributors: state.superadmin.distributor.items || [],
   permissions: state.employee.permissions.permissions
 });
 
 const mapDispatchToProps = dispatch => { 
   return {
     dispatch,
-    actions: bindActionCreators({salesExecutiveList, salesExecutiveDelete, distributorList}, dispatch)
+    actions: bindActionCreators({salesExecutiveList, salesExecutiveDelete}, dispatch)
   }
 };  
 

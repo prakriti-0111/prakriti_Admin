@@ -1,6 +1,6 @@
 import React from 'react';
 import { connect } from 'react-redux';
-import {Box, TextField, Button, Grid, Stack} from '@mui/material';
+import {Box, TextField, Button, Grid, Stack, CircularProgress} from '@mui/material';
 import { bindActionCreators } from 'redux';
 import MainCard from 'ui-component/cards/MainCard';
 import withRouter from 'src/helpers/withRouter';
@@ -21,6 +21,7 @@ class AttendencePage extends React.Component {
         super(props);
 
         this.state = {
+            isLoading: false,
             calendar_value: new Date(),
             year: (new Date()).getFullYear(),
             month: ((new Date()).getMonth() + 1),
@@ -68,10 +69,12 @@ class AttendencePage extends React.Component {
     }
 
     loadAttendence = async() => {
+        this.setState({ isLoading: true });
         let res = await getAttendence({month: this.state.month, year: this.state.year});
         if(res.data.success){
             this.setState({
-                attendance: res.data.data
+                attendance: res.data.data,
+                isLoading: false
             })
         }
     }
@@ -154,19 +157,25 @@ class AttendencePage extends React.Component {
             <div>
                 <div className='calender-wrapper'>
                     <MainCard title="Attendance of the Month">
-                        <Calendar 
-                            onChange={this.onChange} 
-                            onActiveStartDateChange={this.handleMonthAndYearChange}
-                            value={this.state.calendar_value}
-                            tileClassName={({ date, view }) => {
-                                let data = attendance.days.find(x=> x.date == moment(date).format("YYYY-MM-DD"));
-                                if(data){
-                                    return data.status;
-                                }
-                            }}
-                            onClickDay={this.onClickDay}
-                            goToRangeStartOnSelect={false}
-                        />
+                        {this.state.isLoading ? (
+                            <Box sx={{ display: 'flex', justifyContent: 'center', p: 3, width: '100%' }}>
+                                <CircularProgress />
+                            </Box>
+                        ) : (
+                            <Calendar 
+                                onChange={this.onChange} 
+                                onActiveStartDateChange={this.handleMonthAndYearChange}
+                                value={this.state.calendar_value}
+                                tileClassName={({ date, view }) => {
+                                    let data = attendance.days.find(x=> x.date == moment(date).format("YYYY-MM-DD"));
+                                    if(data){
+                                        return data.status;
+                                    }
+                                }}
+                                onClickDay={this.onClickDay}
+                                goToRangeStartOnSelect={false}
+                            />
+                        )}
                     </MainCard>
                     <div className='presence-wrapper'>
                         <ul>

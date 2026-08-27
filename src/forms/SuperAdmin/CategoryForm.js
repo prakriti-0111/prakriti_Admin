@@ -17,6 +17,7 @@ import {
 } from "@mui/material";
 import { ContactPageSharp } from "@mui/icons-material";
 import withRouter from "src/helpers/withRouter";
+import LoadingButton from '@mui/lab/LoadingButton';
 // import noImage from "src/assets/images/no_image.jpg";
 
 const validate = (values) => {
@@ -380,9 +381,14 @@ class CategoryForm extends React.Component {
             direction="row"
             className="modal-button-area"
           >
-            <Button variant="contained" type="submit">
+            <LoadingButton
+              variant="contained"
+              type="submit"
+              loading={submitting}
+              disabled={submitting}
+            >
               Submit
-            </Button>
+            </LoadingButton>
             <Button
               variant="outlined"
               onClick={() => this.props.handleCancel()}
