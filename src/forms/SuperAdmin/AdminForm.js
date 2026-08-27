@@ -18,7 +18,7 @@ import _ from 'lodash';
 import {getRoleName, getUserDashboardRoute} from 'src/helpers/helper';
 import FilePreview from 'src/utils/FilePreview';
 import noImage from 'src/assets/images/no_image.jpg';
-import { validateInteger, validateNumber, isValidEmail } from '../../helpers/helper';
+import { validateInteger, validateNumber } from '../../helpers/helper';
 
 class AdminForm extends React.Component {
 
@@ -332,12 +332,6 @@ class AdminForm extends React.Component {
             hasErr = true;
         }else{
             formErros.mobile = false;
-        }
-        if(!isValidEmail(formValues.email)){
-            formErros.email = true;
-            hasErr = true;
-        }else{
-            formErros.email = false;
         }
         if(this.state.isCreateFrom){
             if(isEmpty(formValues.password)){

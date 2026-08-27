@@ -1,6 +1,6 @@
 import { React, Component } from "react";
 import { connect } from "react-redux";
-import { Grid, Button, Card, CardContent, Typography, Box, CircularProgress } from "@mui/material";
+import { Grid, Button, Card, CardContent, Typography } from "@mui/material";
 import { bindActionCreators } from "redux";
 import { gridSpacing } from "store/constant";
 import MainCard from "ui-component/cards/MainCard";
@@ -33,7 +33,6 @@ class MyRetailerPage extends Component {
     super(props);
 
     this.state = {
-      isLoading: false,
       ...this.props,
       queryParams: {
         page: 1,
@@ -133,7 +132,6 @@ class MyRetailerPage extends Component {
     let update = {};
     if (props.items !== state.items) {
       update.items = props.items;
-      update.isLoading = false;
     }
 
     if (props.total !== state.total) {
@@ -167,7 +165,6 @@ class MyRetailerPage extends Component {
   }
 
   loadListData = () => {
-    this.setState({ isLoading: true });
     this.props.actions.retailerList(this.state.queryParams);
   };
 
@@ -349,11 +346,7 @@ class MyRetailerPage extends Component {
             </>
           }
         >
-          {this.state.isLoading ? (
-            <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
-              <CircularProgress />
-            </Box>
-          ) : this.state.MyRetailer_list ? (
+          {this.state.MyRetailer_list ? (
             <Grid container spacing={gridSpacing} className="abc">
               <DataTable
                 columns={this.columns}

@@ -143,13 +143,6 @@ const adminMenus = [
             breadcrumbs: false,
           },
           {
-            id: "retailer",
-            title: "Retailer",
-            type: "item",
-            url: urlPrefix + "/retailers",
-            breadcrumbs: false,
-          },
-          {
             id: "supplier",
             title: "Supplier",
             type: "item",

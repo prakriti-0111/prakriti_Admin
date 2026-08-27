@@ -1,6 +1,6 @@
 import { React, Component } from 'react';
 import { connect } from 'react-redux';
-import { Grid, Button, TableContainer, Table, TableRow, TableCell, Checkbox, Paper, TableHead, TableBody, DialogActions, Stack, Box, FormControl, InputLabel, Select, MenuItem, TextField, InputAdornment, RadioGroup, Radio, FormControlLabel, CircularProgress } from '@mui/material';
+import { Grid, Button, TableContainer, Table, TableRow, TableCell, Checkbox, Paper, TableHead, TableBody, DialogActions, Stack, Box, FormControl, InputLabel, Select, MenuItem, TextField, InputAdornment, RadioGroup, Radio, FormControlLabel } from '@mui/material';
 import { bindActionCreators } from 'redux';
 import { gridSpacing } from 'store/constant';
 import MainCard from 'ui-component/cards/MainCard';
@@ -25,7 +25,6 @@ class SalaryPage extends Component {
     super(props);
 
     this.state = {
-      isLoading: false,
       items: [],
       total: 0,
       queryParams: {
@@ -84,16 +83,12 @@ class SalaryPage extends Component {
   }
 
   loadListData = async () => {
-    this.setState({ isLoading: true });
     let res = await salaryList(this.state.queryParams);
     if (res.data.success) {
       this.setState({
         items: res.data.data.items,
-        total: res.data.data.total,
-        isLoading: false
+        total: res.data.data.total
       })
-    } else {
-      this.setState({ isLoading: false });
     }
   }
 
@@ -433,113 +428,107 @@ class SalaryPage extends Component {
           </Grid>
         </Box>
         <Grid container spacing={gridSpacing}>
-          {this.state.isLoading ? (
-            <Box sx={{ display: 'flex', justifyContent: 'center', p: 3, width: '100%' }}>
-              <CircularProgress />
-            </Box>
-          ) : (
-            <TableContainer component={Paper} className='ratn-table-wrapper'>
-              <Table sx={{ minWidth: 500 }}>
-                <TableHead className='ratn-table-header'>
-                  <TableRow>
-                    <TableCell>#</TableCell>
-                    <TableCell>Date</TableCell>
-                    <TableCell>Employee</TableCell>
-                    <TableCell>Designation</TableCell>
+          <TableContainer component={Paper} className='ratn-table-wrapper'>
+            <Table sx={{ minWidth: 500 }}>
+              <TableHead className='ratn-table-header'>
+                <TableRow>
+                  <TableCell>#</TableCell>
+                  <TableCell>Date</TableCell>
+                  <TableCell>Employee</TableCell>
+                  <TableCell>Designation</TableCell>
+                  {
+                    this.state.queryParams.type == 'salary' ?
+                      <>
+                        <TableCell>Absent</TableCell>
+                        <TableCell>Gross</TableCell>
+                        <TableCell>Ptax</TableCell>
+                        <TableCell>Absent Amt</TableCell>
+                      </>
+                      : null
+                  }
+                  <TableCell>Total</TableCell>
+                  {
+                    this.state.queryParams.type == 'salary' ?
+                      <TableCell>Actions</TableCell>
+                      : null
+                  }
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {items.map((row, i) => (
+                  <TableRow key={i}>
+                    <TableCell>{i + 1}</TableCell>
+                    <TableCell>{row.display_date}</TableCell>
+                    <TableCell>{row.user_name}</TableCell>
+                    <TableCell>{row.role_name}</TableCell>
                     {
                       this.state.queryParams.type == 'salary' ?
                         <>
-                          <TableCell>Absent</TableCell>
-                          <TableCell>Gross</TableCell>
-                          <TableCell>Ptax</TableCell>
-                          <TableCell>Absent Amt</TableCell>
+                          <TableCell>{row.absent}</TableCell>
+                          <TableCell>{row.gross}</TableCell>
+                          <TableCell>{row.ptax}</TableCell>
+                          <TableCell>{row.absent_amount}</TableCell>
                         </>
                         : null
                     }
-                    <TableCell>Total</TableCell>
+
+                    <TableCell>{row.net}</TableCell>
                     {
                       this.state.queryParams.type == 'salary' ?
-                        <TableCell>Actions</TableCell>
+                        <TableCell className="action_btn">
+                          <Stack spacing={1} direction="row">
+                            {
+                              row.type == "salary" ?
+                                <>
+                                  <Button
+                                    variant="contained"
+                                    color="primary"
+                                    onClick={() => this.handleDownload(row)}
+                                  >
+                                    <FileDownloadIcon />
+                                  </Button>
+                                  {
+                                    row.status != "paid" ?
+                                      <Button
+                                        variant="contained"
+                                        color="primary"
+                                        onClick={() => this.handlePay(row)}
+                                        className='label_btn'
+                                      >
+                                        Pay
+                                      </Button>
+                                      : null
+                                  }
+                                  <Button
+                                    variant="contained"
+                                    color="primary"
+                                    onClick={() => this.props.navigate('history/' + row.user_id)}
+                                    className='label_btn'
+                                  >
+                                    History
+                                  </Button>
+                                </>
+                                : null
+                            }
+
+                          </Stack>
+                        </TableCell>
                         : null
                     }
                   </TableRow>
-                </TableHead>
-                <TableBody>
-                  {items.map((row, i) => (
-                    <TableRow key={i}>
-                      <TableCell>{i + 1}</TableCell>
-                      <TableCell>{row.display_date}</TableCell>
-                      <TableCell>{row.user_name}</TableCell>
-                      <TableCell>{row.role_name}</TableCell>
-                      {
-                        this.state.queryParams.type == 'salary' ?
-                          <>
-                            <TableCell>{row.absent}</TableCell>
-                            <TableCell>{row.gross}</TableCell>
-                            <TableCell>{row.ptax}</TableCell>
-                            <TableCell>{row.absent_amount}</TableCell>
-                          </>
-                          : null
-                      }
-
-                      <TableCell>{row.net}</TableCell>
-                      {
-                        this.state.queryParams.type == 'salary' ?
-                          <TableCell className="action_btn">
-                            <Stack spacing={1} direction="row">
-                              {
-                                row.type == "salary" ?
-                                  <>
-                                    <Button
-                                      variant="contained"
-                                      color="primary"
-                                      onClick={() => this.handleDownload(row)}
-                                    >
-                                      <FileDownloadIcon />
-                                    </Button>
-                                    {
-                                      row.status != "paid" ?
-                                        <Button
-                                          variant="contained"
-                                          color="primary"
-                                          onClick={() => this.handlePay(row)}
-                                          className='label_btn'
-                                        >
-                                          Pay
-                                        </Button>
-                                        : null
-                                    }
-                                    <Button
-                                      variant="contained"
-                                      color="primary"
-                                      onClick={() => this.props.navigate('history/' + row.user_id)}
-                                      className='label_btn'
-                                    >
-                                      History
-                                    </Button>
-                                  </>
-                                  : null
-                              }
-
-                            </Stack>
-                          </TableCell>
-                          : null
-                      }
+                ))}
+                {
+                  items.length == 0 ?
+                    <TableRow>
+                      <TableCell align="center" colSpan={this.state.queryParams.type == 'salary' ? 10 : 5}>
+                        No data found.
+                      </TableCell>
                     </TableRow>
-                  ))}
-                  {
-                    items.length == 0 ?
-                      <TableRow>
-                        <TableCell align="center" colSpan={this.state.queryParams.type == 'salary' ? 10 : 5}>
-                          No data found.
-                        </TableCell>
-                      </TableRow>
-                      : null
-                  }
-                </TableBody>
-              </Table>
-            </TableContainer>
-          )}
+                    : null
+                }
+              </TableBody>
+            </Table>
+          </TableContainer>
         </Grid>
 
         <Dialog

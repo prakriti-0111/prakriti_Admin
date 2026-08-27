@@ -1,7 +1,7 @@
 import { React, Component } from 'react';
 import { matchRoutes, useLocation } from "react-router-dom"
 import { connect } from 'react-redux';
-import { Select, Stack, InputLabel, Box, Typography, FormControl, Card, CardContent, TextField, Grid, Button, MenuItem, Checkbox, CircularProgress } from '@mui/material';
+import { Select, Stack, InputLabel, Box, Typography, FormControl, Card, CardContent, TextField, Grid, Button, MenuItem, Checkbox } from '@mui/material';
 import { bindActionCreators } from 'redux';
 import { gridSpacing } from 'store/constant';
 import MainCard from 'ui-component/cards/MainCard';
@@ -40,7 +40,6 @@ class ReturnStockPage extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      isLoading: false,
       items: this.props.items,
       total: this.props.total,
       actionCalled: this.props.actionCalled,
@@ -169,7 +168,6 @@ class ReturnStockPage extends Component {
     let update = {};
     if (props.items !== state.items) {
       update.items = props.items;
-      update.isLoading = false;
     }
 
     if (props.total !== state.total) {
@@ -236,7 +234,6 @@ class ReturnStockPage extends Component {
   }
 
   loadListData = () => {
-    this.setState({ isLoading: true });
     this.props.actions.stocksList(this.state.queryParams);
   }
 
@@ -631,67 +628,61 @@ class ReturnStockPage extends Component {
             </Grid>
           </Box>
           <Grid container spacing={gridSpacing} className='orders-sale-button'>
-            {this.state.isLoading ? (
-              <Box sx={{ display: 'flex', justifyContent: 'center', p: 3, width: '100%' }}>
-                <CircularProgress />
-              </Box>
-            ) : (
-              <TableContainer component={Paper} className='ratn-table-wrapper table-wrapper-heading'>
-                <Table aria-label="collapsible table">
-                  <TableHead className='ratn-table-header'>
-                    <TableRow className=''>
-                      {/*<TableCell></TableCell>*/}
-                      <TableCell>#</TableCell>
-                      <TableCell>Image</TableCell>
-                      <TableCell>Product Name</TableCell>
-                      <TableCell>Certificate No</TableCell>
-                      <TableCell>Total Wt.</TableCell>
-                      <TableCell>Materials Name</TableCell>
-                      <TableCell>Qty</TableCell>
-                      <TableCell>Unit</TableCell>
-                      <TableCell>P Code</TableCell>
-                      <TableCell>Size</TableCell>
-                      <TableCell>Price</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {
-                      this.state.items.map((item, index) => (
-                        <TableRow key={index}>
-                          {/*<TableCell>
-                            <Checkbox onChange={(e) => this.handleCheckBox(e, item)} checked={this.hasChecked(item)} />
-                      </TableCell>*/}
-                          <TableCell>{index + 1}</TableCell>
-                          <TableCell>
-                            <img src={item.image} style={{ width: '60px', height: '40px' }} className='table-data-image cursor-pointer' onClick={() => this.handleImageClick(item.image)} />
-                          </TableCell>
-                          <TableCell>{item.name}</TableCell>
-                          <TableCell>{item.certificate_no}</TableCell>
-                          <TableCell>{item.total_weight_display}</TableCell>
-                          <TableCell>{item.stock_material_display}</TableCell>
-                          <TableCell>{item.weight_display}</TableCell>
-                          <TableCell>{item.unit_display}</TableCell>
-                          <TableCell>{item.product_code}</TableCell>
-                          <TableCell>{item.size_name}</TableCell>
-                          <TableCell>{item.mrp_display}</TableCell>
-                        </TableRow>
-                      ))
-                    }
-                    {
-                      this.state.items.length == 0 ?
-                        <TableRow>
-                          <TableCell align="center" colSpan={12}>
-                      
-                            No data found.
-                          
-                          </TableCell>
-                        </TableRow>
-                        : null
-                    }
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            )}
+            <TableContainer component={Paper} className='ratn-table-wrapper table-wrapper-heading'>
+              <Table aria-label="collapsible table">
+                <TableHead className='ratn-table-header'>
+                  <TableRow className=''>
+                    {/*<TableCell></TableCell>*/}
+                    <TableCell>#</TableCell>
+                    <TableCell>Image</TableCell>
+                    <TableCell>Product Name</TableCell>
+                    <TableCell>Certificate No</TableCell>
+                    <TableCell>Total Wt.</TableCell>
+                    <TableCell>Materials Name</TableCell>
+                    <TableCell>Qty</TableCell>
+                    <TableCell>Unit</TableCell>
+                    <TableCell>P Code</TableCell>
+                    <TableCell>Size</TableCell>
+                    <TableCell>Price</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {
+                    this.state.items.map((item, index) => (
+                      <TableRow key={index}>
+                        {/*<TableCell>
+                          <Checkbox onChange={(e) => this.handleCheckBox(e, item)} checked={this.hasChecked(item)} />
+                    </TableCell>*/}
+                        <TableCell>{index + 1}</TableCell>
+                        <TableCell>
+                          <img src={item.image} style={{ width: '60px', height: '40px' }} className='table-data-image cursor-pointer' onClick={() => this.handleImageClick(item.image)} />
+                        </TableCell>
+                        <TableCell>{item.name}</TableCell>
+                        <TableCell>{item.certificate_no}</TableCell>
+                        <TableCell>{item.total_weight_display}</TableCell>
+                        <TableCell>{item.stock_material_display}</TableCell>
+                        <TableCell>{item.weight_display}</TableCell>
+                        <TableCell>{item.unit_display}</TableCell>
+                        <TableCell>{item.product_code}</TableCell>
+                        <TableCell>{item.size_name}</TableCell>
+                        <TableCell>{item.mrp_display}</TableCell>
+                      </TableRow>
+                    ))
+                  }
+                  {
+                    this.state.items.length == 0 ?
+                      <TableRow>
+                        <TableCell align="center" colSpan={12}>
+                    
+                          No data found.
+                        
+                        </TableCell>
+                      </TableRow>
+                      : null
+                  }
+                </TableBody>
+              </Table>
+            </TableContainer>
           </Grid>
         </MainCard>
 

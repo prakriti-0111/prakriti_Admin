@@ -193,12 +193,8 @@ export const salesDownloadInvoice = (id) => {
     return axios.post(`/superadmin/sales/download-invoice/${id}`);
 }
 
-/**
- * current = true asks for the same jewellery re-costed at today's gold rate.
- * The plain call keeps printing the rates frozen when the sale was raised.
- */
-export const salesDownloadInvoiceInfo = (id, current = false) => {
-    return axios.post(`/superadmin/sales/download-invoice-info/${id}${current ? '?current=1' : ''}`);
+export const salesDownloadInvoiceInfo = (id) => {
+    return axios.post(`/superadmin/sales/download-invoice-info/${id}`);
 }
 
 export const salesDownloadInvoiceItemList = (id) => {
@@ -209,12 +205,8 @@ export const salesDownloadInvoiceItemDetails = (id) => {
     return axios.post(`/superadmin/sales/download-invoice-item-details/${id}`);
 }
 
-/**
- * current = true asks for the same jewellery re-costed at today's gold rate.
- * The plain call keeps printing the rates frozen when the sale was raised.
- */
-export const salesOnApprovalDownloadInvoiceInfo = (id, current = false) => {
-    return axios.post(`/superadmin/sales-on-approve/download-invoice-info/${id}${current ? '?current=1' : ''}`);
+export const salesOnApprovalDownloadInvoiceInfo = (id) => {
+    return axios.post(`/superadmin/sales-on-approve/download-invoice-info/${id}`);
 }
 
 export const salesOnApprovalDownloadInvoiceItemList = (id) => {
@@ -225,12 +217,12 @@ export const salesOnApprovalDownloadInvoiceItemDetails = (id) => {
     return axios.post(`/superadmin/sales-on-approve/download-invoice-item-details/${id}`);
 }
 
-export const salesViewRaw = (id, current = false) => {
-    return axios.get(`/superadmin/sales/view/${id}${current ? '?current=1' : ''}`)
+export const salesViewRaw = (id) => {
+    return axios.get(`/superadmin/sales/view/${id}`)
 }
 
-export const salesOnApproveViewRaw = (id, current = false) => {
-    return axios.get(`/superadmin/sales-on-approve/view/${id}${current ? '?current=1' : ''}`)
+export const salesOnApproveViewRaw = (id) => {
+    return axios.get(`/superadmin/sales-on-approve/view/${id}`)
 }
 
 /* items of a sale on approval, cart shaped, without touching the cart */

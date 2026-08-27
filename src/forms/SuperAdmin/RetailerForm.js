@@ -1,7 +1,7 @@
 import React from 'react';
 import { connect } from 'react-redux';
 import { Field, reduxForm } from 'redux-form/immutable';
-import {Box, TextField, Button, Grid, Stack, TextareaAutosize, FormControl, InputLabel, Select, MenuItem, ImageList, ImageListItem, CircularProgress, Typography  } from '@mui/material';
+import {Box, TextField, Button, Grid, Stack, TextareaAutosize, FormControl, InputLabel, Select, MenuItem, ImageList, ImageListItem  } from '@mui/material';
 import {isEmpty, toBase64} from 'src/helpers/helper';
 import { bindActionCreators } from 'redux';
 import { withSnackbar } from 'notistack';
@@ -19,7 +19,7 @@ import {getRoleName, getUserDashboardRoute} from 'src/helpers/helper';
 import FilePreview from 'src/utils/FilePreview';
 import noImage from 'src/assets/images/no_image.jpg';
 import { rawDistrictList } from 'actions/superadmin/district.actions';
-import { validateInteger, validateNumber, isValidEmail } from '../../helpers/helper';
+import { validateInteger, validateNumber } from '../../helpers/helper';
 
 
 class RetailerForm extends React.Component {
@@ -117,21 +117,7 @@ class RetailerForm extends React.Component {
             remove_pan_image: false,
             remove_adhar_image: false,
             remove_company_logo: false,
-            remove_documents: [],
-
-            // Image upload loading states
-            profile_image_loading: false,
-            pan_image_loading: false,
-            adhar_image_loading: false,
-            company_logo_loading: false,
-            documents_loading: false,
-
-            // Image upload error states
-            profile_image_error: '',
-            pan_image_error: '',
-            adhar_image_error: '',
-            company_logo_error: '',
-            documents_error: ''
+            remove_documents: []
         }
         
         this.profile_imageRef = React.createRef();
@@ -358,12 +344,6 @@ class RetailerForm extends React.Component {
         }else{
             formErros.mobile = false;
         }
-        if(!isValidEmail(formValues.email)){
-            formErros.email = true;
-            hasErr = true;
-        }else{
-            formErros.email = false;
-        }
         if(this.state.isCreateFrom){
             if(isEmpty(formValues.password)){
                 formErros.password = true;
@@ -443,52 +423,13 @@ class RetailerForm extends React.Component {
         }
     }
 
-    onImageChange = async (e, key) => {
-        const file = e.target.files[0];
-        if (!file) return;
-
-        const loadingKey = key + '_loading';
-        const errorKey = key + '_error';
-        const existingKey = 'existing_' + key;
-        const refName = key + 'Ref';
-
-        // Validate file type
-        if (!file.type.startsWith('image/')) {
-            this.setState({ [errorKey]: 'Please select a valid image file' });
-            if (this[refName]) this[refName].current.value = null;
-            return;
-        }
-
-        // Validate file size (max 10MB before compression)
-        if (file.size > 10 * 1024 * 1024) {
-            this.setState({ [errorKey]: 'Image size should be less than 10MB' });
-            if (this[refName]) this[refName].current.value = null;
-            return;
-        }
-
+    onImageChange = (e, key) => {
+        let existingKey = 'existing_' + key;
         this.setState({
-            [loadingKey]: true,
-            [errorKey]: ''
+            [key]: e.target.files[0],
+            [existingKey]: null
         });
-
-        try {
-            // Simulate processing time for user feedback
-            await new Promise(resolve => setTimeout(resolve, 300));
-            
-            this.setState({
-                [key]: file,
-                [existingKey]: null,
-                [loadingKey]: false,
-                [errorKey]: ''
-            });
-        } catch (error) {
-            this.setState({
-                [loadingKey]: false,
-                [errorKey]: 'Failed to process image. Please try again.'
-            });
-            this.props.enqueueSnackbar('Failed to process image', { variant: 'error' });
-        }
-
+        let refName = key + 'Ref';
         if (this[refName]) {
             this[refName].current.value = null;
         }
@@ -497,19 +438,15 @@ class RetailerForm extends React.Component {
     deleteExistingImage = (key) => {
         let removeKey = 'remove_' + key;
         let existingKey = 'existing_' + key;
-        let errorKey = key + '_error';
         this.setState({
             [existingKey]: null,
-            [removeKey]: true,
-            [errorKey]: ''
+            [removeKey] : true
         });
     }
 
     deleteImage = (key) => {
-        let errorKey = key + '_error';
         this.setState({
-            [key]: null,
-            [errorKey]: ''
+            [key]: null
         });
     }
 
@@ -548,65 +485,26 @@ class RetailerForm extends React.Component {
         }
     }
 
-    onDocumentChange = async (e) => {
-        const files = e.target.files;
-        if (!files || files.length === 0) return;
-
-        let documents = [...this.state.documents];
-        let totalDoc = this.state.existing_documents.length + documents.length + files.length;
-        
+    onDocumentChange = (e) => {
+        let documents = this.state.documents;
+        let totalDoc = this.state.existing_documents.length + documents.length + e.target.files.length;
         if (totalDoc > 10) {
-            this.setState({ documents_error: 'Maximum 10 documents are allowed.' });
-            this.props.enqueueSnackbar('Maximum 10 documents are allowed.', { variant: 'error' });
-            if (this.documentRef) this.documentRef.current.value = null;
-            return;
+          this.props.enqueueSnackbar('Maximum 5 document are allowed.', { variant: 'error' });
+          return;
         }
-
-        // Validate each file
-        for (let i = 0; i < files.length; i++) {
-            const file = files[i];
-            if (!file.type.startsWith('image/') && file.type !== 'application/pdf') {
-                this.setState({ documents_error: 'Only images and PDF files are allowed.' });
-                this.props.enqueueSnackbar('Only images and PDF files are allowed.', { variant: 'error' });
-                if (this.documentRef) this.documentRef.current.value = null;
-                return;
-            }
-            if (file.size > 10 * 1024 * 1024) {
-                this.setState({ documents_error: 'Each file should be less than 10MB.' });
-                this.props.enqueueSnackbar('Each file should be less than 10MB.', { variant: 'error' });
-                if (this.documentRef) this.documentRef.current.value = null;
-                return;
-            }
+        for(let i = 0; i < e.target.files.length; i++){
+            console.log(e.target.files[i])
+            documents.push(e.target.files[i]);
         }
-
+        
         this.setState({
-            documents_loading: true,
-            documents_error: ''
+            documents: documents
         });
-
-        try {
-            await new Promise(resolve => setTimeout(resolve, 300));
-            
-            for (let i = 0; i < files.length; i++) {
-                documents.push(files[i]);
-            }
-            
-            this.setState({
-                documents: documents,
-                documents_loading: false,
-                documents_error: ''
-            });
-        } catch (error) {
-            this.setState({
-                documents_loading: false,
-                documents_error: 'Failed to process documents. Please try again.'
-            });
-            this.props.enqueueSnackbar('Failed to process documents', { variant: 'error' });
-        }
     
         if (this.documentRef) {
-            this.documentRef.current.value = null;
+          this.documentRef.current.value = null;
         }
+    
     }
     
     deleteDocument = (i) => {
@@ -996,11 +894,6 @@ class RetailerForm extends React.Component {
                                 <div className='p-single-image-wrapper'>
                                     <div className='p-single-image'>
                                     {
-                                        this.state.company_logo_loading ?
-                                        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', minHeight: '100px' }}>
-                                            <CircularProgress size={40} />
-                                        </div>
-                                        :
                                         this.state.existing_company_logo ?
                                         <>
                                             <button className='close_img' onClick={() => this.deleteExistingImage('company_logo')}>x</button>
@@ -1020,14 +913,8 @@ class RetailerForm extends React.Component {
                                         </>
                                     }
                                     </div>
-                                    <Button 
-                                        variant="contained" 
-                                        className='image-button' 
-                                        component="label" 
-                                        endIcon={this.state.company_logo_loading ? <CircularProgress size={20} color="inherit" /> : <CloudUploadIcon />}
-                                        disabled={this.state.company_logo_loading}
-                                    >
-                                        {this.state.company_logo_loading ? 'Uploading...' : 'Company Logo'}
+                                    <Button variant="contained" className='image-button' component="label" endIcon={<CloudUploadIcon />}>
+                                        Company Logo
                                         <input
                                         name="company_logo"
                                         hidden
@@ -1037,11 +924,6 @@ class RetailerForm extends React.Component {
                                         ref={this.company_logoRef}
                                         />
                                     </Button>
-                                    {this.state.company_logo_error && (
-                                        <Typography color="error" variant="caption" sx={{ mt: 0.5, display: 'block' }}>
-                                            {this.state.company_logo_error}
-                                        </Typography>
-                                    )}
                                 </div>
                             </div>
                         </div>
@@ -1050,11 +932,6 @@ class RetailerForm extends React.Component {
                                 <div className='p-single-image-wrapper'>
                                     <div className='p-single-image'>
                                     {
-                                        this.state.profile_image_loading ?
-                                        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', minHeight: '100px' }}>
-                                            <CircularProgress size={40} />
-                                        </div>
-                                        :
                                         this.state.existing_profile_image ?
                                         <>
                                             <button className='close_img' onClick={() => this.deleteExistingImage('profile_image')}>x</button>
@@ -1074,14 +951,8 @@ class RetailerForm extends React.Component {
                                         </>
                                     }
                                     </div>
-                                    <Button 
-                                        variant="contained" 
-                                        className='image-button' 
-                                        component="label" 
-                                        endIcon={this.state.profile_image_loading ? <CircularProgress size={20} color="inherit" /> : <CloudUploadIcon />}
-                                        disabled={this.state.profile_image_loading}
-                                    >
-                                        {this.state.profile_image_loading ? 'Uploading...' : 'Visiting Card'}
+                                    <Button variant="contained" className='image-button' component="label" endIcon={<CloudUploadIcon />}>
+                                        Visiting Card 
                                         <input
                                         name="profile_image"
                                         hidden
@@ -1091,11 +962,6 @@ class RetailerForm extends React.Component {
                                         ref={this.profile_imageRef}
                                         />
                                     </Button>
-                                    {this.state.profile_image_error && (
-                                        <Typography color="error" variant="caption" sx={{ mt: 0.5, display: 'block' }}>
-                                            {this.state.profile_image_error}
-                                        </Typography>
-                                    )}
                                 </div>
                             </div>
                         </div>
@@ -1104,37 +970,21 @@ class RetailerForm extends React.Component {
                                 <div className='all-single-image'>
                                     <div>
                                         {
-                                            this.state.documents_loading ?
-                                            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100%', minHeight: '100px' }}>
-                                                <CircularProgress size={40} />
-                                            </div>
-                                            :
+                                            firstDocument.type != "no_image" ?
                                             <>
                                                 {
-                                                    firstDocument.type != "no_image" ?
-                                                    <>
-                                                        {
-                                                            firstDocument.type == "existing" ?
-                                                            <button className='close_img' onClick={() => this.deleteExistingDocument(0)}>x</button>
-                                                            :
-                                                            <button className='close_img' onClick={() => this.deleteDocument(0)}>x</button>
-                                                        }
-                                                    </>
-                                                    : null
+                                                    firstDocument.type == "existing" ?
+                                                    <button className='close_img' onClick={() => this.deleteExistingDocument(0)}>x</button>
+                                                    :
+                                                    <button className='close_img' onClick={() => this.deleteDocument(0)}>x</button>
                                                 }
-                                                <FilePreview file={firstDocument.path} viewImage={firstDocument.type == "no_image" ? false : true} />
                                             </>
+                                            : null
                                         }
+                                        <FilePreview file={firstDocument.path} viewImage={firstDocument.type == "no_image" ? false : true} />
                                     </div>
-                                    <Button 
-                                        variant="contained" 
-                                        className='image-button' 
-                                        component="label" 
-                                        sx={{maxWidth: '260px'}} 
-                                        endIcon={this.state.documents_loading ? <CircularProgress size={20} color="inherit" /> : <CloudUploadIcon />}
-                                        disabled={this.state.documents_loading}
-                                    >
-                                        {this.state.documents_loading ? 'Uploading...' : 'Documents'}
+                                    <Button variant="contained" className='image-button' component="label" sx={{maxWidth: '260px'}} endIcon={<CloudUploadIcon />}>
+                                        Documents
                                         <input
                                         name="documents"
                                         hidden
@@ -1145,11 +995,6 @@ class RetailerForm extends React.Component {
                                         multiple
                                         />
                                     </Button>
-                                    {this.state.documents_error && (
-                                        <Typography color="error" variant="caption" sx={{ mt: 0.5, display: 'block' }}>
-                                            {this.state.documents_error}
-                                        </Typography>
-                                    )}
                                 </div>
                                 {
                                     this.getAllDocuments().map((item, index) => (

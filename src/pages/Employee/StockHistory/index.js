@@ -1,6 +1,6 @@
 import { React, Component } from 'react';
 import { connect } from 'react-redux';
-import { Grid, Button, Box, CircularProgress } from '@mui/material';
+import { Grid, Button } from '@mui/material';
 import { bindActionCreators } from 'redux';
 import { gridSpacing } from 'store/constant';
 import MainCard from 'ui-component/cards/MainCard';
@@ -16,7 +16,6 @@ class StockHistoryPage extends Component {
     super(props);
 
     this.state = {
-      isLoading: false,
       ...this.props,
       queryParams: {
         page: 1,
@@ -70,7 +69,6 @@ class StockHistoryPage extends Component {
     let update = {};
     if(props.items !== state.items){
       update.items = props.items;
-      update.isLoading = false;
     }
 
     if(props.total !== state.total){
@@ -89,7 +87,6 @@ class StockHistoryPage extends Component {
   }
 
   loadListData = () => {
-    this.setState({ isLoading: true });
     this.props.actions.stockHistoryList(this.state.queryParams);
   }
 
@@ -122,11 +119,6 @@ class StockHistoryPage extends Component {
     return (
       <MainCard title="Stock Histories" secondary={<Button variant="contained" onClick={() => this.props.navigate('create') }>Add</Button>} >
         <Grid container spacing={gridSpacing} className="abc">
-          {this.state.isLoading ? (
-            <Box sx={{ display: 'flex', justifyContent: 'center', p: 3, width: '100%' }}>
-              <CircularProgress />
-            </Box>
-          ) : (
           <DataTable 
             columns={this.columns}
             rows={this.state.items}
@@ -136,7 +128,6 @@ class StockHistoryPage extends Component {
             handlePagination={this.handlePagination}
             actions={this.tableActions}
           />
-          )}
         </Grid>
       </MainCard>
     );

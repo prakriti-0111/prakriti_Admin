@@ -104,7 +104,6 @@ class StockPage extends Component {
         own_se: this.props.query.get("own_se") ?? "",
         total_avl_stock: this.props.query.get("total_avl_stock") ?? "",
         manager: this.props.query.get("manager") ?? "",
-        stock_user_id: "",
       },
       cart_actionCalled: this.props.cart_actionCalled,
       cart_createSuccess: this.props.cart_createSuccess,
@@ -120,7 +119,6 @@ class StockPage extends Component {
       unit_error: false,
       cart_stock: null,
       categories: this.props.categories,
-      avl_users: this.props.avl_users || [],
       materialList: this.props.materialList,
       sub_categories: this.props.sub_categories,
       price_by_categories: [],
@@ -148,7 +146,6 @@ class StockPage extends Component {
       downloadingReport: false,
       downloadingCategoryId: null,
       searching: false,
-      isLoading: true,
     };
 
     this.columns = [
@@ -293,13 +290,9 @@ class StockPage extends Component {
 
   static getDerivedStateFromProps(props, state) {
     let update = {};
-    if (props.avl_users !== state.avl_users) {
-      update.avl_users = props.avl_users || [];
-    }
     if (props.items !== state.items) {
       update.items = props.items;
       update.searching = false;
-      update.isLoading = false;
     }
 
     if (props.total !== state.total) {
@@ -1418,15 +1411,6 @@ class StockPage extends Component {
     this.addToCartProcess = false;
   };
 
-  handleAvlByChange = (event) => {
-    this.setState({
-      queryParams: {
-        ...this.state.queryParams,
-        stock_user_id: event.target.value,
-      },
-    });
-  };
-
   handleCategoryChange = (event) => {
     let val = event.target.value;
     this.props.actions.subCategoryList({ all: 1, category_id: val });
@@ -1954,25 +1938,6 @@ class StockPage extends Component {
               </Grid>
               <Grid item xs={6} md={3} className="create-input">
                 <FormControl fullWidth>
-                  <InputLabel>Avl By</InputLabel>
-                  <Select
-                    value={this.state.queryParams.stock_user_id}
-                    label="Avl By"
-                    onChange={this.handleAvlByChange}
-                    className="input-inner"
-                    defaultValue=""
-                  >
-                    <MenuItem value="">All</MenuItem>
-                    {this.state.avl_users.map((item, index) => (
-                      <MenuItem value={item.id} key={index}>
-                        {item.name}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              </Grid>
-              <Grid item xs={6} md={3} className="create-input">
-                <FormControl fullWidth>
                   <TextField
                     label="Search"
                     variant="outlined"
@@ -2006,7 +1971,7 @@ class StockPage extends Component {
                             },
                           }}
                         >
-                          {this.state.searching ? <CircularProgress size={20} /> : <SearchIcon className="search-icon" />}
+                          {this.state.searching ? <CircularProgress size={20} /> : <SearchIcon />}
                         </Button>
                       ),
                     }}
@@ -2082,7 +2047,7 @@ class StockPage extends Component {
                                   </span>
                                 </div>
                               ) : (
-                                <SearchIcon className="search-icon" />
+                                <SearchIcon />
                               )}
                             </Button>
                             <Button
@@ -2216,27 +2181,21 @@ class StockPage extends Component {
               </Grid> */}
             </Grid>
           </Box>
-          {this.state.isLoading ? (
-            <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
-              <CircularProgress />
-            </Box>
-          ) : (
-            <Grid container spacing={gridSpacing} className="orders-sale-button">
-              {console.log(this.props)}
-              <DataTable
-                columns={this.columns}
-                rows={this.state.items}
-                page={this.state.queryParams.page}
-                limit={this.state.queryParams.limit}
-                total={this.state.total}
-                handlePagination={this.handlePagination}
-                actions={this.getTableActions()}
-                haveAllOption={true}
-                getRowActions={this.getTableActions} // Pass function to generate row-specific actions
-                onImageClick={this.handleImageClick} // Pass custom image click handler
-              />
-            </Grid>
-          )}
+          <Grid container spacing={gridSpacing} className="orders-sale-button">
+            {console.log(this.props)}
+            <DataTable
+              columns={this.columns}
+              rows={this.state.items}
+              page={this.state.queryParams.page}
+              limit={this.state.queryParams.limit}
+              total={this.state.total}
+              handlePagination={this.handlePagination}
+              actions={this.getTableActions()}
+              haveAllOption={true}
+              getRowActions={this.getTableActions} // Pass function to generate row-specific actions
+              onImageClick={this.handleImageClick} // Pass custom image click handler
+            />
+          </Grid>
         </MainCard>
 
         {/* Read-only Image Dialog for non-superadmin users */}
@@ -2654,7 +2613,6 @@ class StockPage extends Component {
 const mapStateToProps = (state) => ({
   items: state.superadmin.stocks.items,
   total: state.superadmin.stocks.total,
-  avl_users: state.superadmin.stocks.avl_users,
   actionCalled: state.superadmin.stocks.actionCalled,
   deleteSuccess: state.superadmin.stocks.deleteSuccess,
   successMessage: state.superadmin.stocks.successMessage,

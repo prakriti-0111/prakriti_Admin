@@ -11,7 +11,6 @@ import {
   Select,
   Grid,
   Button,
-  CircularProgress,
 } from "@mui/material";
 import { bindActionCreators } from "redux";
 import { gridSpacing } from "store/constant";
@@ -35,7 +34,8 @@ import {
   isDistributor,
   isAdmin,
   isSalesExecutive,
-  hasPermission, prepareFileWindow, showFileWindow, closeFileWindow } from "src/helpers/helper";
+  hasPermission,
+} from "src/helpers/helper";
 import { retailerList } from "actions/superadmin/retailer.actions";
 import { distributorList } from "actions/superadmin/distributor.actions";
 import { salesExecutiveList } from "actions/superadmin/salesExecutive.actions";
@@ -45,7 +45,6 @@ class SaleOnApprovePage extends Component {
     super(props);
 
     this.state = {
-      isLoading: false,
       items: this.props.items,
       total: this.props.total,
       actionCalled: this.props.actionCalled,
@@ -204,15 +203,7 @@ class SaleOnApprovePage extends Component {
   static getDerivedStateFromProps(props, state) {
     let update = {};
     if (props.items !== state.items) {
-      const items = props.items.map((item) => {
-        return {
-          ...item,
-          // Ensure company name is available - API may return as company_name or user_company_name
-          user_company_name: item.user_company_name || item.company_name || item.user_details?.company_name || '-'
-        };
-      });
-      update.items = items;
-      update.isLoading = false;
+      update.items = props.items;
     }
 
     if (props.total !== state.total) {
@@ -246,7 +237,6 @@ class SaleOnApprovePage extends Component {
   }
 
   loadListData = () => {
-    this.setState({ isLoading: true });
     let data = { ...this.state.queryParams };
     if (data.date_from) {
       data.date_from = moment(data.date_from.toString()).format("YYYY-MM-DD");
@@ -262,11 +252,9 @@ class SaleOnApprovePage extends Component {
   };
 
   handleDownload = async (row) => {
-    // opened on the click itself so mobile does not treat it as a popup
-    const fileWindow = prepareFileWindow();
     let response = await salesDownloadInvoice(row.id);
     if (response.data.success) {
-      showFileWindow(fileWindow, response.data.data.url);
+      window.open(response.data.data.url, "_blank").focus();
 
       /*var xhr = new XMLHttpRequest();
       xhr.responseType = 'blob';
@@ -283,9 +271,6 @@ class SaleOnApprovePage extends Component {
       };
       xhr.open('GET', response.data.data.url);
       xhr.send();*/
-    } else {
-      // the API failed, so the blank tab has nothing to show
-      closeFileWindow(fileWindow);
     }
   };
 
@@ -472,42 +457,36 @@ class SaleOnApprovePage extends Component {
           </Grid>
         </Box>
         <Grid container spacing={gridSpacing}>
-          {this.state.isLoading ? (
-            <Box sx={{ display: 'flex', justifyContent: 'center', p: 3, width: '100%' }}>
-              <CircularProgress />
-            </Box>
-          ) : (
-            <DataTable
-              columns={this.columns}
-              rows={this.state.items}
-              page={this.state.queryParams.page}
-              limit={this.state.queryParams.limit}
-              total={this.state.total}
-              handlePagination={this.handlePagination}
-              actions={[
-                {
-                  label: "View",
-                  onClick: this.handleView,
-                  color: "primary",
-                  show: hasPermission(
-                    this.state.permissions,
-                    "sale_on_approval",
-                    "view",
-                  ),
-                },
-                {
-                  label: "Download",
-                  onClick: this.handleDownloadView,
-                  color: "primary",
-                  show: hasPermission(
-                    this.state.permissions,
-                    "sale_on_approval",
-                    "view",
-                  ),
-                },
-              ]}
-            />
-          )}
+          <DataTable
+            columns={this.columns}
+            rows={this.state.items}
+            page={this.state.queryParams.page}
+            limit={this.state.queryParams.limit}
+            total={this.state.total}
+            handlePagination={this.handlePagination}
+            actions={[
+              {
+                label: "View",
+                onClick: this.handleView,
+                color: "primary",
+                show: hasPermission(
+                  this.state.permissions,
+                  "sale_on_approval",
+                  "view",
+                ),
+              },
+              {
+                label: "Download",
+                onClick: this.handleDownloadView,
+                color: "primary",
+                show: hasPermission(
+                  this.state.permissions,
+                  "sale_on_approval",
+                  "view",
+                ),
+              },
+            ]}
+          />
         </Grid>
       </MainCard>
     );

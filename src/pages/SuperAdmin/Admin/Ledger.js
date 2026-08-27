@@ -44,7 +44,7 @@ import Dialog from "@mui/material/Dialog";
 import DialogContent from "@mui/material/DialogContent";
 import DialogContentText from "@mui/material/DialogContentText";
 import DialogTitle from "@mui/material/DialogTitle";
-import { isEmpty, displayAmount, prepareFileWindow, showFileWindow, closeFileWindow } from "src/helpers/helper";
+import { isEmpty, displayAmount } from "src/helpers/helper";
 import {
   paymentStore,
   paymentGetWalletBalance,
@@ -205,8 +205,6 @@ class SupplierInvoiceTransactionLedgerPage extends React.Component  {
     }
 
     handleDownloadLedger = async () => {
-      // opened on the click itself so mobile does not treat it as a popup
-      const fileWindow = prepareFileWindow();
       this.setState({
         downloadingInfo: true,
       });
@@ -227,12 +225,10 @@ class SupplierInvoiceTransactionLedgerPage extends React.Component  {
             downloadingInfo: false,
           },
           () => {
-            showFileWindow(fileWindow, response.data.data.url);
+            window.open(response.data.data.url, "_blank").focus();
           }
         );
       } else {
-        // the API failed, so the blank tab has nothing to show
-        closeFileWindow(fileWindow);
         this.setState({
           downloadingInfo: false,
         });

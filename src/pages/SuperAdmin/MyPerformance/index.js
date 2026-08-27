@@ -36,7 +36,6 @@ class MyPerformance extends Component {
     super(props);
 
     this.state = {
-      isLoading: false,
       performance: null,
       prev_month_performance: [],
     };
@@ -74,7 +73,6 @@ class MyPerformance extends Component {
   }
 
   componentDidMount() {
-    this.setState({ isLoading: true });
     this.thisMonthPerformance();
     this.preMonthsPerformance();
   }
@@ -99,7 +97,6 @@ class MyPerformance extends Component {
     if (res.data.success) {
       this.setState({
         prev_month_performance: res.data.data,
-        isLoading: false,
       });
     }
   };
@@ -262,21 +259,15 @@ class MyPerformance extends Component {
             <div className='perv_months_perfrmnc'>
               <MainCard title='Previous 6 Months Performance'>
                 <Grid container spacing={gridSpacing}>
-                  {this.state.isLoading ? (
-                    <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
-                      <CircularProgress />
-                    </Box>
-                  ) : (
-                    <DataTable
-                      columns={this.columns}
-                      rows={prev_month_performance}
-                      page={1}
-                      limit={6}
-                      total={6}
-                      havePagination={false}
-                      showSerialNo={false}
-                    />
-                  )}
+                  <DataTable
+                    columns={this.columns}
+                    rows={prev_month_performance}
+                    page={1}
+                    limit={6}
+                    total={6}
+                    havePagination={false}
+                    showSerialNo={false}
+                  />
                 </Grid>
               </MainCard>
             </div>

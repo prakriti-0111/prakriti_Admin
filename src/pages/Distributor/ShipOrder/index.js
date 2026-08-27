@@ -1,6 +1,6 @@
 import { React, Component } from 'react';
 import { connect } from 'react-redux';
-import { Grid, Box, CircularProgress } from '@mui/material';
+import { Grid } from '@mui/material';
 import { bindActionCreators } from 'redux';
 import { gridSpacing } from 'store/constant';
 import MainCard from 'ui-component/cards/MainCard';
@@ -17,7 +17,6 @@ class SizePage extends Component {
     super(props);
 
     this.state = {
-      isLoading: false,
       ...this.props,
       queryParams: {
         page: 1,
@@ -58,7 +57,6 @@ class SizePage extends Component {
 
     if(props.items !== state.items){
       update.items = props.items;
-      update.isLoading = false;
     }
 
     if(props.total !== state.total){
@@ -82,7 +80,6 @@ class SizePage extends Component {
   }
 
   loadListData = () => {
-    this.setState({ isLoading: true });
     this.props.actions.shipOrderList(this.state.queryParams);
   }
 
@@ -96,7 +93,7 @@ class SizePage extends Component {
     return (
       <MainCard title="Ship Orders"  >
         <Grid container spacing={gridSpacing} columnSpacing={{ xs: 1, sm: 2, md: 2 }} className="abc">
-          {this.state.isLoading ? <Box sx={{display:'flex',justifyContent:'center',p:3}}><CircularProgress /></Box> : <DataTable 
+          <DataTable 
             columns={this.columns}
             rows={this.state.items}
             page={this.state.queryParams.page}
@@ -104,7 +101,7 @@ class SizePage extends Component {
             total={this.state.total}
             handlePagination={this.handlePagination}
             actions={this.tableActions}
-          />}
+          />
         </Grid>
 
       </MainCard>

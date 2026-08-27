@@ -6,7 +6,6 @@ import { ContactPageSharp } from '@mui/icons-material';
 import withRouter from 'src/helpers/withRouter';
 import { bindActionCreators } from 'redux';
 import { stateList } from 'actions/superadmin/state.actions';
-import LoadingButton from '@mui/lab/LoadingButton';
 
 const validate = values => {
   const errors = {}
@@ -195,14 +194,7 @@ class DistrictForm extends React.Component {
             
               <Grid item xs={12} className='p-submit-button'>
                 <Stack spacing={1} direction="row" justifyContent="flex-end">
-                  <LoadingButton
-              variant="contained"
-              type="submit"
-              loading={submitting}
-              disabled={submitting}
-            >
-              Submit
-            </LoadingButton>
+                  <Button variant="contained" type="submit">Submit</Button>
                   <Button variant="outlined" onClick={() => this.props.handleCancel() }>Cancel</Button>
                 </Stack>
               </Grid>

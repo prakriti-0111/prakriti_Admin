@@ -1,7 +1,7 @@
 import { React, Component } from 'react';
 import { matchRoutes, useLocation } from "react-router-dom"
 import { connect } from 'react-redux';
-import {TextField, MenuItem, Link, Box, FormControl, InputLabel, Select, Grid, Button, CircularProgress } from '@mui/material';
+import {TextField, MenuItem, Link, Box, FormControl, InputLabel, Select, Grid, Button } from '@mui/material';
 import { bindActionCreators } from 'redux';
 import { gridSpacing } from 'store/constant';
 import MainCard from 'ui-component/cards/MainCard';
@@ -15,7 +15,6 @@ import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import moment from 'moment';
-import { prepareFileWindow, showFileWindow, closeFileWindow } from "src/helpers/helper";
 
 class SalePage extends Component {
 
@@ -23,7 +22,6 @@ class SalePage extends Component {
     super(props);
 
     this.state = {
-      isLoading: false,
       items: this.props.items,
       total: this.props.total,
       actionCalled: this.props.actionCalled,
@@ -119,7 +117,6 @@ class SalePage extends Component {
     let update = {};
     if(props.items !== state.items){
       update.items = props.items;
-      update.isLoading = false;
     }
 
     if(props.total !== state.total){
@@ -144,7 +141,6 @@ class SalePage extends Component {
   }
 
   loadListData = () => {
-    this.setState({ isLoading: true });
     let data = {...this.state.queryParams};
     if(data.date_from){
         data.date_from = moment(data.date_from.toString()).format('YYYY-MM-DD')
@@ -156,11 +152,9 @@ class SalePage extends Component {
   }
 
   handleDownload = async (row) => {
-    // opened on the click itself so mobile does not treat it as a popup
-    const fileWindow = prepareFileWindow();
     let response = await salesDownloadInvoice(row.id);
     if(response.data.success){
-      showFileWindow(fileWindow, response.data.data.url);
+      window.open(response.data.data.url, '_blank').focus();
 
       /*var xhr = new XMLHttpRequest();
       xhr.responseType = 'blob';
@@ -177,9 +171,6 @@ class SalePage extends Component {
       };
       xhr.open('GET', response.data.data.url);
       xhr.send();*/
-    } else {
-      // the API failed, so the blank tab has nothing to show
-      closeFileWindow(fileWindow);
     }
   }
 
@@ -310,23 +301,17 @@ class SalePage extends Component {
             </Grid>
           </Grid>
         </Box>
-        {this.state.isLoading ? (
-          <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
-            <CircularProgress />
-          </Box>
-        ) : (
-          <Grid container spacing={gridSpacing}>
-            <DataTable 
-              columns={this.columns}
-              rows={this.state.items}
-              page={this.state.queryParams.page}
-              limit={this.state.queryParams.limit}
-              total={this.state.total}
-              handlePagination={this.handlePagination}
-              actions={this.tableActions}
-            />
-          </Grid>
-        )}
+        <Grid container spacing={gridSpacing}>
+          <DataTable 
+            columns={this.columns}
+            rows={this.state.items}
+            page={this.state.queryParams.page}
+            limit={this.state.queryParams.limit}
+            total={this.state.total}
+            handlePagination={this.handlePagination}
+            actions={this.tableActions}
+          />
+        </Grid>
       </MainCard>
     );
   }

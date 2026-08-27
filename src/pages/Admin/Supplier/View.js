@@ -529,7 +529,7 @@ class SupplierViewPage extends React.Component {
                               <IconButton
                                 onClick={this.handleSearch}
                                 edge='end'>
-                                <SearchIcon className="search-icon" />
+                                <SearchIcon />
                               </IconButton>
                             </InputAdornment>
                           }

@@ -1,6 +1,6 @@
 import { React, Component } from 'react';
 import { connect } from 'react-redux';
-import { Grid, Button, Box, CircularProgress } from '@mui/material';
+import { Grid, Button } from '@mui/material';
 import { bindActionCreators } from 'redux';
 import { gridSpacing } from 'store/constant';
 import MainCard from 'ui-component/cards/MainCard';
@@ -19,7 +19,6 @@ class InvestorPage extends Component {
     super(props);
 
     this.state = {
-      isLoading: false,
       ...this.props,
       queryParams: {
         page: 1,
@@ -71,7 +70,6 @@ class InvestorPage extends Component {
     let update = {};
     if(props.items !== state.items){
       update.items = props.items;
-      update.isLoading = false;
     }
 
     if(props.total !== state.total){
@@ -101,7 +99,6 @@ class InvestorPage extends Component {
   }
 
   loadListData = () => {
-    this.setState({ isLoading: true });
     this.props.actions.investorList(this.state.queryParams);
   }
 
@@ -134,11 +131,6 @@ class InvestorPage extends Component {
     return (
       <MainCard title="Investors" secondary={hasPermission(this.state.permissions, 'investors', 'add') ? <Button variant="contained" onClick={() => this.props.navigate('create') }>Add</Button> : null} >
         <Grid container spacing={gridSpacing} className="abc">
-          {this.state.isLoading ? (
-            <Box sx={{ display: 'flex', justifyContent: 'center', p: 3, width: '100%' }}>
-              <CircularProgress />
-            </Box>
-          ) : (
           <DataTable 
             columns={this.columns}
             rows={this.state.items}
@@ -162,7 +154,6 @@ class InvestorPage extends Component {
               }
             ]}
           />
-          )}
         </Grid>
       </MainCard>
     );
