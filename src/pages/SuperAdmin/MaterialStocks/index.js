@@ -148,15 +148,16 @@ class MaterialStockPage extends Component {
   fetchLiveGoldRate = () => {
     axios.get(process.env.GOLD_RATE_URL)
       .then(res => {
-        if (res.data && res.data.per_gram && res.data.per_gram['24K']) {
-          const rate = res.data.per_gram['24K'];
+        const perGram = res.data && (res.data.base_per_gram || res.data.per_gram);
+        if (perGram && perGram['24K']) {
+          const rate = perGram['24K'];
           this.setState({
             liveGoldRate24K: rate,
             liveGoldRateDisplay: `₹${parseFloat(rate).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}/gm`
           });
         }
       })
-      .catch(() => {});
+      .catch(err => console.warn('gold rate fetch failed', err));
   }
 
   loadPriceByCategory = async () => {

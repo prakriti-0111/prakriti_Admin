@@ -358,13 +358,14 @@ class SaleViewPage extends React.Component {
   handlePayNow = () => {
     axios.get(process.env.GOLD_RATE_URL)
       .then(res => {
-        if (res.data && res.data.base_per_gram) {
-          const liveGoldPerGram = res.data.base_per_gram['24K'];
+        const perGram = res.data && (res.data.base_per_gram || res.data.per_gram);
+        if (perGram && perGram['24K']) {
+          const liveGoldPerGram = perGram['24K'];
           const liveGoldPriceDisplay = res.data.display || `₹${liveGoldPerGram.toLocaleString('en-IN')}`;
           this.setState({ liveGoldPerGram, liveGoldPriceDisplay });
         }
       })
-      .catch(() => {});
+      .catch(err => console.warn('gold rate fetch failed', err));
     this.props.actions.stocksList({
       page: 1,
       limit: 50,
