@@ -313,6 +313,15 @@ const isEmpty = (value) => {
   );
 };
 
+/**
+ * Email is a login identifier, so a malformed one would lock the user out.
+ * Blank counts as invalid — callers use this for required email fields.
+ */
+const isValidEmail = (value) => {
+  if (isEmpty(value)) return false;
+  return /^\S+@\S+\.\S+$/.test(String(value).trim());
+};
+
 const getNewlineText = (text) => {
   return text
     .split("\n")
@@ -582,6 +591,26 @@ const isAdmin = () => {
 const isSalesExecutive = () => {
   let role = getAuthData("role_name", true);
   return role == "Sales Executive";
+};
+
+/**
+ * Retailers the logged in user actually owns. The API's my_retailer scope only
+ * matches the creator, so an Admin still gets every other distributor's
+ * retailers back: keep the ones created by the user or by anyone in the
+ * downline passed in (their distributors and sales executives). Retailers
+ * without a created_by are left alone — only the API can scope those.
+ */
+const filterOwnRetailers = (retailers, downline) => {
+  let ids = [getAuthData("id", true)]
+    .concat((downline || []).map((user) => user.id))
+    .filter((id) => !isEmpty(id))
+    .map(String);
+
+  return (retailers || []).filter(
+    (retailer) =>
+      isEmpty(retailer.created_by) ||
+      ids.indexOf(String(retailer.created_by)) !== -1,
+  );
 };
 
 const getApprovalColor = (status) => {
@@ -998,6 +1027,42 @@ const fetchCertificateDetails = async (certificateNo) => {
   }
 };
 
+/**
+ * Open a generated invoice/report PDF.
+ *
+ * `window.open()` only counts as user-initiated while the click handler is
+ * still on the stack. These downloads call it *after* awaiting the API, by
+ * which point mobile Safari and Chrome for Android treat it as an unsolicited
+ * popup and block it - which is why the phone showed nothing while the desktop
+ * worked. So the tab is opened empty on the click itself (prepareFileWindow)
+ * and pointed at the file once the URL arrives (showFileWindow). If the tab was
+ * blocked anyway, the current one navigates to the file instead.
+ */
+const prepareFileWindow = () => {
+  try {
+    return window.open("", "_blank");
+  } catch (e) {
+    return null;
+  }
+};
+
+const closeFileWindow = (fileWindow) => {
+  if (fileWindow && !fileWindow.closed) fileWindow.close();
+};
+
+const showFileWindow = (fileWindow, url) => {
+  if (!url) {
+    closeFileWindow(fileWindow);
+    return;
+  }
+  if (fileWindow && !fileWindow.closed) {
+    fileWindow.location.href = url;
+    if (fileWindow.focus) fileWindow.focus();
+    return;
+  }
+  window.location.href = url;
+};
+
 export {
   getAuthData,
   objectToQuery,
@@ -1007,6 +1072,7 @@ export {
   toBase64,
   getValuesFromKey,
   isEmpty,
+  filterOwnRetailers,
   getNewlineText,
   calculateAdminProductPrice,
   priceFormat,
@@ -1034,6 +1100,10 @@ export {
   ucWords,
   validateNumber,
   validateInteger,
+  isValidEmail,
   fetchCertificateDetails,
   formatIndianNumber,
+  prepareFileWindow,
+  showFileWindow,
+  closeFileWindow,
 };

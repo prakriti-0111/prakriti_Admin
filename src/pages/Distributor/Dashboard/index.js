@@ -28,11 +28,13 @@ class DashboardPage extends Component {
     super(props);
 
     this.state = {
+      isLoading: false,
       dashboard: this.props.dashboard,
     };
   }
 
   componentDidMount() {
+    this.setState({ isLoading: true });
     this.props.actions.getDashboardData();
   }
 
@@ -40,6 +42,7 @@ class DashboardPage extends Component {
     let update = {};
     if (props.dashboard !== state.dashboard) {
       update.dashboard = props.dashboard;
+      update.isLoading = false;
     }
 
     return update;
@@ -52,7 +55,7 @@ class DashboardPage extends Component {
   render() {
     const dashboard = this.state.dashboard;
     return (
-      <Card className='dashboard_card'>
+      this.state.isLoading ? <Box sx={{display:'flex',justifyContent:'center',p:3}}><CircularProgress /></Box> : <Card className='dashboard_card'>
         <CardContent
           onClick={() => this.handleClick("sales-executive")}
           className='dashboard_card_content bg-color-1'

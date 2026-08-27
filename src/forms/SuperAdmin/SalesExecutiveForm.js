@@ -22,7 +22,7 @@ import noImage from 'src/assets/images/no_image.jpg';
 import { distributorList } from 'actions/superadmin/distributor.actions';
 import { formValues } from 'redux-form';
 import {UPDATE_GLOBAL_AUTH} from '../../actionTypes/global.types';
-import { validateInteger, validateNumber } from '../../helpers/helper';
+import { validateInteger, validateNumber, isValidEmail } from '../../helpers/helper';
 
 class SalesExecutiveForm extends React.Component {
 
@@ -408,6 +408,12 @@ class SalesExecutiveForm extends React.Component {
         }else{
             formErros.mobile = false;
         }
+        if(!isValidEmail(formValues.email)){
+            formErros.email = true;
+            hasErr = true;
+        }else{
+            formErros.email = false;
+        }
         if(this.state.isCreateFrom && !this.state.isEditProfile){
             if(isEmpty(formValues.password)){
                 formErros.password = true;
@@ -646,7 +652,6 @@ class SalesExecutiveForm extends React.Component {
                             value={formValues.email}
                             onChange={(event) => this.handleDefaultChange(event, 'email')}
                             error={formErros.email}
-                            disabled={isEditProfile}
                             inputProps={{ className: "non_disable_text" }}
                         />
                     </Grid>

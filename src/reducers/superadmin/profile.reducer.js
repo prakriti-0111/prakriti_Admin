@@ -43,9 +43,11 @@ export default function (state = initialState, action) {
                 errorMessage: null
             }
         case SUPERADMIN_DASHBOARD:
+            // sections arrive separately (summary / charts / stock) and merge
+            // into one object, each tagged so the tiles know what has landed
             return {
                 ...state,
-                dashboard: payload
+                dashboard: { ...(state.dashboard || {}), ...payload }
             }
         default:
             return state;

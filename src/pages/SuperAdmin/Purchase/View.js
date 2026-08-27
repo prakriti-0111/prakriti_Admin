@@ -70,6 +70,7 @@ import { getProfile } from "actions/superadmin/profile.actions";
 import { stocksTransferHistoryStore } from 'actions/superadmin/stockHistory.actions';
 import { stocksList } from 'actions/superadmin/stocks.actions';
 import './style.css';
+import { PAYMENT_STATUS_COLORS } from "../../../utils/paymentStatusColors";
 
 class PurchaseViewPage extends React.Component {
   constructor(props) {
@@ -801,16 +802,7 @@ class PurchaseViewPage extends React.Component {
                     handlePagination={this.handlePagination}
                     actions={[]}
                     actionValue={"action_value"}
-                    actionValueColorConditions={[
-                      {
-                        value: "Accepted",
-                        color: "green",
-                      },
-                      {
-                        value: "Declined",
-                        color: "red",
-                      },
-                    ]}
+                    actionValueColorConditions={PAYMENT_STATUS_COLORS}
                   />
                 </Grid>
               ) : null}
