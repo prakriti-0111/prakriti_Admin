@@ -1,6 +1,6 @@
 import { React, Component } from 'react';
 import { connect } from 'react-redux';
-import { Grid, Button, Box, FormControl, TextField, IconButton } from '@mui/material';
+import { Grid, Button, Box, FormControl, TextField, IconButton, CircularProgress } from '@mui/material';
 import { gridSpacing } from 'store/constant';
 import MainCard from 'ui-component/cards/MainCard';
 import withRouter from 'src/helpers/withRouter';
@@ -14,6 +14,7 @@ class SubscriberPage extends Component {
     super(props);
 
     this.state = {
+      isLoading: false,
       items: [],
       total: 1,
       queryParams: {
@@ -48,12 +49,14 @@ class SubscriberPage extends Component {
   }
 
   loadListData = () => {
+    this.setState({ isLoading: true });
     subscriberList(this.state.queryParams)
       .then(res => {
         if (res.data.success) {
           this.setState({
             items: res.data.data.items,
-            total: res.data.data.total
+            total: res.data.data.total,
+            isLoading: false
           })
         }
       })
@@ -123,14 +126,20 @@ class SubscriberPage extends Component {
           </Grid>
         </Box>
         <Grid container spacing={gridSpacing}>
-          <DataTable
-            columns={this.columns}
-            rows={this.state.items}
-            page={this.state.queryParams.page}
-            limit={this.state.queryParams.limit}
-            total={this.state.total}
-            handlePagination={this.handlePagination}
-          />
+          {this.state.isLoading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', p: 3, width: '100%' }}>
+              <CircularProgress />
+            </Box>
+          ) : (
+            <DataTable
+              columns={this.columns}
+              rows={this.state.items}
+              page={this.state.queryParams.page}
+              limit={this.state.queryParams.limit}
+              total={this.state.total}
+              handlePagination={this.handlePagination}
+            />
+          )}
         </Grid>
       </MainCard>
     );

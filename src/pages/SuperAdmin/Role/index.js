@@ -1,6 +1,6 @@
 import { React, Component } from 'react';
 import { connect } from 'react-redux';
-import { Grid, Button } from '@mui/material';
+import { Grid, Button, Box, CircularProgress } from '@mui/material';
 import { bindActionCreators } from 'redux';
 import { gridSpacing } from 'store/constant';
 import MainCard from 'ui-component/cards/MainCard';
@@ -27,6 +27,7 @@ class RolePage extends Component {
     super(props);
 
     this.state = {
+      isLoading: false,
       ...this.props,
       queryParams: {
         page: 1,
@@ -60,6 +61,7 @@ class RolePage extends Component {
 
     if (props.items !== state.items) {
       update.items = props.items;
+      update.isLoading = false;
     }
 
     if (props.total !== state.total) {
@@ -109,6 +111,7 @@ class RolePage extends Component {
   }
 
   loadListData = () => {
+    this.setState({ isLoading: true });
     this.props.actions.roleList(this.state.queryParams);
   }
 
@@ -211,41 +214,47 @@ class RolePage extends Component {
     return (
       <MainCard title="Roles" secondary={hasPermission(this.state.permissions, 'roles', 'add') ? <Button variant="contained" onClick={this.handleCreate}>Add</Button> : null} >
         <Grid container spacing={gridSpacing}>
-          <DataTable
-            columns={this.columns}
-            rows={this.state.items}
-            page={this.state.queryParams.page}
-            limit={this.state.queryParams.limit}
-            total={this.state.total}
-            handlePagination={this.handlePagination}
-            actions={[
-              {
-                label: 'Edit',
-                onClick: this.handleEdit,
-                color: 'primary',
-                show: hasPermission(this.state.permissions, 'roles', 'edit')
-              },
-              {
-                label: 'Delete',
-                onClick: this.handleDelete,
-                isDelete: true,
-                color: 'error',
-                show: hasPermission(this.state.permissions, 'roles', 'delete'),
-                conditions: [
-                  {
-                    key: "can_delete",
-                    value: true
-                  }
-                ]
-              },
-              {
-                label: 'Permissions',
-                onClick: this.handlePermissions,
-                color: 'primary',
-                show: hasPermission(this.state.permissions, 'roles', 'edit')
-              },
-            ]}
-          />
+          {this.state.isLoading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+              <CircularProgress />
+            </Box>
+          ) : (
+            <DataTable
+              columns={this.columns}
+              rows={this.state.items}
+              page={this.state.queryParams.page}
+              limit={this.state.queryParams.limit}
+              total={this.state.total}
+              handlePagination={this.handlePagination}
+              actions={[
+                {
+                  label: 'Edit',
+                  onClick: this.handleEdit,
+                  color: 'primary',
+                  show: hasPermission(this.state.permissions, 'roles', 'edit')
+                },
+                {
+                  label: 'Delete',
+                  onClick: this.handleDelete,
+                  isDelete: true,
+                  color: 'error',
+                  show: hasPermission(this.state.permissions, 'roles', 'delete'),
+                  conditions: [
+                    {
+                      key: "can_delete",
+                      value: true
+                    }
+                  ]
+                },
+                {
+                  label: 'Permissions',
+                  onClick: this.handlePermissions,
+                  color: 'primary',
+                  show: hasPermission(this.state.permissions, 'roles', 'edit')
+                },
+              ]}
+            />
+          )}
         </Grid>
 
           <Dialog

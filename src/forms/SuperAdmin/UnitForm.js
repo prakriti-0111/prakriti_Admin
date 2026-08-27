@@ -4,6 +4,7 @@ import { Field, reduxForm } from 'redux-form/immutable';
 import {Box, TextField, Button, Grid, Stack, FormControl, InputLabel, Select, MenuItem } from '@mui/material';
 import { ContactPageSharp } from '@mui/icons-material';
 import withRouter from 'src/helpers/withRouter';
+import LoadingButton from '@mui/lab/LoadingButton';
 
 const validate = values => {
   const errors = {}
@@ -82,7 +83,14 @@ class UnitForm extends React.Component {
                 </Grid>
             </Grid>
             <Stack spacing={1} mt={2} direction="row" className='modal-button-area'>
-              <Button variant="contained" type="submit">Submit</Button>
+              <LoadingButton
+              variant="contained"
+              type="submit"
+              loading={submitting}
+              disabled={submitting}
+            >
+              Submit
+            </LoadingButton>
               <Button variant="outlined" onClick={() => this.props.handleCancel() }>Cancel</Button>
             </Stack>
         </Box>

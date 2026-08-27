@@ -426,14 +426,21 @@ class DataTable extends React.Component {
 
   getActionValueStyle = (val) => {
     let color = "";
+    let extra = null;
     for (let x = 0; x < this.state.actionValueColorConditions.length; x++) {
       if (this.state.actionValueColorConditions[x].value == val) {
         color = this.state.actionValueColorConditions[x].color;
+        // A condition may carry a whole style object as well as a colour, so a
+        // status can render as a chip rather than bare coloured text. Yellow
+        // text is unreadable on a white row at any shade that still looks
+        // yellow, so the waiting statuses need a filled background.
+        extra = this.state.actionValueColorConditions[x].style || null;
         break;
       }
     }
 
-    return color ? { color: color } : {};
+    if (!color && !extra) return {};
+    return { ...(color ? { color: color } : {}), ...(extra || {}) };
   };
 
   getSerialNo = (index, page, limit) => {

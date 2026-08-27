@@ -29,6 +29,7 @@ class StockViewPage extends React.Component {
     super(props);
 
     this.state = {
+      isLoading: true,
       stock: this.props.stock,
     };
 
@@ -49,6 +50,7 @@ class StockViewPage extends React.Component {
     let update = {};
     if (props.stock !== state.stock) {
       update.stock = props.stock;
+      update.isLoading = false;
     }
 
     return update;
@@ -63,10 +65,10 @@ class StockViewPage extends React.Component {
     return (
       <MainCard title='Stock Details'>
         <div className='ratn-dialog-wrapper'>
-          {!stock ? (
-            <Grid container justifyContent='center'>
-              <CircularProgress size='30px' />
-            </Grid>
+          {this.state.isLoading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+              <CircularProgress />
+            </Box>
           ) : (
             <>
               <div className='single-item-wrapper details-header'>

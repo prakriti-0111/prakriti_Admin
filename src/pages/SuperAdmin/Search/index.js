@@ -7,6 +7,7 @@ import {
   FormControl,
   TextField,
   IconButton,
+  CircularProgress,
 } from "@mui/material";
 import { bindActionCreators } from "redux";
 import { gridSpacing } from "store/constant";
@@ -22,6 +23,7 @@ class SizePage extends Component {
     super(props);
 
     this.state = {
+      isLoading: false,
       auth: this.props.auth,
       searchData: [],
       total: 0,
@@ -75,6 +77,7 @@ class SizePage extends Component {
   }
 
   loadSearchData = async () => {
+    this.setState({ isLoading: true });
     if (!this.state.search) {
       this.setState({
         searchData: [],
@@ -89,10 +92,12 @@ class SizePage extends Component {
         searchData: res.data.data.items,
         total: res.data.data.total,
         loading: false,
+        isLoading: false,
       });
     } else {
       this.setState({
         loading: false,
+        isLoading: false,
       });
     }
   };
@@ -161,14 +166,20 @@ class SizePage extends Component {
         </Box>
 
         <Grid container spacing={gridSpacing}>
-          <DataTable
-            columns={this.columns}
-            rows={this.state.searchData}
-            page={1}
-            limit={this.state.searchData.length}
-            total={this.state.searchData.length}
-            havePagination={false}
-          />
+          {this.state.isLoading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+              <CircularProgress />
+            </Box>
+          ) : (
+            <DataTable
+              columns={this.columns}
+              rows={this.state.searchData}
+              page={1}
+              limit={this.state.searchData.length}
+              total={this.state.searchData.length}
+              havePagination={false}
+            />
+          )}
         </Grid>
       </MainCard>
     );

@@ -13,7 +13,9 @@ import {
   Grid,
   Button,
   MenuItem,
+  CircularProgress,
 } from "@mui/material";
+import LoadingButton from "@mui/lab/LoadingButton";
 import { bindActionCreators } from "redux";
 import { gridSpacing } from "store/constant";
 import MainCard from "ui-component/cards/MainCard";
@@ -33,6 +35,10 @@ class PurchaseProductsPage extends Component {
     this.state = {
       items: [],
       total: 0,
+      searching: false,
+      categoriesLoading: false,
+      subCategoriesLoading: false,
+      suppliersLoading: false,
       price_by_categories: [],
       categories: this.props.categories,
       sub_categories: this.props.sub_categories,
@@ -115,9 +121,34 @@ class PurchaseProductsPage extends Component {
 
   componentDidMount() {
     this.loadListData();
-    this.props.actions.categoryList({ all: 1 });
-    this.props.actions.supplierList({ all: 1 });
   }
+
+  // Categories/suppliers are fetched only when their dropdown is opened,
+  // not on every page load - the list is rarely touched but was always paid for.
+  handleCategoryOpen = () => {
+    if (!this.state.categories.length) {
+      this.setState({ categoriesLoading: true });
+      this.props.actions
+        .categoryList({ all: 1 })
+        .finally(() => this.setState({ categoriesLoading: false }));
+    }
+  };
+
+  handleSupplierOpen = () => {
+    if (!this.state.suppliers.length) {
+      this.setState({ suppliersLoading: true });
+      this.props.actions
+        .supplierList({ all: 1 })
+        .finally(() => this.setState({ suppliersLoading: false }));
+    }
+  };
+
+  fetchSubCategories = (category_id) => {
+    this.setState({ subCategoriesLoading: true });
+    this.props.actions
+      .subCategoryList({ all: 1, category_id })
+      .finally(() => this.setState({ subCategoriesLoading: false }));
+  };
 
   static getDerivedStateFromProps(props, state) {
     let update = {};
@@ -137,15 +168,18 @@ class PurchaseProductsPage extends Component {
   }
 
   loadListData = () => {
-    purchaseProducts(this.state.queryParams).then((res) => {
-      if (res.data.success) {
-        this.setState({
-          items: res.data.data.items,
-          total: res?.data?.data?.total || res?.data?.data?.items?.length || 0,
-          price_by_categories: res.data.data.categories,
-        });
-      }
-    });
+    this.setState({ searching: true });
+    purchaseProducts(this.state.queryParams)
+      .then((res) => {
+        if (res.data.success) {
+          this.setState({
+            items: res.data.data.items,
+            total: res?.data?.data?.total || res?.data?.data?.items?.length || 0,
+            price_by_categories: res.data.data.categories,
+          });
+        }
+      })
+      .finally(() => this.setState({ searching: false }));
   };
 
   handlePagination = (page, all = false) => {
@@ -174,7 +208,7 @@ class PurchaseProductsPage extends Component {
 
   handleCategoryChange = (event) => {
     let val = event.target.value;
-    this.props.actions.subCategoryList({ all: 1, category_id: val });
+    this.fetchSubCategories(val);
     this.setState({
       queryParams: {
         ...this.state.queryParams,
@@ -222,7 +256,7 @@ class PurchaseProductsPage extends Component {
   };
 
   handleCardClick = (category_id) => {
-    this.props.actions.subCategoryList({ all: 1, category_id: category_id });
+    this.fetchSubCategories(category_id);
     this.setState(
       {
         queryParams: {
@@ -285,15 +319,22 @@ class PurchaseProductsPage extends Component {
                     value={this.state.queryParams.category_id}
                     label="Category"
                     onChange={this.handleCategoryChange}
+                    onOpen={this.handleCategoryOpen}
                     className="input-inner"
                     defaultValue=""
                   >
                     <MenuItem value="">All</MenuItem>
-                    {this.state.categories.map((item, index) => (
-                      <MenuItem value={item.id} key={index}>
-                        {item.name}
+                    {this.state.categoriesLoading ? (
+                      <MenuItem disabled sx={{ justifyContent: "center" }}>
+                        <CircularProgress size={20} />
                       </MenuItem>
-                    ))}
+                    ) : (
+                      this.state.categories.map((item, index) => (
+                        <MenuItem value={item.id} key={index}>
+                          {item.name}
+                        </MenuItem>
+                      ))
+                    )}
                   </Select>
                 </FormControl>
               </Grid>
@@ -308,11 +349,17 @@ class PurchaseProductsPage extends Component {
                     defaultValue=""
                   >
                     <MenuItem value="">All</MenuItem>
-                    {this.state.sub_categories.map((item, index) => (
-                      <MenuItem value={item.id} key={index}>
-                        {item.name}
+                    {this.state.subCategoriesLoading ? (
+                      <MenuItem disabled sx={{ justifyContent: "center" }}>
+                        <CircularProgress size={20} />
                       </MenuItem>
-                    ))}
+                    ) : (
+                      this.state.sub_categories.map((item, index) => (
+                        <MenuItem value={item.id} key={index}>
+                          {item.name}
+                        </MenuItem>
+                      ))
+                    )}
                   </Select>
                 </FormControl>
               </Grid>
@@ -323,15 +370,22 @@ class PurchaseProductsPage extends Component {
                     value={this.state.queryParams.supplier_id}
                     label="Supplier"
                     onChange={this.handleSupplierChange}
+                    onOpen={this.handleSupplierOpen}
                     className="input-inner"
                     defaultValue=""
                   >
                     <MenuItem value="">All</MenuItem>
-                    {this.state.suppliers.map((item, index) => (
-                      <MenuItem value={item.id} key={index}>
-                        {item.name}
+                    {this.state.suppliersLoading ? (
+                      <MenuItem disabled sx={{ justifyContent: "center" }}>
+                        <CircularProgress size={20} />
                       </MenuItem>
-                    ))}
+                    ) : (
+                      this.state.suppliers.map((item, index) => (
+                        <MenuItem value={item.id} key={index}>
+                          {item.name}
+                        </MenuItem>
+                      ))
+                    )}
                   </Select>
                 </FormControl>
               </Grid>
@@ -341,17 +395,39 @@ class PurchaseProductsPage extends Component {
                 md={1}
                 className="create-input order-input button-right"
               >
-                <Button
+                <LoadingButton
                   variant="contained"
                   className="search-btn"
                   onClick={this.handleSearch}
+                  loading={this.state.searching}
                 >
                   Search
-                </Button>
+                </LoadingButton>
               </Grid>
             </Grid>
           </Box>
-          <Grid container spacing={gridSpacing} className="orders-sale-button">
+          <Grid
+            container
+            spacing={gridSpacing}
+            className="orders-sale-button"
+            sx={{ position: "relative", minHeight: 160 }}
+          >
+            {this.state.searching && (
+              <Box
+                sx={{
+                  position: "absolute",
+                  inset: 0,
+                  zIndex: 2,
+                  display: "flex",
+                  alignItems: "flex-start",
+                  justifyContent: "center",
+                  pt: 8,
+                  backgroundColor: "rgba(255, 255, 255, 0.65)",
+                }}
+              >
+                <CircularProgress />
+              </Box>
+            )}
             <DataTable
               columns={this.columns}
               rows={this.state.items}
