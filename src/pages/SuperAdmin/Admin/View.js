@@ -49,7 +49,8 @@ import {
   displayAmount,
   isAdmin,
   getAuthData,
-  getUserDashboardRoute, prepareFileWindow, showFileWindow, closeFileWindow } from "src/helpers/helper";
+  getUserDashboardRoute,
+} from "src/helpers/helper";
 import {
   paymentStore,
   paymentGetWalletBalance,
@@ -297,16 +298,11 @@ class AdminViewPage extends React.Component {
   };
 
   handleInvoiceDownload = async (row) => {
-    // opened on the click itself so mobile does not treat it as a popup
-    const fileWindow = prepareFileWindow();
     let response = this.isAdminUser
       ? await adminSalesDownloadInvoice(row.id)
       : await superAdminSalesDownloadInvoice(row.id);
     if (response.data.success) {
-      showFileWindow(fileWindow, response.data.data.url);
-    } else {
-      // the API failed, so the blank tab has nothing to show
-      closeFileWindow(fileWindow);
+      window.open(response.data.data.url, "_blank").focus();
     }
   };
 
@@ -847,7 +843,7 @@ class AdminViewPage extends React.Component {
                                   onClick={this.handleSearch}
                                   edge="end"
                                 >
-                                  <SearchIcon className="search-icon" />
+                                  <SearchIcon />
                                 </IconButton>
                               </InputAdornment>
                             }

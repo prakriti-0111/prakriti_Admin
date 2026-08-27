@@ -47,23 +47,19 @@ module.exports = {
           MiniCssExtractPlugin.loader,
           "css-loader",
           "postcss-loader",
-          {
-            loader: "sass-loader",
-            options: {
-              api: "modern",
-              sassOptions: {
-                silenceDeprecations: ["import"],
-              },
-            },
-          },
+          "sass-loader",
         ],
       },
       {
         test: /\.(jpe?g|png|gif|svg)$/i,
-        type: "asset/resource",
-        generator: {
-          filename: "assets/[name][ext]",
-        },
+        use: [
+          {
+            loader: "file-loader",
+            options: {
+              name: "assets/[name].[ext]",
+            },
+          },
+        ],
       },
     ],
   },

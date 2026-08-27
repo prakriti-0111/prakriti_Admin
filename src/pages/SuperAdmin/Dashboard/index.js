@@ -226,28 +226,24 @@ class DashboardPage extends Component {
     }
     if (
       props.dashboard != null &&
-      props.dashboard.__charts &&
       props.dashboard.all_months !== state.all_months
     ) {
       update.months_name = props.dashboard.all_months;
     }
     if (
       props.dashboard != null &&
-      props.dashboard.__charts &&
       props.dashboard.month_wise_customer !== state.month_wise_customer
     ) {
       update.month_wise_customer = props.dashboard.month_wise_customer;
     }
     if (
       props.dashboard != null &&
-      props.dashboard.__charts &&
       props.dashboard.month_wise_order !== state.month_wise_order
     ) {
       update.month_wise_order = props.dashboard.month_wise_order;
     }
     if (
       props.dashboard != null &&
-      props.dashboard.__charts &&
       props.dashboard.month_wise_sales !== state.month_wise_sales
     ) {
       update.month_wise_sales = props.dashboard.month_wise_sales;
@@ -279,12 +275,6 @@ class DashboardPage extends Component {
 
   render() {
     const { dashboard, permissions, profile, auth } = this.state;
-
-    /* the dashboard arrives as three independent responses — a tile waits only
-       on the section that carries its numbers, not on the whole payload */
-    const dashboardSummary = dashboard && dashboard.__summary ? dashboard : null;
-    const dashboardStock = dashboard && dashboard.__stock ? dashboard : null;
-    const dashboardCharts = dashboard && dashboard.__charts ? dashboard : null;
     console.log("profile.own : ",profile);
     console.log("auth : ", auth);
     //this.chartLabels = this.state.months_name;
@@ -380,7 +370,7 @@ class DashboardPage extends Component {
               >
                 <h1>My Wallet </h1>
                 <h2>
-                  {dashboardSummary ? dashboard.wallet_balance :<CircularProgress size="20px" />}
+                  {dashboard ? dashboard.wallet_balance :<CircularProgress size="20px" />}
                 </h2>
               </Typography>
               <div className="card-icon">
@@ -405,11 +395,11 @@ class DashboardPage extends Component {
                 <h1>
                   My Stock &nbsp;{" "}
                   <span>
-                    {dashboardStock ? dashboard.total_stock :<CircularProgress size="20px" />}
+                    {dashboard ? dashboard.total_stock :<CircularProgress size="20px" />}
                   </span>
                 </h1>
                 <h2>
-                  {dashboardStock ? (
+                  {dashboard ? (
                     <span style={{ fontSize: "16px" }}>
                       {" "}
                       {dashboard.total_stock_price}{" "}
@@ -446,7 +436,7 @@ class DashboardPage extends Component {
                 <h1>
                   Material Stock &nbsp;{" "}
                   <span>
-                    {dashboardStock ? (
+                    {dashboard ? (
                       dashboard.material_total_stock
                     ) : (
                     <CircularProgress size="20px" />
@@ -454,7 +444,7 @@ class DashboardPage extends Component {
                   </span>
                 </h1>
                 <h2>
-                  {dashboardStock ? (
+                  {dashboard ? (
                     <span style={{ fontSize: "16px" }}>
                       {" "}
                       {dashboard.material_total_stock_price}{" "}
@@ -489,7 +479,7 @@ class DashboardPage extends Component {
                 <h1>
                   Pending Stock &nbsp;{" "}
                   <span>
-                    {dashboardStock ? (
+                    {dashboard ? (
                       dashboard.total_avl_pending_stock
                     ) : (
                     <CircularProgress size="20px" />
@@ -497,7 +487,7 @@ class DashboardPage extends Component {
                   </span>
                 </h1>
                 <h2>
-                  {dashboardStock ? (
+                  {dashboard ? (
                     <span style={{ fontSize: "16px" }}>
                       {" "}
                       {dashboard.total_avl_pending_stock_price}{" "}
@@ -528,11 +518,11 @@ class DashboardPage extends Component {
                 <h1>
                   Total Return Stock &nbsp;{" "}
                   <span>
-                    {dashboardStock ? dashboard.return_stock :<CircularProgress size="20px" />}
+                    {dashboard ? dashboard.return_stock :<CircularProgress size="20px" />}
                   </span>
                 </h1>
                 <h2>
-                  {dashboardStock ? (
+                  {dashboard ? (
                     <span style={{ fontSize: "16px" }}>
                       {" "}
                       {dashboard.return_stock_price}{" "}
@@ -568,7 +558,7 @@ class DashboardPage extends Component {
                 <h1>
                   Total Supplier &nbsp;{" "}
                   <span>
-                    {dashboardSummary ? (
+                    {dashboard ? (
                       dashboard.total_supplier
                     ) : (
                     <CircularProgress size="20px" />
@@ -576,7 +566,7 @@ class DashboardPage extends Component {
                   </span>{" "}
                 </h1>
                 <h2>
-                  {dashboardSummary ? (
+                  {dashboard ? (
                     <span style={{ fontSize: "16px" }}>
                       {" "}
                       {dashboard.purchase_due_amount}{" "}
@@ -606,7 +596,7 @@ class DashboardPage extends Component {
                 <h1 onClick={() => this.handleClick("admins?own=1")}>
                   Own Admin &nbsp;{" "}
                   <span>
-                    {dashboardSummary ? dashboard.total_admin :<CircularProgress size="20px" />}
+                    {dashboard ? dashboard.total_admin :<CircularProgress size="20px" />}
                   </span>{" "}
                 </h1>
                 <h2
@@ -614,7 +604,7 @@ class DashboardPage extends Component {
                     this.handleClick("stocks?own_admin=1&by_specific=1")
                   }
                 >
-                  {dashboardStock ? (
+                  {dashboard ? (
                     dashboard.total_admin_stock +
                     " | " +
                     dashboard.total_admin_stock_price
@@ -644,7 +634,7 @@ class DashboardPage extends Component {
                 <h1 onClick={() => this.handleClick("distributors?own=1")}>
                   Own Distributor &nbsp;{" "}
                   <span>
-                    {dashboardSummary ? (
+                    {dashboard ? (
                       dashboard.total_distributor
                     ) : (
                     <CircularProgress size="20px" />
@@ -656,7 +646,7 @@ class DashboardPage extends Component {
                     this.handleClick("stocks?own_distributor=1&by_specific=1")
                   }
                 >
-                  {dashboardStock ? (
+                  {dashboard ? (
                     dashboard.total_distributor_stock +
                     " | " +
                     dashboard.total_distributor_stock_price
@@ -685,7 +675,7 @@ class DashboardPage extends Component {
                 <h1 onClick={() => this.handleClick("admins?own=0")}>
                   Other Admin &nbsp;{" "}
                   <span>
-                    {dashboardSummary ? (
+                    {dashboard ? (
                       dashboard.total_other_admin
                     ) : (
                     <CircularProgress size="20px" />
@@ -693,7 +683,7 @@ class DashboardPage extends Component {
                   </span>{" "}
                 </h1>
                 <h2>
-                  {dashboardSummary ? (
+                  {dashboard ? (
                     dashboard.sale_due_amount
                   ) : (
                   <CircularProgress size="20px" />
@@ -704,7 +694,7 @@ class DashboardPage extends Component {
                     this.handleClick("stocks?own_admin=0&by_specific=1")
                   }
                 >
-                  {dashboardStock ? (
+                  {dashboard ? (
                     dashboard.total_other_admin_stock +
                     " | " +
                     dashboard.total_other_admin_stock_price
@@ -732,7 +722,7 @@ class DashboardPage extends Component {
                 <h1 onClick={() => this.handleClick("admins?own=0")}>
                   Buyer Admin &nbsp;{" "}
                   <span>
-                    {dashboardSummary ? (
+                    {dashboard ? (
                       dashboard.total_other_admin_buyer
                     ) : (
                     <CircularProgress size="20px" />
@@ -740,7 +730,7 @@ class DashboardPage extends Component {
                   </span>{" "}
                 </h1>
                 <h2>
-                  {dashboardSummary ? (
+                  {dashboard ? (
                     dashboard.total_other_admin_buyer_due_amount
                   ) : (
                   <CircularProgress size="20px" />
@@ -751,7 +741,7 @@ class DashboardPage extends Component {
                     this.handleClick("stocks?own_admin=0&by_specific=1")
                   }
                 >
-                  {dashboardStock ? (
+                  {dashboard ? (
                     dashboard.total_other_admin_stock +
                     " | " +
                     dashboard.total_other_admin_stock_price
@@ -781,7 +771,7 @@ class DashboardPage extends Component {
                 <h1 onClick={() => this.handleClick("distributors?own=0")}>
                   Distributor Other &nbsp;{" "}
                   <span>
-                    {dashboardSummary ? (
+                    {dashboard ? (
                       dashboard.total_other_distributor
                     ) : (
                     <CircularProgress size="20px" />
@@ -789,7 +779,7 @@ class DashboardPage extends Component {
                   </span>{" "}
                 </h1>
                 <h2>
-                    {dashboardSummary ? (
+                    {dashboard ? (
                         dashboard.total_other_distributor_due_amount
                       ) : (
                       <CircularProgress size="20px" />
@@ -800,7 +790,7 @@ class DashboardPage extends Component {
                     this.handleClick("stocks?own_distributor=0&by_specific=1")
                   }
                 >
-                  {dashboardStock ? (
+                  {dashboard ? (
                     dashboard.total_other_distributor_stock +
                     " | " +
                     dashboard.total_other_distributor_stock_price
@@ -830,7 +820,7 @@ class DashboardPage extends Component {
                   <h1 onClick={() => this.handleClick("distributors?own=1")}>
                     Distributor Own &nbsp;{" "}
                     <span>
-                      {dashboardSummary ? (
+                      {dashboard ? (
                         dashboard.total_distributor
                       ) : (
                       <CircularProgress size="20px" />
@@ -842,7 +832,7 @@ class DashboardPage extends Component {
                       this.handleClick("stocks?own_distributor=1&by_specific=1")
                     }
                   >
-                    {dashboardStock ? (
+                    {dashboard ? (
                       dashboard.total_distributor_stock +
                       " | " +
                       dashboard.total_distributor_stock_price
@@ -868,7 +858,7 @@ class DashboardPage extends Component {
                   <h1 onClick={() => this.handleClick("distributors?own=0")}>
                     Distributor Other &nbsp;{" "}
                     <span>
-                      {dashboardSummary ? (
+                      {dashboard ? (
                         dashboard.total_other_distributor
                       ) : (
                       <CircularProgress size="20px" />
@@ -876,7 +866,7 @@ class DashboardPage extends Component {
                     </span>{" "}
                   </h1>
                   <h2>
-                    {dashboardSummary ? (
+                    {dashboard ? (
                         dashboard.total_other_distributor_due_amount
                       ) : (
                       <CircularProgress size="20px" />
@@ -887,7 +877,7 @@ class DashboardPage extends Component {
                       this.handleClick("stocks?own_distributor=0&by_specific=1")
                     }
                   >
-                    {dashboardStock ? (
+                    {dashboard ? (
                       dashboard.total_other_distributor_stock +
                       " | " +
                       dashboard.total_other_distributor_stock_price
@@ -922,7 +912,7 @@ class DashboardPage extends Component {
                   <>
                     &nbsp;{" "}
                     <span>
-                      {dashboardSummary ? (
+                      {dashboard ? (
                         this.isAdmin && this.isDistributor?dashboard.total_own_sales_executive:dashboard.total_sales_executive
                       ) : (
                       <CircularProgress size="20px" />
@@ -938,7 +928,7 @@ class DashboardPage extends Component {
                           this.handleClick("stocks?own_se=1&by_specific=1")
                         }
                       >
-                        {dashboardStock ? (
+                        {dashboard ? (
                           dashboard.total_se_stock +
                           " | " +
                           dashboard.total_se_stock_price
@@ -954,7 +944,7 @@ class DashboardPage extends Component {
                       this.handleClick("stocks?own_se=1&by_specific=1")
                     }
                   >
-                    {dashboardStock ? (
+                    {dashboard ? (
                       dashboard.total_own_se_stock +
                       " | " +
                       dashboard.total_own_se_stock_price
@@ -985,7 +975,7 @@ class DashboardPage extends Component {
                 <h1>
                   Total Purchase &nbsp;{" "}
                   <span>
-                    {dashboardSummary ? (
+                    {dashboard ? (
                       dashboard.total_purchase_product
                     ) : (
                     <CircularProgress size="20px" />
@@ -993,7 +983,7 @@ class DashboardPage extends Component {
                   </span>{" "}
                 </h1>
                 <h2>
-                  {dashboardSummary ? dashboard.total_purchase :<CircularProgress size="20px" />}
+                  {dashboard ? dashboard.total_purchase :<CircularProgress size="20px" />}
                 </h2>
               </Typography>
               <div className="card-icon">
@@ -1017,7 +1007,7 @@ class DashboardPage extends Component {
                 <h1>
                   Total Sale &nbsp;{" "}
                   <span>
-                    {dashboardSummary ? (
+                    {dashboard ? (
                       dashboard.total_own_sale_products
                     ) : (
                     <CircularProgress size="20px" />
@@ -1025,7 +1015,7 @@ class DashboardPage extends Component {
                   </span>{" "}
                 </h1>
                 <h2>
-                  {dashboardSummary ? dashboard.total_own_sale :<CircularProgress size="20px" />}
+                  {dashboard ? dashboard.total_own_sale :<CircularProgress size="20px" />}
                 </h2>
               </Typography>
               <div className="card-icon">
@@ -1049,7 +1039,7 @@ class DashboardPage extends Component {
                 <h1>
                   Total Return &nbsp;{" "}
                   <span>
-                    {dashboardSummary ? (
+                    {dashboard ? (
                       dashboard.total_return_product
                     ) : (
                     <CircularProgress size="20px" />
@@ -1057,7 +1047,7 @@ class DashboardPage extends Component {
                   </span>{" "}
                 </h1>
                 <h2>
-                  {dashboardSummary ? dashboard.total_return_amount :<CircularProgress size="20px" />}
+                  {dashboard ? dashboard.total_return_amount :<CircularProgress size="20px" />}
                 </h2>
               </Typography>
               <div className="card-icon">
@@ -1086,7 +1076,7 @@ class DashboardPage extends Component {
                 <h1>
                   Available &nbsp;{" "}
                   <span>
-                    {dashboardStock ? (
+                    {dashboard ? (
                       dashboard.total_avl_stock
                     ) : (
                     <CircularProgress size="20px" />
@@ -1094,7 +1084,7 @@ class DashboardPage extends Component {
                   </span>
                 </h1>
                 <h2>
-                  {dashboardStock ? (
+                  {dashboard ? (
                     <span style={{ fontSize: "16px" }}>
                       {" "}
                       {dashboard.total_avl_stock_price}{" "}
@@ -1130,7 +1120,7 @@ class DashboardPage extends Component {
                 <h1>
                   Total Available &nbsp;{" "}
                   <span>
-                    {dashboardStock ? (
+                    {dashboard ? (
                       dashboard.super_admin_total_avl_stock
                     ) : (
                     <CircularProgress size="20px" />
@@ -1138,7 +1128,7 @@ class DashboardPage extends Component {
                   </span>
                 </h1>
                 <h2>
-                  {dashboardStock ? (
+                  {dashboard ? (
                     <span style={{ fontSize: "16px" }}>
                       {" "}
                       {dashboard.super_admin_total_avl_stock_price}{" "}
@@ -1171,7 +1161,7 @@ class DashboardPage extends Component {
                 <h1>
                   Total Retailer &nbsp;{" "}
                   <span>
-                    {dashboardSummary ? (
+                    {dashboard ? (
                       dashboard.total_retailer
                     ) : (
                     <CircularProgress size="20px" />
@@ -1181,7 +1171,7 @@ class DashboardPage extends Component {
                 <h2>
                   {this.isDistributor ? (
                     <>
-                      {dashboardSummary ? (
+                      {dashboard ? (
                         <span style={{ fontSize: "16px" }}>
                           {" "}
                           {dashboard.total_other_distributor_due_amount}{" "}
@@ -1192,7 +1182,7 @@ class DashboardPage extends Component {
                     </>
                   ) : (
                     <>
-                      {dashboardSummary ? (
+                      {dashboard ? (
                         <span style={{ fontSize: "16px" }}>
                           {" "}
                           {dashboard.total_retailer_due}{" "}
@@ -1225,11 +1215,11 @@ class DashboardPage extends Component {
                 <h1>
                   My Retailer &nbsp;{" "}
                   <span>
-                    {dashboardSummary ? dashboard.my_retailer :<CircularProgress size="20px" />}
+                    {dashboard ? dashboard.my_retailer :<CircularProgress size="20px" />}
                   </span>{" "}
                 </h1>
                 <h2>
-                  {dashboardSummary ? (
+                  {dashboard ? (
                     <span style={{ fontSize: "16px" }}>
                       {" "}
                       {dashboard.my_retailer_due_amount}{" "}
@@ -1260,11 +1250,11 @@ class DashboardPage extends Component {
                 <h1>
                   My Retailer &nbsp;{" "}
                   <span>
-                    {dashboardSummary ? dashboard.my_retailer :<CircularProgress size="20px" />}
+                    {dashboard ? dashboard.my_retailer :<CircularProgress size="20px" />}
                   </span>{" "}
                 </h1>
                 <h2>
-                  {dashboardSummary ? (
+                  {dashboard ? (
                     <span style={{ fontSize: "16px" }}>
                       {" "}
                       {dashboard.my_retailer_due_amount}{" "}
@@ -1296,7 +1286,7 @@ class DashboardPage extends Component {
               >
                 <h1>Total Customer </h1>
                 <h2>
-                  {dashboardSummary ? dashboard.total_customer :<CircularProgress size="20px" />}
+                  {dashboard ? dashboard.total_customer :<CircularProgress size="20px" />}
                 </h2>
               </Typography>
               <div className="card-icon">
@@ -1328,7 +1318,7 @@ class DashboardPage extends Component {
                   </span>{" "}
                 </h1>
                 <h2>
-                  {dashboardSummary ? (
+                  {dashboard ? (
                     <span style={{ fontSize: "16px" }}>
                       {" "}
                       {this.state.Total_sales_on_approval}
@@ -1367,7 +1357,7 @@ class DashboardPage extends Component {
                   </span>{" "}
                 </h1>
                 <h2>
-                  {dashboardSummary ? (
+                  {dashboard ? (
                     <span style={{ fontSize: "16px" }}>
                       {" "}
                       {this.state.Total_purchase_on_approval}
@@ -1400,7 +1390,7 @@ class DashboardPage extends Component {
                 <h1>
                   Manager Stock &nbsp;{" "}
                   <span>
-                    {dashboardStock ? (
+                    {dashboard ? (
                       dashboard.total_manager_stock
                     ) : (
                     <CircularProgress size="20px" />
@@ -1408,7 +1398,7 @@ class DashboardPage extends Component {
                   </span>
                 </h1>
                 <h2>
-                  {dashboardStock ? (
+                  {dashboard ? (
                     <span style={{ fontSize: "16px" }}>
                       {" "}
                       {dashboard.total_manager_stock_price}{" "}
@@ -1427,7 +1417,7 @@ class DashboardPage extends Component {
           {/* <CardContent className='dashboard_card_content bg-color-7' sx = {{ display: "flex", justifyContent: "space-between" }}>
             <Typography sx={{ fontSize: 14, margin: 0 }} color="text.secondary" gutterBottom component="span">
               <h1>Best Admin </h1>
-              <h2>{dashboardCharts ? dashboard.best_admin :<CircularProgress size="20px" />}</h2>
+              <h2>{dashboard ? dashboard.best_admin :<CircularProgress size="20px" />}</h2>
             </Typography>
             <div className="card-icon">
               <GroupIcon />
@@ -1436,7 +1426,7 @@ class DashboardPage extends Component {
           <CardContent className='dashboard_card_content bg-color-7' sx = {{ display: "flex", justifyContent: "space-between" }}>
             <Typography sx={{ fontSize: 14, margin: 0 }} color="text.secondary" gutterBottom component="span">
               <h1>Poor Admin </h1>
-              <h2>{dashboardCharts ? dashboard.poor_admins :<CircularProgress size="20px" />}</h2>
+              <h2>{dashboard ? dashboard.poor_admins :<CircularProgress size="20px" />}</h2>
             </Typography>
             <div className="card-icon">
               <GroupIcon />

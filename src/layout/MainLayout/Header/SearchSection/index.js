@@ -76,7 +76,7 @@ const MobileSearch = ({ value, setValue, popupState, handleSearch }) => {
                 <InputAdornment position="end">
                     <ButtonBase sx={{ borderRadius: '12px' }}>
                         <HeaderAvatarStyle variant="rounded">
-                            <IconSearch stroke={1.5} size="1rem" color={theme.palette.primary.main} onClick={handleSearch} />
+                            <IconSearch stroke={1.5} size="1rem" color={theme.palette.grey[500]} onClick={handleSearch} />
                         </HeaderAvatarStyle>
                     </ButtonBase>
                     <Box sx={{ ml: 2 }}>
@@ -178,7 +178,7 @@ const SearchSection = () => {
                     className='header_search'
                     endAdornment={
                         <InputAdornment position="start">
-                            <IconSearch stroke={1.5} size="1rem" color={theme.palette.primary.main} className="cursor-pointer" onClick={handleSearch} />
+                            <IconSearch stroke={1.5} size="1rem" color={theme.palette.grey[500]} className="cursor-pointer" onClick={handleSearch} />
                         </InputAdornment>
                     }
                     aria-describedby="search-helper-text"

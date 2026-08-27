@@ -994,16 +994,6 @@ span.forget_header {
   svg {
     color: #b3b3b3;
   }
-
-  // beats the blanket grey above, which outranks MUI's .MuiSvgIcon-colorPrimary
-  svg.search-icon {
-    color: $primaryMain;
-  }
-}
-
-// search icons outside .create-input (header search, etc.)
-svg.search-icon {
-  color: $primaryMain;
 }
 
 .para-subheading {

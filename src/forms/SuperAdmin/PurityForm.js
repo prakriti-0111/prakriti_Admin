@@ -5,7 +5,6 @@ import {Box, TextField, Button, Grid, Stack, FormControl, InputLabel, Select, Me
 import { ContactPageSharp } from '@mui/icons-material';
 import withRouter from 'src/helpers/withRouter';
 import { validateNumber } from 'src/helpers/helper';
-import LoadingButton from '@mui/lab/LoadingButton';
 
 const validate = values => {
   const errors = {}
@@ -94,14 +93,7 @@ class PurityForm extends React.Component {
                 </Grid>
             </Grid>
             <Stack spacing={1} mt={2} direction="row" className='modal-button-area'>
-              <LoadingButton
-              variant="contained"
-              type="submit"
-              loading={submitting}
-              disabled={submitting}
-            >
-              Submit
-            </LoadingButton>
+              <Button variant="contained" type="submit">Submit</Button>
               <Button variant="outlined" onClick={() => this.props.handleCancel() }>Cancel</Button>
             </Stack>
         </Box>
