@@ -52,14 +52,14 @@ import DialogTitle from "@mui/material/DialogTitle";
 import {
   isEmpty,
   getApprovalColor,
-  formatIndianNumber, prepareFileWindow, showFileWindow, closeFileWindow } from "src/helpers/helper";
+  formatIndianNumber,
+} from "src/helpers/helper";
 import { paymentStore, paymentList } from "actions/superadmin/payment.actions";
 import { SUPERADMIN_RESET_PAYMENT } from "../../../actionTypes/superadmin/payment.types";
 import { getRoleName, getUserDashboardRoute } from "src/helpers/helper";
 import { getNotifiactions } from "actions/superadmin/notification.actions";
 import FileDownloadIcon from "@mui/icons-material/FileDownload";
 import "./style.css";
-import { PAYMENT_STATUS_COLORS } from "../../../utils/paymentStatusColors";
 class PurchaseViewPage extends React.Component {
   constructor(props) {
     super(props);
@@ -101,12 +101,8 @@ class PurchaseViewPage extends React.Component {
         display_name: "Amount",
       },
       {
-        // payment_mode_display carries the amount in brackets while a payment
-        // is still pending: "Cheque (Rs.500.00)". The cheque no / txn id have
-        // their own columns on this screen, so they are not repeated here.
-        name: "payment_mode_display",
+        name: "payment_mode",
         display_name: "Payment Mode",
-        isHtml: true,
       },
       {
         name: "cheque_no",
@@ -144,8 +140,6 @@ class PurchaseViewPage extends React.Component {
   };
 
   handleDownloadInfo = async (id) => {
-    // opened on the click itself so mobile does not treat it as a popup
-    const fileWindow = prepareFileWindow();
     this.setState({
       downloadingInfo: true,
     });
@@ -157,7 +151,7 @@ class PurchaseViewPage extends React.Component {
           downloadingInfo: false,
         },
         () => {
-          showFileWindow(fileWindow, response.data.data.url);
+          window.open(response.data.data.url, "_blank").focus();
         },
       );
 
@@ -177,8 +171,6 @@ class PurchaseViewPage extends React.Component {
       xhr.open('GET', response.data.data.url);
       xhr.send();*/
     } else {
-      // the API failed, so the blank tab has nothing to show
-      closeFileWindow(fileWindow);
       this.setState({
         downloadingInfo: false,
       });
@@ -186,8 +178,6 @@ class PurchaseViewPage extends React.Component {
   };
 
   handleDownloadList = async (id) => {
-    // opened on the click itself so mobile does not treat it as a popup
-    const fileWindow = prepareFileWindow();
     this.setState({
       downloadingList: true,
     });
@@ -199,7 +189,7 @@ class PurchaseViewPage extends React.Component {
           downloadingList: false,
         },
         () => {
-          showFileWindow(fileWindow, response.data.data.url);
+          window.open(response.data.data.url, "_blank").focus();
         },
       );
 
@@ -219,8 +209,6 @@ class PurchaseViewPage extends React.Component {
       xhr.open('GET', response.data.data.url);
       xhr.send();*/
     } else {
-      // the API failed, so the blank tab has nothing to show
-      closeFileWindow(fileWindow);
       this.setState({
         downloadingList: false,
       });
@@ -228,8 +216,6 @@ class PurchaseViewPage extends React.Component {
   };
 
   handleDownloadItems = async (id) => {
-    // opened on the click itself so mobile does not treat it as a popup
-    const fileWindow = prepareFileWindow();
     this.setState({
       downloadingItem: true,
     });
@@ -240,7 +226,7 @@ class PurchaseViewPage extends React.Component {
           downloadingItem: false,
         },
         () => {
-          showFileWindow(fileWindow, response.data.data.url);
+          window.open(response.data.data.url, "_blank").focus();
         },
       );
 
@@ -260,8 +246,6 @@ class PurchaseViewPage extends React.Component {
       xhr.open('GET', response.data.data.url);
       xhr.send();*/
     } else {
-      // the API failed, so the blank tab has nothing to show
-      closeFileWindow(fileWindow);
       this.setState({
         downloadingItem: false,
       });
@@ -924,7 +908,10 @@ class PurchaseViewPage extends React.Component {
                         handlePagination={this.handlePagination}
                         actions={[]}
                         actionValue={"action_value"}
-                        actionValueColorConditions={PAYMENT_STATUS_COLORS}
+                        actionValueColorConditions={[
+                          { value: "Accepted", color: "green" },
+                          { value: "Declined", color: "red" },
+                        ]}
                       />
                     </Grid>
                   ) : null}

@@ -405,6 +405,3 @@ build/
 .env.development
 .env.production
 .env.test
-
-# Caveman agent worktrees
-.cave/

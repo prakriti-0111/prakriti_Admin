@@ -1,6 +1,6 @@
 import { React, Component } from 'react';
 import { connect } from 'react-redux';
-import { Grid, Button, Box, CircularProgress } from '@mui/material';
+import { Grid, Button } from '@mui/material';
 import { bindActionCreators } from 'redux';
 import { gridSpacing } from 'store/constant';
 import MainCard from 'ui-component/cards/MainCard';
@@ -19,7 +19,6 @@ class ReturnPolicyPage extends Component {
     super(props);
 
     this.state = {
-      isLoading: false,
       ...this.props,
       queryParams: {
         page: 1,
@@ -70,7 +69,6 @@ class ReturnPolicyPage extends Component {
 
     if (props.items !== state.items) {
       update.items = props.items;
-      update.isLoading = false;
     }
 
     if (props.total !== state.total) {
@@ -124,7 +122,6 @@ class ReturnPolicyPage extends Component {
   }
 
   loadListData = () => {
-    this.setState({ isLoading: true });
     this.props.actions.returnPolicyList(this.state.queryParams);
   }
 
@@ -250,35 +247,29 @@ class ReturnPolicyPage extends Component {
           : null
         }
         <Grid container spacing={gridSpacing}>
-          {this.state.isLoading ? (
-            <Box sx={{ display: 'flex', justifyContent: 'center', p: 3, width: '100%' }}>
-              <CircularProgress />
-            </Box>
-          ) : (
-            <DataTable
-              columns={this.columns}
-              rows={this.state.items}
-              page={this.state.queryParams.page}
-              limit={this.state.queryParams.limit}
-              total={this.state.total}
-              handlePagination={this.handlePagination}
-              actions={[
-                {
-                  label: 'Edit',
-                  onClick: this.handleEdit,
-                  color: 'primary',
-                  show: hasPermission(this.state.permissions, 'return_policy', 'edit')
-                },
-                {
-                  label: 'Delete',
-                  onClick: this.handleDelete,
-                  isDelete: true,
-                  color: 'error',
-                  show: hasPermission(this.state.permissions, 'return_policy', 'delete')
-                }
-              ]}
-            />
-          )}
+          <DataTable
+            columns={this.columns}
+            rows={this.state.items}
+            page={this.state.queryParams.page}
+            limit={this.state.queryParams.limit}
+            total={this.state.total}
+            handlePagination={this.handlePagination}
+            actions={[
+              {
+                label: 'Edit',
+                onClick: this.handleEdit,
+                color: 'primary',
+                show: hasPermission(this.state.permissions, 'return_policy', 'edit')
+              },
+              {
+                label: 'Delete',
+                onClick: this.handleDelete,
+                isDelete: true,
+                color: 'error',
+                show: hasPermission(this.state.permissions, 'return_policy', 'delete')
+              }
+            ]}
+          />
         </Grid>
       </MainCard>
     );

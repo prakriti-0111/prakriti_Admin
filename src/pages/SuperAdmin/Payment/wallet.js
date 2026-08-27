@@ -60,7 +60,6 @@ import { distributorList } from "actions/superadmin/distributor.actions";
 import { adminList } from "actions/superadmin/admin.actions";
 import { retailerList } from "actions/superadmin/retailer.actions";
 import { getProfile } from "actions/superadmin/profile.actions";
-import { PAYMENT_STATUS_COLORS } from "../../../utils/paymentStatusColors";
 
 class WalletPage extends Component {
   constructor(props) {
@@ -222,14 +221,6 @@ class WalletPage extends Component {
     if (reason && reason == "backdropClick") return;
     this.setState({
       openDialog: false,
-      // Clear what was typed, or the next row opens carrying the last row's
-      // decline reason / cheque ref - which now also decides whether the
-      // confirm button is enabled.
-      formvalues: {
-        ...this.state.formvalues,
-        reasons: "",
-        ref_no: "",
-      },
     });
   };
 
@@ -927,7 +918,7 @@ class WalletPage extends Component {
                     rawAction === "success" ||
                     rawAction === "processed"
                   ) {
-                    normalizedActionValue = "Processed";
+                    normalizedActionValue = "processed";
                   } else if (
                     rawAction === "failed" ||
                     rawAction === "declined" ||
@@ -941,7 +932,7 @@ class WalletPage extends Component {
                     );
                     normalizedActionValue =
                       !Number.isNaN(creditAmount) && creditAmount > 0
-                        ? "Processed"
+                        ? "processed"
                         : "Pending";
                   }
                 } else if (rawStatus === "pending" && row.can_accept) {
@@ -950,7 +941,7 @@ class WalletPage extends Component {
                     rawAction === "success" ||
                     rawAction === "processed"
                   ) {
-                    normalizedActionValue = "Processed";
+                    normalizedActionValue = "processed";
                   } else if (
                     rawAction === "failed" ||
                     rawAction === "declined" ||
@@ -971,7 +962,7 @@ class WalletPage extends Component {
                     rawStatus === "reject" ||
                     rawStatus === "rejected"
                       ? "Declined"
-                      : "Processed";
+                      : "processed";
                 }
 
                 let normalizedDisplayMode = row.display_mode;
@@ -1004,7 +995,24 @@ class WalletPage extends Component {
               handlePagination={this.handlePagination}
               actions={this.tableActions}
               actionValue={"action_value"}
-              actionValueColorConditions={PAYMENT_STATUS_COLORS}
+              actionValueColorConditions={[
+                {
+                  value: "Pending",
+                  color: "orange",
+                },
+                {
+                  value: "Accepted",
+                  color: "green",
+                },
+                {
+                  value: "Declined",
+                  color: "red",
+                },
+                {
+                  value: "processed",
+                  color: "gray",
+                },
+              ]}
             />
           )}
         </Grid>
@@ -1017,46 +1025,10 @@ class WalletPage extends Component {
           maxWidth="xs"
         >
           <DialogTitle>
-            {this.state.formvalues.status == 1
-              ? "Accept Payment"
-              : "Decline Payment"}
+            {this.state.formvalues.status == 1 ? "Accept" : "Reject"}
           </DialogTitle>
           <DialogContent>
-            {/* A confirmation dialog with an empty body told the user nothing
-                about what they were confirming - the amount, who it is from and
-                how it was paid all come from the row being acted on. */}
-            <DialogContentText sx={{ mb: 2 }}>
-              {this.state.formvalues.status == 1 ? (
-                <>
-                  Accept{" "}
-                  <strong>
-                    {this.state.actionRow ? this.state.actionRow.amount : ""}
-                  </strong>
-                  {this.state.actionRow && this.state.actionRow.payment_mode
-                    ? " paid by " + this.state.actionRow.payment_mode
-                    : ""}
-                  {this.state.actionRow && this.state.actionRow.payment_to
-                    ? " from " + this.state.actionRow.payment_to
-                    : ""}
-                  ? The amount will be added to your wallet balance.
-                </>
-              ) : (
-                <>
-                  Decline{" "}
-                  <strong>
-                    {this.state.actionRow ? this.state.actionRow.amount : ""}
-                  </strong>
-                  {this.state.actionRow && this.state.actionRow.payment_mode
-                    ? " paid by " + this.state.actionRow.payment_mode
-                    : ""}
-                  {this.state.actionRow && this.state.actionRow.payment_to
-                    ? " from " + this.state.actionRow.payment_to
-                    : ""}
-                  ? Nothing will be added to your wallet, and the reason below
-                  is shown to the sender.
-                </>
-              )}
-            </DialogContentText>
+            <DialogContentText></DialogContentText>
             <Box sx={{ flexGrow: 1, m: 0.5 }}>
               <Grid container spacing={2}>
                 {this.state.formvalues.status == 1 ? (
@@ -1083,17 +1055,11 @@ class WalletPage extends Component {
                   </>
                 ) : (
                   <Grid item xs={12} className="create-input">
-                    {/* Was a bare TextareaAutosize with only width:100% - no
-                        border, no padding, so it read as blank space under a
-                        floating label. An outlined multiline TextField looks
-                        like every other input on the screen. */}
-                    <TextField
-                      label="Reason"
-                      placeholder="Why is this payment being declined?"
-                      variant="outlined"
-                      fullWidth
-                      multiline
+                    <InputLabel>Reason</InputLabel>
+                    <TextareaAutosize
                       minRows={3}
+                      label={"Reason"}
+                      style={{ width: "100%" }}
                       value={this.state.formvalues.reasons}
                       onChange={(event) =>
                         this.setState({
@@ -1103,31 +1069,21 @@ class WalletPage extends Component {
                           },
                         })
                       }
-                      helperText="Optional. If given, the sender sees it."
                     />
                   </Grid>
                 )}
                 <Grid item xs={12}>
                   <Stack spacing={1} direction="row" justifyContent="flex-end">
-                    {/* "Submit" said nothing about what was being submitted.
-                        The button now names the action it performs. */}
                     <Button
                       variant="contained"
                       type="button"
-                      color={
-                        this.state.formvalues.status == 1 ? "primary" : "error"
-                      }
                       disabled={this.state.processing}
                       onClick={this.handleSubmit}
                     >
-                      {this.state.processing
-                        ? "Processing"
-                        : this.state.formvalues.status == 1
-                          ? "Yes, Accept"
-                          : "Yes, Decline"}
+                      {this.state.processing ? "Processing" : "Submit"}
                     </Button>
                     <Button variant="outlined" onClick={this.handleDialogClose}>
-                      No
+                      Cancel
                     </Button>
                   </Stack>
                 </Grid>

@@ -53,7 +53,8 @@ let LoginForm = props => {
         <Field
           name="mobile"
           component={renderTextField}
-          label="Mobile / Email"
+          label="Mobile"
+          onInput={(e) => validateInteger(e)}
         />
 
         <Field

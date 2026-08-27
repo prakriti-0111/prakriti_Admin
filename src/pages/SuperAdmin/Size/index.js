@@ -7,7 +7,6 @@ import {
   FormControl,
   TextField,
   IconButton,
-  CircularProgress,
 } from "@mui/material";
 import { bindActionCreators } from "redux";
 import { gridSpacing } from "store/constant";
@@ -47,7 +46,6 @@ class SizePage extends Component {
     super(props);
 
     this.state = {
-      isLoading: false,
       ...this.props,
       queryParams: {
         page: 1,
@@ -94,7 +92,6 @@ class SizePage extends Component {
 
     if (props.items !== state.items) {
       update.items = props.items;
-      update.isLoading = false;
     }
 
     if (props.total !== state.total) {
@@ -155,7 +152,6 @@ class SizePage extends Component {
   };
 
   loadListData = () => {
-    this.setState({ isLoading: true });
     this.props.actions.sizeList(this.state.queryParams);
   };
 
@@ -416,43 +412,37 @@ class SizePage extends Component {
             {this.state.items.length > 0 ? (
               <>
                 <Grid container spacing={gridSpacing} className="abc">
-                  {this.state.isLoading ? (
-                    <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
-                      <CircularProgress />
-                    </Box>
-                  ) : (
-                    <DataTable
-                      columns={this.columns}
-                      rows={this.state.items}
-                      page={this.state.queryParams.page}
-                      limit={this.state.queryParams.limit}
-                      total={this.state.total}
-                      handlePagination={this.handlePagination}
-                      actions={[
-                        {
-                          label: "Edit",
-                          onClick: this.handleEdit,
-                          color: "primary",
-                          show: hasPermission(
-                            this.state.permissions,
-                            "size",
-                            "edit",
-                          ),
-                        },
-                        {
-                          label: "Delete",
-                          onClick: this.handleDelete,
-                          isDelete: true,
-                          color: "error",
-                          show: hasPermission(
-                            this.state.permissions,
-                            "size",
-                            "delete",
-                          ),
-                        },
-                      ]}
-                    />
-                  )}
+                  <DataTable
+                    columns={this.columns}
+                    rows={this.state.items}
+                    page={this.state.queryParams.page}
+                    limit={this.state.queryParams.limit}
+                    total={this.state.total}
+                    handlePagination={this.handlePagination}
+                    actions={[
+                      {
+                        label: "Edit",
+                        onClick: this.handleEdit,
+                        color: "primary",
+                        show: hasPermission(
+                          this.state.permissions,
+                          "size",
+                          "edit",
+                        ),
+                      },
+                      {
+                        label: "Delete",
+                        onClick: this.handleDelete,
+                        isDelete: true,
+                        color: "error",
+                        show: hasPermission(
+                          this.state.permissions,
+                          "size",
+                          "delete",
+                        ),
+                      },
+                    ]}
+                  />
                 </Grid>
               </>
             ) : null}

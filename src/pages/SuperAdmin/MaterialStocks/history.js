@@ -44,10 +44,8 @@ class MaterialStockHistoryPage extends Component {
       queryParams: {
         page: 1,
         limit: 50,
-        search: '',
-        material_id: this.props.query.get('material_id') ?? ''
+        search: ''
       },
-      material_name: this.props.query.get('material_name') ?? '',
       processing: false,
       openDialog: false,
       actionRow: null,
@@ -59,28 +57,8 @@ class MaterialStockHistoryPage extends Component {
 
     this.columns = [
       {
-        name: 'date',
-        display_name: 'Date'
-      },
-      {
         name: 'material_name',
         display_name: 'Material Name'
-      },
-      {
-        name: 'ref_no',
-        display_name: 'Invoice #'
-      },
-      {
-        name: 'payment_mode_display',
-        display_name: 'Mode'
-      },
-      {
-        name: 'amount_display',
-        display_name: 'Amount'
-      },
-      {
-        name: 'metal_rate_display',
-        display_name: 'Rate'
       },
       {
         name: 'purity_name',
@@ -259,10 +237,7 @@ class MaterialStockHistoryPage extends Component {
     return (
       <>
         <div className='sale-heading'>
-          <h1>
-            Material Stock History
-            {this.state.material_name ? ` — ${this.state.material_name}` : ''}
-          </h1>
+          <h1>Material Stock History</h1>
         </div>
         <MainCard>
           <Box sx={{ flexGrow: 1, m: 0.5 }} className='ratn-dialog-inner'>

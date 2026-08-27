@@ -11,7 +11,6 @@ import {
   Select,
   MenuItem,
   Box,
-  CircularProgress,
 } from "@mui/material";
 import { bindActionCreators } from "redux";
 import { gridSpacing } from "store/constant";
@@ -110,7 +109,6 @@ class AdminPage extends Component {
       ownType === "0" || ownType === "1" || ownType === "" ? ownType : "";
 
     this.state = {
-      isLoading: false,
       ...this.props,
       queryParams: {
         page: 1,
@@ -132,7 +130,6 @@ class AdminPage extends Component {
     let update = {};
     if (props.items !== state.items) {
       update.items = props.items;
-      update.isLoading = false;
     }
 
     if (props.total !== state.total) {
@@ -174,7 +171,6 @@ class AdminPage extends Component {
   }
 
   loadListData = () => {
-    this.setState({ isLoading: true });
     this.props.actions.adminList(this.state.queryParams);
   };
 
@@ -363,45 +359,39 @@ class AdminPage extends Component {
           </Box>
 
           <Grid container spacing={gridSpacing}>
-            {this.state.isLoading ? (
-              <Box sx={{ display: 'flex', justifyContent: 'center', p: 3, width: '100%' }}>
-                <CircularProgress />
-              </Box>
-            ) : (
-              <DataTable
-                columns={this.getColumns()}
-                rows={this.state.items}
-                page={this.state.queryParams.page}
-                limit={this.state.queryParams.limit}
-                total={this.state.total}
-                handlePagination={this.handlePagination}
-                actions={[
-                  {
-                    label: "Edit",
-                    onClick: this.handleEdit,
-                    color: "primary",
-                    show:
-                      !this.isAdminUser &&
-                      hasPermission(this.state.permissions, "admin", "edit"),
-                  },
-                  {
-                    label: "Delete",
-                    onClick: this.handleDelete,
-                    isDelete: true,
-                    color: "error",
-                    show:
-                      !this.isAdminUser &&
-                      hasPermission(this.state.permissions, "admin", "delete"),
-                  },
-                  {
-                    label: "View",
-                    onClick: this.handleView,
-                    color: "primary",
-                    show: hasPermission(this.state.permissions, "admin", "view"),
-                  },
-                ]}
-              />
-            )}
+            <DataTable
+              columns={this.getColumns()}
+              rows={this.state.items}
+              page={this.state.queryParams.page}
+              limit={this.state.queryParams.limit}
+              total={this.state.total}
+              handlePagination={this.handlePagination}
+              actions={[
+                {
+                  label: "Edit",
+                  onClick: this.handleEdit,
+                  color: "primary",
+                  show:
+                    !this.isAdminUser &&
+                    hasPermission(this.state.permissions, "admin", "edit"),
+                },
+                {
+                  label: "Delete",
+                  onClick: this.handleDelete,
+                  isDelete: true,
+                  color: "error",
+                  show:
+                    !this.isAdminUser &&
+                    hasPermission(this.state.permissions, "admin", "delete"),
+                },
+                {
+                  label: "View",
+                  onClick: this.handleView,
+                  color: "primary",
+                  show: hasPermission(this.state.permissions, "admin", "view"),
+                },
+              ]}
+            />
           </Grid>
         </MainCard>
       </>
