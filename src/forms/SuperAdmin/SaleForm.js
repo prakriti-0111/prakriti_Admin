@@ -53,6 +53,7 @@ import {
   filterOwnRetailers,
 } from "src/helpers/helper";
 
+
 import { bindActionCreators } from "redux";
 
 import {
@@ -5507,7 +5508,7 @@ class SaleForm extends React.Component {
                     <TableCell sx={{ width: "40px" }}>Total</TableCell>
 
                     {this.state.isCreateFrom ? (
-                      <TableCell sx={{ width: '120px', textAlign: 'right' }}>
+                      <TableCell align="center" sx={{ width: '120px' }}>
                         {isCartPage && this.state.holdSelectedItems.size > 0 ? (
                           <Button
                             size="small"
@@ -5595,17 +5596,23 @@ class SaleForm extends React.Component {
                             {item.total_weight} {"Wt"}
                           </TableCell>
 
-                          <TableCell></TableCell>
+                          {/* the product row carries no price of its own, but it
+                              still has to reach the last column or its band stops
+                              mid-table. Actions only exists while creating. */}
+                          <TableCell
+                            colSpan={this.state.isCreateFrom ? 5 : 4}
+                          ></TableCell>
                         </TableRow>
 
                         <TableRow className="material_details">
                           <TableCell></TableCell>
 
-                          {!this.state.isCreateFrom ? (
-                            <>
-                              <TableCell></TableCell>
-                            </>
-                          ) : null}
+                          {/* the materials sit under the product, so the row
+                              starts two columns in - checkbox and number. This
+                              second one used to be skipped while creating, which
+                              pulled every figure a column to the left and left
+                              the delete button under Total. */}
+                          <TableCell></TableCell>
 
                           <TableCell colSpan={2}>
                             {item.materials.map((m, key) =>
@@ -5621,14 +5628,12 @@ class SaleForm extends React.Component {
                                       key={key}
                                       style={{ position: "relative" }}
                                     >
-                                      {m.material_name} &nbsp;({m.purity}) &nbsp;
-                                      {m.weight} &nbsp;{m.unit_name} &nbsp; x
-                                      &nbsp; {m.rate}{" "}
+                                      {m.material_name} ({m.purity}) {m.weight}{" "}
+                                      {m.unit_name} x {m.rate}
                                     </div>
 
                                     <div className="products-amount">
-                                      {" "}
-                                      = &nbsp; &nbsp;{m.amount}
+                                      = {m.amount}
                                     </div>
                                   </div>
                                 </div>
@@ -5748,23 +5753,14 @@ class SaleForm extends React.Component {
                           <TableCell>{item.total}</TableCell>
 
                           {this.state.isCreateFrom ? (
-                            <TableCell
-                              className="action_column"
-                              style={{ textAlign: "center" }}
-                            >
-                              {/*<IconButton className='del-icon' color="error" component="label"  onClick={() => this.handleProductDelete(index)}>
-
-                                                              <CloseIcon />
-
-                                                              </IconButton> */}
-
+                            <TableCell align="center" className="action_column">
                               <Button
                                 variant="contained"
                                 className="sale-cross-icon"
+                                aria-label="Remove product"
                                 onClick={() => this.handleProductDelete(index)}
                               >
-                                {" "}
-                                X{" "}
+                                X
                               </Button>
                             </TableCell>
                           ) : null}
@@ -7616,14 +7612,12 @@ class SaleForm extends React.Component {
                                     <div className="products-data-container" key={key}>
                                       <div className="products-data-row">
                                         <div className="products-data">
-                                          {m.material_name} &nbsp;({m.purity}) &nbsp;
-                                          {m.weight} &nbsp;{m.unit_name} &nbsp; x
-                                          &nbsp; {m.rate}{" "}
+                                          {m.material_name} ({m.purity}) {m.weight}{" "}
+                                          {m.unit_name} x {m.rate}
                                         </div>
 
                                         <div className="products-amount">
-                                          {" "}
-                                          = &nbsp; &nbsp;{m.amount}
+                                          = {m.amount}
                                         </div>
                                       </div>
                                     </div>
