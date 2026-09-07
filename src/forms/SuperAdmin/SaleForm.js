@@ -53,6 +53,8 @@ import {
   filterOwnRetailers,
 } from "src/helpers/helper";
 
+import { fetchLiveGoldRates, applyLiveGoldRate } from "src/helpers/goldRate";
+
 
 import { bindActionCreators } from "redux";
 
@@ -67,7 +69,9 @@ import {
 import {
   stocksProductList,
   stocksProducDetails,
+  getStocksList,
 } from "actions/superadmin/stocks.actions";
+
 
 import { getProfile } from "actions/superadmin/profile.actions";
 
@@ -229,6 +233,9 @@ class SaleForm extends React.Component {
 
       retailerList: this.props.retailerList,
       retailerListApiCall: false,
+
+      stockImages: {},
+
 
       distributorList: this.props.distributorList,
       distributorListApiCall: false,
@@ -819,18 +826,56 @@ class SaleForm extends React.Component {
     }
   };
 
+  /**
+   * certificate_no -> the photo of that piece, for carts whose API does not
+   * send one.
+   *
+   * The stock list matches certificate numbers through its search parameter, so
+   * one request covers the whole cart (~80ms for five) and returns
+   * current_image already built into a full URL. Never awaited: pictures are
+   * cosmetic and must not hold up the table.
+   */
+  loadStockImages = async (products) => {
+    const certificates = products
+      .filter((product) => !product.image && product.certificate_no)
+      .map((product) => product.certificate_no);
+    if (!certificates.length) return;
+    try {
+      const res = await getStocksList({
+        search: certificates.join(","),
+        limit: certificates.length,
+        type: "product",
+      });
+      const items = (res.data && res.data.data && res.data.data.items) || [];
+      const stockImages = { ...this.state.stockImages };
+      for (const item of items) {
+        if (item.certificate_no && item.current_image) {
+          stockImages[item.certificate_no] = item.current_image;
+        }
+      }
+      this.setState({ stockImages });
+    } catch (e) {
+      /* no pictures is a plainer page, not a broken one */
+    }
+  };
+
   loadCart = async () => {
     this.setState({ productsLoading: true });
     let onApprovalId = this.props.query.get("sale_on_approval");
 
     /* a sale on approval brings its own items, the cart stays untouched */
-    let response = !isEmpty(onApprovalId)
-      ? await salesOnApproveTransferItemsRaw(onApprovalId)
-      : await cartListRaw({
+    const cartRequest = !isEmpty(onApprovalId)
+      ? salesOnApproveTransferItemsRaw(onApprovalId)
+      : cartListRaw({
           from_order_price: this.props.query.get("from_order_price"),
 
           order_id: this.props.query.get("order_id"),
         });
+
+    const [liveGoldRates, response] = await Promise.all([
+      fetchLiveGoldRates({ force: true }),
+      cartRequest,
+    ]);
 
     if (response.data.success) {
       let cartList = response.data.data.items;
@@ -845,6 +890,8 @@ class SaleForm extends React.Component {
         //quantity = 1;
 
         for (let item of cart.materials) {
+          item = applyLiveGoldRate(item, liveGoldRates);
+
           materials.push({
             id: item.id,
 
@@ -918,6 +965,10 @@ class SaleForm extends React.Component {
           product_type: cart.product_type,
 
           product_name: cart.product_name,
+
+          /* current_image is the picture of this exact piece; image is the same
+             value under the older name. Both come straight from the cart. */
+          image: cart.current_image || cart.image,
 
           certificate_no: cart.certificate_no,
 
@@ -1007,6 +1058,8 @@ class SaleForm extends React.Component {
 
         () => {
           this.calculateProductPrice();
+          /* after the table is on screen, not before it */
+          this.loadStockImages(products);
         },
       );
     }
@@ -5580,12 +5633,34 @@ class SaleForm extends React.Component {
                           <TableCell>{index + 1}</TableCell>
 
                           <TableCell>
-                            {item.product_name} X{" "}
-                            {item.quantity
-                              ? item.quantity
-                              : item.certificate_no
-                                ? 1
-                                : item.materials[0].avl_qty}
+                            <div className="sale-product-name">
+                              {/* no picture, no placeholder - a row of grey
+                                  boxes reads as broken rather than as "this
+                                  piece has no photo". A path that 404s hides
+                                  itself for the same reason. */}
+                              {item.image ||
+                              this.state.stockImages[item.certificate_no] ? (
+                                <img
+                                  className="sale-product-thumb"
+                                  src={
+                                    item.image ||
+                                    this.state.stockImages[item.certificate_no]
+                                  }
+                                  alt=""
+                                  onError={(e) => {
+                                    e.target.style.display = "none";
+                                  }}
+                                />
+                              ) : null}
+                              <span>
+                                {item.product_name} X{" "}
+                                {item.quantity
+                                  ? item.quantity
+                                  : item.certificate_no
+                                    ? 1
+                                    : item.materials[0].avl_qty}
+                              </span>
+                            </div>
                           </TableCell>
 
                           <TableCell style={{ paddingLeft: '12px', paddingRight: '12px' }}>{item.size_name}</TableCell>
