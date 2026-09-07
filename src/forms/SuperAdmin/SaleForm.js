@@ -75,7 +75,10 @@ import {
 
 import { getProfile } from "actions/superadmin/profile.actions";
 
-import { materialPriceProductPriceInfo } from "actions/superadmin/materialPrice.actions";
+import {
+  materialPriceProductPriceInfo,
+  materialPriceRawList,
+} from "actions/superadmin/materialPrice.actions";
 
 import { adminList } from "actions/superadmin/admin.actions";
 
@@ -859,6 +862,30 @@ class SaleForm extends React.Component {
     }
   };
 
+  /**
+   * "material_id:purity_id" -> that row's increase %.
+   *
+   * per_gram_price is a list price and increase is what turns it into the
+   * charged one, so the live metal rate has to be grossed up by it before it
+   * can stand in for the stored list price. ~50ms for the whole table.
+   */
+  loadMaterialIncrease = async () => {
+    const increaseByPurity = {};
+    try {
+      const res = await materialPriceRawList({ all: 1 });
+      const items = (res.data && res.data.data && res.data.data.items) || [];
+      for (const material of items) {
+        for (const purity of material.purities || []) {
+          increaseByPurity[`${material.material_id}:${purity.purity_id}`] =
+            purity.increase;
+        }
+      }
+    } catch (e) {
+      /* without it the stored prices stand, which is the safe direction */
+    }
+    return increaseByPurity;
+  };
+
   loadCart = async () => {
     this.setState({ productsLoading: true });
     let onApprovalId = this.props.query.get("sale_on_approval");
@@ -872,8 +899,9 @@ class SaleForm extends React.Component {
           order_id: this.props.query.get("order_id"),
         });
 
-    const [liveGoldRates, response] = await Promise.all([
+    const [liveGoldRates, increaseByPurity, response] = await Promise.all([
       fetchLiveGoldRates({ force: true }),
+      this.loadMaterialIncrease(),
       cartRequest,
     ]);
 
@@ -890,7 +918,11 @@ class SaleForm extends React.Component {
         //quantity = 1;
 
         for (let item of cart.materials) {
-          item = applyLiveGoldRate(item, liveGoldRates);
+          item = applyLiveGoldRate(
+            item,
+            liveGoldRates,
+            increaseByPurity[`${item.material_id}:${item.purity_id}`],
+          );
 
           materials.push({
             id: item.id,

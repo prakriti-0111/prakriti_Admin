@@ -78,14 +78,36 @@ export const liveRateForPurity = (purity, rates) => {
 };
 
 /**
- * Overwrites a cart material's per-gram price with the live rate for its
- * purity, leaving non-gold materials and an unavailable feed untouched.
+ * The list rate that charges `live` once the sale's discount is taken off.
+ *
+ * per_gram_price is a LIST price, not what the customer pays: the stored rows
+ * hold mrp x increase% = price (20909.09 x 55% = 11500), and the discount on
+ * the sale line brings the list price back down to it. The feed quotes the
+ * charged metal price, so writing it into per_gram_price unchanged would put a
+ * charged price where a list price belongs and the discount would halve it -
+ * 11292.75 would be sold at 6211/g. Grossing up by the same increase keeps the
+ * arithmetic whole: 11292.75 / 55% = 20532.27, and 20532.27 x 55% = 11292.75.
+ */
+export const increasedRate = (live, increasePercent) => {
+  const increase = parseFloat(increasePercent);
+  if (!(live > 0)) return 0;
+  /* no usable increase means no way to tell list from charged - leave the
+     stored price alone rather than quote off the wrong basis */
+  if (!(increase > 0 && increase <= 100)) return 0;
+  return Math.round((live / (increase / 100)) * 100) / 100;
+};
+
+/**
+ * Overwrites a cart material's per-gram list price with the live rate for its
+ * purity, grossed up by that material's increase. Non-gold materials, an
+ * unavailable feed and a missing increase are all left untouched.
  * org_* carries the same value: the discount controls reset back to it, and
  * resetting to the stored price would silently undo the live rate.
  */
-export const applyLiveGoldRate = (material, rates) => {
+export const applyLiveGoldRate = (material, rates, increasePercent) => {
   if (!rates || !isGoldMaterial(material.material_name)) return material;
-  const rate = liveRateForPurity(material.purity, rates);
+  const live = liveRateForPurity(material.purity, rates);
+  const rate = increasedRate(live, increasePercent);
   if (!(rate > 0)) return material;
   /* unchanged rate, unchanged object - lets a caller tell whether a refresh
      actually moved anything before it recalculates the whole form */
