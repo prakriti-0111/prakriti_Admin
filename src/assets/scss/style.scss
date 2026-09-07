@@ -2912,18 +2912,19 @@ input:-ms-input-placeholder {
     margin: 0 -2px;
 
     .products-data {
-      flex: 1 1 auto;
+      flex: 0 1 auto;
       min-width: 0;
       margin: 0 2px 2px;
     }
 
-    /* margin-left:auto rather than justify-content, so the amount stays in the
-       same right-hand column whether it shares the line with the description or
-       wraps below it - which is what keeps the phone layout readable */
+    /* Sits straight after the description rather than being pushed to the far
+       edge of the cell. The cell is wide enough that margin-left:auto stranded
+       the amount off the side of the visible table. nowrap keeps "= 16610.33"
+       from ever breaking across lines. */
     .products-amount {
       flex: 0 0 auto;
       white-space: nowrap;
-      margin: 0 2px 2px auto;
+      margin: 0 2px 2px 10px;
       font-size: 10px;
     }
   }
@@ -2968,6 +2969,22 @@ input:-ms-input-placeholder {
 }
 
 .sale_form_table .action_sec {
+  background-color: #fff;
+}
+
+/* product thumbnail beside the name in the sale product table */
+.sale-product-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sale-product-thumb {
+  width: 48px;
+  height: 48px;
+  flex: 0 0 48px;
+  object-fit: cover;
+  border-radius: 4px;
   background-color: #fff;
 }
 
