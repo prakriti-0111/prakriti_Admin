@@ -2896,20 +2896,34 @@ input:-ms-input-placeholder {
   max-width: 400px;
   margin: auto;
 
+  /* description left, amount right, on one line. The two used to be sized at
+     75%/25%, so a description wider than its share pushed the amount onto a
+     line of its own where justify-content centred it - one material line
+     right-aligned its amount and the next centred it. Letting the description
+     wrap inside its own box keeps the amount where it belongs at any width,
+     which is what the narrow phone layout needs too. */
+  /* nowrap on purpose: with wrapping on, flex moves the amount to a line of
+     its own instead of narrowing the description, which is what made one
+     material line right-align its amount and the next centre it */
   .products-data-row {
     display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
+    flex-wrap: nowrap;
+    align-items: baseline;
     margin: 0 -2px;
 
     .products-data {
-      flex-basis: calc(75% - 4px);
+      flex: 1 1 auto;
+      min-width: 0;
       margin: 0 2px 2px;
     }
 
+    /* margin-left:auto rather than justify-content, so the amount stays in the
+       same right-hand column whether it shares the line with the description or
+       wraps below it - which is what keeps the phone layout readable */
     .products-amount {
-      flex-basis: calc(25% - 4px);
-      margin: 0 2px 2px;
+      flex: 0 0 auto;
+      white-space: nowrap;
+      margin: 0 2px 2px auto;
       font-size: 10px;
     }
   }
