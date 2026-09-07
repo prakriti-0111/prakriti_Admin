@@ -40,7 +40,8 @@ const mod = new Module(file);
 mod.filename = file;
 mod.paths = Module._nodeModulePaths(path.dirname(file));
 mod._compile(code, file);
-const { liveRateForPurity, isGoldMaterial, applyLiveGoldRate, fetchLiveGoldRates } = mod.exports;
+const { liveRateForPurity, isGoldMaterial, applyLiveGoldRate, fetchLiveGoldRates, increasedRate } =
+  mod.exports;
 
 const RATES = { rate24: 15057, rate22: 13802.25, rate18: 11292.75 };
 
@@ -60,16 +61,33 @@ assert.strictEqual(liveRateForPurity("", RATES), 0, "no purity -> no live rate")
 assert.ok(isGoldMaterial("Gold yellow"));
 assert.ok(!isGoldMaterial("10-Diamond"), "diamond is not gold");
 
+/* per_gram_price is a LIST price: the stored rows hold mrp x increase% = the
+   charged price (20909.09 x 55% = 11500). The feed quotes the CHARGED price, so
+   it must be grossed up by the same increase - otherwise the sale's discount
+   halves it and 11292.75/g gets sold at 6211/g. */
+assert.strictEqual(increasedRate(11292.75, 55), 20532.27, "live 18K grossed up by 55%");
+assert.strictEqual(
+  Math.round(increasedRate(11292.75, 55) * 0.55 * 100) / 100,
+  11292.75,
+  "the 45% discount must land back exactly on the live rate"
+);
+assert.strictEqual(increasedRate(11292.75, 0), 0, "no increase -> no rate, keep the stored price");
+assert.strictEqual(increasedRate(11292.75, 120), 0, "a nonsense increase is refused");
+assert.strictEqual(increasedRate(0, 55), 0, "no live rate -> nothing to gross up");
+assert.strictEqual(increasedRate(11292.75, 100), 11292.75, "100% increase means list == charged");
+
 const gold = { material_name: "Gold yellow", purity: "18 Carat", per_gram_price: 20909.09, rate: 20909.09 };
-const applied = applyLiveGoldRate(gold, RATES);
-assert.strictEqual(applied.per_gram_price, 11292.75, "gold takes the live rate");
-assert.strictEqual(applied.rate, 11292.75, "the displayed rate follows");
-assert.strictEqual(applied.org_per_gram_price, 11292.75,
-  "org_* must carry the live rate too - the discount reset restores org, and a stored value there would silently undo it");
+const applied = applyLiveGoldRate(gold, RATES, 55);
+assert.strictEqual(applied.per_gram_price, 20532.27, "gold takes the grossed-up live rate");
+assert.strictEqual(applied.rate, 20532.27, "the displayed rate follows");
+assert.strictEqual(applied.org_per_gram_price, 20532.27,
+  "org_* must carry it too - the discount reset restores org, and a stored value there would silently undo the live rate");
 
 const diamond = { material_name: "10-Diamond", purity: "SI", per_gram_price: 345455, rate: 690.91 };
-assert.deepStrictEqual(applyLiveGoldRate(diamond, RATES), diamond, "a non-gold material is untouched");
-assert.deepStrictEqual(applyLiveGoldRate(gold, null), gold, "feed down -> stored price kept");
+assert.deepStrictEqual(applyLiveGoldRate(diamond, RATES, 55), diamond, "a non-gold material is untouched");
+assert.deepStrictEqual(applyLiveGoldRate(gold, null, 55), gold, "feed down -> stored price kept");
+assert.deepStrictEqual(applyLiveGoldRate(gold, RATES, undefined), gold,
+  "no increase for this material -> stored price kept, never the raw charged rate");
 
 (async () => {
   const first = await fetchLiveGoldRates({ force: true });
@@ -83,5 +101,5 @@ assert.deepStrictEqual(applyLiveGoldRate(gold, null), gold, "feed down -> stored
   assert.strictEqual(afterFailure.rate18, 11292.75,
     "a failed read keeps the last live rate, not the stored admin price");
 
-  console.log("ok - karat bands, gold-only, org_* reset, ex-GST basis and failure fallback all hold");
+  console.log("ok - karat bands, increase gross-up, gold-only, org_* reset, ex-GST basis and failure fallback all hold");
 })().catch((e) => { console.error("FAILED:", e.message); process.exit(1); });
