@@ -1005,6 +1005,13 @@ class WalletPage extends Component {
               actions={this.tableActions}
               actionValue={"action_value"}
               actionValueColorConditions={PAYMENT_STATUS_COLORS}
+              /*
+               * An accepted request that had newer rows above it is listed as a
+               * single "Accepted" row at the top; the request it replaced is
+               * folded underneath and opens with the chevron.
+               */
+              expandableKey="history"
+              expandableFlag="has_history"
             />
           )}
         </Grid>
