@@ -9,7 +9,10 @@ import {
   MenuItem,
   FormControl,
   Rating,
+  IconButton,
 } from "@mui/material";
+import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
+import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
 
 // Add CSS for spinner animation
 const spinnerStyles = `
@@ -91,8 +94,46 @@ class DataTable extends React.Component {
       certificateNo: "",
       certificateDetails: null,
       certificateLoading: false,
+      // Row keys currently expanded, for the opt-in `expandableKey` mode.
+      expandedRowKeys: [],
     };
   }
+
+  /*
+   * Expandable rows are opt-in: a page passes `expandableKey` (the field on a
+   * row holding its nested rows) and, optionally, `expandableFlag`. Without
+   * `expandableKey` every branch below is inert and the table renders exactly
+   * as it always has - this component backs most screens in the admin, so the
+   * default path must not shift.
+   */
+  getNestedRows = (row) => {
+    const key = this.props.expandableKey;
+    if (!key || !row) return [];
+    const nested = row[key];
+    return Array.isArray(nested) ? nested : [];
+  };
+
+  rowHasNested = (row) => {
+    if (!this.props.expandableKey) return false;
+    const flag = this.props.expandableFlag;
+    if (flag && !row[flag]) return false;
+    return this.getNestedRows(row).length > 0;
+  };
+
+  rowKeyFor = (row, index) =>
+    row && row.id !== undefined && row.id !== null ? `id:${row.id}` : `i:${index}`;
+
+  isRowExpanded = (row, index) =>
+    this.state.expandedRowKeys.includes(this.rowKeyFor(row, index));
+
+  toggleRowExpanded = (row, index) => {
+    const key = this.rowKeyFor(row, index);
+    this.setState((prev) => ({
+      expandedRowKeys: prev.expandedRowKeys.includes(key)
+        ? prev.expandedRowKeys.filter((k) => k !== key)
+        : [...prev.expandedRowKeys, key],
+    }));
+  };
 
   handleChangePage = (e, number) => {
     console.log("page datatable", number);
@@ -1228,6 +1269,9 @@ class DataTable extends React.Component {
           <Table sx={{ minWidth: 500 }} stickyHeader={stickyHeader}>
             <TableHead className="ratn-table-header">
               <TableRow>
+                {this.props.expandableKey ? (
+                  <TableCell align={columnAlign} sx={{ width: 44 }} />
+                ) : null}
                 {this.state.showSerialNo ? (
                   <TableCell align={columnAlign}>#</TableCell>
                 ) : null}
@@ -1255,7 +1299,29 @@ class DataTable extends React.Component {
             </TableHead>
             <TableBody>
               {paginatedRows.map((row, i) => (
-                <TableRow key={i}>
+                <React.Fragment key={i}>
+                <TableRow>
+                  {this.props.expandableKey ? (
+                    <TableCell align={rowAlign} sx={{ width: 44 }}>
+                      {this.rowHasNested(row) ? (
+                        <IconButton
+                          size="small"
+                          aria-label={
+                            this.isRowExpanded(row, i)
+                              ? "Hide earlier transaction"
+                              : "Show earlier transaction"
+                          }
+                          onClick={() => this.toggleRowExpanded(row, i)}
+                        >
+                          {this.isRowExpanded(row, i) ? (
+                            <KeyboardArrowUpIcon fontSize="small" />
+                          ) : (
+                            <KeyboardArrowDownIcon fontSize="small" />
+                          )}
+                        </IconButton>
+                      ) : null}
+                    </TableCell>
+                  ) : null}
                   {this.state.showSerialNo ? (
                     <TableCell align={rowAlign} style={{ fontSize: "12px" }}>
                       {/* {console.log("page, limit", page, limit)} */}
@@ -1401,6 +1467,54 @@ class DataTable extends React.Component {
                     </TableCell>
                   ) : null}
                 </TableRow>
+
+                {/* Earlier states of this row, revealed by the chevron. */}
+                {this.rowHasNested(row) && this.isRowExpanded(row, i)
+                  ? this.getNestedRows(row).map((nested, n) => (
+                      <TableRow
+                        key={`n${i}-${n}`}
+                        sx={{
+                          backgroundColor: "rgba(0, 0, 0, 0.03)",
+                          "& td": { color: "text.secondary" },
+                        }}
+                      >
+                        <TableCell align={rowAlign} sx={{ width: 44 }} />
+                        {this.state.showSerialNo ? (
+                          <TableCell align={rowAlign} />
+                        ) : null}
+                        {this.getData(nested).map((item, index) => (
+                          <TableCell
+                            align={rowAlign}
+                            key={`nc${i}-${n}-${index}`}
+                            style={{ fontSize: "12px" }}
+                          >
+                            {item}
+                          </TableCell>
+                        ))}
+                        {actions.length || this.state.actionValue !== "" ? (
+                          <TableCell align={rowAlign} className="action_btn">
+                            {/*
+                              History is a record, not something to act on -
+                              no buttons here, only the status it ended in.
+                            */}
+                            {this.state.actionValue !== "" ? (
+                              <span
+                                style={{
+                                  ...this.getActionValueStyle(
+                                    nested[this.state.actionValue],
+                                  ),
+                                  fontSize: "12px",
+                                }}
+                              >
+                                {nested[this.state.actionValue]}
+                              </span>
+                            ) : null}
+                          </TableCell>
+                        ) : null}
+                      </TableRow>
+                    ))
+                  : null}
+                </React.Fragment>
               ))}
 
               {paginatedRows.length === 0 ? (
@@ -1410,7 +1524,8 @@ class DataTable extends React.Component {
                     colSpan={
                       columns.length +
                       actions.length +
-                      (this.state.showSerialNo ? 1 : 0)
+                      (this.state.showSerialNo ? 1 : 0) +
+                      (this.props.expandableKey ? 1 : 0)
                     }
                   >
                     No data found.
