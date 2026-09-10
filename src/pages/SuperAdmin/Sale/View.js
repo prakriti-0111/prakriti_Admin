@@ -105,6 +105,7 @@ class SaleViewPage extends React.Component {
         // is still pending: "Cheque (Rs.500.00)". The cheque no / txn id have
         // their own columns on this screen, so they are not repeated here.
         name: "payment_mode_display",
+        fallback_name: "payment_mode",
         display_name: "Payment Mode",
         isHtml: true,
       },
@@ -676,6 +677,13 @@ class SaleViewPage extends React.Component {
                     actions={[]}
                     actionValue={"action_value"}
                     actionValueColorConditions={PAYMENT_STATUS_COLORS}
+                    /*
+                      An accepted payment that had newer rows above it is listed as a
+                      single "Accepted" row; the request it replaced folds underneath
+                      and opens with the chevron - same as the wallet screen.
+                    */
+                    expandableKey="history"
+                    expandableFlag="has_history"
                   />
                 </Grid>
               ) : null}
