@@ -159,7 +159,20 @@ class DataTable extends React.Component {
     // console.log("this is the data for ", arr);
 
     for (let i of this.state.columns) {
+      /*
+       * `fallback_name` covers a field an older API build does not send yet:
+       * the invoice payment tables bind Payment Mode to `payment_mode_display`,
+       * and against an API without it the whole column rendered blank rather
+       * than dropping back to the plain `payment_mode` it does send.
+       */
       let d = i.name in item ? item[i.name] : "";
+      if (
+        (d === "" || d === null || d === undefined) &&
+        "fallback_name" in i &&
+        i.fallback_name in item
+      ) {
+        d = item[i.fallback_name];
+      }
       if (Array.isArray(d)) {
         if ("show_tag" in i) {
           let tags = [];
@@ -468,8 +481,18 @@ class DataTable extends React.Component {
   getActionValueStyle = (val) => {
     let color = "";
     let extra = null;
+    /*
+     * Matched case-insensitively: the two APIs spell these labels differently
+     * ("Processed" vs "processed"), and an exact compare silently dropped the
+     * chip, leaving a bare grey word beside properly chipped neighbours.
+     */
+    const target = String(val ?? "").trim().toLowerCase();
     for (let x = 0; x < this.state.actionValueColorConditions.length; x++) {
-      if (this.state.actionValueColorConditions[x].value == val) {
+      if (
+        String(this.state.actionValueColorConditions[x].value)
+          .trim()
+          .toLowerCase() === target
+      ) {
         color = this.state.actionValueColorConditions[x].color;
         // A condition may carry a whole style object as well as a colour, so a
         // status can render as a chip rather than bare coloured text. Yellow
