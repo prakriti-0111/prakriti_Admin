@@ -907,10 +907,21 @@ class WalletPage extends Component {
             <DataTable
               columns={this.columns}
               rows={(this.state.items || []).map((row) => {
+                /*
+                 * The API is the authority on this label. It already weighs
+                 * status, can_accept, parent/child rows and the send_money
+                 * direction to decide between Accepted / Declined / Processed /
+                 * Pending / Sent, and it is the same computation the invoice
+                 * screens read.
+                 *
+                 * This used to re-derive the label here from `status` plus the
+                 * credit figure, which silently overrode the server on two real
+                 * cases: a settled transfer the API called "Accepted" (its row
+                 * is still status=pending underneath) was rewritten to
+                 * "Processed", and "Sent" was rewritten to "Pending". The
+                 * derivation now only fills in when the API sent nothing.
+                 */
                 const rawStatus = (row.status || "").toString().toLowerCase();
-                const rawAction = (row.action_value || "")
-                  .toString()
-                  .toLowerCase();
                 const receiverProcessed =
                   row.can_accept === true &&
                   (rawStatus === "success" ||
@@ -921,57 +932,19 @@ class WalletPage extends Component {
                     rawStatus === "rejected");
 
                 let normalizedActionValue = row.action_value;
-                if (rawStatus === "pending" && !row.can_accept) {
+                if (!normalizedActionValue) {
                   if (
-                    rawAction === "accepted" ||
-                    rawAction === "success" ||
-                    rawAction === "processed"
-                  ) {
-                    normalizedActionValue = "Processed";
-                  } else if (
-                    rawAction === "failed" ||
-                    rawAction === "declined" ||
-                    rawAction === "reject" ||
-                    rawAction === "rejected"
-                  ) {
-                    normalizedActionValue = "Declined";
-                  } else {
-                    const creditAmount = parseFloat(
-                      (row.credit || "0").toString().replace(/[^0-9.-]/g, ""),
-                    );
-                    normalizedActionValue =
-                      !Number.isNaN(creditAmount) && creditAmount > 0
-                        ? "Processed"
-                        : "Pending";
-                  }
-                } else if (rawStatus === "pending" && row.can_accept) {
-                  if (
-                    rawAction === "accepted" ||
-                    rawAction === "success" ||
-                    rawAction === "processed"
-                  ) {
-                    normalizedActionValue = "Processed";
-                  } else if (
-                    rawAction === "failed" ||
-                    rawAction === "declined" ||
-                    rawAction === "reject" ||
-                    rawAction === "rejected"
-                  ) {
-                    normalizedActionValue = "Declined";
-                  } else {
-                    normalizedActionValue = "Pending";
-                  }
-                } else if (
-                  receiverProcessed &&
-                  (rawAction === "pending" || !rawAction)
-                ) {
-                  normalizedActionValue =
                     rawStatus === "failed" ||
                     rawStatus === "declined" ||
                     rawStatus === "reject" ||
                     rawStatus === "rejected"
-                      ? "Declined"
-                      : "Processed";
+                  ) {
+                    normalizedActionValue = "Declined";
+                  } else if (rawStatus === "success" || rawStatus === "accepted") {
+                    normalizedActionValue = "Accepted";
+                  } else {
+                    normalizedActionValue = row.can_accept ? "Pending" : "Processed";
+                  }
                 }
 
                 let normalizedDisplayMode = row.display_mode;
