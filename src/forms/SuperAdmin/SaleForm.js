@@ -53,6 +53,9 @@ import {
   filterOwnRetailers,
 } from "src/helpers/helper";
 
+import { fetchLiveGoldRates, applyLiveGoldRate } from "src/helpers/goldRate";
+
+
 import { bindActionCreators } from "redux";
 
 import {
@@ -66,11 +69,16 @@ import {
 import {
   stocksProductList,
   stocksProducDetails,
+  getStocksList,
 } from "actions/superadmin/stocks.actions";
+
 
 import { getProfile } from "actions/superadmin/profile.actions";
 
-import { materialPriceProductPriceInfo } from "actions/superadmin/materialPrice.actions";
+import {
+  materialPriceProductPriceInfo,
+  materialPriceRawList,
+} from "actions/superadmin/materialPrice.actions";
 
 import { adminList } from "actions/superadmin/admin.actions";
 
@@ -210,6 +218,8 @@ import jsQR from "jsqr";
 
 import Modal from "@mui/material/Modal";
 
+import "pages/SuperAdmin/Sale/style.css";
+
 class SaleForm extends React.Component {
   constructor(props) {
     super(props);
@@ -228,6 +238,9 @@ class SaleForm extends React.Component {
 
       retailerList: this.props.retailerList,
       retailerListApiCall: false,
+
+      stockImages: {},
+
 
       distributorList: this.props.distributorList,
       distributorListApiCall: false,
@@ -818,18 +831,81 @@ class SaleForm extends React.Component {
     }
   };
 
+  /**
+   * certificate_no -> the photo of that piece, for carts whose API does not
+   * send one.
+   *
+   * The stock list matches certificate numbers through its search parameter, so
+   * one request covers the whole cart (~80ms for five) and returns
+   * current_image already built into a full URL. Never awaited: pictures are
+   * cosmetic and must not hold up the table.
+   */
+  loadStockImages = async (products) => {
+    const certificates = products
+      .filter((product) => !product.image && product.certificate_no)
+      .map((product) => product.certificate_no);
+    if (!certificates.length) return;
+    try {
+      const res = await getStocksList({
+        search: certificates.join(","),
+        limit: certificates.length,
+        type: "product",
+      });
+      const items = (res.data && res.data.data && res.data.data.items) || [];
+      const stockImages = { ...this.state.stockImages };
+      for (const item of items) {
+        if (item.certificate_no && item.current_image) {
+          stockImages[item.certificate_no] = item.current_image;
+        }
+      }
+      this.setState({ stockImages });
+    } catch (e) {
+      /* no pictures is a plainer page, not a broken one */
+    }
+  };
+
+  /**
+   * "material_id:purity_id" -> that row's increase %.
+   *
+   * per_gram_price is a list price and increase is what turns it into the
+   * charged one, so the live metal rate has to be grossed up by it before it
+   * can stand in for the stored list price. ~50ms for the whole table.
+   */
+  loadMaterialIncrease = async () => {
+    const increaseByPurity = {};
+    try {
+      const res = await materialPriceRawList({ all: 1 });
+      const items = (res.data && res.data.data && res.data.data.items) || [];
+      for (const material of items) {
+        for (const purity of material.purities || []) {
+          increaseByPurity[`${material.material_id}:${purity.purity_id}`] =
+            purity.increase;
+        }
+      }
+    } catch (e) {
+      /* without it the stored prices stand, which is the safe direction */
+    }
+    return increaseByPurity;
+  };
+
   loadCart = async () => {
     this.setState({ productsLoading: true });
     let onApprovalId = this.props.query.get("sale_on_approval");
 
     /* a sale on approval brings its own items, the cart stays untouched */
-    let response = !isEmpty(onApprovalId)
-      ? await salesOnApproveTransferItemsRaw(onApprovalId)
-      : await cartListRaw({
+    const cartRequest = !isEmpty(onApprovalId)
+      ? salesOnApproveTransferItemsRaw(onApprovalId)
+      : cartListRaw({
           from_order_price: this.props.query.get("from_order_price"),
 
           order_id: this.props.query.get("order_id"),
         });
+
+    const [liveGoldRates, increaseByPurity, response] = await Promise.all([
+      fetchLiveGoldRates({ force: true }),
+      this.loadMaterialIncrease(),
+      cartRequest,
+    ]);
 
     if (response.data.success) {
       let cartList = response.data.data.items;
@@ -844,6 +920,12 @@ class SaleForm extends React.Component {
         //quantity = 1;
 
         for (let item of cart.materials) {
+          item = applyLiveGoldRate(
+            item,
+            liveGoldRates,
+            increaseByPurity[`${item.material_id}:${item.purity_id}`],
+          );
+
           materials.push({
             id: item.id,
 
@@ -917,6 +999,10 @@ class SaleForm extends React.Component {
           product_type: cart.product_type,
 
           product_name: cart.product_name,
+
+          /* current_image is the picture of this exact piece; image is the same
+             value under the older name. Both come straight from the cart. */
+          image: cart.current_image || cart.image,
 
           certificate_no: cart.certificate_no,
 
@@ -1006,6 +1092,8 @@ class SaleForm extends React.Component {
 
         () => {
           this.calculateProductPrice();
+          /* after the table is on screen, not before it */
+          this.loadStockImages(products);
         },
       );
     }
@@ -5507,7 +5595,7 @@ class SaleForm extends React.Component {
                     <TableCell sx={{ width: "40px" }}>Total</TableCell>
 
                     {this.state.isCreateFrom ? (
-                      <TableCell sx={{ width: '120px', textAlign: 'right' }}>
+                      <TableCell align="center" sx={{ width: '120px' }}>
                         {isCartPage && this.state.holdSelectedItems.size > 0 ? (
                           <Button
                             size="small"
@@ -5548,6 +5636,19 @@ class SaleForm extends React.Component {
                         <TableRow className="product_details">
                           {!this.state.isCreateFrom ? (
                             <TableCell>
+                              {!item.is_return ? (
+                                <Checkbox
+                                  size="small"
+                                  onChange={(e) =>
+                                    this.handleCheckBox(e, index)
+                                  }
+                                  checked={
+                                    !!this.state.return_products[index]
+                                      ?.is_return
+                                  }
+                                />
+                              ) : null}
+
                               {!item.is_return &&
                               item.product_type == "material" &&
                               item.materials[0].return_weight ? (
@@ -5579,12 +5680,34 @@ class SaleForm extends React.Component {
                           <TableCell>{index + 1}</TableCell>
 
                           <TableCell>
-                            {item.product_name} X{" "}
-                            {item.quantity
-                              ? item.quantity
-                              : item.certificate_no
-                                ? 1
-                                : item.materials[0].avl_qty}
+                            <div className="sale-product-name">
+                              {/* no picture, no placeholder - a row of grey
+                                  boxes reads as broken rather than as "this
+                                  piece has no photo". A path that 404s hides
+                                  itself for the same reason. */}
+                              {item.image ||
+                              this.state.stockImages[item.certificate_no] ? (
+                                <img
+                                  className="sale-product-thumb"
+                                  src={
+                                    item.image ||
+                                    this.state.stockImages[item.certificate_no]
+                                  }
+                                  alt=""
+                                  onError={(e) => {
+                                    e.target.style.display = "none";
+                                  }}
+                                />
+                              ) : null}
+                              <span>
+                                {item.product_name} X{" "}
+                                {item.quantity
+                                  ? item.quantity
+                                  : item.certificate_no
+                                    ? 1
+                                    : item.materials[0].avl_qty}
+                              </span>
+                            </div>
                           </TableCell>
 
                           <TableCell style={{ paddingLeft: '12px', paddingRight: '12px' }}>{item.size_name}</TableCell>
@@ -5595,17 +5718,23 @@ class SaleForm extends React.Component {
                             {item.total_weight} {"Wt"}
                           </TableCell>
 
-                          <TableCell></TableCell>
+                          {/* the product row carries no price of its own, but it
+                              still has to reach the last column or its band stops
+                              mid-table. Actions only exists while creating. */}
+                          <TableCell
+                            colSpan={this.state.isCreateFrom ? 5 : 4}
+                          ></TableCell>
                         </TableRow>
 
                         <TableRow className="material_details">
                           <TableCell></TableCell>
 
-                          {!this.state.isCreateFrom ? (
-                            <>
-                              <TableCell></TableCell>
-                            </>
-                          ) : null}
+                          {/* the materials sit under the product, so the row
+                              starts two columns in - checkbox and number. This
+                              second one used to be skipped while creating, which
+                              pulled every figure a column to the left and left
+                              the delete button under Total. */}
+                          <TableCell></TableCell>
 
                           <TableCell colSpan={2}>
                             {item.materials.map((m, key) =>
@@ -5621,14 +5750,12 @@ class SaleForm extends React.Component {
                                       key={key}
                                       style={{ position: "relative" }}
                                     >
-                                      {m.material_name} &nbsp;({m.purity}) &nbsp;
-                                      {m.weight} &nbsp;{m.unit_name} &nbsp; x
-                                      &nbsp; {m.rate}{" "}
+                                      {m.material_name} ({m.purity}) {m.weight}{" "}
+                                      {m.unit_name} x {m.rate}
                                     </div>
 
                                     <div className="products-amount">
-                                      {" "}
-                                      = &nbsp; &nbsp;{m.amount}
+                                      = {m.amount}
                                     </div>
                                   </div>
                                 </div>
@@ -5748,23 +5875,14 @@ class SaleForm extends React.Component {
                           <TableCell>{item.total}</TableCell>
 
                           {this.state.isCreateFrom ? (
-                            <TableCell
-                              className="action_column"
-                              style={{ textAlign: "center" }}
-                            >
-                              {/*<IconButton className='del-icon' color="error" component="label"  onClick={() => this.handleProductDelete(index)}>
-
-                                                              <CloseIcon />
-
-                                                              </IconButton> */}
-
+                            <TableCell align="center" className="action_column">
                               <Button
                                 variant="contained"
                                 className="sale-cross-icon"
+                                aria-label="Remove product"
                                 onClick={() => this.handleProductDelete(index)}
                               >
-                                {" "}
-                                X{" "}
+                                X
                               </Button>
                             </TableCell>
                           ) : null}
@@ -7616,14 +7734,12 @@ class SaleForm extends React.Component {
                                     <div className="products-data-container" key={key}>
                                       <div className="products-data-row">
                                         <div className="products-data">
-                                          {m.material_name} &nbsp;({m.purity}) &nbsp;
-                                          {m.weight} &nbsp;{m.unit_name} &nbsp; x
-                                          &nbsp; {m.rate}{" "}
+                                          {m.material_name} ({m.purity}) {m.weight}{" "}
+                                          {m.unit_name} x {m.rate}
                                         </div>
 
                                         <div className="products-amount">
-                                          {" "}
-                                          = &nbsp; &nbsp;{m.amount}
+                                          = {m.amount}
                                         </div>
                                       </div>
                                     </div>
