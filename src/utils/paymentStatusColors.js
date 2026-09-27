@@ -59,6 +59,12 @@ export const REFUSED_CHIP = {
 
 export const PAYMENT_STATUS_COLORS = [
   { value: "Pending", color: "#3d2f00", style: WAITING_CHIP },
+  /*
+   * "process" is what an older API build calls the sender's view of a payment
+   * still in flight. It means Pending, so it gets the waiting chip; matching is
+   * case-insensitive, so "Processed"/"processed" need no separate entry.
+   */
+  { value: "process", color: "#3d2f00", style: WAITING_CHIP },
   { value: "Awaiting Approval", color: "#3d2f00", style: WAITING_CHIP },
   { value: "Sent", color: "#3d2f00", style: WAITING_CHIP },
   { value: "Accepted", color: "#0f3d17", style: SETTLED_CHIP },
