@@ -218,6 +218,8 @@ import jsQR from "jsqr";
 
 import Modal from "@mui/material/Modal";
 
+import "pages/SuperAdmin/Sale/style.css";
+
 class SaleForm extends React.Component {
   constructor(props) {
     super(props);
@@ -5634,6 +5636,19 @@ class SaleForm extends React.Component {
                         <TableRow className="product_details">
                           {!this.state.isCreateFrom ? (
                             <TableCell>
+                              {!item.is_return ? (
+                                <Checkbox
+                                  size="small"
+                                  onChange={(e) =>
+                                    this.handleCheckBox(e, index)
+                                  }
+                                  checked={
+                                    !!this.state.return_products[index]
+                                      ?.is_return
+                                  }
+                                />
+                              ) : null}
+
                               {!item.is_return &&
                               item.product_type == "material" &&
                               item.materials[0].return_weight ? (
