@@ -576,10 +576,10 @@ class AdminViewPage extends React.Component {
                   </Grid>
                   <Grid item xs={12} md={2} className="create-input">
                     <TextField
-                      label="Total Payable"
+                      label="Total Return"
                       variant="outlined"
                       fullWidth
-                      value={admin.total_payable_amount}
+                      value={admin.total_return}
                       disabled
                       InputProps={{
                         startAdornment: (
@@ -591,10 +591,10 @@ class AdminViewPage extends React.Component {
                   </Grid>
                   <Grid item xs={12} md={2} className="create-input">
                     <TextField
-                      label="Total Return"
+                      label="Total Payable"
                       variant="outlined"
                       fullWidth
-                      value={admin.total_return}
+                      value={admin.total_payable_amount}
                       disabled
                       InputProps={{
                         startAdornment: (
