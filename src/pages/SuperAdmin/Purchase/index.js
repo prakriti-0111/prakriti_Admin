@@ -174,6 +174,9 @@ class PurchasePage extends Component {
     if (data.date_to) {
       data.date_to = moment(data.date_to.toString()).format("YYYY-MM-DD");
     }
+    /* purchases made from a sale show that sale's Total / Due at today's gold
+       rate - admins, distributors and super admin all land on this page */
+    data.current = 1;
     this.props.actions.purchaseList(data);
   };
 

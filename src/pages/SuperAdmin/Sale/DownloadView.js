@@ -248,7 +248,8 @@ class SaleViewPage extends React.Component {
       downloadingList: true,
     });
 
-    let response = await salesDownloadInvoiceItemList(id);
+    /* today's gold rate, like everything else on this page */
+    let response = await salesDownloadInvoiceItemList(id, true);
     if (response.data.success) {
       this.setState(
         {
@@ -290,7 +291,8 @@ class SaleViewPage extends React.Component {
       downloadingItem: true,
     });
 
-    let response = await salesDownloadInvoiceItemDetails(id);
+    /* today's gold rate, like everything else on this page */
+    let response = await salesDownloadInvoiceItemDetails(id, true);
     if (response.data.success) {
       this.setState(
         {
@@ -649,10 +651,24 @@ class SaleViewPage extends React.Component {
       if (caratMatch) return (parseFloat(caratMatch[1]) / 24) * 100;
       return 0;
     };
+    /* returned pieces stay in the product list (crossed out) but are not
+       billed - both totals say how many of each */
+    const returnedCount = sale
+      ? (sale.products || []).filter((p) => p.is_return).length
+      : 0;
+    const billedCount = sale
+      ? (sale.products || []).length - returnedCount
+      : 0;
+    /* full value (making and GST included) of what came back */
+    const returnedValue = sale
+      ? (sale.products || [])
+          .filter((p) => p.is_return)
+          .reduce((t, p) => t + (parseFloat(p.total) || 0), 0)
+      : 0;
     // Invoice fine metal: 18K gold × 76% = fine gold (24K equivalent)
     let invoiceFineWeight = 0;
     if (sale) {
-      (sale.products || []).forEach(product => {
+      (sale.products || []).filter(p => !p.is_return).forEach(product => {
         (product.materials || []).forEach(material => {
           if ((material.material_name || '').toLowerCase().includes('gold')) {
             const pakka = parseFloat(material.pakka_weight) || 0;
@@ -864,8 +880,12 @@ class SaleViewPage extends React.Component {
                           // Build making charge (after discount) lookup from products by sub_category_hsn
                           const makingChargeMap = {};
                           if (sale.products) {
+                            /* returned rows are listed crossed out with their
+                               own making charge, so the key carries is_return */
                             sale.products.forEach((p) => {
-                              const key = p.sub_category_hsn || "";
+                              const key =
+                                (p.sub_category_hsn || "") +
+                                (p.is_return ? "|returned" : "");
                               if (!makingChargeMap[key])
                                 makingChargeMap[key] = 0;
                               makingChargeMap[key] +=
@@ -874,8 +894,14 @@ class SaleViewPage extends React.Component {
                                   0);
                             });
                           }
-                          return sale.subCatItems.map((row, i) => {
-                            const makingCharge = makingChargeMap[row.hsn] || 0;
+                          /* returned rows get their own block below */
+                          return sale.subCatItems
+                            .filter((row) => !row.is_return)
+                            .map((row, i) => {
+                            const makingCharge =
+                              makingChargeMap[
+                                row.hsn + (row.is_return ? "|returned" : "")
+                              ] || 0;
                             return (
                               <SubCatRow
                                 key={i}
@@ -892,7 +918,7 @@ class SaleViewPage extends React.Component {
                           let totalMakingCharge = 0;
                           // Sum making_charge after discount from products
                           if (sale.products) {
-                            sale.products.forEach((product) => {
+                            sale.products.filter((p) => !p.is_return).forEach((product) => {
                               totalMakingCharge +=
                                 (parseFloat(product.making_charge) || 0) -
                                 (parseFloat(
@@ -901,7 +927,11 @@ class SaleViewPage extends React.Component {
                             });
                           }
                           let totalTax = 0;
-                          sale.subCatItems.forEach((item) => {
+                          /* crossed-out returned rows are shown, not billed */
+                          const billedSubCats = sale.subCatItems.filter(
+                            (item) => !item.is_return,
+                          );
+                          billedSubCats.forEach((item) => {
                             const taxableAmt =
                               parseFloat(item.taxableAmount) || 0;
                             const taxPercent = parseFloat(item.tax) || 0;
@@ -956,7 +986,7 @@ class SaleViewPage extends React.Component {
                           // Calculate total Gross Weight with unit conversion
                           let totalGrossWeight = 0;
                           if (sale.subCatItems) {
-                            sale.subCatItems.forEach((item) => {
+                            billedSubCats.forEach((item) => {
                               item.material.forEach((mat) => {
                                 totalGrossWeight += convertUnitToGram(
                                   mat.unit,
@@ -1164,6 +1194,12 @@ class SaleViewPage extends React.Component {
                         ) || 0;
                       return (
                         <>
+                          {returnedCount > 0 && (
+                            <div className="invoice-totals-line">
+                              <span>Returned Items</span>
+                              <span>{returnedCount}</span>
+                            </div>
+                          )}
                           <div className="invoice-totals-line">
                             <span style={{ fontWeight: 700 }}>Sub Total</span>
                             <span style={{ fontWeight: 700 }}>
@@ -1594,6 +1630,81 @@ class SaleViewPage extends React.Component {
                                         ₹{totalTax.toFixed(2)}
                                       </TableCell>
                                     </TableRow>
+                                    {returnedCount > 0 && (
+                                      <>
+                                        <TableRow
+                                          sx={{
+                                            "& td": {
+                                              padding: "4px 16px",
+                                              borderTop: "1px solid #ccc",
+                                            },
+                                          }}
+                                        >
+                                          <TableCell
+                                            colSpan={8}
+                                            style={{
+                                              fontSize: "13px",
+                                              fontWeight: 700,
+                                              color: "#1E2746",
+                                            }}
+                                          >
+                                            Total Item Value ({billedCount + returnedCount})
+                                          </TableCell>
+                                          <TableCell
+                                            colSpan={4}
+                                            style={{
+                                              fontSize: "13px",
+                                              fontWeight: 700,
+                                              color: "#1E2746",
+                                              textAlign: "right",
+                                            }}
+                                          >
+                                            ₹{(grandTotal + returnedValue).toFixed(2)}
+                                          </TableCell>
+                                        </TableRow>
+                                        <TableRow>
+                                          <TableCell
+                                            colSpan={12}
+                                            style={{ padding: 0 }}
+                                          >
+                                            <Divider
+                                              sx={{
+                                                borderColor: "#1E2746",
+                                                borderWidth: "1px",
+                                              }}
+                                            />
+                                          </TableCell>
+                                        </TableRow>
+                                        <TableRow
+                                          sx={{
+                                            "& td": {
+                                              borderBottom: "none",
+                                              padding: "4px 16px",
+                                            },
+                                          }}
+                                        >
+                                          <TableCell
+                                            colSpan={8}
+                                            style={{
+                                              fontSize: "13px",
+                                              color: "#555",
+                                            }}
+                                          >
+                                            Returned Items ({returnedCount})
+                                          </TableCell>
+                                          <TableCell
+                                            colSpan={4}
+                                            style={{
+                                              fontSize: "13px",
+                                              color: "#555",
+                                              textAlign: "right",
+                                            }}
+                                          >
+                                            - ₹{returnedValue.toFixed(2)}
+                                          </TableCell>
+                                        </TableRow>
+                                      </>
+                                    )}
                                     <TableRow
                                       sx={{
                                         "& td": {

@@ -2573,6 +2573,9 @@ class SaleForm extends React.Component {
     for (let i = 0; i < formValues.products.length; i++) {
       if (formValues.products[i].is_held) continue;
 
+      /* went back on an earlier return - no longer part of what is owed */
+      if (!this.state.isCreateFrom && formValues.products[i].is_return) continue;
+
       taxable_amount +=
         parseFloat(formValues.products[i].total) -
         parseFloat(formValues.products[i].total_tax);
@@ -2681,9 +2684,19 @@ class SaleForm extends React.Component {
 
     formValues.total_amount = total_amount;
 
-    formValues.total_payable = this.state.isCreateFrom
-      ? total_payable
-      : formValues.total_payable;
+    /* the return page shows gold at today's rate, so the stored payable would
+       disagree with the Total Amount above it. Only the ledger fields
+       (paid_amount, due_amount) stay as stored - the refund is worked from them. */
+    if (!this.state.isCreateFrom) {
+      /* the return being ticked comes off what is payable, so the page shows
+         the bill as it will stand once the return goes through */
+      total_payable = priceFormat(
+        total_payable - (parseFloat(this.state.product_amount) || 0),
+        true,
+      );
+    }
+
+    formValues.total_payable = total_payable;
 
     formValues.due_amount = due_amount;
 
@@ -3675,13 +3688,16 @@ class SaleForm extends React.Component {
 
     return_products[actionProductIndex].is_return = false;
 
-    this.setState({
-      return_products: return_products,
+    this.setState(
+      {
+        return_products: return_products,
 
-      formValues: formValues,
+        formValues: formValues,
 
-      materialReturnDialog: false,
-    });
+        materialReturnDialog: false,
+      },
+      this.calculateReturnAmount,
+    );
   };
 
   handleReturnMaterialSubmit = () => {
@@ -4130,7 +4146,7 @@ class SaleForm extends React.Component {
       return_discount: returnDis,
 
       return_from_wallet: priceFormat(return_from_wallet, true),
-    });
+    }, this.handleCalculateMainPrice);
   };
 
   handleReturnMaterial = (val, key) => {
@@ -5627,13 +5643,22 @@ class SaleForm extends React.Component {
                     let productWeightUnitName =
                       getUnit.length > 0 ? getUnit[0].unit_name : "";
 
+                    /* returned earlier, or ticked for this return - struck
+                       through so it reads as coming off the bill */
+                    let returnedCls =
+                      !this.state.isCreateFrom &&
+                      (item.is_return ||
+                        this.state.return_products[index]?.is_return)
+                        ? " is-returned"
+                        : "";
+
                     return (
                       <React.Fragment key={index}>
 
                         {item.is_held && isCartPage ? null : (
                         <>
 
-                        <TableRow className="product_details">
+                        <TableRow className={"product_details" + returnedCls}>
                           {!this.state.isCreateFrom ? (
                             <TableCell>
                               {!item.is_return ? (
@@ -5726,7 +5751,7 @@ class SaleForm extends React.Component {
                           ></TableCell>
                         </TableRow>
 
-                        <TableRow className="material_details">
+                        <TableRow className={"material_details" + returnedCls}>
                           <TableCell></TableCell>
 
                           {/* the materials sit under the product, so the row
