@@ -743,3 +743,9 @@
     }
   }
   
+
+/* returned product rows on the return page */
+.is-returned td {
+  text-decoration: line-through;
+  opacity: 0.6;
+}

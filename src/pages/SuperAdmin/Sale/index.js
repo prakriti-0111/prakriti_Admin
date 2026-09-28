@@ -190,6 +190,7 @@ class SalePage extends Component {
     if (data.date_to) {
       data.date_to = moment(data.date_to.toString()).format("YYYY-MM-DD");
     }
+    data.current = 1; // Bill and Due Amount at today's gold rate
     this.props.actions.salesList(data);
   };
 

@@ -43,10 +43,10 @@ export const adminCreate = (data) => {
   };
 };
 
-export const adminFetch = (id) => {
+export const adminFetch = (id, params = {}) => {
   return (dispatch) => {
     axios
-      .get(`${getApiPrefix()}/admin/fetch/${id}`)
+      .get(`${getApiPrefix()}/admin/fetch/${id}`, { params })
       .then((response) => {
         if (response.data.success) {
           dispatch({
