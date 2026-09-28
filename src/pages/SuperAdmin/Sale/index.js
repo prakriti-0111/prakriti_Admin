@@ -90,6 +90,10 @@ class SalePage extends Component {
         display_name: "Bill Amount",
       },
       {
+        name: "return_amount",
+        display_name: "Return Amount",
+      },
+      {
         name: "due_amount_display",
         display_name: "Due Amount",
       },
