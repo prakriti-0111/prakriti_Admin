@@ -175,7 +175,8 @@ class AdminPage extends Component {
 
   loadListData = () => {
     this.setState({ isLoading: true });
-    this.props.actions.adminList(this.state.queryParams);
+    /* amounts at today's gold rate, like the sales list and admin details */
+    this.props.actions.adminList({ ...this.state.queryParams, current: 1 });
   };
 
   handlePagination = (page) => {

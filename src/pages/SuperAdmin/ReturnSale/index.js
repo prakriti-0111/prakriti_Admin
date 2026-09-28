@@ -64,6 +64,10 @@ class ReturnSale extends Component {
         display_name: 'Owner Name'
       },
       {
+        name: 'return_amount_with_gst',
+        display_name: 'Amount (incl. GST)'
+      },
+      {
         name: 'return_amount',
         display_name: 'Return Amount'
       },
