@@ -154,12 +154,14 @@ class AdminViewPage extends React.Component {
   };
 
   loadViewData = () => {
-    this.props.actions.adminFetch(this.props.params.id);
+    /* totals at today's gold rate, matching the sales list below */
+    this.props.actions.adminFetch(this.props.params.id, { current: 1 });
   };
 
   loadSalesData = () => {
     let data = { ...this.state.queryParams };
     data.user_id = this.props.params.id;
+    data.current = 1; // Bill Amount at today's gold rate
     data.is_own_sale = 1;
     if (this.isAdminUser) {
       this.props.actions.adminSalesList(data);
@@ -1265,7 +1267,9 @@ function Row(props) {
         <TableCell scope="row">{getSerialNo()}</TableCell>
         <TableCell>{row.invoice_date}</TableCell>
         <TableCell>{row.invoice_number}</TableCell>
-        <TableCell>{row.total_payable}</TableCell>
+        {/* the original bill: total_payable is cut by every return, and showing
+            it here beside the Return column read as the return taken off twice */}
+        <TableCell>{row.bill_amount ?? row.total_payable}</TableCell>
         <TableCell>{row.return_amount}</TableCell>
         <TableCell>{row.paid_amount}</TableCell>
         <TableCell>{row.due_amount}</TableCell>

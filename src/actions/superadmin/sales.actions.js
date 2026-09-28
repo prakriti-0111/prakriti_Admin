@@ -146,7 +146,8 @@ export const salesStatusChange = (id, data) => {
 }
 export const salesEdit = (id) => {
     return (dispatch) => {
-        axios.get(`/superadmin/sales/edit/${id}`)
+        /* current=1: the return page credits gold at today's rate */
+        axios.get(`/superadmin/sales/edit/${id}`, { params: { current: 1 } })
         .then(response => {
             console.log(response.data.data)
             if(response.data.success){
@@ -201,12 +202,12 @@ export const salesDownloadInvoiceInfo = (id, current = false) => {
     return axios.post(`/superadmin/sales/download-invoice-info/${id}${current ? '?current=1' : ''}`);
 }
 
-export const salesDownloadInvoiceItemList = (id) => {
-    return axios.post(`/superadmin/sales/download-invoice-item-list/${id}`);
+export const salesDownloadInvoiceItemList = (id, current = false) => {
+    return axios.post(`/superadmin/sales/download-invoice-item-list/${id}${current ? '?current=1' : ''}`);
 }
 
-export const salesDownloadInvoiceItemDetails = (id) => {
-    return axios.post(`/superadmin/sales/download-invoice-item-details/${id}`);
+export const salesDownloadInvoiceItemDetails = (id, current = false) => {
+    return axios.post(`/superadmin/sales/download-invoice-item-details/${id}${current ? '?current=1' : ''}`);
 }
 
 /**
