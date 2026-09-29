@@ -570,7 +570,7 @@ class DistrubutorViewPage extends React.Component {
                       label='Total Amount'
                       variant='outlined'
                       fullWidth
-                      value={admin.total_amount}
+                      value={Number(admin.total_amount || 0).toFixed(2)}
                       disabled
                       InputProps={{
                         startAdornment: (
@@ -585,7 +585,7 @@ class DistrubutorViewPage extends React.Component {
                       label='Total Payable'
                       variant='outlined'
                       fullWidth
-                      value={admin.total_payable_amount}
+                      value={Number(admin.total_payable_amount || 0).toFixed(2)}
                       disabled
                       InputProps={{
                         startAdornment: (
@@ -600,7 +600,7 @@ class DistrubutorViewPage extends React.Component {
                       label='Total Return'
                       variant='outlined'
                       fullWidth
-                      value={admin.total_return}
+                      value={Number(admin.total_return || 0).toFixed(2)}
                       disabled
                       InputProps={{
                         startAdornment: (
@@ -615,7 +615,7 @@ class DistrubutorViewPage extends React.Component {
                       label='Total Paid'
                       variant='outlined'
                       fullWidth
-                      value={admin.paid_amount}
+                      value={Number(admin.paid_amount || 0).toFixed(2)}
                       disabled
                       InputProps={{
                         startAdornment: (
@@ -630,7 +630,7 @@ class DistrubutorViewPage extends React.Component {
                       label='Total Dues'
                       variant='outlined'
                       fullWidth
-                      value={admin.due_amount}
+                      value={Number(admin.due_amount || 0).toFixed(2)}
                       disabled
                       InputProps={{
                         startAdornment: (
@@ -645,7 +645,7 @@ class DistrubutorViewPage extends React.Component {
                       label='Advance'
                       variant='outlined'
                       fullWidth
-                      value={admin.advance_amount}
+                      value={Number(admin.advance_amount || 0).toFixed(2)}
                       disabled
                       InputProps={{
                         startAdornment: (
@@ -1259,7 +1259,7 @@ function Row(props) {
         <TableCell>{row.bill_amount ?? row.total_payable}</TableCell>
         <TableCell>{row.return_amount}</TableCell>
         <TableCell>{row.paid_amount}</TableCell>
-        <TableCell>{row.due_amount}</TableCell>
+        <TableCell>{row.due_amount_display}</TableCell>
         <TableCell sx={{ color: getStatusColor(row.approve_status) }}>
           <b>{row.approve_status}</b>
         </TableCell>
