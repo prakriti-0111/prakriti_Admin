@@ -465,17 +465,21 @@ class SaleViewPage extends React.Component {
       // would give the 24K rate instead, which is not what was agreed.
       const metalRate = this.getQuotedMetalRate();
 
-      // 1. Record payment against the sale
-      this.props.actions.paymentStore({
+      // 1. Record payment against the sale. at_current_rate: the Due on this
+      //    page is at today's gold rate, so the API re-values the invoice to
+      //    it before settling - otherwise a settled invoice records nothing.
+      const result = await this.props.actions.paymentStore({
         ...formValues,
         amount: totalAmount,
         metal_rate: isMetalPayment ? metalRate : null,
         user_id: sale.user_id,
         table_id: sale.id,
+        at_current_rate: 1,
       });
 
-      // 2. Transfer metal from buyer to seller's material stock
-      if (isMetalPayment) {
+      // 2. Transfer metal from buyer to seller's material stock - only once
+      //    the payment is recorded, so metal never moves without a payment
+      if (isMetalPayment && result && result.success) {
         try {
           const stockRes = await stocksTransferHistoryStore({
             from_user_id: sale.user_id,
@@ -509,7 +513,8 @@ class SaleViewPage extends React.Component {
     let formErros = this.state.formErros;
     let hasErr = false;
     const isMetalPayment = formValues.payment_mode === 'metal';
-    // Nothing absorbs an over-payment any more, so no mode may exceed the due.
+    // Nothing absorbs an over-payment any more, so no mode may exceed the due
+    // (today's-rate Due - the API re-values the invoice to it first).
     if (parseFloat(formValues.amount) > parseFloat(this.state.sale.due_amount)) {
       hasErr = true;
       this.props.enqueueSnackbar("Amount must be less than or equal due amount.", { variant: "error" });
