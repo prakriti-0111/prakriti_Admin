@@ -26,14 +26,23 @@ export const paymentList = (params) => {
 
 export const paymentStore = (data) => {
     return (dispatch) => {
-        axios.post("/superadmin/payments/store", data)
+        /* returns the API response, so a caller that has a follow-up step
+           (Sale Details moving metal into stock) can run it only once the
+           payment was really recorded */
+        return axios.post("/superadmin/payments/store", data)
         .then(response => {
             dispatch({
                 type: SUPERADMIN_ADD_PAYMENT,
                 payload: response.data
             });
+            return response.data;
         })
         .catch(error => {
+            const payload = (error && error.response && error.response.data) || null;
+            if (payload) {
+                dispatch({ type: SUPERADMIN_ADD_PAYMENT, payload });
+            }
+            return payload;
         })
     }
 }
