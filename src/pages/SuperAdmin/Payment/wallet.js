@@ -789,6 +789,26 @@ class WalletPage extends Component {
                 <AccountBalanceWalletIcon />
               </div>
             </CardContent>
+            {balance_by_mode.metal !== undefined ? (
+              <CardContent
+                className="dashboard_card_content bg-color-5"
+                sx={{ display: "flex", justifyContent: "space-between" }}
+                onClick={() => this.handleCardClick("metal")}
+              >
+                <Typography
+                  sx={{ fontSize: 14, margin: 0 }}
+                  color="text.secondary"
+                  gutterBottom
+                  component="span"
+                >
+                  <h1>Metal (fine)</h1>
+                  <h2>{balance_by_mode.metal}</h2>
+                </Typography>
+                <div className="card-icon">
+                  <AccountBalanceWalletIcon />
+                </div>
+              </CardContent>
+            ) : null}
           </Card>
         ) : null}
         <Grid
