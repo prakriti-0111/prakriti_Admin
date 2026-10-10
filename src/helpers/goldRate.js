@@ -120,3 +120,37 @@ export const applyLiveGoldRate = (material, rates, increasePercent) => {
     org_per_gram_price: rate,
   };
 };
+
+/**
+ * Fine (24K) gold an invoice can be paid with, as the super admin's Pay Now
+ * shows it: the billed gold's pakka weight (or weight x purity), less metal
+ * already paid - pending payments included, so it cannot be paid twice;
+ * declined ones not. Returns null when the invoice bills no gold.
+ */
+export const invoiceFineMetal = (products, payments, purityItems) => {
+  const purityPct = {};
+  (purityItems || []).forEach((p) => {
+    if (p.name && p.value) purityPct[p.name.trim()] = parseFloat(p.value);
+  });
+  const pctOf = (name) => {
+    const key = (name || "").trim();
+    if (purityPct[key]) return purityPct[key];
+    const pct = key.match(/\((\d+\.?\d*)%\)/);
+    if (pct) return parseFloat(pct[1]);
+    const carat = key.match(/(\d+\.?\d*)\s*(?:carat|k)\b/i);
+    return carat ? (parseFloat(carat[1]) / 24) * 100 : 0;
+  };
+  let total = 0;
+  (products || []).filter((p) => !p.is_return).forEach((product) => {
+    (product.materials || []).forEach((m) => {
+      if (!isGoldMaterial(m.material_name)) return;
+      const pakka = parseFloat(m.pakka_weight) || 0;
+      total += pakka > 0 ? pakka : ((parseFloat(m.weight) || 0) * pctOf(m.purity_name)) / 100;
+    });
+  });
+  if (!(total > 0)) return null;
+  const paid = (payments || [])
+    .filter((row) => !/declin|fail|reject/i.test(String(row.action_value || "")))
+    .reduce((sum, row) => sum + (parseFloat(row.weight) || 0), 0);
+  return { total, paid, remaining: Math.max(total - paid, 0) };
+};
