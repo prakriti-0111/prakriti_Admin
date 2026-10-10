@@ -97,17 +97,15 @@ class PurchaseViewPage extends React.Component {
         display_name: "Payment Date",
       },
       {
-        name: "amount",
+        // the amount stays in its own column, pending or not - the status is
+        // shown under Actions (Pending / Accepted / Declined)
+        name: "amount_value",
+        fallback_name: "amount",
         display_name: "Amount",
       },
       {
-        // payment_mode_display carries the amount in brackets while a payment
-        // is still pending: "Cheque (Rs.500.00)". The cheque no / txn id have
-        // their own columns on this screen, so they are not repeated here.
-        name: "payment_mode_display",
-        fallback_name: "payment_mode",
+        name: "payment_mode",
         display_name: "Payment Mode",
-        isHtml: true,
       },
       {
         name: "cheque_no",
