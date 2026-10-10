@@ -816,6 +816,9 @@ class WalletPage extends Component {
                 <MenuItem value="cheque">Cheque</MenuItem>
                 <MenuItem value="imps_neft">BANKING/RTGS/NEFT</MenuItem>
                 <MenuItem value="online">UPI/PhonePe/Gpay</MenuItem>
+                {/* metal payments (and admins' metal payments awaiting
+                    approval) are listed here, not under All */}
+                <MenuItem value="metal">Metal</MenuItem>
               </Select>
             </FormControl>
           </Grid>
