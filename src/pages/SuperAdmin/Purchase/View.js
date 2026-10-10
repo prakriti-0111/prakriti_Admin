@@ -69,7 +69,7 @@ import { getNotifiactions } from "actions/superadmin/notification.actions";
 import { getProfile } from "actions/superadmin/profile.actions";
 import { stocksList } from 'actions/superadmin/stocks.actions';
 import { purityList } from "actions/superadmin/purity.actions";
-import { fetchLiveGoldRates } from "src/helpers/goldRate";
+import { fetchLiveGoldRates, invoiceFineMetal } from "src/helpers/goldRate";
 import './style.css';
 import { PAYMENT_STATUS_COLORS } from "../../../utils/paymentStatusColors";
 
@@ -147,12 +147,29 @@ class PurchaseViewPage extends React.Component {
    * purity, amount = fine x today's 24K rate, and the quoted rate saved with
    * the payment is the purity rate (24K x purity), which applies to the gross.
    */
+  /* invoice fine metal: total, already paid, still payable */
+  fineMetal = () =>
+    invoiceFineMetal(
+      this.state.purchase && this.state.purchase.products,
+      this.state.items,
+      this.props.purityItems,
+    );
+
   metalValues = (weight, purity) => {
-    const gross = parseFloat(weight) || 0;
+    let gross = parseFloat(weight) || 0;
     const pct = purity ? parseFloat(purity.value) || 100 : 100;
     const live = this.state.liveGoldPerGram;
-    const fine = parseFloat(((gross * pct) / 100).toFixed(3));
+    let fine = parseFloat(((gross * pct) / 100).toFixed(3));
+    /* no more than the invoice still owes in metal - the gross follows */
+    const owed = this.fineMetal();
+    let capped = {};
+    if (owed && fine > owed.remaining) {
+      fine = parseFloat(owed.remaining.toFixed(3));
+      gross = parseFloat(((fine * 100) / pct).toFixed(3));
+      capped = { weight: gross };
+    }
     return {
+      ...capped,
       effective_weight: gross > 0 ? fine : "",
       amount: gross > 0 && live > 0 ? parseFloat((fine * live).toFixed(2)) : "",
       metal_rate: live > 0 ? parseFloat(((live * pct) / 100).toFixed(2)) : null,
@@ -988,6 +1005,28 @@ class PurchaseViewPage extends React.Component {
                 ) : null}
                 {this.canPayMetal() && formValues.payment_mode == "metal" ? (
                   <>
+                    {(() => {
+                      const owed = this.fineMetal();
+                      if (!owed) return null;
+                      const purity = metalPurityList.find((p) => p.id == formValues.purity_id);
+                      return (
+                        <Grid item xs={12} className='create-input'>
+                          <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 1, p: '6px 12px', bgcolor: '#e8f5e9', borderRadius: 1 }}>
+                            <Typography variant='body2' sx={{ color: 'text.secondary', fontWeight: 500 }}>
+                              Fine Metal{purity ? ` (${purity.name})` : ''}:
+                            </Typography>
+                            <Typography variant='body2' sx={{ fontWeight: 700, color: '#1a7a1a' }}>
+                              {owed.remaining.toFixed(3)} GM
+                            </Typography>
+                            {owed.paid > 0 && (
+                              <Typography variant='body2' sx={{ color: 'text.secondary' }}>
+                                (already paid {owed.paid.toFixed(3)} GM of {owed.total.toFixed(3)} GM)
+                              </Typography>
+                            )}
+                          </Box>
+                        </Grid>
+                      );
+                    })()}
                     <Grid item md={4} xs={12} className='create-input'>
                       <FormControl fullWidth error={formErros.payment_mode}>
                         <InputLabel>Purity</InputLabel>
