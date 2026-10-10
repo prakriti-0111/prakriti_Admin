@@ -159,18 +159,22 @@ export const purchaseStore = (data) => {
   };
 };
 
-export const purchaseViewRaw = (id) => {
-  return axios.get(`/superadmin/purchases/view/${id}`);
+export const purchaseViewRaw = (id, current = false) => {
+  /* current=1: a purchase made from a sale shows its Total / Due at today's
+     gold rate */
+  return axios.get(`/superadmin/purchases/view/${id}`, { params: current ? { current: 1 } : {} });
 };
 
 export const purchaseOnApprovalViewRaw = (id) => {
   return axios.get(`/superadmin/purchases-on-approve/view/${id}`);
 };
 
-export const purchaseView = (id) => {
+export const purchaseView = (id, current = false) => {
   return (dispatch) => {
     axios
-      .get(`/superadmin/purchases/view/${id}`)
+      /* current=1: a purchase made from a sale shows its Total / Due at
+         today's gold rate */
+      .get(`/superadmin/purchases/view/${id}`, { params: current ? { current: 1 } : {} })
       .then((response) => {
         console.log(response.data.data);
         if (response.data.success) {
