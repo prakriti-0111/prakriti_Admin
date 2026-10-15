@@ -69,7 +69,7 @@ import { getNotifiactions } from "actions/superadmin/notification.actions";
 import { getProfile } from "actions/superadmin/profile.actions";
 import { stocksList } from 'actions/superadmin/stocks.actions';
 import { purityList } from "actions/superadmin/purity.actions";
-import { fetchLiveGoldRates, invoiceFineMetal } from "src/helpers/goldRate";
+import { fetchLiveGoldRates, invoiceFineMetal, purityRatePerGram } from "src/helpers/goldRate";
 import './style.css';
 import { PAYMENT_STATUS_COLORS } from "../../../utils/paymentStatusColors";
 
@@ -134,7 +134,7 @@ class PurchaseViewPage extends React.Component {
     this.loadProfile();
     this.props.actions.purityList({ all: 1 });
     fetchLiveGoldRates().then((rates) =>
-      this.setState({ liveGoldPerGram: rates ? rates.rate24 : 0 })
+      this.setState({ liveGoldPerGram: rates ? rates.rate24 : 0, goldRates: rates })
     );
   }
 
@@ -155,10 +155,30 @@ class PurchaseViewPage extends React.Component {
       this.props.purityItems,
     );
 
+  /*
+   * Metal is valued as the invoice bills gold - gross weight x the purity's
+   * live karat rate - from the API's own rate. The API recomputes the same on
+   * save, so what is shown here is what gets recorded. Fine = gross x purity.
+   */
+  /* a purity with its display name, e.g. "24 Carat(99.5%)" */
+  metalPurityById = (id) => {
+    const item = (this.props.purityItems || []).find((p) => p.id == id);
+    return item
+      ? { ...item, name: item.name + `${item.value ? "(" + item.value + "%)" : ""}` }
+      : null;
+  };
+
+  /* the purity rate the amount uses, e.g. "24 Carat(99.5%) rate ₹14750.1/GM" */
+  metalRateLabel = () => {
+    const purity = this.metalPurityById(this.state.formValues.purity_id);
+    const rate = purityRatePerGram(purity ? purity.value : 100, this.state.goldRates);
+    return `${purity ? purity.name + " " : "24K "}rate ₹${rate}/GM`;
+  };
+
   metalValues = (weight, purity) => {
     let gross = parseFloat(weight) || 0;
     const pct = purity ? parseFloat(purity.value) || 100 : 100;
-    const live = this.state.liveGoldPerGram;
+    const rate = purityRatePerGram(pct, this.state.goldRates);
     let fine = parseFloat(((gross * pct) / 100).toFixed(3));
     /* no more than the invoice still owes in metal - the gross follows */
     const owed = this.fineMetal();
@@ -171,10 +191,11 @@ class PurchaseViewPage extends React.Component {
     return {
       ...capped,
       effective_weight: gross > 0 ? fine : "",
-      amount: gross > 0 && live > 0 ? parseFloat((fine * live).toFixed(2)) : "",
-      metal_rate: live > 0 ? parseFloat(((live * pct) / 100).toFixed(2)) : null,
+      amount: gross > 0 && rate > 0 ? parseFloat((gross * rate).toFixed(2)) : "",
+      metal_rate: rate > 0 ? rate : null,
     };
   };
+
 
   loadProfile = () => {
     getProfile().then((res) => {
@@ -941,7 +962,7 @@ class PurchaseViewPage extends React.Component {
                     disabled={formValues.payment_mode == "metal"}
                     helperText={
                       formValues.payment_mode == "metal" && this.state.liveGoldPerGram > 0
-                        ? `Fine weight x today's 24K rate ₹${this.state.liveGoldPerGram}/GM`
+                        ? `Gross weight x today's ${this.metalRateLabel()}`
                         : ""
                     }
                     InputProps={{
@@ -1013,11 +1034,16 @@ class PurchaseViewPage extends React.Component {
                         <Grid item xs={12} className='create-input'>
                           <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 1, p: '6px 12px', bgcolor: '#e8f5e9', borderRadius: 1 }}>
                             <Typography variant='body2' sx={{ color: 'text.secondary', fontWeight: 500 }}>
-                              Fine Metal{purity ? ` (${purity.name})` : ''}:
+                              Metal Needed{purity ? ` (${purity.name})` : ' (24K)'}:
                             </Typography>
                             <Typography variant='body2' sx={{ fontWeight: 700, color: '#1a7a1a' }}>
-                              {owed.remaining.toFixed(3)} GM
+                              {(purity && parseFloat(purity.value) > 0 ? (owed.remaining * 100) / parseFloat(purity.value) : owed.remaining).toFixed(3)} GM
                             </Typography>
+                              {purity && parseFloat(purity.value) > 0 && (
+                                <Typography variant='body2' sx={{ color: 'text.secondary' }}>
+                                  (= {owed.remaining.toFixed(3)} GM fine)
+                                </Typography>
+                              )}
                             {owed.paid > 0 && (
                               <Typography variant='body2' sx={{ color: 'text.secondary' }}>
                                 (already paid {owed.paid.toFixed(3)} GM of {owed.total.toFixed(3)} GM)
