@@ -3,6 +3,7 @@ import { matchRoutes, useLocation } from "react-router-dom"
 import { connect } from 'react-redux';
 import { Select, Stack, InputLabel, Box, Typography, FormControl, Card, CardContent, TextField, Grid, Button, MenuItem, CircularProgress } from '@mui/material';
 import axios from 'axios';
+import { fetchLiveGoldRates } from "src/helpers/goldRate";
 import { bindActionCreators } from 'redux';
 import { gridSpacing } from 'store/constant';
 import MainCard from 'ui-component/cards/MainCard';
@@ -146,11 +147,11 @@ class MaterialStockPage extends Component {
   }
 
   fetchLiveGoldRate = () => {
-    axios.get(process.env.GOLD_RATE_URL)
-      .then(res => {
-        const perGram = res.data && (res.data.base_per_gram || res.data.per_gram);
-        if (perGram && perGram['24K']) {
-          const rate = perGram['24K'];
+    /* the API's rate - the one invoices and metal payments use */
+    fetchLiveGoldRates({ force: true })
+      .then(rates => {
+        if (rates && rates.rate24 > 0) {
+          const rate = rates.rate24;
           this.setState({
             liveGoldRate24K: rate,
             liveGoldRateDisplay: `₹${parseFloat(rate).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}/gm`

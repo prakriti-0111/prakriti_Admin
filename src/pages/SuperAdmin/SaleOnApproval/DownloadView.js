@@ -58,14 +58,11 @@ import {
   getUserDashboardRoute,
   getApprovalColor,
   convertUnitToGram, prepareFileWindow, showFileWindow, closeFileWindow } from "src/helpers/helper";
-import {
-  metalValuesFromFine as computeMetalValues,
-  purePerGramRate,
-} from "src/helpers/metalPayment.mjs";
+import { metalValuesFromFine as computeMetalValues } from "src/helpers/metalPayment.mjs";
+import { fetchLiveGoldRates, purityRatePerGram, fineRatePerGram } from "src/helpers/goldRate";
 import { paymentStore, paymentList } from "actions/superadmin/payment.actions";
 import { SUPERADMIN_RESET_PAYMENT } from "../../../actionTypes/superadmin/payment.types";
 import { getNotifiactions } from "actions/superadmin/notification.actions";
-import axios from 'axios';
 import FileDownloadIcon from "@mui/icons-material/FileDownload";
 import { stocksList } from "actions/superadmin/stocks.actions";
 import { stocksTransferHistoryStore } from "actions/superadmin/stockHistory.actions";
@@ -358,16 +355,16 @@ class SaleViewPage extends React.Component {
   }
 
   handlePayNow = () => {
-    axios.get(process.env.GOLD_RATE_URL)
-      .then(res => {
-        const perGram = res.data && (res.data.base_per_gram || res.data.per_gram);
-        if (perGram && perGram['24K']) {
-          const liveGoldPerGram = perGram['24K'];
-          const liveGoldPriceDisplay = res.data.display || `₹${liveGoldPerGram.toLocaleString('en-IN')}`;
-          this.setState({ liveGoldPerGram, liveGoldPriceDisplay });
-        }
-      })
-      .catch(err => console.warn('gold rate fetch failed', err));
+    /* the API's rate - the one the invoice and the saved payment use */
+    fetchLiveGoldRates({ force: true }).then((rates) => {
+      if (rates && rates.rate24 > 0) {
+        this.setState({
+          liveGoldPerGram: rates.rate24,
+          liveGoldPriceDisplay: rates.display || `₹${rates.rate24.toLocaleString('en-IN')}`,
+          goldRates: rates,
+        });
+      }
+    });
     this.props.actions.stocksList({
       page: 1,
       limit: 50,
@@ -446,14 +443,12 @@ class SaleViewPage extends React.Component {
   // 24 Carat and pro-rated from there — e.g. 18 Carat of a 14422 spot is
   // 14422 x 76 / 99.5 = 11017.75, not 14422 x 76 / 100.
   getQuotedMetalRate = () => {
-    const { liveGoldPerGram, formValues } = this.state;
-    if (!(liveGoldPerGram > 0)) return null;
+    const { goldRates, formValues } = this.state;
     const purity = (this.props.purityItems || []).find(
       (p) => p.id == formValues.purity_id
     );
-    const purityPct = parseFloat(purity?.value) || 100;
-    const pureRate = purePerGramRate(liveGoldPerGram, this.props.purityItems);
-    return parseFloat(((pureRate * purityPct) / 100).toFixed(2));
+    const rate = purityRatePerGram(parseFloat(purity?.value) || 100, goldRates);
+    return rate > 0 ? rate : null;
   };
 
   handleSubmit = async () => {
@@ -461,11 +456,17 @@ class SaleViewPage extends React.Component {
       this.setState({ processing: true });
       const { formValues, sale } = this.state;
       const isMetalPayment = formValues.payment_mode === 'metal';
-      const totalAmount = parseFloat(formValues.amount) || 0;
+      const quotedRate = this.getQuotedMetalRate();
+      /* metal: the amount the API records - gross weight x purity rate - so the
+         stock transfer and the payment carry the same figure */
+      const totalAmount =
+        isMetalPayment && quotedRate > 0 && parseFloat(formValues.weight) > 0
+          ? parseFloat((parseFloat(formValues.weight) * quotedRate).toFixed(2))
+          : parseFloat(formValues.amount) || 0;
       // Store the rate the operator was actually quoted - the purity rate,
       // which applies to the gross weight. Deriving amount/fine_weight later
       // would give the 24K rate instead, which is not what was agreed.
-      const metalRate = this.getQuotedMetalRate();
+      const metalRate = quotedRate;
 
       // 1. Record payment against the sale
       this.props.actions.paymentStore({
@@ -691,14 +692,10 @@ class SaleViewPage extends React.Component {
     // gross x purity% = fine, fine x pure rate = amount. Both inputs clamp to
     // the fine metal still owed on the invoice, so neither can be used to
     // over-pay. One helper so the two directions cannot drift apart.
-    // The feed's 24K price is already a 99.50 price, so it is converted back
-    // to a notional 100% rate here rather than being discounted again.
-    const { liveGoldPerGram } = this.state;
+    // Valued as the invoice bills gold: gross x the purity's live rate, i.e.
+    // fine x (purity rate / purity%) - the API recomputes the same on save.
     const metalPurityPct = selectedPurityPct || 100;
-    const pureGoldPerGram = purePerGramRate(
-      liveGoldPerGram,
-      this.props.purityItems,
-    );
+    const pureGoldPerGram = fineRatePerGram(metalPurityPct, this.state.goldRates);
     const maxMetalAmount = calculatedFineWeight !== null && pureGoldPerGram > 0
       ? parseFloat((calculatedFineWeight * pureGoldPerGram).toFixed(2))
       : null;
@@ -1757,7 +1754,7 @@ class SaleViewPage extends React.Component {
                   color: '#fff', fontWeight: 800, fontSize: '0.9rem',
                   whiteSpace: 'nowrap'
                 }}>
-                  {this.state.selectedPurityLabel || '24K'}:-&nbsp;<strong>₹{(this.state.selectedPurityPerGram > 0 ? this.state.selectedPurityPerGram : this.state.liveGoldPerGram).toLocaleString('en-IN')}/gm</strong>
+                  {this.state.selectedPurityLabel || '24K'}:-&nbsp;<strong>₹{(this.getQuotedMetalRate() || this.state.liveGoldPerGram).toLocaleString('en-IN')}/gm</strong>
                 </span>
               ) : null}
             </DialogTitle>
@@ -1909,11 +1906,18 @@ class SaleViewPage extends React.Component {
                         <Grid item xs={12} className="create-input">
                           <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 1, p: '6px 12px', bgcolor: '#e8f5e9', borderRadius: 1 }}>
                             <Typography variant="body2" sx={{ color: 'text.secondary', fontWeight: 500 }}>
-                              Fine Metal ({selectedPurityForFine?.label || selectedPurityForFine?.name}):
+                              Metal Needed ({selectedPurityForFine?.label || selectedPurityForFine?.name || '24K'}):
                             </Typography>
+                            {/* fine gold still owed, shown as weight of the
+                                chosen purity: fine ÷ purity% (7.082 fine = 9.318 of 18 Carat) */}
                             <Typography variant="body2" sx={{ fontWeight: 700, color: '#1a7a1a' }}>
-                              {calculatedFineWeight.toFixed(3)} GM
+                              {(selectedPurityPct > 0 ? (calculatedFineWeight * 100) / selectedPurityPct : calculatedFineWeight).toFixed(3)} GM
                             </Typography>
+                            {selectedPurityPct > 0 && (
+                              <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                                (= {calculatedFineWeight.toFixed(3)} GM fine)
+                              </Typography>
+                            )}
                             {paidFineWeight > 0 && (
                               <Typography variant="body2" sx={{ color: 'text.secondary' }}>
                                 (already paid {paidFineWeight.toFixed(3)} GM of {invoiceFineWeight.toFixed(3)} GM)
@@ -1983,7 +1987,7 @@ class SaleViewPage extends React.Component {
                     </Grid> */}
                       <Grid item md={4} xs={12} className="create-input">
                         <TextField
-                          label="Weight(GM)"
+                          label={`Weight (${selectedPurityForFine?.label || selectedPurityForFine?.name || '24K'}) (GM)`}
                           variant="outlined"
                           fullWidth
                           type="number"
@@ -2030,7 +2034,7 @@ class SaleViewPage extends React.Component {
                             variant="h6"
                             gutterBottom
                             component="div"
-                          >{`Effective weight : ${formValues.effective_weight} GM`}</Typography>
+                          >{`Fine Weight : ${formValues.effective_weight} GM`}</Typography>
                         ) : (
                           <></>
                         )}

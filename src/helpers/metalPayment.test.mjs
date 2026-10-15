@@ -1,42 +1,33 @@
 /* Check for the Pay Now modal's metal maths: node src/helpers/metalPayment.test.mjs
    Lives outside metalPayment.mjs so webpack never sees the node: imports. */
 import { strict as assert } from "node:assert";
-import {
-  metalValuesFromFine,
-  purePerGramRate,
-  referencePurityPct,
-} from "./metalPayment.mjs";
+import { metalValuesFromFine } from "./metalPayment.mjs";
 
-// The live feed quotes 24K, which the purity master calls 99.50 — so 24 Carat
-// metal must settle at the quoted rate exactly, never 99.50% of it.
-const purityItems = [
-  { id: 1, name: "24 Carat", value: "99.50" },
-  { id: 2, name: "22 Carat", value: "91.60" },
-  { id: 3, name: "18 Carat", value: "76" },
-];
-const spot = 14422;
+// Metal is valued as the invoice bills gold: gross x the purity's own live
+// karat rate. Screens pass the rate per FINE gram (purity rate / purity%), so
+// 10g gross of any purity must settle at exactly 10 x its purity rate.
+const rate24 = 14750.1; // 24 Carat (99.50) billed at the 24K rate
+const rate18 = 11062.58; // 18 Carat (76) billed at the 18K rate
 
-assert.equal(referencePurityPct(purityItems), 99.5);
-assert.equal(referencePurityPct([]), 100);
-
-const pureRate = purePerGramRate(spot, purityItems);
 const paid24K = metalValuesFromFine((10 * 99.5) / 100, {
   purityPct: 99.5,
-  ratePerGram: pureRate,
+  ratePerGram: (rate24 * 100) / 99.5,
 });
 assert.equal(paid24K.weight, 10);
-assert.equal(paid24K.amount, round2(10 * spot)); // 144220, not 143498.90
+assert.equal(paid24K.amount, round2(10 * rate24)); // 147501, as billed
 
-// 18 Carat still prices off the same pure rate, pro rata to its purity.
 const paid18K = metalValuesFromFine((10 * 76) / 100, {
   purityPct: 76,
-  ratePerGram: pureRate,
+  ratePerGram: (rate18 * 100) / 76,
 });
 assert.equal(paid18K.weight, 10);
-// 10g at 76% is 7.638g of 24 Carat metal, priced at the quoted 24K rate.
-assert.equal(paid18K.amount, round2(((10 * 76) / 99.5) * spot));
+assert.equal(paid18K.amount, round2(10 * rate18)); // 110625.8, as billed
 
-assert.equal(purePerGramRate(0, purityItems), 0);
+// The amount comes from the rounded gross the API stores and prices, so a
+// fine weight whose gross needs rounding still shows the saved figure.
+const odd = metalValuesFromFine(1.233, { purityPct: 99.9, ratePerGram: (rate24 * 100) / 99.9 });
+assert.equal(odd.weight, 1.234);
+assert.equal(odd.amount, round2(1.234 * rate24));
 
 function round2(n) {
   return parseFloat(n.toFixed(2));
