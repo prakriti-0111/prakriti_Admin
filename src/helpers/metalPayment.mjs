@@ -25,37 +25,15 @@ export function metalValuesFromFine(
 
   if (!(capped > 0)) return { effective_weight: 0, weight: "", amount: "" };
 
+  // Amount from the ROUNDED gross, as the API prices what it stores
+  // (gross x purity rate, purity rate = fine rate x purity%) - so the figure
+  // shown is the figure saved, to the paisa.
+  const weight = round((capped * 100) / pct, 3);
   return {
     effective_weight: round(capped, 3),
-    weight: round((capped * 100) / pct, 3),
-    amount: rate > 0 ? round(capped * rate, 2) : "",
+    weight,
+    amount: rate > 0 ? round(weight * round((rate * pct) / 100, 2), 2) : "",
   };
-}
-
-/**
- * The purity the live gold feed is already quoted at. The feed returns
- * per_gram["24K"], and 24 Carat in the purity master is 99.50 — not 100 — so
- * that price is a converted price already. Scaling it by 99.50% again would
- * discount 24K metal against its own rate.
- *
- * Falls back to 100 only when there is no purity master to read.
- */
-export function referencePurityPct(purityItems) {
-  const values = (purityItems || [])
-    .map((p) => parseFloat(p?.value))
-    .filter((v) => v > 0);
-  return values.length ? Math.max(...values) : 100;
-}
-
-/**
- * Per-gram rate for notionally 100% pure metal, backed out of the quoted rate.
- * Everything else divides purity against 100, so this is the one place the
- * feed's own purity is undone.
- */
-export function purePerGramRate(quotedPerGram, purityItems) {
-  const quoted = parseFloat(quotedPerGram) || 0;
-  if (!(quoted > 0)) return 0;
-  return (quoted * 100) / referencePurityPct(purityItems);
 }
 
 const round = (n, dp) => parseFloat(n.toFixed(dp));
