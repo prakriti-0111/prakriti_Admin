@@ -74,6 +74,11 @@ class SalesExecutivePage extends Component {
           isBold: true
         },
         {
+          name: 'expense_wallet_balance',
+          display_name: 'Expense Wallet',
+          isBold: true
+        },
+        {
           name: 'attendence',
           display_name: 'Attendence',
           show_tag: true,

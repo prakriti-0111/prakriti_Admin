@@ -12,7 +12,7 @@ import { ConstructionOutlined, ContactPageSharp } from '@mui/icons-material';
 import withRouter from 'src/helpers/withRouter';
 import moment from 'moment';
 import { salesExecutiveList } from 'actions/superadmin/salesExecutive.actions';
-import {isSuperAdmin, isDistributor } from 'src/helpers/helper';
+import {isSuperAdmin, isDistributor, isAdmin } from 'src/helpers/helper';
 import { validateInteger, validateNumber } from '../../helpers/helper';
 import LoadingButton from '@mui/lab/LoadingButton';
 
@@ -51,6 +51,11 @@ class ExpenseForm extends React.Component {
     this.bill_imageRef = React.createRef();
     this.isSuperAdmin = isSuperAdmin();
     this.isDistributor = isDistributor();
+    this.isAdmin = isAdmin();
+    /* Roles that file an expense against one of their sales executives rather
+       than against themselves: they get the Sales Executive and Mode fields,
+       and the narrower column widths that make room for them. */
+    this.managesOthers = this.isSuperAdmin || this.isDistributor || this.isAdmin;
   }
 
   componentDidMount(){ 
@@ -339,7 +344,7 @@ class ExpenseForm extends React.Component {
       <form onSubmit={ handleSubmit }>
         <Box sx={{ flexGrow: 1}}>
             <Grid container spacing={2}>
-              <Grid item md={(this.isSuperAdmin || this.isDistributor) ? 2 : 3} xs={6}>
+              <Grid item md={this.managesOthers ? 2 : 3} xs={6}>
               <Field
                 name="date"
                 component={this.renderDateField}
@@ -347,7 +352,7 @@ class ExpenseForm extends React.Component {
               />
               </Grid>
               {
-                (this.isSuperAdmin || this.isDistributor) ?
+                this.managesOthers ?
                 <Grid item md={2} xs={6} className='create-input'>
                   <Field
                     name="user_id"
@@ -360,7 +365,7 @@ class ExpenseForm extends React.Component {
                 : null
               }
               
-              <Grid item md={(this.isSuperAdmin || this.isDistributor) ? 2 : 3} xs={(this.isSuperAdmin || this.isDistributor) ? 6 : 12} className='create-input'>
+              <Grid item md={this.managesOthers ? 2 : 3} xs={this.managesOthers ? 6 : 12} className='create-input'>
                 <Field
                   name="reason_id"
                   component={this.renderReasonField}
@@ -369,7 +374,7 @@ class ExpenseForm extends React.Component {
                   onChange={(event, val) => this.handleReasonChange(val)}
                 />
               </Grid>
-              <Grid item md={(this.isSuperAdmin || this.isDistributor) ? 1.5 : 3} xs={6} className='create-input'>
+              <Grid item md={this.managesOthers ? 1.5 : 3} xs={6} className='create-input'>
                 <Field
                   name="amount"
                   component={this.renderTextField}
@@ -379,7 +384,7 @@ class ExpenseForm extends React.Component {
                 />
               </Grid>
               {
-                (this.isSuperAdmin || this.isDistributor) ?
+                this.managesOthers ?
                 <Grid item md={2} xs={12} className='create-input'>
                   <Field
                     name="payment_mode"
@@ -390,7 +395,7 @@ class ExpenseForm extends React.Component {
                 </Grid>
                 : null
               }
-              <Grid item md={(this.isSuperAdmin || this.isDistributor) ? 2.5 : 3} xs={12} className='create-input'>
+              <Grid item md={this.managesOthers ? 2.5 : 3} xs={12} className='create-input'>
                 <Field
                   name="description"
                   component={this.renderTextField}
