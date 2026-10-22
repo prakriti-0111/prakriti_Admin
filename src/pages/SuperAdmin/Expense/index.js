@@ -15,12 +15,35 @@ import DialogContentText from '@mui/material/DialogContentText';
 import DialogTitle from '@mui/material/DialogTitle';
 import ExpenseForm from 'forms/SuperAdmin/ExpenseForm';
 import { withSnackbar } from 'notistack';
-import { isEmpty, toBase64, isSuperAdmin, displayAmount, hasPermission, isDistributor } from 'src/helpers/helper';
+import { isEmpty, toBase64, isSuperAdmin, displayAmount, hasPermission, isDistributor, isAdmin } from 'src/helpers/helper';
 import {
   SUPERADMIN_RESET_EXPENSE
 } from '../../../actionTypes/superadmin/expense.types';
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
 import { salesExecutiveList } from 'actions/superadmin/salesExecutive.actions';
+
+/* The API sends `type` already rendered as its label, so these are the two
+   values a row can carry. Money issued to the executive goes into their wallet,
+   an expense comes out of it - hence credit and debit. */
+const TYPE_ISSUE = 'Issue Amount';
+const TYPE_EXPENSE = 'Expense';
+
+/**
+ * The list shows dates day-first, the way the wallet's credit/debit table does.
+ *
+ * Display only, deliberately: the fetch endpoint hands the edit dialog the very
+ * same ExpenseCollection, and ExpenseForm builds its dates as MM/DD/YYYY - so
+ * switching the API to a day-first format would feed 20/10/2026 into a
+ * month-first picker. Anything that is not the MM/DD/YYYY the API sends is left
+ * untouched, so a future change there shows up as an unswapped date rather than
+ * a silently wrong one.
+ */
+const toDayFirst = (value) => {
+  const parts = String(value || '').split('/');
+  if (parts.length !== 3) return value;
+  const [month, day, year] = parts;
+  return `${day}/${month}/${year}`;
+};
 
 class ExpensePage extends Component {
 
@@ -56,6 +79,11 @@ class ExpensePage extends Component {
     }
     this.isSuperAdmin = isSuperAdmin();
     this.isDistributor = isDistributor();
+    this.isAdmin = isAdmin();
+    /* Roles that review other people's expenses rather than file their own:
+       they get the Sales Executive column and filter, and the wallet figure of
+       whoever is selected instead of their own. */
+    this.managesOthers = this.isSuperAdmin || this.isDistributor || this.isAdmin;
 
     this.columns = [
       {
@@ -63,7 +91,7 @@ class ExpensePage extends Component {
         display_name: 'Date'
       }
     ];
-    if (this.isSuperAdmin || this.isDistributor) {
+    if (this.managesOthers) {
       this.columns = [...this.columns,
       {
         name: 'user_name',
@@ -87,8 +115,19 @@ class ExpensePage extends Component {
         isImage: true
       },
       {
-        name: 'amount',
-        display_name: 'Amount',
+        name: 'credit',
+        display_name: 'Credit',
+        class_conditions: [
+          {
+            key: "action_value",
+            value: "Declined",
+            class_name: "strike_through"
+          }
+        ]
+      },
+      {
+        name: 'debit',
+        display_name: 'Debit',
         class_conditions: [
           {
             key: "action_value",
@@ -113,6 +152,12 @@ class ExpensePage extends Component {
   componentDidMount() {
     this.loadListData();
     this.props.actions.reasonList();
+    /* The Sales Executive filter reads this slice. It used to be filled only as
+       a side effect of the add form mounting, so a reviewer without add
+       permission saw an empty dropdown. */
+    if (this.managesOthers) {
+      this.props.actions.salesExecutiveList({ all: 1, role_id: 4 });
+    }
   }
 
   static getDerivedStateFromProps(props, state) {
@@ -393,12 +438,23 @@ class ExpensePage extends Component {
     })
   }
 
+  /* A row is either money in or money out, never both, so the other column is
+     left blank rather than showing a 0 that reads like a real entry. */
+  getRows = () => {
+    return (this.state.items || []).map((row) => ({
+      ...row,
+      date: toDayFirst(row.date),
+      credit: row.type === TYPE_ISSUE ? row.amount : '',
+      debit: row.type === TYPE_EXPENSE ? row.amount : '',
+    }));
+  }
+
   render() {
-    let typeList = [{label: 'Issue Amount', value: 'issue'}, {label: 'Expense', value: 'expense'}]
+    let typeList = [{label: TYPE_ISSUE, value: 'issue'}, {label: TYPE_EXPENSE, value: 'expense'}]
 
 
     return (
-      <MainCard title="Add Daily Expense" secondary={!this.isSuperAdmin && !this.isDistributor ? <><div className='expense_wallet'><AccountBalanceWalletIcon /> <span>{displayAmount(this.state.wallet_balance)}</span></div></> : null}>
+      <MainCard title="Add Daily Expense" secondary={!this.managesOthers ? <><div className='expense_wallet'><AccountBalanceWalletIcon /> <span>{displayAmount(this.state.wallet_balance)}</span></div></> : null}>
         {
           hasPermission(this.state.permissions, 'expense', 'add') || this.isDistributor ?
             <div className='tax-input loans_view p_view'>
@@ -410,7 +466,7 @@ class ExpensePage extends Component {
         <Box sx={{ flexGrow: 1, m: 0.5 }} className='ratn-dialog-inner'>
           <Grid container spacing={2} className='tax-input loans_view p_view'>
             {
-              this.isSuperAdmin || this.isDistributor ?
+              this.managesOthers ?
                 <Grid item xs={12} md={3} className='create-input'>
                   <FormControl fullWidth>
                     <InputLabel shrink>Sales Executive</InputLabel>
@@ -455,7 +511,7 @@ class ExpensePage extends Component {
               <Button variant="contained" className='search-btn' onClick={this.handleSearch}>Search</Button>
             </Grid>
             {
-              ((this.isSuperAdmin || this.isDistributor) && this.state.queryParams.user_id) ?
+              (this.managesOthers && this.state.queryParams.user_id) ?
               <Grid item xs={5} md={5} className='create-input'>
                 <div className='expense_wallet by_user'><AccountBalanceWalletIcon /> <span>{displayAmount(this.state.wallet_balance)}</span></div>
               </Grid>
@@ -471,7 +527,7 @@ class ExpensePage extends Component {
           ) : (
             <DataTable
               columns={this.columns}
-              rows={this.state.items}
+              rows={this.getRows()}
               page={this.state.queryParams.page}
               limit={this.state.queryParams.limit}
               total={this.state.total}
