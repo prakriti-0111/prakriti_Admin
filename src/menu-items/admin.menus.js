@@ -206,6 +206,14 @@ const adminMenus = [
           },
         ],
       },
+      {
+        id: "Expense",
+        title: "Expense",
+        type: "item",
+        url: urlPrefix + "/expenses",
+        icon: IconFileInvoice,
+        breadcrumbs: false,
+      },
     ],
   },
 ];
