@@ -21,6 +21,7 @@ import {
 import { gridSpacing } from "store/constant";
 import MainCard from "ui-component/cards/MainCard";
 import withRouter from "src/helpers/withRouter";
+import { fetchLiveGoldRates } from "src/helpers/goldRate";
 import DataTable from "src/utils/DataTable";
 import { withSnackbar } from "notistack";
 import { salesView } from "actions/superadmin/sales.actions";
@@ -55,7 +56,6 @@ import { getNotifiactions } from "actions/superadmin/notification.actions";
 import { stocksList } from 'actions/superadmin/stocks.actions';
 import { stocksTransferHistoryStore } from 'actions/superadmin/stockHistory.actions';
 import { purityList } from 'actions/superadmin/purity.actions';
-import axios from 'axios';
 import './style.css';
 import { PAYMENT_STATUS_COLORS } from "../../../utils/paymentStatusColors";
 
@@ -97,17 +97,15 @@ class SaleViewPage extends React.Component {
         display_name: "Payment Date",
       },
       {
-        name: "amount",
+        // the amount stays in its own column, pending or not - the status is
+        // shown under Actions (Pending / Accepted / Declined)
+        name: "amount_value",
+        fallback_name: "amount",
         display_name: "Amount",
       },
       {
-        // payment_mode_display carries the amount in brackets while a payment
-        // is still pending: "Cheque (Rs.500.00)". The cheque no / txn id have
-        // their own columns on this screen, so they are not repeated here.
-        name: "payment_mode_display",
-        fallback_name: "payment_mode",
+        name: "payment_mode",
         display_name: "Payment Mode",
-        isHtml: true,
       },
       {
         name: "cheque_no",
@@ -193,16 +191,16 @@ class SaleViewPage extends React.Component {
   }
 
   handlePayNow = () => {
-    axios.get(process.env.GOLD_RATE_URL)
-      .then(res => {
-        const perGram = res.data && (res.data.base_per_gram || res.data.per_gram);
-        if (perGram && perGram['24K']) {
-          const liveGoldPerGram = perGram['24K'];
-          const liveGoldPriceDisplay = res.data.display || `₹${liveGoldPerGram.toLocaleString('en-IN')}`;
-          this.setState({ liveGoldPerGram, liveGoldPriceDisplay });
-        }
-      })
-      .catch(err => console.warn('gold rate fetch failed', err));
+    /* the API's rate - the one the invoice and the saved payment use */
+    fetchLiveGoldRates({ force: true }).then((rates) => {
+      if (rates && rates.rate24 > 0) {
+        this.setState({
+          liveGoldPerGram: rates.rate24,
+          liveGoldPriceDisplay: rates.display || `₹${rates.rate24.toLocaleString('en-IN')}`,
+          goldRates: rates,
+        });
+      }
+    });
     this.props.actions.stocksList({
       page: 1,
       limit: 50,

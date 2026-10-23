@@ -1,24 +1,22 @@
-import axios from "axios";
+import axios from "actions/axios";
 
 /**
- * How long a fetched rate is considered current, and how often an open page
- * re-reads it. Arriving on a page more than this long after the last read
- * fetches again, so the quote is never staler than one interval.
+ * How often an open page re-reads the rate. The API holds the feed for 10
+ * minutes; this short cache only stops one screen asking several times at once.
  */
-export const GOLD_RATE_TTL = 5 * 60 * 1000;
+export const GOLD_RATE_TTL = 60 * 1000;
 
 let cached = null; // { at, rates }
 let inFlight = null; // concurrent callers share one request
 
 /**
- * Live per-karat gold rates.
+ * Today's per-karat gold rates (ex-GST), read from the API - the same cached
+ * rate it prices invoices and metal payments with. The screens used to fetch
+ * the third-party feed themselves, each at its own moment, so the Pay modal
+ * and the invoice it settled quoted different rates.
  *
- * The feed also quotes retailer_per_gram, which already carries the 3% GST.
- * Taking that would tax the customer twice, because the sale adds igst on top
- * of whatever rate it is given - so the ex-GST base_per_gram is the one to use.
- *
- * Resolves to null when the feed is unavailable, and callers keep the stored
- * price in that case rather than showing a zero.
+ * Resolves to { rate24, rate22, rate18, display }, or null when unavailable
+ * (callers keep the stored price rather than showing a zero).
  */
 export const fetchLiveGoldRates = ({ force = false } = {}) => {
   if (!force && cached && Date.now() - cached.at < GOLD_RATE_TTL) {
@@ -26,31 +24,50 @@ export const fetchLiveGoldRates = ({ force = false } = {}) => {
   }
   if (inFlight) return inFlight;
   inFlight = axios
-    /* Bounded on purpose: this is a third-party feed and the sale page waits on
-       it. Without a timeout a hung feed leaves the product table empty with no
-       spinner, because the cart request is behind it. Same 5s the API uses. */
-    .get(process.env.GOLD_RATE_URL, { timeout: 5000 })
+    .get("/superadmin/gold-rate", { timeout: 8000 })
     .then((res) => {
-      const perGram =
-        (res.data && (res.data.base_per_gram || res.data.per_gram)) || {};
-      const rate24 = parseFloat(perGram["24K"]) || 0;
+      const d = res.data && res.data.success ? res.data.data : null;
+      const rate24 = d ? parseFloat(d.rate24) || 0 : 0;
       if (!(rate24 > 0)) return cached ? cached.rates : null;
       const rates = {
         rate24,
-        rate22: parseFloat(perGram["22K"]) || 0,
-        rate18: parseFloat(perGram["18K"]) || 0,
+        rate22: parseFloat(d.rate22) || 0,
+        rate18: parseFloat(d.rate18) || 0,
+        display: d.display || "",
       };
       cached = { at: Date.now(), rates };
       return rates;
     })
-    /* A refresh that fails keeps the last rate we did get. Dropping to the
-       stored admin price would jump the quote mid-sale, which is worse than
-       holding a rate a few minutes old. */
+    /* a failed refresh keeps the last rate rather than jumping the quote */
     .catch(() => (cached ? cached.rates : null))
     .finally(() => {
       inFlight = null;
     });
   return inFlight;
+};
+
+/**
+ * Per-gram rate a purity is billed at, by its purity % - the API's
+ * liveRateForPurity bands (>=95 is 24K, >=85 22K, else 18K). Metal paid in is
+ * valued at exactly this rate on its gross weight, the way the invoice bills it.
+ */
+export const purityRatePerGram = (purityValue, rates) => {
+  const pct = parseFloat(purityValue) || 0;
+  if (!rates || !(pct > 0)) return 0;
+  if (pct >= 95) return rates.rate24;
+  if (pct >= 85) return rates.rate22;
+  return rates.rate18;
+};
+
+/**
+ * The same value per FINE gram (gross x purity% = fine), for screens that work
+ * in fine weight: fine x this = gross x purity rate. Mirrors the API's
+ * metalPaymentQuote, which decides the amount actually saved.
+ */
+export const fineRatePerGram = (purityValue, rates) => {
+  const pct = parseFloat(purityValue) || 0;
+  const rate = purityRatePerGram(pct, rates);
+  return rate > 0 ? (rate * 100) / pct : 0;
 };
 
 export const isGoldMaterial = (name) => /gold/i.test(name || "");
@@ -119,4 +136,38 @@ export const applyLiveGoldRate = (material, rates, increasePercent) => {
     org_rate: rate,
     org_per_gram_price: rate,
   };
+};
+
+/**
+ * Fine (24K) gold an invoice can be paid with, as the super admin's Pay Now
+ * shows it: the billed gold's pakka weight (or weight x purity), less metal
+ * already paid - pending payments included, so it cannot be paid twice;
+ * declined ones not. Returns null when the invoice bills no gold.
+ */
+export const invoiceFineMetal = (products, payments, purityItems) => {
+  const purityPct = {};
+  (purityItems || []).forEach((p) => {
+    if (p.name && p.value) purityPct[p.name.trim()] = parseFloat(p.value);
+  });
+  const pctOf = (name) => {
+    const key = (name || "").trim();
+    if (purityPct[key]) return purityPct[key];
+    const pct = key.match(/\((\d+\.?\d*)%\)/);
+    if (pct) return parseFloat(pct[1]);
+    const carat = key.match(/(\d+\.?\d*)\s*(?:carat|k)\b/i);
+    return carat ? (parseFloat(carat[1]) / 24) * 100 : 0;
+  };
+  let total = 0;
+  (products || []).filter((p) => !p.is_return).forEach((product) => {
+    (product.materials || []).forEach((m) => {
+      if (!isGoldMaterial(m.material_name)) return;
+      const pakka = parseFloat(m.pakka_weight) || 0;
+      total += pakka > 0 ? pakka : ((parseFloat(m.weight) || 0) * pctOf(m.purity_name)) / 100;
+    });
+  });
+  if (!(total > 0)) return null;
+  const paid = (payments || [])
+    .filter((row) => !/declin|fail|reject/i.test(String(row.action_value || "")))
+    .reduce((sum, row) => sum + (parseFloat(row.weight) || 0), 0);
+  return { total, paid, remaining: Math.max(total - paid, 0) };
 };

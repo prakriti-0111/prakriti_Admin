@@ -58,6 +58,14 @@ import { paymentStore, paymentList } from "actions/superadmin/payment.actions";
 import { SUPERADMIN_RESET_PAYMENT } from "../../../actionTypes/superadmin/payment.types";
 import { getRoleName, getUserDashboardRoute } from "src/helpers/helper";
 import { getNotifiactions } from "actions/superadmin/notification.actions";
+import { getProfile } from "actions/superadmin/profile.actions";
+import {
+  salesDownloadInvoiceInfo,
+  salesViewRaw,
+} from "actions/superadmin/sales.actions";
+import { purityList } from "actions/superadmin/purity.actions";
+import { fetchLiveGoldRates, invoiceFineMetal, purityRatePerGram } from "src/helpers/goldRate";
+import { isAdmin } from "src/helpers/helper";
 import FileDownloadIcon from "@mui/icons-material/FileDownload";
 import "./style.css";
 import { PAYMENT_STATUS_COLORS } from "../../../utils/paymentStatusColors";
@@ -87,9 +95,12 @@ class PurchaseViewPage extends React.Component {
       downloadingInfo: false,
       downloadingList: false,
       downloadingItem: false,
+      downloadingCurrent: false,
       paymentOpen: false,
       productListOpen: false,
       activeTab: "section-purchase-details",
+      profile: null,
+      liveGoldPerGram: 0, // today's 24K rate per gram, for metal payments
     };
 
     this.columns = [
@@ -98,17 +109,15 @@ class PurchaseViewPage extends React.Component {
         display_name: "Payment Date",
       },
       {
-        name: "amount",
+        // the amount stays in its own column, pending or not - the status is
+        // shown under Actions (Pending / Accepted / Declined)
+        name: "amount_value",
+        fallback_name: "amount",
         display_name: "Amount",
       },
       {
-        // payment_mode_display carries the amount in brackets while a payment
-        // is still pending: "Cheque (Rs.500.00)". The cheque no / txn id have
-        // their own columns on this screen, so they are not repeated here.
-        name: "payment_mode_display",
-        fallback_name: "payment_mode",
+        name: "payment_mode",
         display_name: "Payment Mode",
-        isHtml: true,
       },
       {
         name: "cheque_no",
@@ -118,13 +127,94 @@ class PurchaseViewPage extends React.Component {
         name: "txn_id",
         display_name: "Transaction #",
       },
+      {
+        // fine weight of a metal payment
+        name: "weight",
+        display_name: "Weight",
+      },
     ];
   }
 
   componentDidMount() {
     this.loadViewData();
     this.loadListData();
+    getProfile().then((res) => {
+      if (res.data.success) this.setState({ profile: res.data.data });
+    });
+    this.props.actions.purityList({ all: 1 });
+    fetchLiveGoldRates().then((rates) =>
+      this.setState({ liveGoldPerGram: rates ? rates.rate24 : 0, goldRates: rates })
+    );
   }
+
+  /* an admin (not an "own" account) may pay a purchase in metal */
+  canPayMetal = () =>
+    isAdmin() && this.state.profile && this.state.profile.own == false;
+
+  /* every purity, so an admin holding no metal can still pay in metal (their
+     stock goes below zero when it moves) */
+  metalPurities = () =>
+    (this.props.purityItems || []).map((item) => ({
+      id: item.id,
+      unit_id: item.unit_id || "",
+      value: item.value,
+      name: item.name + `${item.value ? "(" + item.value + "%)" : ""}`,
+    }));
+
+  /*
+   * Metal is valued like the super admin's Pay Now: fine weight = gross x
+   * purity, amount = fine x today's 24K rate, and the quoted rate saved with
+   * the payment is the purity rate (24K x purity), which applies to the gross.
+   */
+  /* invoice fine metal: total, already paid, still payable */
+  fineMetal = () =>
+    invoiceFineMetal(
+      this.state.purchase && this.state.purchase.products,
+      this.state.items,
+      this.props.purityItems,
+    );
+
+  /*
+   * Metal is valued as the invoice bills gold - gross weight x the purity's
+   * live karat rate - from the API's own rate. The API recomputes the same on
+   * save, so what is shown here is what gets recorded. Fine = gross x purity.
+   */
+  /* a purity with its display name, e.g. "24 Carat(99.5%)" */
+  metalPurityById = (id) => {
+    const item = (this.props.purityItems || []).find((p) => p.id == id);
+    return item
+      ? { ...item, name: item.name + `${item.value ? "(" + item.value + "%)" : ""}` }
+      : null;
+  };
+
+  /* the purity rate the amount uses, e.g. "24 Carat(99.5%) rate ₹14750.1/GM" */
+  metalRateLabel = () => {
+    const purity = this.metalPurityById(this.state.formValues.purity_id);
+    const rate = purityRatePerGram(purity ? purity.value : 100, this.state.goldRates);
+    return `${purity ? purity.name + " " : "24K "}rate ₹${rate}/GM`;
+  };
+
+  metalValues = (weight, purity) => {
+    let gross = parseFloat(weight) || 0;
+    const pct = purity ? parseFloat(purity.value) || 100 : 100;
+    const rate = purityRatePerGram(pct, this.state.goldRates);
+    let fine = parseFloat(((gross * pct) / 100).toFixed(3));
+    /* no more than the invoice still owes in metal - the gross follows */
+    const owed = this.fineMetal();
+    let capped = {};
+    if (owed && fine > owed.remaining) {
+      fine = parseFloat(owed.remaining.toFixed(3));
+      gross = parseFloat(((fine * 100) / pct).toFixed(3));
+      capped = { weight: gross };
+    }
+    return {
+      ...capped,
+      effective_weight: gross > 0 ? fine : "",
+      amount: gross > 0 && rate > 0 ? parseFloat((gross * rate).toFixed(2)) : "",
+      metal_rate: rate > 0 ? rate : null,
+    };
+  };
+
 
   loadListData = () => {
     let data = { ...this.state.queryParams, table_id: this.props.params.id };
@@ -184,6 +274,34 @@ class PurchaseViewPage extends React.Component {
       this.setState({
         downloadingInfo: false,
       });
+    }
+  };
+
+  /*
+   * The current-rate invoice of a purchase made from a sale is that sale's own
+   * current invoice - same pieces, same invoice number - priced at today's gold
+   * rate: held pieces billed, returned ones crossed out. The API lets the
+   * buyer download it (current=1 only) on the seller's letterhead.
+   */
+  handleDownloadCurrent = async (saleId) => {
+    // opened on the click itself so mobile does not treat it as a popup
+    const fileWindow = prepareFileWindow();
+    this.setState({ downloadingCurrent: true });
+    try {
+      const response = await salesDownloadInvoiceInfo(saleId, true);
+      if (response.data.success) {
+        this.setState({ downloadingCurrent: false }, () =>
+          showFileWindow(fileWindow, response.data.data.url),
+        );
+      } else {
+        closeFileWindow(fileWindow);
+        this.setState({ downloadingCurrent: false });
+        this.props.enqueueSnackbar(response.data.message || "Could not create the current invoice.", { variant: "error" });
+      }
+    } catch (e) {
+      closeFileWindow(fileWindow);
+      this.setState({ downloadingCurrent: false });
+      this.props.enqueueSnackbar("Could not create the current invoice.", { variant: "error" });
     }
   };
 
@@ -365,6 +483,12 @@ class PurchaseViewPage extends React.Component {
         notes: "",
         cheque_no: "",
         txn_id: "",
+        material_id: "1", // Gold
+        purity_id: "",
+        unit_id: "",
+        weight: "",
+        effective_weight: "",
+        metal_rate: null,
         table_type: "purchase",
         table_id: "",
       },
@@ -377,21 +501,34 @@ class PurchaseViewPage extends React.Component {
         cheque_no: false,
         txn_id: false,
         due_date: false,
+        purity_id: false,
+        weight: false,
       },
     };
   };
 
-  handleSubmit = () => {
+  handleSubmit = async () => {
     if (!this.formValidate()) {
       this.setState({
         processing: true,
       });
+      const { formValues, purchase } = this.state;
       let data = {
-        ...this.state.formValues,
-        user_id: this.state.purchase.user_id,
-        table_id: this.state.purchase.id,
+        ...formValues,
+        user_id: purchase.supplier_id,
+        table_id: purchase.id,
+        // the Due shown is at today's gold rate for a purchase made from a
+        // sale, so the API re-values that sale before settling
+        ...(purchase.sale ? { at_current_rate: 1 } : {}),
       };
-      this.props.actions.paymentStore(data);
+      if (formValues.payment_mode !== "metal") {
+        ["material_id", "purity_id", "unit_id", "weight", "effective_weight", "metal_rate"]
+          .forEach((k) => delete data[k]);
+      }
+      /* The API moves the metal itself - when the super admin accepts the
+         payment, or at once when it settles on the spot - writing the stock
+         history; the admin's stock may go below zero. */
+      await this.props.actions.paymentStore(data);
     }
   };
 
@@ -419,6 +556,18 @@ class PurchaseViewPage extends React.Component {
       hasErr = true;
     } else {
       formErros.payment_mode = false;
+    }
+    if (formValues.payment_mode === "metal") {
+      if (!(this.state.liveGoldPerGram > 0)) {
+        hasErr = true;
+        this.props.enqueueSnackbar(
+          "Today's gold rate is not available right now. Please try again.",
+          { variant: "error" },
+        );
+      }
+      formErros.purity_id = isEmpty(formValues.purity_id);
+      formErros.weight = !(parseFloat(formValues.weight) > 0);
+      if (formErros.purity_id || formErros.weight) hasErr = true;
     }
     if (isEmpty(formValues.payment_date)) {
       formErros.payment_date = true;
@@ -477,10 +626,43 @@ class PurchaseViewPage extends React.Component {
 
   loadViewData = async () => {
     this.setState({ purchase: null });
-    const response = await purchaseViewRaw(this.props.params.id);
-    if (response.data.success) {
-      this.setState({ purchase: response.data.data });
+    const response = await purchaseViewRaw(this.props.params.id, true);
+    if (!response.data.success) return;
+    let purchase = response.data.data;
+    /*
+     * A purchase made from a sale is the same pieces as that sale, so it is
+     * shown at today's gold rate exactly as the seller's Sale Details shows
+     * it: held pieces repriced, returned ones flagged, report charge and the
+     * Due worked out the same way. The purchase keeps its own identity,
+     * supplier, payments and actions; only the figures come from the sale.
+     */
+    if (purchase.sale) {
+      try {
+        const live = await salesViewRaw(purchase.sale.id, true);
+        if (live.data.success) {
+          const sale = live.data.data;
+          purchase = {
+            ...purchase,
+            subCatItems: sale.subCatItems,
+            products: sale.products,
+            taxable_amount: sale.taxable_amount,
+            tax: sale.total_tax,
+            discount: sale.discount,
+            bill_amount: sale.bill_amount,
+            total_payable: sale.total_payable,
+            due_amount: sale.due_amount,
+            due_amount_display: sale.due_amount_display,
+            report_qty: sale.report_qty,
+            report_charge: sale.report_charge,
+            report_tax_percentage: sale.report_tax_percentage,
+            at_current_rate: true,
+          };
+        }
+      } catch (e) {
+        // keep the stored figures if today's rate cannot be loaded
+      }
     }
+    this.setState({ purchase });
   };
 
   render() {
@@ -555,6 +737,23 @@ class PurchaseViewPage extends React.Component {
                 <FileDownloadIcon sx={{ ml: 0.5 }} />
               </Button>
             )}
+            {/* the same jewellery re-costed at today's gold rate - only for a
+                purchase made from a sale */}
+            {purchase && purchase.sale ? (
+              this.state.downloadingCurrent ? (
+                <CircularProgress size="28px" />
+              ) : (
+                <Button
+                  variant="contained"
+                  onClick={() => this.handleDownloadCurrent(purchase.sale.id)}
+                  sx={{ color: "#fff !important", backgroundColor: "#f57c00" }}
+                  title="Re-costed at today's gold rate"
+                >
+                  Current Invoice
+                  <FileDownloadIcon sx={{ ml: 0.5 }} />
+                </Button>
+              )
+            ) : null}
             <Button
               variant="contained"
               onClick={() => this.props.navigate(-1)}
@@ -627,13 +826,18 @@ class PurchaseViewPage extends React.Component {
                         </TableRow>
                       </TableHead>
                       <TableBody>
-                        {purchase.subCatItems.map((row, i) => (
-                          <SubCatRow key={i} row={row} index={i} />
-                        ))}
+                        {/* returned pieces are counted in the totals box, not billed */}
+                        {purchase.subCatItems
+                          .filter((row) => !row.is_return)
+                          .map((row, i) => (
+                            <SubCatRow key={i} row={row} index={i} />
+                          ))}
                         {(() => {
                           const materialTotals = {};
                           let totalTaxableAmt = 0;
-                          purchase.subCatItems.forEach((item) => {
+                          purchase.subCatItems
+                            .filter((item) => !item.is_return)
+                            .forEach((item) => {
                             const taxableAmt =
                               parseFloat(item.taxableAmount) || 0;
                             totalTaxableAmt += taxableAmt;
@@ -792,18 +996,52 @@ class PurchaseViewPage extends React.Component {
                         const subTotal = parseAmt(purchase.taxable_amount);
                         const tax = parseAmt(purchase.tax);
                         const discount = parseAmt(purchase.discount);
+                        // at today's rate the payable carries the report
+                        // charge and its GST, so they are shown as well
+                        const report = purchase.at_current_rate
+                          ? (parseFloat(purchase.report_qty) || 0) *
+                            (parseFloat(purchase.report_charge) || 0)
+                          : 0;
+                        const reportTax =
+                          (report * (parseFloat(purchase.report_tax_percentage) || 0)) / 100;
+                        const returnedCount = (purchase.products || []).filter(
+                          (p) => p.is_return,
+                        ).length;
                         return (
                           <>
+                            {returnedCount > 0 && (
+                              <div className="invoice-totals-line">
+                                <span>Returned Items</span>
+                                <span>{returnedCount}</span>
+                              </div>
+                            )}
                             <div className="invoice-totals-line">
                               <span style={{ fontWeight: 700 }}>Sub Total</span>
                               <span style={{ fontWeight: 700 }}>
                                 ₹{formatIndianNumber(subTotal)}
                               </span>
                             </div>
+                            {report > 0 && (
+                              <div className="invoice-totals-line">
+                                <span>
+                                  Report Charge ({purchase.report_qty} x ₹
+                                  {formatIndianNumber(purchase.report_charge)})
+                                </span>
+                                <span>₹{formatIndianNumber(report)}</span>
+                              </div>
+                            )}
                             <div className="invoice-totals-line">
                               <span>Tax</span>
                               <span>₹{formatIndianNumber(tax)}</span>
                             </div>
+                            {reportTax > 0 && (
+                              <div className="invoice-totals-line">
+                                <span>
+                                  Report Tax ({parseFloat(purchase.report_tax_percentage)}%)
+                                </span>
+                                <span>₹{formatIndianNumber(reportTax)}</span>
+                              </div>
+                            )}
                             <div className="invoice-totals-line">
                               <span>Discount</span>
                               <span>
@@ -1107,6 +1345,12 @@ class PurchaseViewPage extends React.Component {
                       variant="outlined"
                       fullWidth
                       value={formValues.amount}
+                      disabled={formValues.payment_mode === "metal"}
+                      helperText={
+                        formValues.payment_mode === "metal" && this.state.liveGoldPerGram > 0
+                          ? `Gross weight x today's ${this.metalRateLabel()}`
+                          : ""
+                      }
                       InputProps={{
                         startAdornment: (
                           <InputAdornment position="start">₹</InputAdornment>
@@ -1138,6 +1382,9 @@ class PurchaseViewPage extends React.Component {
                         <MenuItem value="cheque">Cheque</MenuItem>
                         <MenuItem value="imps_neft">BANKING/RTGS/NEFT</MenuItem>
                         <MenuItem value="online">UPI/PhonePe/Gpay</MenuItem>
+                        {this.canPayMetal() && (
+                          <MenuItem value="metal">Metal</MenuItem>
+                        )}
                       </Select>
                     </FormControl>
                   </Grid>
@@ -1167,6 +1414,101 @@ class PurchaseViewPage extends React.Component {
                         }
                       />
                     </Grid>
+                  ) : null}
+                  {this.canPayMetal() && formValues.payment_mode === "metal" ? (
+                    <>
+                      {(() => {
+                        const owed = this.fineMetal();
+                        if (!owed) return null;
+                        const purity = this.metalPurities().find((p) => p.id == formValues.purity_id);
+                        return (
+                          <Grid item xs={12} className="create-input">
+                            <Box sx={{ display: "inline-flex", alignItems: "center", gap: 1, p: "6px 12px", bgcolor: "#e8f5e9", borderRadius: 1 }}>
+                              <Typography variant="body2" sx={{ color: "text.secondary", fontWeight: 500 }}>
+                                Metal Needed{purity ? ` (${purity.name})` : " (24K)"}:
+                              </Typography>
+                              <Typography variant="body2" sx={{ fontWeight: 700, color: "#1a7a1a" }}>
+                                {(purity && parseFloat(purity.value) > 0 ? (owed.remaining * 100) / parseFloat(purity.value) : owed.remaining).toFixed(3)} GM
+                              </Typography>
+                              {purity && parseFloat(purity.value) > 0 && (
+                                <Typography variant="body2" sx={{ color: "text.secondary" }}>
+                                  (= {owed.remaining.toFixed(3)} GM fine)
+                                </Typography>
+                              )}
+                              {owed.paid > 0 && (
+                                <Typography variant="body2" sx={{ color: "text.secondary" }}>
+                                  (already paid {owed.paid.toFixed(3)} GM of {owed.total.toFixed(3)} GM)
+                                </Typography>
+                              )}
+                            </Box>
+                          </Grid>
+                        );
+                      })()}
+                      <Grid item md={4} xs={12} className="create-input">
+                        <FormControl fullWidth error={formErros.purity_id}>
+                          <InputLabel>Purity</InputLabel>
+                          <Select
+                            className="input-inner"
+                            value={formValues.purity_id}
+                            fullWidth
+                            label="Purity"
+                            onChange={(event) => {
+                              const purity = this.metalPurities().find(
+                                (item) => item.id == event.target.value,
+                              );
+                              if (!purity) return;
+                              this.setState({
+                                formValues: {
+                                  ...this.state.formValues,
+                                  ...this.metalValues(formValues.weight, purity),
+                                  purity_id: purity.id,
+                                  unit_id: purity.unit_id,
+                                },
+                              });
+                            }}
+                          >
+                            {this.metalPurities().map((item) => (
+                              <MenuItem key={item.id} value={item.id}>
+                                {item.name}
+                              </MenuItem>
+                            ))}
+                          </Select>
+                        </FormControl>
+                      </Grid>
+                      <Grid item md={4} xs={12} className="create-input">
+                        <TextField
+                          label="Gross Weight(GM)"
+                          variant="outlined"
+                          fullWidth
+                          type="number"
+                          inputProps={{ step: "0.001", min: 0 }}
+                          error={formErros.weight}
+                          value={formValues.weight}
+                          onChange={(event) => {
+                            let value = event.target.value;
+                            // 3 decimals, like every other weight
+                            if (value.includes(".") && value.split(".")[1].length > 3) {
+                              value = parseFloat(value).toFixed(3);
+                            }
+                            const purity = this.metalPurities().find(
+                              (item) => item.id == formValues.purity_id,
+                            );
+                            this.setState({
+                              formValues: {
+                                ...this.state.formValues,
+                                weight: value,
+                                ...this.metalValues(value, purity),
+                              },
+                            });
+                          }}
+                        />
+                        {formValues.effective_weight > 0 ? (
+                          <Typography variant="h6" gutterBottom component="div">
+                            {`Fine weight : ${formValues.effective_weight} GM`}
+                          </Typography>
+                        ) : null}
+                      </Grid>
+                    </>
                   ) : null}
                   <Grid item md={4} xs={12} className="create-input">
                     <TextareaAutosize
@@ -1244,6 +1586,7 @@ const mapStateToProps = (state) => ({
   items: state.superadmin.payment.items,
   total: state.superadmin.payment.total,
   auth: state.auth,
+  purityItems: state.superadmin.purity.items,
 });
 
 const mapDispatchToProps = (dispatch) => {
@@ -1253,6 +1596,7 @@ const mapDispatchToProps = (dispatch) => {
       {
         paymentStore,
         paymentList,
+        purityList,
         getNotifiactions,
       },
       dispatch,
