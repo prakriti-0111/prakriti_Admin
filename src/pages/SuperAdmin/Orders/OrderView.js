@@ -27,6 +27,7 @@ import {
   ImageList,
   ImageListItem,
   Backdrop,
+  Chip,
 } from "@mui/material";
 import Dialog from "@mui/material/Dialog";
 import DialogContent from "@mui/material/DialogContent";
@@ -42,6 +43,11 @@ import {
   orderSaleProceed,
   orderUpdateStatus,
   updateOrderProducts,
+  orderAssign,
+  assignableSalesExecutives,
+  orderStockRequestForAdmin,
+  stockRequestAddToCart,
+  stockRequestFromHolder,
 } from "actions/superadmin/order.actions";
 import { stocksHistoryStoreByProduct } from "actions/superadmin/stockHistory.actions";
 import { bindActionCreators } from "redux";
@@ -54,6 +60,7 @@ import {
   isManager,
   getNewlineText,
   isSuperAdmin,
+  isAdmin,
   isEmpty,
   convertUnitToGram,
   weightFormat,
@@ -62,6 +69,10 @@ import DataTable from "src/utils/DataTable";
 import CloseIcon from "@mui/icons-material/Close";
 import { employeeList } from "actions/superadmin/employee.actions";
 import _ from "lodash";
+
+import { StockPath, RequestSteps } from "src/utils/StockTracking";
+/* how a holder of a requested piece is named in "Available With" */
+const HOLDER_ROLE = { super_admin: "Super Admin", admin: "Admin", sales_executive: "SE", distributor: "Distributor" };
 
 class OrderView extends React.Component {
   constructor(props) {
@@ -74,6 +85,9 @@ class OrderView extends React.Component {
       saleDialog: false,
       from_order_price: 0,
       processing: false,
+      assignDialog: false,
+      assignSeId: "",
+      assignSeList: [],
       openDialog: false,
       order_status: "",
       advance_amount: "",
@@ -141,6 +155,7 @@ class OrderView extends React.Component {
     ];
     this.isManager = isManager();
     this.isSuperAdmin = isSuperAdmin();
+    this.isAdmin = isAdmin();
     this.timer = 0;
   }
 
@@ -171,6 +186,75 @@ class OrderView extends React.Component {
         });
       }
     });
+    /* a stock transfer request on the order sent to this admin / the super admin */
+    if (this.isAdmin || this.isSuperAdmin) {
+      orderStockRequestForAdmin(this.props.params.id)
+        // no request comes back as an empty value - only a real one (with an id) shows
+        .then((res) => this.setState({ stockRequest: res.data.success && res.data.data && res.data.data.id ? res.data.data : null }))
+        .catch(() => {});
+    }
+  };
+
+  /* ticked items of the SE's request (ones another admin / the super admin holds) */
+  toggleHolderItem = (id, checked) => {
+    const sel = (this.state.holderSel || []).filter((x) => x !== id);
+    this.setState({ holderSel: checked ? [...sel, id] : sel });
+  };
+
+  holderSelectable = () =>
+    ((this.state.stockRequest && this.state.stockRequest.requested_items) || [])
+      .filter((i) => !i.with_you && (i.holders || []).some((h) => h.request_to))
+      .map((i) => i.order_product_id);
+
+  /* who to ask for the ticked items (an SE of your team, an admin, the super
+     admin), with how many of the ticked items each can supply */
+  selectedHolders = () => {
+    const sel = this.state.holderSel || [];
+    const map = new Map();
+    for (const it of (this.state.stockRequest && this.state.stockRequest.requested_items) || []) {
+      if (!sel.includes(it.order_product_id)) continue;
+      const targets = new Map((it.holders || []).filter((x) => x.request_to).map((x) => [x.request_to.user_id, x.request_to]));
+      for (const to of targets.values()) {
+        const cur = map.get(to.user_id) || { ...to, items: 0 };
+        cur.items++;
+        map.set(to.user_id, cur);
+      }
+    }
+    const order = { sales_executive: 0, distributor: 0, admin: 1, super_admin: 2 };
+    return [...map.values()].sort((a, b) => (order[a.role] ?? 1) - (order[b.role] ?? 1));
+  };
+
+  handleRequestHolder = async (holder) => {
+    const ids = (this.state.holderSel || []).filter((id) =>
+      ((this.state.stockRequest.requested_items || []).find((i) => i.order_product_id == id) || { holders: [] })
+        .holders.some((h) => h.request_to && h.request_to.user_id == holder.user_id),
+    );
+    this.setState({ requestingHolder: holder.user_id });
+    const res = await stockRequestFromHolder(this.state.order.id, holder.user_id, ids).catch((e) => e.response);
+    this.setState({ requestingHolder: null });
+    if (res && res.data && res.data.success) {
+      this.props.enqueueSnackbar(res.data.message, { variant: "success" });
+      this.setState({ holderSel: [] });
+      this.loadViewData();
+    } else {
+      this.props.enqueueSnackbar((res && res.data && res.data.message) || "Could not send the request.", { variant: "error" });
+    }
+  };
+
+  /* put the requested pieces in the admin's cart, then go sell them to the SE */
+  handleStockRequestToCart = async () => {
+    if (this.state.addingToCart) return;
+    this.setState({ addingToCart: true });
+    const res = await stockRequestAddToCart(this.state.stockRequest.id).catch((e) => e.response);
+    this.setState({ addingToCart: false });
+    if (res && res.data && res.data.success) {
+      this.props.enqueueSnackbar(res.data.message, { variant: "success" });
+      const to = res.data.data && res.data.data.requested_by_id;
+      this.props.navigate(getUserDashboardRoute(getRoleName(this.state.auth)) + "/sales/Create" + (to ? "?transfer_to=" + to : ""));
+    } else {
+      this.props.enqueueSnackbar((res && res.data && res.data.message) || "Could not add to cart.", { variant: "error" });
+      this.loadViewData();
+    }
   };
 
   componentDidUpdate(prevProps) {
@@ -193,6 +277,7 @@ class OrderView extends React.Component {
   };
 
   handleSaleSubmit = async () => {
+    if (this.state.order && this.state.order.can_manage === false) return; // view only
     this.setState({
       processing: true,
     });
@@ -215,7 +300,40 @@ class OrderView extends React.Component {
     }
   };
 
+  /* assign the order to an SE - only for whoever handles it */
+  handleAssignOpen = async () => {
+    if (this.state.order && this.state.order.can_manage === false) return;
+    this.setState({ assignDialog: true, assignSeId: this.state.order.sales_executive_id || "" });
+    if (!this.state.assignSeList.length) {
+      const res = await assignableSalesExecutives();
+      if (res.data.success) {
+        const data = res.data.data;
+        this.setState({ assignSeList: (data && data.items) || data || [] });
+      }
+    }
+  };
+
+  handleAssignSubmit = async () => {
+    if (!this.state.assignSeId) {
+      this.props.enqueueSnackbar("Please select a sales executive.", { variant: "error" });
+      return;
+    }
+    this.setState({ processing: true });
+    const res = await orderAssign(this.state.order.id, { user_id: this.state.assignSeId });
+    this.setState({ processing: false });
+    if (res.data.success) {
+      this.props.enqueueSnackbar(res.data.message, { variant: "success" });
+      this.setState({ assignDialog: false });
+      this.loadViewData();
+    } else {
+      this.props.enqueueSnackbar(res.data.message, { variant: "error" });
+    }
+  };
+
   handleStatus = () => {
+    /* an order handled by an admin is that admin's to act on - the super
+       admin (and anyone else) only views it */
+    if (this.state.order && this.state.order.can_manage === false) return;
     this.setState({
       order_status: this.state.order.status,
       openDialog: true,
@@ -230,18 +348,21 @@ class OrderView extends React.Component {
   };
 
   handleSubmit = async () => {
+    if (this.state.order && this.state.order.can_manage === false) return; // view only
     this.setState({
       processing: true,
     });
     let res = await orderUpdateStatus(this.state.order.id, {
       status: this.state.order_status,
       advance_amount: this.state.advance_amount,
+      notes: this.state.notes,
     });
     let openDialog = false;
     if (res.data.success) {
       this.props.enqueueSnackbar(res.data.message, { variant: "success" });
       this.loadViewData();
       this.setState({
+        notes: "",
         advance_amount: "",
       });
     } else {
@@ -268,6 +389,7 @@ class OrderView extends React.Component {
   };
 
   handleCheckBox = (e, index) => {
+    if (this.state.order && this.state.order.can_manage === false) return; // view only
     let action_products = this.state.action_products;
     let order = this.state.order;
     let key = "item_" + index;
@@ -340,6 +462,7 @@ class OrderView extends React.Component {
   };
 
   handleProductConfirmSubmit = () => {
+    if (this.state.order && this.state.order.can_manage === false) return; // view only
     let err = false;
     let action_products = this.state.action_products;
     for (let key of Object.keys(action_products)) {
@@ -426,6 +549,7 @@ class OrderView extends React.Component {
   };
 
   handleSizeChange = async (e, p) => {
+    if (this.state.order && this.state.order.can_manage === false) return; // view only
     const { name, value } = e.target;
     let item = p.cart_data;
     let sizeMaterial = _.filter(item.size_materials, function (s) {
@@ -493,6 +617,7 @@ class OrderView extends React.Component {
   };
 
   handlPurityChange = async (e, row, m) => {
+    if (this.state.order && this.state.order.can_manage === false) return; // view only
     this.setState({
       is_updating: true,
     });
@@ -673,6 +798,7 @@ class OrderView extends React.Component {
   };
 
   handleReceiveSubmitProceed = async () => {
+    if (this.state.order && this.state.order.can_manage === false) return; // view only
     let { order, receiving_product } = this.state;
     let err = false;
     if (!err) {
@@ -904,6 +1030,169 @@ class OrderView extends React.Component {
                   />
                 </Grid>
               ) : null}
+              {(order.is_customer || order.is_retailer) && order.can_manage !== false ? (
+                <Grid item xs={12} md={1} className='create-input' style={{ display: "flex", alignItems: "center" }}>
+                  <Button variant='contained' onClick={this.handleAssignOpen}>
+                    Assign
+                  </Button>
+                </Grid>
+              ) : null}
+              {/* the API returns only a request sent to you, so no can_manage check here:
+                  an admin asked by another admin works the request without handling the order */}
+              {(this.isAdmin || this.isSuperAdmin) && this.state.stockRequest ? (
+                <Grid item xs={12} className='create-input'>
+                  {/* a stock request sent to you: what was asked, where each piece is, who to ask next */}
+                  <div style={{ border: "1px solid #e6e9ef", borderRadius: 8, background: "#fff", overflow: "hidden" }}>
+                    <div style={{ padding: "12px 16px", background: "#f8f9fb", borderBottom: "1px solid #e6e9ef", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+                      <div>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                          <span style={{ fontSize: 15, fontWeight: 600, color: "#1e2746" }}>Stock Request</span>
+                          <Chip
+                            size='small'
+                            label={this.state.stockRequest.status == "pending" ? "Pending" : "Added To Cart"}
+                            // solid, so the request's own status reads apart from the tinted step chips below
+                            sx={{
+                              height: 22,
+                              fontSize: 11,
+                              fontWeight: 600,
+                              color: "#fff",
+                              background: this.state.stockRequest.status == "pending" ? "#d97706" : "#2e7d32",
+                            }}
+                          />
+                        </div>
+                        <div style={{ fontSize: 13, color: "#5b6474", marginTop: 2 }}>
+                          <b style={{ color: "#1e2746" }}>{this.state.stockRequest.requested_by_name || this.state.stockRequest.sales_executive_name || "The SE"}</b>{" "}
+                          asked you for {this.state.stockRequest.items} item(s) on this order
+                          {this.state.stockRequest.status == "pending" ? "" : " - they are in your cart for transfer"}
+                        </div>
+                      </div>
+                      {/* only when you hold some requested piece - otherwise there is nothing to transfer */}
+                      {this.state.stockRequest.status == "pending" &&
+                      (this.state.stockRequest.requested_items || []).some((it) => it.with_you) ? (
+                        <Button
+                          variant='contained'
+                          disabled={!!this.state.addingToCart}
+                          onClick={this.handleStockRequestToCart}
+                          startIcon={this.state.addingToCart ? <CircularProgress size={16} color='inherit' /> : null}>
+                          {this.state.addingToCart ? "Adding..." : "Add to Cart for Transfer"}
+                        </Button>
+                      ) : null}
+                    </div>
+                    {this.state.stockRequest.status == "pending" ? (
+                      <div style={{ overflowX: "auto" }}>
+                        <Table size='small' sx={{ "& td, & th": { verticalAlign: "top", py: 1.25 }, "& th": { fontSize: 12, color: "#5b6474", fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.3 } }}>
+                          <TableHead>
+                            <TableRow>
+                              <TableCell padding='checkbox'>
+                                <Checkbox
+                                  size='small'
+                                  disabled={!this.holderSelectable().length}
+                                  checked={this.holderSelectable().length > 0 && (this.state.holderSel || []).length === this.holderSelectable().length}
+                                  indeterminate={(this.state.holderSel || []).length > 0 && (this.state.holderSel || []).length < this.holderSelectable().length}
+                                  onChange={(e) => this.setState({ holderSel: e.target.checked ? this.holderSelectable() : [] })}
+                                />
+                              </TableCell>
+                              <TableCell>Item</TableCell>
+                              <TableCell>Your Stock</TableCell>
+                              <TableCell>Currently With</TableCell>
+                              <TableCell>Movement</TableCell>
+                              <TableCell>Request Status</TableCell>
+                            </TableRow>
+                          </TableHead>
+                          <TableBody>
+                            {(this.state.stockRequest.requested_items || []).map((it) => (
+                              <TableRow key={it.order_product_id} hover>
+                                <TableCell padding='checkbox'>
+                                  {!it.with_you && (it.holders || []).some((h) => h.request_to) ? (
+                                    <Checkbox
+                                      size='small'
+                                      checked={(this.state.holderSel || []).includes(it.order_product_id)}
+                                      onChange={(e) => this.toggleHolderItem(it.order_product_id, e.target.checked)}
+                                    />
+                                  ) : null}
+                                </TableCell>
+                                <TableCell>
+                                  <div style={{ fontWeight: 600, color: "#1e2746" }}>{it.product_name}</div>
+                                  <div style={{ fontSize: 12, color: "#8a94a6" }}>{it.certificate_no ? "Cert. " + it.certificate_no : "No certificate"}</div>
+                                </TableCell>
+                                <TableCell>
+                                  <Chip
+                                    size='small'
+                                    label={it.with_you ? "In Stock" : "Not In Stock"}
+                                    // explicit colours: the theme's warning is a pale yellow, unreadable as text
+                                    sx={{
+                                      height: 22,
+                                      fontSize: 11,
+                                      fontWeight: 600,
+                                      color: it.with_you ? "#1b5e20" : "#b45309",
+                                      background: it.with_you ? "#e8f5e9" : "#fff4e5",
+                                      border: "1px solid " + (it.with_you ? "#a5d6a7" : "#f5c38b"),
+                                    }}
+                                  />
+                                </TableCell>
+                                <TableCell>
+                                  {it.with_you ? (
+                                    <span style={{ fontWeight: 600 }}>You</span>
+                                  ) : (it.holders || []).length ? (
+                                    it.holders.map((h) => (
+                                      <div key={h.user_id} style={{ marginBottom: 4 }}>
+                                        <div style={{ fontWeight: 600, color: "#1e2746" }}>
+                                          {h.name}
+                                          {h.count > 1 ? <span style={{ color: "#8a94a6", fontWeight: 400 }}> × {h.count}</span> : null}
+                                        </div>
+                                        <div style={{ fontSize: 12, color: "#8a94a6" }}>
+                                          {HOLDER_ROLE[h.role] || "User"}
+                                          {h.request_to && h.request_to.user_id != h.user_id ? " · request via " + h.request_to.name : ""}
+                                        </div>
+                                      </div>
+                                    ))
+                                  ) : (
+                                    <span style={{ color: "#c62828", fontSize: 13 }}>Not available (sold)</span>
+                                  )}
+                                </TableCell>
+                                <TableCell>
+                                  <StockPath tracking={it.tracking} />
+                                </TableCell>
+                                <TableCell>
+                                  <RequestSteps tracking={it.tracking} />
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                        {this.selectedHolders().length ? (
+                          <div style={{ padding: "10px 16px", borderTop: "1px solid #e6e9ef", background: "#f8f9fb", display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 8, flexWrap: "wrap" }}>
+                            <span style={{ fontSize: 13, color: "#5b6474", marginRight: "auto" }}>
+                              {(this.state.holderSel || []).length} item(s) selected - request from:
+                            </span>
+                            {this.selectedHolders().map((h) => (
+                              <Button
+                                key={h.user_id}
+                                size='small'
+                                variant='contained'
+                                disabled={this.state.requestingHolder === h.user_id}
+                                onClick={() => this.handleRequestHolder(h)}
+                                startIcon={this.state.requestingHolder === h.user_id ? <CircularProgress size={14} color='inherit' /> : null}>
+                                {(h.role === "super_admin" ? "Super Admin" : (HOLDER_ROLE[h.role] || "") + " " + h.name) + " (" + h.items + ")"}
+                              </Button>
+                            ))}
+                          </div>
+                        ) : null}
+                      </div>
+                    ) : null}
+                  </div>
+                </Grid>
+              ) : null}
+              {order.can_manage === false ? (
+                <Grid item xs={12} className='create-input'>
+                  {/* someone else handles this order - this screen only watches it */}
+                  <div style={{ padding: "8px 12px", borderRadius: 6, background: "#f5f7fa", color: "#1e2746", fontSize: 14 }}>
+                    View only - this order is handled by{" "}
+                    <b>{order.handled_by_admin_name ? "admin " + order.handled_by_admin_name : "its admin"}</b>.
+                    Status changes and actions are done there.
+                  </div>
+                </Grid>
+              ) : null}
               {order.status == "cancelled" && order.cancel_reason ? (
                 <Grid item xs={12} md={4} className='create-input'>
                   <TextField
@@ -969,7 +1258,7 @@ class OrderView extends React.Component {
                       className='invoice_product_list'>
                       <TableHead className='ratn-table-header'>
                         <TableRow>
-                          {(this.isManager || this.isSuperAdmin) &&
+                          {(this.isManager || this.isSuperAdmin) && order.can_manage !== false &&
                           (order.status == "accepted" ||
                             order.status == "on_process") ? (
                             <TableCell sx={{ width: "10px" }}></TableCell>
@@ -998,7 +1287,7 @@ class OrderView extends React.Component {
                       <TableBody>
                         {order.products.map((row, i) => (
                           <TableRow key={i}>
-                            {(this.isManager || this.isSuperAdmin) &&
+                            {(this.isManager || this.isSuperAdmin) && order.can_manage !== false &&
                             (order.status == "accepted" ||
                               order.status == "on_process") ? (
                               <TableCell>
@@ -1560,6 +1849,52 @@ class OrderView extends React.Component {
               </Dialog>
 
             <Dialog
+          className='ratn-dialog-wrapper'
+          open={this.state.assignDialog}
+          onClose={(e, reason) => reason !== "backdropClick" && this.setState({ assignDialog: false })}
+          fullWidth
+          maxWidth='xs'>
+          <DialogTitle>Assign Order</DialogTitle>
+          <DialogContent>
+            <Box sx={{ flexGrow: 1, m: 0.5 }}>
+              <Grid container spacing={2}>
+                <Grid item xs={12} className='create-input'>
+                  <FormControl fullWidth>
+                    <InputLabel>Sales Executive</InputLabel>
+                    <Select
+                      className='input-inner'
+                      value={this.state.assignSeId}
+                      label='Sales Executive'
+                      onChange={(e) => this.setState({ assignSeId: e.target.value })}>
+                      <MenuItem value=''></MenuItem>
+                      {this.state.assignSeList.map((item) => (
+                        <MenuItem value={item.id} key={item.id}>
+                          {item.name}{item.mobile ? " | " + item.mobile : ""}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </Grid>
+                <Grid item xs={12}>
+                  <Stack spacing={1} direction='row' justifyContent='flex-end'>
+                    <Button
+                      variant='contained'
+                      type='button'
+                      disabled={this.state.processing}
+                      onClick={this.handleAssignSubmit}>
+                      {this.state.processing ? "Processing" : "Assign"}
+                    </Button>
+                    <Button variant='outlined' onClick={() => this.setState({ assignDialog: false })}>
+                      Cancel
+                    </Button>
+                  </Stack>
+                </Grid>
+              </Grid>
+            </Box>
+          </DialogContent>
+        </Dialog>
+
+            <Dialog
               className='ratn-dialog-wrapper'
               open={this.state.openDialog}
               onClose={this.handleDialogClose}
@@ -1589,12 +1924,13 @@ class OrderView extends React.Component {
                         </Select>
                       </FormControl>
                     </Grid>
-                    {this.state.order_status == "accepted" ? (
+                    {/* a note goes with Accepted / Delivered, and is the reason on a cancel */}
+                    {["accepted", "delivered", "cancelled"].includes(this.state.order_status) ? (
                       <Grid item xs={12} md={12} className='create-input'>
                         <TextareaAutosize
                           className='description'
                           minRows={3}
-                          placeholder='Notes'
+                          placeholder={this.state.order_status == "cancelled" ? "Reason" : "Notes"}
                           style={{ width: "100%" }}
                           value={this.state.notes}
                           onChange={(e) =>

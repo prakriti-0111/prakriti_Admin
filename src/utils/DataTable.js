@@ -338,6 +338,10 @@ class DataTable extends React.Component {
     if ("icon" in a && a.icon === false) {
       return a.label;
     }
+    /* an action can bring its own icon */
+    if (React.isValidElement(a.icon)) {
+      return a.icon;
+    }
     switch (a.label) {
       case "Edit":
         return <EditIcon />;
@@ -1450,7 +1454,7 @@ class DataTable extends React.Component {
                                         ? "Adding to cart..."
                                         : a.disabled
                                           ? "Disabled"
-                                          : ""
+                                          : a.label || "" // icon buttons say what they do on hover
                                     }
                                   >
                                     {a.loading ? (

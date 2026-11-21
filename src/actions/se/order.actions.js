@@ -42,3 +42,12 @@ export const orderViewRaw = (id) => {
     return axios.get(`/sales-executive/orders/fetch/${id}`)
 }
 
+/* stock this SE needs for an order and its admin holds */
+export const orderStockAvailability = (id) => {
+    return axios.get(`/sales-executive/orders/${id}/stock-availability`)
+}
+
+/* ask the admin to transfer those pieces */
+export const orderStockRequest = (id, orderProductIds) => {
+    return axios.post(`/sales-executive/orders/${id}/stock-request`, { order_product_ids: orderProductIds })
+}
