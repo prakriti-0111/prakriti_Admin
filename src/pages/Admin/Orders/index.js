@@ -1,7 +1,7 @@
 import React from 'react';
 import { matchRoutes, useLocation } from "react-router-dom"
 import { connect } from 'react-redux';
-import { Avatar, CssBaseline, Link, Box, Typography, Container, Alert, Grid, Button, FormControl, InputLabel, Select, MenuItem, CircularProgress } from '@mui/material';
+import { Avatar, CssBaseline, Link, Box, Typography, Container, Alert, Grid, Button, FormControl, InputLabel, Select, MenuItem, CircularProgress, Tabs, Tab } from '@mui/material';
 import { bindActionCreators } from 'redux';
 import { gridSpacing } from 'store/constant';
 import MainCard from 'ui-component/cards/MainCard';
@@ -28,7 +28,8 @@ class OrderPage extends React.Component {
         page: 1,
         limit: 50,
         date_from: null,
-        date_to: null
+        date_to: null,
+        mine: 0 // 1 = "My Orders": the ones this admin handles
       },
     }
 
@@ -74,6 +75,11 @@ class OrderPage extends React.Component {
         display_name: 'Status',
         show_tag: true
       },
+      {
+        // the assigned SE asked this admin to transfer stock for the order
+        name: 'stock_request',
+        display_name: 'Stock Request'
+      },
     ];
 
     this.tableActions = [
@@ -116,6 +122,15 @@ class OrderPage extends React.Component {
     this.props.orderList(data);
   }
 
+  /* All Orders / My Orders */
+  handleTab = (e, mine) => {
+    this.setState({
+      queryParams: { ...this.state.queryParams, mine: mine, page: 1 }
+    }, () => {
+      this.loadListData();
+    });
+  }
+
   handlePagination = (page) => {
     this.setState({
       queryParams: {
@@ -150,6 +165,14 @@ class OrderPage extends React.Component {
     return (
       <>
         <MainCard title="Orders">
+            <Tabs
+              value={this.state.queryParams.mine}
+              onChange={this.handleTab}
+              sx={{ mb: 2, borderBottom: 1, borderColor: 'divider' }}
+            >
+              <Tab label="All Orders" value={0} />
+              <Tab label="My Orders" value={1} />
+            </Tabs>
             <Grid container spacing={gridSpacing} sx={{mb: 2}}>
                 <Grid item xs={4} className='create-input'>
                     <FormControl fullWidth>

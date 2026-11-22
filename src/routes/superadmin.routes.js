@@ -63,6 +63,9 @@ const EmployeeViewPage = Loadable(lazy(() => import('../pages/SuperAdmin/Employe
 const SalesExecutivePage = Loadable(lazy(() => import('../pages/SuperAdmin/SalesExecutive')));
 const SalesExecutiveCreatePage = Loadable(lazy(() => import('../pages/SuperAdmin/SalesExecutive/Create')));
 const SalesExecutiveEditPage = Loadable(lazy(() => import('../pages/SuperAdmin/SalesExecutive/Edit')));
+/* Stocks listing opened from the new list icon beside the profile View on the
+   SE row. Admin already had this route; Super Admin was missing it. */
+const SalesExecutiveViewPage = Loadable(lazy(() => import('../pages/SuperAdmin/SalesExecutive/View')));
 
 // worker
 /*const WorkerPage = Loadable(lazy(() => import('../pages/SuperAdmin/Worker')));
@@ -171,6 +174,7 @@ const RolePermissionPage = Loadable(lazy(() => import('../pages/SuperAdmin/Role/
 
 //orders
 const OrderPage = Loadable(lazy(() => import('../pages/SuperAdmin/Orders')));
+const StockRequestsPage = Loadable(lazy(() => import('../pages/Admin/StockRequests')));
 const OrderViewPage = Loadable(lazy(() => import('../pages/SuperAdmin/Orders/View')));
 
 //customers
@@ -602,6 +606,10 @@ const SuperAdminRoutes = (isLoggedIn) => [
         element: <OrderPage />
       },
       {
+        path: 'stock-requests',
+        element: <StockRequestsPage />
+      },
+      {
         path: 'orders/View/:id',
         element: <OrderViewPage />
       },
@@ -616,6 +624,10 @@ const SuperAdminRoutes = (isLoggedIn) => [
       {
         path: 'sales-executive/Edit/:id',
         element: <SalesExecutiveEditPage />
+      },
+      {
+        path: 'sales-executive/View/:id',
+        element: <SalesExecutiveViewPage />
       },
       {
         path: 'customers',

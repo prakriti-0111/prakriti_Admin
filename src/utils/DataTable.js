@@ -59,6 +59,7 @@ import CloseIcon from "@mui/icons-material/Close";
 import ReplayIcon from "@mui/icons-material/Replay";
 import AssignmentIndIcon from "@mui/icons-material/AssignmentInd";
 import LockIcon from "@mui/icons-material/Lock";
+import FormatListBulletedIcon from "@mui/icons-material/FormatListBulleted";
 
 class DataTable extends React.Component {
   constructor(props) {
@@ -337,6 +338,10 @@ class DataTable extends React.Component {
     if ("icon" in a && a.icon === false) {
       return a.label;
     }
+    /* an action can bring its own icon */
+    if (React.isValidElement(a.icon)) {
+      return a.icon;
+    }
     switch (a.label) {
       case "Edit":
         return <EditIcon />;
@@ -348,6 +353,12 @@ class DataTable extends React.Component {
 
       case "View":
         return <RemoveRedEyeIcon />;
+        break;
+
+      case "Stocks":
+        /* used wherever an action opens a listing of stocks under this record,
+           so the eye icon can be kept for a profile-style page */
+        return <FormatListBulletedIcon />;
         break;
 
       case "+":
@@ -1443,7 +1454,7 @@ class DataTable extends React.Component {
                                         ? "Adding to cart..."
                                         : a.disabled
                                           ? "Disabled"
-                                          : ""
+                                          : a.label || "" // icon buttons say what they do on hover
                                     }
                                   >
                                     {a.loading ? (

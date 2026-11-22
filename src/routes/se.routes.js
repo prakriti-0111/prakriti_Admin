@@ -17,6 +17,9 @@ const RetailerInvoiceTransactionLedgerPage = Loadable(lazy(() => import('../page
 const StocksPage =Loadable(lazy(() => import('../pages/SuperAdmin/Stocks')));
 const StocksViewPage = Loadable(lazy(() => import('../pages/SuperAdmin/Stocks/View')));
 
+// stock transfer requests sent to this SE
+const StockRequestsPage = Loadable(lazy(() => import('../pages/Admin/StockRequests')));
+
 //Return stocks
 const ReturnStocksPage =Loadable(lazy(() => import('../pages/SuperAdmin/ReturnStocks')));
 const ReturnStocksViewPage = Loadable(lazy(() => import('../pages/SuperAdmin/ReturnStocks/View')));
@@ -140,6 +143,10 @@ const SeRoutes = (isLoggedIn) => [
       {
         path: 'return-stocks',
         element: <ReturnStocksPage />
+      },
+      {
+        path: 'stock-requests',
+        element: <StockRequestsPage />
       },
       {
         path: 'return-stocks/View/:id',

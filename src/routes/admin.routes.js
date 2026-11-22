@@ -129,6 +129,12 @@ const SalesExecutiveEditPage = Loadable(
 const SalesExecutiveViewPage = Loadable(
   lazy(() => import("../pages/SuperAdmin/SalesExecutive/View")),
 );
+/* The performance + salary profile page. Admin reuses the Super Admin
+   implementation - the API endpoint it calls (/superadmin/employees/fetch/:id)
+   is the same one Admin already reaches through the sales-executive list. */
+const SalesExecutiveProfilePage = Loadable(
+  lazy(() => import("../pages/SuperAdmin/Employee/View")),
+);
 const SalesExecutiveInvoiceTransactionLedgerPage = Loadable(
   lazy(() => import("../pages/SuperAdmin/SalesExecutive/Ledger")),
 );
@@ -281,8 +287,10 @@ const RolePage = Loadable(lazy(() => import("../pages/SuperAdmin/Role")));
 
 //orders
 const OrderPage = Loadable(lazy(() => import("../pages/Admin/Orders")));
+const StockRequestsPage = Loadable(lazy(() => import("../pages/Admin/StockRequests")));
+// the full order screen - the admin handles its orders there (status flow)
 const OrderViewPage = Loadable(
-  lazy(() => import("../pages/Admin/Orders/View")),
+  lazy(() => import("../pages/SuperAdmin/Orders/View")),
 );
 
 //customers
@@ -418,6 +426,10 @@ const AdminRoutes = (isLoggedIn) => [
       {
         path: "sales-executive/View/:id",
         element: <SalesExecutiveViewPage />,
+      },
+      {
+        path: "sales-executive/profile/:id",
+        element: <SalesExecutiveProfilePage />,
       },
       {
         path: "sales-executive/invoice-transaction-ledger/:id",
@@ -570,6 +582,10 @@ const AdminRoutes = (isLoggedIn) => [
       {
         path: "orders",
         element: <OrderPage />,
+      },
+      {
+        path: "stock-requests",
+        element: <StockRequestsPage />,
       },
       {
         path: "orders/View/:id",

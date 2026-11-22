@@ -101,6 +101,14 @@ const adminMenus = [
             url: urlPrefix + "/orders",
           },
           {
+            // stock transfer requests from this admin's SEs
+            id: "stockrequests",
+            title: "Stock Requests",
+            type: "item",
+            url: urlPrefix + "/stock-requests",
+            breadcrumbs: false,
+          },
+          {
             id: "myorders",
             title: "My Orders",
             type: "item",

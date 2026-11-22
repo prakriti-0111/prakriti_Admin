@@ -879,7 +879,6 @@ class SaleViewPage extends React.Component {
                           <TableCell>Unit</TableCell>
                           <TableCell>Rate</TableCell>
                           <TableCell>Making(-Dis.)</TableCell>
-                          <TableCell>Tax@</TableCell>
                           <TableCell>Taxable Amt.</TableCell>
                         </TableRow>
                       </TableHead>
@@ -902,10 +901,11 @@ class SaleViewPage extends React.Component {
                                   0);
                             });
                           }
-                          /* returned rows get their own block below */
-                          return sale.subCatItems
-                            .filter((row) => !row.is_return)
-                            .map((row, i) => {
+                          /* billed rows first, then the returned ones crossed out */
+                          return [
+                            ...sale.subCatItems.filter((row) => !row.is_return),
+                            ...sale.subCatItems.filter((row) => row.is_return),
+                          ].map((row, i) => {
                             const makingCharge =
                               makingChargeMap[
                                 row.hsn + (row.is_return ? "|returned" : "")
@@ -935,6 +935,8 @@ class SaleViewPage extends React.Component {
                             });
                           }
                           let totalTax = 0;
+                          let totalMaterialTax = 0;
+                          const taxPercentSet = new Set();
                           /* crossed-out returned rows are shown, not billed */
                           const billedSubCats = sale.subCatItems.filter(
                             (item) => !item.is_return,
@@ -945,6 +947,7 @@ class SaleViewPage extends React.Component {
                             const taxPercent = parseFloat(item.tax) || 0;
                             totalTaxableAmt += taxableAmt;
                             totalTax += (taxableAmt * taxPercent) / 100;
+                            taxPercentSet.add(taxPercent);
                             item.material.forEach((mat) => {
                               const key = mat.name;
                               if (!materialTotals[key]) {
@@ -953,14 +956,19 @@ class SaleViewPage extends React.Component {
                                   unit: mat.unit,
                                   rate: parseFloat(mat.rate) || 0,
                                   amount: 0,
+                                  tax: 0,
+                                  taxPercents: new Set(),
                                 };
                               }
                               materialTotals[key].weight +=
                                 parseFloat(mat.weight) || 0;
                               const amt =
-                                (parseFloat(mat.weight) || 0) *
-                                (parseFloat(mat.rate) || 0);
+                                (mat.material_cost != null /* after the discount */ ? parseFloat(mat.material_cost) || 0 : (parseFloat(mat.weight) || 0) *
+                                (parseFloat(mat.rate) || 0));
                               materialTotals[key].amount += amt;
+                              materialTotals[key].tax += (amt * taxPercent) / 100;
+                              materialTotals[key].taxPercents.add(taxPercent);
+                              totalMaterialTax += (amt * taxPercent) / 100;
                             });
                           });
                           const entries = Object.entries(materialTotals).sort(
@@ -1008,7 +1016,7 @@ class SaleViewPage extends React.Component {
                             <>
                               <TableRow>
                                 <TableCell
-                                  colSpan={12}
+                                  colSpan={11}
                                   style={{
                                     borderBottom: "none",
                                     padding: "4px",
@@ -1042,114 +1050,122 @@ class SaleViewPage extends React.Component {
                                 >
                                   {totalGrossWeight.toFixed(3)} gm
                                 </TableCell>
-                                <TableCell colSpan={5} />
+                                <TableCell colSpan={4} />
                               </TableRow>
-                              {entries.map(([name, data], idx) => {
-                                const isGold = name
-                                  .toLowerCase()
-                                  .includes("gold");
+                              {(() => {
+                                /* same layout as the invoice: amount, x tax %,
+                                   amount with tax; the making charge takes the
+                                   tax left once the materials' is out, so the
+                                   rows always add up to the Total */
+                                const cell = (bold, extra = {}) => ({
+                                  fontSize: "13px",
+                                  color: bold ? "#1E2746" : "#555",
+                                  fontWeight: bold ? 600 : 400,
+                                  whiteSpace: "nowrap",
+                                  ...extra,
+                                });
+                                const rowSx = {
+                                  "& td": {
+                                    borderBottom: "1px solid #eeeeee",
+                                    padding: "4px 16px",
+                                  },
+                                };
+                                const pct = (set) =>
+                                  set.size === 1 ? `× ${[...set][0]}%` : "";
+                                const makingTax = totalTax - totalMaterialTax;
+                                const reportPct =
+                                  parseFloat(sale.report_tax_percentage) || 0;
+                                const totalBeforeTax = totalTaxableAmt + reportAmt;
+                                const totalTaxAll = totalTax + reportTax;
                                 return (
-                                  <TableRow
-                                    key={idx}
-                                    sx={{
-                                      "& td": {
-                                        borderBottom: "none",
-                                        padding: "2px 16px",
-                                      },
-                                    }}
-                                  >
-                                    <TableCell
-                                      colSpan={5}
-                                      style={{
-                                        fontSize: "13px",
-                                        color: isGold ? "#1E2746" : "#555",
-                                        fontWeight: isGold ? 600 : 400,
+                                  <>
+                                    {entries.map(([name, data], idx) => {
+                                      const isGold = name
+                                        .toLowerCase()
+                                        .includes("gold");
+                                      return (
+                                        <TableRow key={idx} sx={rowSx}>
+                                          <TableCell colSpan={5} style={cell(isGold)}>
+                                            {name}
+                                          </TableCell>
+                                          <TableCell style={cell(isGold, { textAlign: "right" })}>
+                                            {data.weight.toFixed(3)} {data.unit}
+                                          </TableCell>
+                                          <TableCell colSpan={2} style={cell(isGold, { textAlign: "center" })}>
+                                            × {(data.weight ? data.amount / data.weight : data.rate).toFixed(2)}
+                                          </TableCell>
+                                          <TableCell colSpan={1} style={cell(isGold, { textAlign: "right" })}>
+                                            {data.amount.toFixed(2)}
+                                          </TableCell>
+                                          <TableCell style={cell(isGold, { textAlign: "center" })}>
+                                            {pct(data.taxPercents)}
+                                          </TableCell>
+                                          <TableCell style={cell(isGold, { textAlign: "right" })}>
+                                            {(data.amount + data.tax).toFixed(2)}
+                                          </TableCell>
+                                        </TableRow>
+                                      );
+                                    })}
+                                    {totalMakingCharge > 0 && (
+                                      <TableRow sx={rowSx}>
+                                        <TableCell colSpan={8} style={cell(false, { fontWeight: 700 })}>
+                                          Making Charge
+                                        </TableCell>
+                                        <TableCell colSpan={1} style={cell(false, { fontWeight: 700, textAlign: "right" })}>
+                                          {totalMakingCharge.toFixed(2)}
+                                        </TableCell>
+                                        <TableCell style={cell(false, { fontWeight: 700, textAlign: "center" })}>
+                                          {pct(taxPercentSet)}
+                                        </TableCell>
+                                        <TableCell style={cell(false, { fontWeight: 700, textAlign: "right" })}>
+                                          {(totalMakingCharge + makingTax).toFixed(2)}
+                                        </TableCell>
+                                      </TableRow>
+                                    )}
+                                    {reportAmt > 0 && (
+                                      <TableRow sx={rowSx}>
+                                        <TableCell colSpan={8} style={cell(false, { fontWeight: 700 })}>
+                                          Report Charge ({parseFloat(sale.report_qty) || 0} pcs ×{" "}
+                                          {(parseFloat(sale.report_charge) || 0).toFixed(2)})
+                                        </TableCell>
+                                        <TableCell colSpan={1} style={cell(false, { fontWeight: 700, textAlign: "right" })}>
+                                          {reportAmt.toFixed(2)}
+                                        </TableCell>
+                                        <TableCell style={cell(false, { fontWeight: 700, textAlign: "center" })}>
+                                          × {reportPct}%
+                                        </TableCell>
+                                        <TableCell style={cell(false, { fontWeight: 700, textAlign: "right" })}>
+                                          {(reportAmt + reportTax).toFixed(2)}
+                                        </TableCell>
+                                      </TableRow>
+                                    )}
+                                    <TableRow
+                                      sx={{
+                                        "& td": {
+                                          borderTop: "2px solid #90caf9",
+                                          borderBottom: "none",
+                                          padding: "6px 16px",
+                                          fontSize: "15px",
+                                          fontWeight: 700,
+                                          color: "#1E2746",
+                                          whiteSpace: "nowrap",
+                                        },
                                       }}
                                     >
-                                      {name}
-                                    </TableCell>
-                                    <TableCell
-                                      style={{
-                                        fontSize: "13px",
-                                        color: isGold ? "#1E2746" : "#555",
-                                        fontWeight: isGold ? 600 : 400,
-                                      }}
-                                    >
-                                      {data.weight.toFixed(3)} {data.unit}
-                                    </TableCell>
-                                    <TableCell
-                                      colSpan={2}
-                                      style={{
-                                        fontSize: "13px",
-                                        color: isGold ? "#1E2746" : "#555",
-                                        fontWeight: isGold ? 600 : 400,
-                                      }}
-                                    >
-                                      × ₹{formatIndianNumber(data.rate)}
-                                    </TableCell>
-                                    <TableCell
-                                      colSpan={4}
-                                      style={{
-                                        fontSize: "13px",
-                                        color: isGold ? "#1E2746" : "#555",
-                                        fontWeight: isGold ? 600 : 400,
-                                      }}
-                                    >
-                                      ₹{formatIndianNumber(data.amount)}
-                                    </TableCell>
-                                  </TableRow>
+                                      <TableCell colSpan={8}>Total</TableCell>
+                                      <TableCell colSpan={1} style={{ textAlign: "right" }}>
+                                        {totalBeforeTax.toFixed(2)}
+                                      </TableCell>
+                                      <TableCell style={{ textAlign: "right" }}>
+                                        {totalTaxAll.toFixed(2)}
+                                      </TableCell>
+                                      <TableCell style={{ textAlign: "right" }}>
+                                        {(totalBeforeTax + totalTaxAll).toFixed(2)}
+                                      </TableCell>
+                                    </TableRow>
+                                  </>
                                 );
-                              })}
-                              {totalMakingCharge > 0 && (
-                                <TableRow
-                                  sx={{
-                                    "& td": {
-                                      borderBottom: "none",
-                                      padding: "2px 16px",
-                                    },
-                                  }}
-                                >
-                                  <TableCell
-                                    colSpan={9}
-                                    style={{ fontSize: "13px", color: "#555" }}
-                                  >
-                                    Making Charge
-                                  </TableCell>
-                                  <TableCell
-                                    colSpan={3}
-                                    style={{ fontSize: "13px", color: "#555" }}
-                                  >
-                                    ₹{totalMakingCharge.toFixed(2)}
-                                  </TableCell>
-                                </TableRow>
-                              )}
-                              <TableRow>
-                                <TableCell
-                                  colSpan={9}
-                                  style={{
-                                    fontSize: "15px",
-                                    fontWeight: 700,
-                                    color: "#1E2746",
-                                    borderTop: "2px solid #90caf9",
-                                    borderBottom: "none",
-                                  }}
-                                >
-                                  Taxable Amt.
-                                </TableCell>
-                                <TableCell
-                                  colSpan={3}
-                                  style={{
-                                    fontSize: "15px",
-                                    fontWeight: 700,
-                                    color: "#1E2746",
-                                    textAlign: "right",
-                                    borderTop: "2px solid #90caf9",
-                                    borderBottom: "none",
-                                  }}
-                                >
-                                  ₹{totalTaxableAmt.toFixed(2)}
-                                </TableCell>
-                              </TableRow>
+                              })()}
 
                           </>
                         );
@@ -1182,7 +1198,6 @@ class SaleViewPage extends React.Component {
                       const igst = parseFloat(sale.igst_tax) || 0;
                       const cgst = parseFloat(sale.cgst_tax) || 0;
                       const sgst = parseFloat(sale.sgst_tax) || 0;
-                      const productTax = (igst > 0 ? igst : cgst + sgst) - rTax;
                       const reportTaxPerc =
                         parseFloat(sale.report_tax_percentage) || 0;
                       const totalPayableAmt =
@@ -1193,6 +1208,9 @@ class SaleViewPage extends React.Component {
                           ),
                         ) || 0;
                       const totalTaxAmt = igst > 0 ? igst : cgst + sgst;
+                      /* the stored GST carries the report tax too; it has its own line above,
+                         so the GST lines show the products' share and Tax adds them up */
+                      const productGst = Math.max(0, totalTaxAmt - rTax);
                       const finalDiscount =
                         parseFloat(
                           String(sale.discount || "0").replace(
@@ -1208,7 +1226,11 @@ class SaleViewPage extends React.Component {
                               <span>{returnedCount}</span>
                             </div>
                           )}
-                          <div className="invoice-totals-line">
+                          {/* black rule above Sub Total, separating it from the lines above */}
+                          <div
+                            className="invoice-totals-line"
+                            style={{ borderTop: "2px solid #000", paddingTop: "8px" }}
+                          >
                             <span style={{ fontWeight: 700 }}>Sub Total</span>
                             <span style={{ fontWeight: 700 }}>
                               ₹{formatIndianNumber(subTotal)}
@@ -1222,20 +1244,11 @@ class SaleViewPage extends React.Component {
                               <span>₹{formatIndianNumber(rTax)}</span>
                             </div>
                           )}
-                          <div className="invoice-totals-line">
-                            <span>Tax</span>
-                            <span>
-                              ₹
-                              {formatIndianNumber(
-                                productTax > 0 ? productTax : 0,
-                              )}
-                            </span>
-                          </div>
                           {igst > 0 ? (
                             <div className="invoice-totals-line">
                               <span style={{ fontWeight: 700 }}>IGST</span>
                               <span style={{ fontWeight: 700 }}>
-                                ₹{formatIndianNumber(igst)}
+                                ₹{formatIndianNumber(productGst)}
                               </span>
                             </div>
                           ) : cgst > 0 || sgst > 0 ? (
@@ -1243,17 +1256,24 @@ class SaleViewPage extends React.Component {
                               <div className="invoice-totals-line">
                                 <span style={{ fontWeight: 700 }}>CGST</span>
                                 <span style={{ fontWeight: 700 }}>
-                                  ₹{formatIndianNumber(cgst)}
+                                  ₹{formatIndianNumber(productGst / 2)}
                                 </span>
                               </div>
                               <div className="invoice-totals-line">
                                 <span style={{ fontWeight: 700 }}>SGST</span>
                                 <span style={{ fontWeight: 700 }}>
-                                  ₹{formatIndianNumber(sgst)}
+                                  ₹{formatIndianNumber(productGst / 2)}
                                 </span>
                               </div>
                             </>
                           ) : null}
+                          {/* Sub Total + Tax, before the cash discount comes off */}
+                          <div className="invoice-totals-line">
+                            <span style={{ fontWeight: 700 }}>Total Amount</span>
+                            <span style={{ fontWeight: 700 }}>
+                              ₹{formatIndianNumber(subTotal + (totalTaxAmt > 0 ? totalTaxAmt : 0))}
+                            </span>
+                          </div>
                           <div className="invoice-totals-line">
                             <span>Discount</span>
                             <span>
@@ -1530,8 +1550,8 @@ class SaleViewPage extends React.Component {
                                     materialTotals[key].weight +=
                                       parseFloat(item.weight) || 0;
                                     const amt =
-                                      (parseFloat(item.weight) || 0) *
-                                      (parseFloat(item.rate) || 0);
+                                      (item.material_cost != null /* after the discount */ ? parseFloat(item.material_cost) || 0 : (parseFloat(item.weight) || 0) *
+                                      (parseFloat(item.rate) || 0));
                                     materialTotals[key].amount += amt;
                                     totalTax += (amt * taxPercent) / 100;
                                   });
@@ -1596,7 +1616,7 @@ class SaleViewPage extends React.Component {
                                             color: "#555",
                                           }}
                                         >
-                                          × ₹{data.rate.toFixed(2)}
+                                          × ₹{(data.weight ? data.amount / data.weight : data.rate).toFixed(2)}
                                         </TableCell>
                                         <TableCell
                                           colSpan={4}
@@ -1765,7 +1785,15 @@ class SaleViewPage extends React.Component {
             maxWidth="md"
           >
             <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', pr: 3 }}>
-              <span>Pay Now</span>
+              <span>
+                Pay Now
+                {/* what is still owed on this invoice */}
+                {this.state.sale && parseFloat(this.state.sale.due_amount) > 0 && (
+                  <span style={{ marginLeft: "12px", fontWeight: 800, fontSize: "0.9rem" }}>
+                    Due:&nbsp;{this.state.sale.due_amount_display}
+                  </span>
+                )}
+              </span>
               {this.state.liveGoldPerGram > 0 && (
                 <span style={{
                   display: 'inline-flex', alignItems: 'center',
@@ -2171,7 +2199,7 @@ function SubCatRow(props) {
     .join("\n")
     .replace(/\n/g, "<br/>");
   let materialRates = row.material
-    .map((itm) => itm.rate.toFixed(2))
+    .map((itm) => /* rate after discount, so it matches the amount charged */ (itm.material_cost != null && parseFloat(itm.weight) ? parseFloat(itm.material_cost) / parseFloat(itm.weight) : parseFloat(itm.rate)).toFixed(2))
     .join("\n")
     .replace(/\n/g, "<br/>");
 
@@ -2209,7 +2237,6 @@ function SubCatRow(props) {
         <TableCell>
           {makingCharge > 0 ? "₹" + formatIndianNumber(makingCharge) : "-"}
         </TableCell>
-        <TableCell>{row.tax}%</TableCell>
         <TableCell style={{ fontWeight: 700, color: "#1E2746" }}>
           ₹{row.taxableAmount.toFixed(2)}
         </TableCell>
