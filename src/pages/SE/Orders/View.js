@@ -343,11 +343,10 @@ class OrderViewPage extends React.Component {
         secondary={
           <Stack spacing={1} direction="row" justifyContent="flex-end" alignItems="center">
             {/* missing pieces the admin holds: ask for a transfer, or show the request */}
-            {this.state.stockInfo && this.state.stockInfo.request ? (
+            {/* only while waiting - the Stock column's tracking shows the rest */}
+            {this.state.stockInfo && this.state.stockInfo.request && this.state.stockInfo.request.status == "pending" ? (
               <span style={{ fontSize: 13, fontWeight: 600, color: "#1e2746" }}>
-                {this.state.stockInfo.request.status == "pending"
-                  ? `${this.state.stockInfo.request.items} item(s) requested - waiting for admin`
-                  : `Admin added ${this.state.stockInfo.request.pieces} piece(s) to cart for transfer`}
+                {`${this.state.stockInfo.request.items} item(s) requested - waiting for admin`}
               </span>
             ) : null}
             {order &&
