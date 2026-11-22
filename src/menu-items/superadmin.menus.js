@@ -136,6 +136,14 @@ const superadminMenus = [
             breadcrumbs: false
           },
           {
+            // stock transfer requests admins sent the super admin
+            id: 'stockrequests',
+            title: 'Stock Requests',
+            type: 'item',
+            url: urlPrefix + '/stock-requests',
+            breadcrumbs: false
+          },
+          {
             id: 'returnorders',
             title: 'Return Orders',
             type: 'item',

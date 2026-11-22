@@ -1,7 +1,7 @@
 import React from 'react';
 import { connect } from 'react-redux';
 import { Field, reduxForm } from 'redux-form/immutable';
-import {Box, TextField, Button, Grid, Stack, TextareaAutosize, FormControl, InputLabel, Select, MenuItem, ImageList, ImageListItem  } from '@mui/material';
+import {Box, TextField, Button, Grid, Stack, TextareaAutosize, FormControl, InputLabel, Select, MenuItem, ImageList, ImageListItem, FormControlLabel, Checkbox  } from '@mui/material';
 import {isEmpty, toBase64} from 'src/helpers/helper';
 import { bindActionCreators } from 'redux';
 import { withSnackbar } from 'notistack';
@@ -62,7 +62,9 @@ class AdminForm extends React.Component {
                 landmark: '',
                 user_name: '',
                 password: '',
-                own: 0
+                own: 0,
+                // list this admin's stock products on the customer frontend
+                show_frontend_stock: true
             },
             formErros: {
                 name: false,
@@ -1140,6 +1142,17 @@ class AdminForm extends React.Component {
                                 <MenuItem value={0}>Inactive</MenuItem>
                             </Select>
                         </FormControl>
+                    </Grid>
+                    <Grid item xs={6} md={3} className='create-input'>
+                        <FormControlLabel
+                            control={
+                                <Checkbox
+                                    checked={formValues.show_frontend_stock !== false}
+                                    onChange={(event) => this.updateFormValues(event.target.checked, 'show_frontend_stock')}
+                                />
+                            }
+                            label="Show stock products on frontend"
+                        />
                     </Grid>
 
                     <Grid item xs={12} md={3}>

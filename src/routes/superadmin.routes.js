@@ -174,6 +174,7 @@ const RolePermissionPage = Loadable(lazy(() => import('../pages/SuperAdmin/Role/
 
 //orders
 const OrderPage = Loadable(lazy(() => import('../pages/SuperAdmin/Orders')));
+const StockRequestsPage = Loadable(lazy(() => import('../pages/Admin/StockRequests')));
 const OrderViewPage = Loadable(lazy(() => import('../pages/SuperAdmin/Orders/View')));
 
 //customers
@@ -603,6 +604,10 @@ const SuperAdminRoutes = (isLoggedIn) => [
       {
         path: 'orders',
         element: <OrderPage />
+      },
+      {
+        path: 'stock-requests',
+        element: <StockRequestsPage />
       },
       {
         path: 'orders/View/:id',

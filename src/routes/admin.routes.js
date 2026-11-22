@@ -287,8 +287,10 @@ const RolePage = Loadable(lazy(() => import("../pages/SuperAdmin/Role")));
 
 //orders
 const OrderPage = Loadable(lazy(() => import("../pages/Admin/Orders")));
+const StockRequestsPage = Loadable(lazy(() => import("../pages/Admin/StockRequests")));
+// the full order screen - the admin handles its orders there (status flow)
 const OrderViewPage = Loadable(
-  lazy(() => import("../pages/Admin/Orders/View")),
+  lazy(() => import("../pages/SuperAdmin/Orders/View")),
 );
 
 //customers
@@ -580,6 +582,10 @@ const AdminRoutes = (isLoggedIn) => [
       {
         path: "orders",
         element: <OrderPage />,
+      },
+      {
+        path: "stock-requests",
+        element: <StockRequestsPage />,
       },
       {
         path: "orders/View/:id",

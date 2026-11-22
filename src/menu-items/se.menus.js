@@ -142,6 +142,13 @@ const seMenus = [
             type: 'item',
             url: urlPrefix + '/return-stocks',
           },
+          {
+            // an admin asked this SE for pieces it holds
+            id: 'stockrequests',
+            title: 'Stock Requests',
+            type: 'item',
+            url: urlPrefix + '/stock-requests',
+          },
         ]
       },
       {

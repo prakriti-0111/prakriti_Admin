@@ -637,7 +637,9 @@ class SaleForm extends React.Component {
     const barWidth = bar.getBoundingClientRect().width;
     /* table scrolled sideways (phones): the columns are off the bar, so the
        figures fall back to a plain inline line */
-    const fits = dist.left + dist.width <= barWidth;
+    /* ...and the discount fields need room left of the Price column, or the
+       figures would sit on top of them */
+    const fits = dist.left + dist.width <= barWidth && price.left >= 260;
     /* the Total column runs to the table edge - pin the total by its right
        edge to that column (at least 16px in), so it is never clipped */
     const total = {
@@ -651,6 +653,17 @@ class SaleForm extends React.Component {
   };
 
   async componentDidMount() {
+    /* from a stock request's Add to Cart: pick who the pieces go to */
+    const transferTo = this.props.query && this.props.query.get("transfer_to");
+    if (transferTo) {
+      this.setState({ pendingAdminSelectId: transferTo, pendingTransferTo: transferTo });
+      // never leave the select spinning if that user is in no list
+      setTimeout(() => {
+        if (String(this.state.pendingAdminSelectId) === String(transferTo)) {
+          this.setState({ pendingAdminSelectId: null, pendingTransferTo: null });
+        }
+      }, 10000);
+    }
     if (this.isSuperAdmin) {
       this.props.actions.adminList({ all: 1 });
 
@@ -1160,6 +1173,9 @@ class SaleForm extends React.Component {
           this.loadStockImages(products);
         },
       );
+    } else {
+      // never leave the table spinning on a failed load
+      this.setState({ productsLoading: false });
     }
   };
 
@@ -1383,10 +1399,29 @@ class SaleForm extends React.Component {
         /* the company was picked for us by the inline creation, it is not
            meant to be swapped afterwards */
         this.setState(
-          { pendingAdminSelectId: null, userAutoSelected: true },
+          { pendingAdminSelectId: null, pendingTransferTo: null, userAutoSelected: true },
           () => this.handleAdminChange(null, pendingId),
         );
       }
+    }
+    /* a stock request recipient missing from the sale list is in the
+       Transfer list (an SE, an employee - or an admin, when an SE is selling):
+       switch to Transfer, then the block above picks them */
+    const transferTo = this.state.pendingTransferTo;
+    if (
+      transferTo &&
+      !this.state.isAssign &&
+      !_.find(this.getUserList(), (u) => String(u.id) === String(transferTo)) &&
+      _.find(
+        [
+          ...(this.state.salesExecutiveList || []),
+          ...(this.state.employeeList || []),
+          ...(this.isSalesExecutive ? this.state.adminList || [] : []),
+        ],
+        (u) => String(u.id) === String(transferTo),
+      )
+    ) {
+      this.setState({ pendingTransferTo: null }, () => this.handleTransfer(""));
     }
 
     if (this.props.formData != prevProps.formData) {
@@ -5776,7 +5811,9 @@ class SaleForm extends React.Component {
                 </TableHead>
 
                 <TableBody>
-                  {!isCartPage && this.state.productsLoading && (
+                  {/* also on the create page: coming from an order the cart is
+                      being filled, and an empty table there reads as broken */}
+                  {this.state.productsLoading && (
                     <TableRow>
                       <TableCell colSpan={12} sx={{ textAlign: 'center', py: 4 }}>
                         <CircularProgress size={28} sx={{ color: '#1E2746' }} />
@@ -6489,7 +6526,12 @@ class SaleForm extends React.Component {
           >
             {!this.state.isAssign ? (
               <Paper elevation={0} className="sale-summary-bar" ref={this.summaryBarRef}>
-                <div className="sale-summary-discounts">
+                {/* the discount fields stop short of the Price column and wrap
+                    onto another line, never under the figures */}
+                <div
+                  className="sale-summary-discounts"
+                  style={this.state.totalsCols ? { maxWidth: this.state.totalsCols.price.left - 24 } : undefined}
+                >
                   {this.state.unique_materials.map((item, index) => (
                     <div className="sale-summary-field" key={index}>
                       <label>
@@ -6646,7 +6688,7 @@ class SaleForm extends React.Component {
 
                             </Grid> */}
 
-                {this.props.query.get("all_added") == 0 ? (
+                {this.props.query.get("all_added") == 0 && !this.state.productsLoading ? (
                   <Grid item xs={12} md={12} className="create-input">
                     <Alert variant="filled" severity="error">
                       You doesn't have enough stock.

@@ -7,6 +7,7 @@ import {
   IconButton,
   Collapse,
   Box,
+  Checkbox,
   TextField,
   Stack,
   FormControl,
@@ -24,7 +25,7 @@ import { gridSpacing } from "store/constant";
 import MainCard from "ui-component/cards/MainCard";
 import withRouter from "src/helpers/withRouter";
 import { withSnackbar } from "notistack";
-import { orderViewRaw } from "actions/se/order.actions";
+import { orderViewRaw, orderStockAvailability, orderStockRequest } from "actions/se/order.actions";
 import {
   orderUpdateStatus,
   orderSaleProceed,
@@ -50,6 +51,7 @@ import DialogTitle from "@mui/material/DialogTitle";
 import DataTable from "src/utils/DataTable";
 import DialogActions from "@mui/material/DialogActions";
 import CloseIcon from "@mui/icons-material/Close";
+import { CompactTracking, StateChip } from "src/utils/StockTracking";
 
 class OrderViewPage extends React.Component {
   constructor(props) {
@@ -73,6 +75,12 @@ class OrderViewPage extends React.Component {
 
     this.columns = [
       {
+        // tick the items to ask the admin for (only ones this SE doesn't hold)
+        name: "select",
+        display_name: "",
+        width: "40px",
+      },
+      {
         name: "image",
         display_name: "Image",
         isImage: true,
@@ -85,6 +93,12 @@ class OrderViewPage extends React.Component {
         name: "certificate_no",
         display_name: "Certificate No",
         width: "120px",
+      },
+      {
+        // the piece (by certificate): a stock chip, who has it, the latest
+        // request step - hover for the whole trail
+        name: "stock_cell",
+        display_name: "Stock",
       },
       {
         name: "total_weight_display",
@@ -151,6 +165,83 @@ class OrderViewPage extends React.Component {
         });
       }
     });
+    this.loadStockInfo();
+  };
+
+  /* each order item with where its piece is: In Stock (this SE) / Request (admin) */
+  rowsWithStock = (products) => {
+    const items = (this.state.stockInfo && this.state.stockInfo.items) || [];
+    const label = { with_se: "In Stock", with_admin: "Request", elsewhere: "Not Available", requested: "Requested" };
+    const look = {
+      with_se: { fg: "#1b5e20", bg: "#e8f5e9", border: "#a5d6a7" },
+      with_admin: { fg: "#b45309", bg: "#fff4e5", border: "#f5c38b" },
+      requested: { fg: "#1565c0", bg: "#e3f2fd", border: "#90caf9" },
+      elsewhere: { fg: "#5b6474", bg: "#f2f3f5", border: "#d5d9e0" },
+    };
+    const selected = this.state.selectedItems || [];
+    return products.map((row) => {
+      const item = items.find((i) => i.order_product_id == row.id);
+      if (!item) return row;
+      const status = item.status != "with_se" && item.requested ? "requested" : item.status;
+      return {
+        ...row,
+        stock_status: status,
+        stock_cell: (
+          <CompactTracking
+            tracking={item.tracking}
+            chip={<StateChip label={label[status] || ""} {...(look[status] || look.elsewhere)} />}
+          />
+        ),
+        select: this.isSelectable(item) ? (
+          <Checkbox
+            size="small"
+            checked={selected.includes(item.order_product_id)}
+            onChange={(e) => this.toggleItem(item.order_product_id, e.target.checked)}
+          />
+        ) : "",
+      };
+    });
+  };
+
+  /* an item the SE doesn't hold and hasn't asked for yet */
+  isSelectable = (item) => item.status != "with_se" && !item.requested;
+
+  selectableIds = () =>
+    ((this.state.stockInfo && this.state.stockInfo.items) || [])
+      .filter(this.isSelectable)
+      .map((i) => i.order_product_id);
+
+  toggleItem = (id, checked) => {
+    const selected = (this.state.selectedItems || []).filter((x) => x !== id);
+    this.setState({ selectedItems: checked ? [...selected, id] : selected });
+  };
+
+  toggleAll = (checked) => {
+    this.setState({ selectedItems: checked ? this.selectableIds() : [] });
+  };
+
+  /* pieces this SE holds for the order, and which its admin could transfer */
+  loadStockInfo = () => {
+    orderStockAvailability(this.props.params.id)
+      .then((res) => {
+        if (res.data.success) this.setState({ stockInfo: res.data.data });
+      })
+      .catch(() => {});
+  };
+
+  handleStockRequest = async () => {
+    const ids = this.state.selectedItems || [];
+    if (!ids.length) return;
+    this.setState({ requesting: true });
+    const res = await orderStockRequest(this.props.params.id, ids).catch((e) => e.response);
+    this.setState({ requesting: false });
+    if (res && res.data && res.data.success) {
+      this.props.enqueueSnackbar(res.data.message, { variant: "success" });
+      this.setState({ selectedItems: [] });
+      this.loadStockInfo();
+    } else {
+      this.props.enqueueSnackbar((res && res.data && res.data.message) || "Could not send the request.", { variant: "error" });
+    }
   };
 
   handleStatus = () => {
@@ -250,7 +341,14 @@ class OrderViewPage extends React.Component {
       <MainCard
         title="Order Details"
         secondary={
-          <Stack spacing={1} direction="row" justifyContent="flex-end">
+          <Stack spacing={1} direction="row" justifyContent="flex-end" alignItems="center">
+            {/* missing pieces the admin holds: ask for a transfer, or show the request */}
+            {/* only while waiting - the Stock column's tracking shows the rest */}
+            {this.state.stockInfo && this.state.stockInfo.request && this.state.stockInfo.request.status == "pending" ? (
+              <span style={{ fontSize: 13, fontWeight: 600, color: "#1e2746" }}>
+                {`${this.state.stockInfo.request.items} item(s) requested - waiting for admin`}
+              </span>
+            ) : null}
             {order &&
             order.status != "delivered" &&
             order.status != "cancelled" &&
@@ -433,9 +531,36 @@ class OrderViewPage extends React.Component {
             >
               <Grid item xs={12} className="p-add-product create-input">
                 <h3 className="p_heading_list">Product List</h3>
+                {this.selectableIds().length > 0 ? (
+                  <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 1 }}>
+                    <FormControlLabel
+                      control={
+                        <Checkbox
+                          size="small"
+                          checked={(this.state.selectedItems || []).length === this.selectableIds().length}
+                          indeterminate={
+                            (this.state.selectedItems || []).length > 0 &&
+                            (this.state.selectedItems || []).length < this.selectableIds().length
+                          }
+                          onChange={(e) => this.toggleAll(e.target.checked)}
+                        />
+                      }
+                      label="Select all items not in your stock"
+                    />
+                    <Button
+                      variant="contained"
+                      disabled={!!this.state.requesting || !(this.state.selectedItems || []).length}
+                      onClick={this.handleStockRequest}
+                    >
+                      {this.state.requesting
+                        ? "Requesting..."
+                        : `Request Selected from Admin (${(this.state.selectedItems || []).length})`}
+                    </Button>
+                  </Stack>
+                ) : null}
                 <DataTable
                   columns={this.columns}
-                  rows={order.products}
+                  rows={this.rowsWithStock(order.products)}
                   page={1}
                   limit={order.products.length}
                   total={order.products.length}
